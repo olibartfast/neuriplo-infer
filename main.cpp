@@ -34,7 +34,6 @@ Mat run_detection(Mat frame){
       timeinfo = localtime(&rawtime);
       strftime(buffer,sizeof(buffer),"%d%m%Y_%I%M%S",timeinfo);
       string fname(buffer);
-      cout << fname << endl;
       imwrite(fname+".jpg", frame );
     }
     return frame;
@@ -67,15 +66,14 @@ new_sample(GstAppSink *appsink, gpointer data) {
     g_print("Could not get image width and height from filter caps");
     exit(-12);
   }
-  //g_print("Image size: %d\t%d\n",width,height);
+
 
   // ---- Read frame and convert to opencv format ---------------
 
   GstMapInfo map;
   gst_buffer_map (buffer, &map, GST_MAP_READ);
 
-  // convert gstreamer data to OpenCV Mat, you could actually
-  // resolve height / width from caps...
+  // convert gstreamer data to OpenCV Mat.
 
   Mat mYUV(height + height/2, width, CV_8UC1, (void*) map.data);
   Mat mRGB(height, width, CV_8UC3);
