@@ -1,4 +1,4 @@
-#include "detector.h"
+#include "HogSvmDetector.h"
 
 
 string HogSvmDetector::modeName() const { return (m == Default ? "Default" : "Daimler"); }

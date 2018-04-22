@@ -1,9 +1,10 @@
-# People detection from IP camera stream
+# People detection from IP camera stream (in progress)
 
 
 
-Using GStreamer and OpenCV libraries and combining the code from:   
-https://github.com/opencv/opencv/blob/master/samples/cpp/peopledetect.cpp   
+Using GStreamer and OpenCV libraries combining the code from:   
+https://github.com/opencv/opencv/blob/master/samples/cpp/peopledetect.cpp for HoG + SVM detector  
+https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp for DNN detector  
 and Mikael Lepistö answer at:  
 https://stackoverflow.com/questions/10403588/adding-opencv-processing-to-gstreamer-application  
 

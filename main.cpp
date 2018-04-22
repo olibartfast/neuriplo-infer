@@ -1,4 +1,5 @@
-#include "detector.h"
+#include "HogSvmDetector.h"
+#include "DnnDetector.h"
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 #include <stdlib.h>
@@ -7,12 +8,6 @@
 
 Mat frame;
 
-
-
-
-Mat run_dnn_detection(Mat frame){
-
-}
 
  
 GstFlowReturn
@@ -102,7 +97,28 @@ my_bus_callback (GstBus *bus, GstMessage *message, gpointer data) {
 
 
 static const string keys = "{ help h   |   | print help message }"
-                           "{ link l   |   | capture video from ip camera}";	   	
+                           "{ input i     | | Path to input image or video file. Skip this argument to capture frames from a camera.}"
+                           "{ link l   |   | capture video from ip camera}"
+                           "{ model m     | | Path to a binary file of model contains trained weights. "
+                                             "It could be a file with extensions .caffemodel (Caffe), "
+                                             ".pb (TensorFlow), .t7 or .net (Torch), .weights (Darknet) }"
+                           "{ config c    | | Path to a text file of model contains network configuration. "
+                                             "It could be a file with extensions .prototxt (Caffe), .pbtxt (TensorFlow), .cfg (Darknet) }"
+                           "{ framework f | | Optional name of an origin framework of the model. Detect it automatically if it does not set. }"
+                           "{ classes     | | Optional path to a text file with names of classes to label detected objects. }"
+                           "{ mean        | | Preprocess input image by subtracting mean values. Mean values should be in BGR order and delimited by spaces. }"
+                           "{ scale       |  1 | Preprocess input image by multiplying on a scale factor. }"
+                           "{ width       | -1 | Preprocess input image by resizing to a specific width. }"
+                           "{ height      | -1 | Preprocess input image by resizing to a specific height. }"
+                           "{ rgb         |    | Indicate that model works with RGB input images instead BGR ones. }"
+                           "{ thr         | .5 | Confidence threshold. }"
+                           "{ backend     |  0 | Choose one of computation backends: "
+                                                "0: default C++ backend, "
+                                                "1: Halide language (http://halide-lang.org/), "
+                                                "2: Intel's Deep Learning Inference Engine (https://software.seek.intel.com/deep-learning-deployment)}"
+                           "{ target      |  0 | Choose one of target computation devices: "
+                                                "0: CPU target (by default),"
+                           			"1: OpenCL }";  	
 
 int main (int argc, char *argv[])
 {

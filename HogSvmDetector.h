@@ -4,13 +4,11 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
-#include <opencv2/dnn.hpp>
 #include <iostream>
 #include <iomanip>
 #include <ctime>
 
 using namespace cv;
-using namespace dnn;
 using namespace std;
 
 
@@ -30,4 +28,5 @@ public:
     Mat run_detection(Mat frame);
 
 };
+
 
