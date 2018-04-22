@@ -6,40 +6,13 @@
 #include <stdbool.h> 
 
 Mat frame;
-Detector detector;
 
-Mat run_detection(Mat frame){
-    int64 t = getTickCount();
-    vector<Rect> found = detector.detect(frame);
-    t = getTickCount() - t;
 
-    // show the window
-    {
-        ostringstream buf;
-        buf << "Mode: " << detector.modeName() << " ||| "
-            << "FPS: " << fixed << setprecision(1) << (getTickFrequency() / (double)t);
-        putText(frame, buf.str(), Point(10, 30), FONT_HERSHEY_PLAIN, 2.0, Scalar(0, 0, 255), 2, LINE_AA);
-    }
-    for (vector<Rect>::iterator i = found.begin(); i != found.end(); ++i)
-    {
-        Rect &r = *i;
-        detector.adjustRect(r);
-        rectangle(frame, r.tl(), r.br(), cv::Scalar(0, 255, 0), 2);
-    }
-    if(found.size() > 0){
-      time_t rawtime;
-      struct tm * timeinfo;
-      char buffer[80];
-      time (&rawtime);
-      timeinfo = localtime(&rawtime);
-      strftime(buffer,sizeof(buffer),"%d%m%Y_%I%M%S",timeinfo);
-      string fname(buffer);
-      imwrite(fname+".jpg", frame );
-    }
-    return frame;
+
+
+Mat run_dnn_detection(Mat frame){
+
 }
-
-
 
  
 GstFlowReturn
@@ -187,10 +160,11 @@ int main (int argc, char *argv[])
   gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_PLAYING);
 
   cvNamedWindow("opencv feed",1);
+  HogSvmDetector hsdetector;
   while(1) {
         g_main_iteration(false);
         if(!frame.empty()){
-	    frame = run_detection(frame);
+	    frame = hsdetector.run_detection(frame);
             imshow("opencv feed", frame);  
             char key = waitKey(30);
             if (key == 27 || key == 'q') // ESC
