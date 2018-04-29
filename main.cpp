@@ -122,6 +122,8 @@ static const string keys = "{ help h   |   | print help message }"
 
 int main (int argc, char *argv[])
 {
+
+  // Command line parser
   CommandLineParser parser(argc, argv, keys);
   parser.about("Detect people from rtsp ip camera stream");
   if (parser.has("help")){
@@ -139,8 +141,33 @@ int main (int argc, char *argv[])
     return 2;
   }
 
+  float confThreshold = parser.get<float>("thr");
 
-  
+    // Open file with classes names.
+  std::vector<std::string> classes;
+  if (parser.has("classes"))
+  {
+    std::string file = parser.get<String>("classes");
+    std::ifstream ifs(file.c_str());
+    if (!ifs.is_open())
+        CV_Error(Error::StsError, "File " + file + " not found");
+    std::string line;
+    while (std::getline(ifs, line))
+    {
+        classes.push_back(line);
+    }
+  }
+  float scale = parser.get<float>("scale");
+  Scalar mean = parser.get<Scalar>("mean");
+  bool swapRB = parser.get<bool>("rgb");
+  int inpWidth = parser.get<int>("width");
+  int inpHeight = parser.get<int>("height");
+
+  DnnDetector dnndetector;
+  dnndetector.init(confThreshold, classes, scale, mean, swapRB, inpWidth, inpHeight);
+
+
+  // Gstreamer
   string pipeline_cmd;
   pipeline_cmd = "rtspsrc location=" + link + " ! decodebin ! appsink name=autovideosink";
   printf("%s\n", pipeline_cmd.c_str());
@@ -175,12 +202,14 @@ int main (int argc, char *argv[])
 
   gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_PLAYING);
 
+
+  // OpenCV detection loop
   cvNamedWindow("opencv feed",1);
   HogSvmDetector hsdetector;
   while(1) {
         g_main_iteration(false);
         if(!frame.empty()){
-	    frame = hsdetector.run_detection(frame);
+	          frame = hsdetector.run_detection(frame);
             imshow("opencv feed", frame);  
             char key = waitKey(30);
             if (key == 27 || key == 'q') // ESC
@@ -191,6 +220,8 @@ int main (int argc, char *argv[])
       }
   }
  
+
+  // Ending
   gst_element_set_state (GST_ELEMENT (pipeline), GST_STATE_NULL);
   gst_object_unref (GST_OBJECT (pipeline));
 

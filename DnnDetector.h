@@ -13,10 +13,23 @@ using namespace std;
 
 
 class DnnDetector{
-    float confThreshold;
-    std::vector<std::string> classes;
+  float confThreshold;
+  std::vector<std::string> classes;
+  float scale;
+  Scalar mean;
+  bool swapRB;
+  int inpWidth;
+  int inpHeight;  
+  Net net; 
 public:
-    DnnDetector(){}
+	DnnDetector(){}
+    void init(float confThreshold_, 
+    	std::vector<std::string> classes_, 
+    	float scale_,
+    	Scalar mean_, 
+    	bool swapRB_, 
+    	int inpWidth_, 
+    	int inpHeight_);
 
     Mat run_dnn_detection(Mat frame);
 

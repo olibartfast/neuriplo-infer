@@ -1,12 +1,22 @@
 #include "DnnDetector.h"
 
-Mat DnnDetector::run_dnn_detection(Mat frame){
-  // Create a 4D blob from a frame.
-  /*Size inpSize(inpWidth > 0 ? inpWidth : frame.cols,
-      inpHeight > 0 ? inpHeight : frame.rows);
-  blobFromImage(frame, blob, scale, inpSize, mean, swapRB, false);*/
 
+void DnnDetector::init(float confThreshold_, 
+    std::vector<std::string> classes_, 
+    Scalar mean_, 
+    float scale_,
+    bool swapRB_, 
+    int inpWidth_, 
+    int inpHeight_){
+  confThreshold = confThreshold_;
+  classes = classes_;
+  scale = scale_;
+  mean = mean_;
+  swapRB = swapRB_;
+  inpWidth = inpWidth_;
+  inpHeight = inpHeight_;  
 }
+
 
 
 void DnnDetector::postprocess(Mat& frame, const Mat& out, Net& net)
@@ -104,4 +114,50 @@ void DnnDetector::drawPred(int classId, float conf, int left, int top, int right
 void DnnDetector::callback(int pos, void*)
 {
     confThreshold = pos * 0.01f;
+}
+
+
+
+static std::vector<String> getOutputsNames(const Net& net)
+{
+    static std::vector<String> names;
+    if (names.empty())
+    {
+        std::vector<int> outLayers = net.getUnconnectedOutLayers();
+        std::vector<String> layersNames = net.getLayerNames();
+        names.resize(outLayers.size());
+        for (size_t i = 0; i < outLayers.size(); ++i)
+            names[i] = layersNames[outLayers[i] - 1];
+    }
+    return names;
+}
+
+Mat DnnDetector::run_dnn_detection(Mat frame){
+  // Create a 4D blob from a frame.
+
+  Mat blob;  
+  Size inpSize(inpWidth > 0 ? inpWidth : frame.cols,
+      inpHeight > 0 ? inpHeight : frame.rows);
+  blobFromImage(frame, blob, scale, inpSize, mean, swapRB, false);
+ // Run a model.
+  net.setInput(blob);
+  if (net.getLayer(0)->outputNameToIndex("im_info") != -1)  // Faster-RCNN or R-FCN
+  {
+      resize(frame, frame, inpSize);
+      Mat imInfo = (Mat_<float>(1, 3) << inpSize.height, inpSize.width, 1.6f);
+      net.setInput(imInfo, "im_info");
+  }
+  std::vector<Mat> outs;
+  net.forward(outs, getOutputsNames(net));
+
+  postprocess(frame, outs, net);
+
+  // Put efficiency information.
+  std::vector<double> layersTimes;
+  double freq = getTickFrequency() / 1000;
+  double t = net.getPerfProfile(layersTimes) / freq;
+  std::string label = format("Inference time: %.2f ms", t);
+  putText(frame, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+  return frame;
+
 }
