@@ -1,10 +1,12 @@
 DNN = 1
-DEBUG = 1
+DEBUG = 0
 
 CFLAGS=-Wall -Wfatal-errors 
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
+else
+OPTS=-Ofast
 endif
 
 CFLAGS+=$(OPTS)
