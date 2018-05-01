@@ -72,7 +72,7 @@ Mat DnnDetector::run_dnn_detection(Mat frame){
 
     Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
-    frame = frame(crop);
+   // frame = frame(crop);
 
     for(int i = 0; i < detectionMat.rows; i++)
     {

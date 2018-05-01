@@ -1,4 +1,13 @@
 DNN = 1
+DEBUG = 1
+
+CFLAGS=-Wall -Wfatal-errors 
+
+ifeq ($(DEBUG), 1) 
+OPTS=-O0 -g
+endif
+
+CFLAGS+=$(OPTS)
 
 ifeq ($(DNN), 1) 
 COMMON+= -DDNN

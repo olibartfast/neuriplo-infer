@@ -98,11 +98,11 @@ my_bus_callback (GstBus *bus, GstMessage *message, gpointer data) {
 
 static const string keys = "{ help h   |   | print help message }"
       "{ link l   |   | capture video from ip camera}"
-      "{ proto          | MobileNetSSD_deploy.prototxt | model configuration }"
-      "{ model          | MobileNetSSD_deploy.caffemodel | model weights }"
+      "{ proto          | models/MobileNetSSD_deploy.prototxt | model configuration }"
+      "{ model          | models/MobileNetSSD_deploy.caffemodel | model weights }"
       "{ video          |       | video for detection }"
       "{ out            |       | path to output video file}"
-      "{ min_confidence | 0.2   | min confidence      }";
+      "{ min_confidence | 0.5   | min confidence      }";
 
 int main (int argc, char *argv[])
 {
@@ -191,7 +191,7 @@ int main (int argc, char *argv[])
   dnndetector.init(classNames, 
     inWidth, inHeight, 
     inScaleFactor, meanVal, 
-    frameWidth, frameHeight, 
+    1280, 720, 
     confidenceThreshold, 
     modelConfiguration, modelBinary);
   #else
@@ -203,10 +203,10 @@ int main (int argc, char *argv[])
           #ifdef DNN 
           frame = dnndetector.run_dnn_detection(frame);
           #else
-	        frame = hsdetector.run_detection(frame);
+	  frame = hsdetector.run_detection(frame);
           #endif
           imshow("opencv feed", frame);  
-          char key = waitKey(30);
+          char key = waitKey(50);
           if (key == 27 || key == 'q') // ESC
           {
             cout << "Exit requested" << endl;
