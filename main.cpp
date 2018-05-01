@@ -6,9 +6,12 @@
 #include <glib.h>
 #include <stdbool.h> 
 
-Mat frame;
-static int frameWidth=0, frameHeight=0 ;
 
+// ip camera frame size
+const int W = 1080;
+const int H = 720
+
+Mat frame;
  
 GstFlowReturn
 new_preroll(GstAppSink *appsink, gpointer data) {
@@ -18,6 +21,7 @@ new_preroll(GstAppSink *appsink, gpointer data) {
 
 GstFlowReturn
 new_sample(GstAppSink *appsink, gpointer data) {
+    static int frameWidth=0, frameHeight=0 ;
     static int framecount = 0;
     framecount++;
 
@@ -186,12 +190,10 @@ int main (int argc, char *argv[])
   String modelBinary = parser.get<string>("model");
   DnnDetector dnndetector;
 
-
-
   dnndetector.init(classNames, 
     inWidth, inHeight, 
     inScaleFactor, meanVal, 
-    1280, 720, 
+    W, H, 
     confidenceThreshold, 
     modelConfiguration, modelBinary);
   #else
