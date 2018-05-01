@@ -4,6 +4,8 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/dnn.hpp>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <ctime>
 
@@ -13,29 +15,35 @@ using namespace std;
 
 
 class DnnDetector{
-  float confThreshold;
-  std::vector<std::string> classes;
-  float scale;
-  Scalar mean;
-  bool swapRB;
-  int inpWidth;
-  int inpHeight;  
+  const char** classNames;
+  size_t inWidth;
+  size_t inHeight;
+  float WHRatio;
+  float inScaleFactor;
+  float meanVal;
+  int frameWidth; 
+  int frameHeight;   
+  float confidenceThreshold;
+  String modelConfiguration;
+  String modelBinary;  
   Net net; 
+  Size inVideoSize;
+  Size cropSize;
+  Rect crop;
+  VideoWriter outputVideo;
+
 public:
 	DnnDetector(){}
-    void init(float confThreshold_, 
-    	std::vector<std::string> classes_, 
-    	float scale_,
-    	Scalar mean_, 
-    	bool swapRB_, 
-    	int inpWidth_, 
-    	int inpHeight_);
-
+    void init(const char** classNames_,
+    	size_t inWidth_, 
+    	size_t inHeight_, 
+    	float inScaleFactor_,
+    	float meanVal_, 
+ 		int frameWidth_, 
+ 		int frameHeight_,   	
+ 		float confidenceThreshold_,
+    	String modelConfiguration_, 
+    	String modelBinary_);
     Mat run_dnn_detection(Mat frame);
 
-    void postprocess(Mat& frame, const Mat& out, Net& net);
-
-    void drawPred(int classId, float conf, int left, int top, int right, int bottom, Mat& frame);
-
-    void callback(int pos, void* userdata);
 };

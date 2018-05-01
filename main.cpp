@@ -7,7 +7,7 @@
 #include <stdbool.h> 
 
 Mat frame;
-
+static int frameWidth=0, frameHeight=0 ;
 
  
 GstFlowReturn
@@ -20,15 +20,15 @@ GstFlowReturn
 new_sample(GstAppSink *appsink, gpointer data) {
     static int framecount = 0;
     framecount++;
-    static int width=0, height=0 ;
+
     GstSample *sample = gst_app_sink_pull_sample(appsink);
     GstCaps *caps = gst_sample_get_caps(sample);
     GstBuffer *buffer = gst_sample_get_buffer(sample);
     const GstStructure *info = gst_sample_get_info(sample);
     static GstStructure *s;
   s = gst_caps_get_structure(caps,0);
-  gboolean res = gst_structure_get_int(s, "width", &width);
-  res |= gst_structure_get_int(s, "height", &height);
+  gboolean res = gst_structure_get_int(s, "width", &frameWidth);
+  res |= gst_structure_get_int(s, "height", &frameHeight);
   if(!res)
   {
     g_print("Could not get image width and height from filter caps");
@@ -43,8 +43,8 @@ new_sample(GstAppSink *appsink, gpointer data) {
 
   // convert gstreamer data to OpenCV Mat.
 
-  Mat mYUV(height + height/2, width, CV_8UC1, (void*) map.data);
-  Mat mRGB(height, width, CV_8UC3);
+  Mat mYUV(frameHeight + frameHeight/2, frameWidth, CV_8UC1, (void*) map.data);
+  Mat mRGB(frameHeight, frameWidth, CV_8UC3);
   cvtColor(mYUV, mRGB,  CV_YUV2RGBA_YV12, 3);
   mRGB.copyTo(frame);
   int frameSize = map.size;
@@ -97,28 +97,12 @@ my_bus_callback (GstBus *bus, GstMessage *message, gpointer data) {
 
 
 static const string keys = "{ help h   |   | print help message }"
-                           "{ input i     | | Path to input image or video file. Skip this argument to capture frames from a camera.}"
-                           "{ link l   |   | capture video from ip camera}"
-                           "{ model m     | | Path to a binary file of model contains trained weights. "
-                                             "It could be a file with extensions .caffemodel (Caffe), "
-                                             ".pb (TensorFlow), .t7 or .net (Torch), .weights (Darknet) }"
-                           "{ config c    | | Path to a text file of model contains network configuration. "
-                                             "It could be a file with extensions .prototxt (Caffe), .pbtxt (TensorFlow), .cfg (Darknet) }"
-                           "{ framework f | | Optional name of an origin framework of the model. Detect it automatically if it does not set. }"
-                           "{ classes     | | Optional path to a text file with names of classes to label detected objects. }"
-                           "{ mean        | | Preprocess input image by subtracting mean values. Mean values should be in BGR order and delimited by spaces. }"
-                           "{ scale       |  1 | Preprocess input image by multiplying on a scale factor. }"
-                           "{ width       | -1 | Preprocess input image by resizing to a specific width. }"
-                           "{ height      | -1 | Preprocess input image by resizing to a specific height. }"
-                           "{ rgb         |    | Indicate that model works with RGB input images instead BGR ones. }"
-                           "{ thr         | .5 | Confidence threshold. }"
-                           "{ backend     |  0 | Choose one of computation backends: "
-                                                "0: default C++ backend, "
-                                                "1: Halide language (http://halide-lang.org/), "
-                                                "2: Intel's Deep Learning Inference Engine (https://software.seek.intel.com/deep-learning-deployment)}"
-                           "{ target      |  0 | Choose one of target computation devices: "
-                                                "0: CPU target (by default),"
-                           			"1: OpenCL }";  	
+      "{ link l   |   | capture video from ip camera}"
+      "{ proto          | MobileNetSSD_deploy.prototxt | model configuration }"
+      "{ model          | MobileNetSSD_deploy.caffemodel | model weights }"
+      "{ video          |       | video for detection }"
+      "{ out            |       | path to output video file}"
+      "{ min_confidence | 0.2   | min confidence      }";
 
 int main (int argc, char *argv[])
 {
@@ -141,30 +125,8 @@ int main (int argc, char *argv[])
     return 2;
   }
 
-  float confThreshold = parser.get<float>("thr");
 
-    // Open file with classes names.
-  std::vector<std::string> classes;
-  if (parser.has("classes"))
-  {
-    std::string file = parser.get<String>("classes");
-    std::ifstream ifs(file.c_str());
-    if (!ifs.is_open())
-        CV_Error(Error::StsError, "File " + file + " not found");
-    std::string line;
-    while (std::getline(ifs, line))
-    {
-        classes.push_back(line);
-    }
-  }
-  float scale = parser.get<float>("scale");
-  Scalar mean = parser.get<Scalar>("mean");
-  bool swapRB = parser.get<bool>("rgb");
-  int inpWidth = parser.get<int>("width");
-  int inpHeight = parser.get<int>("height");
 
-  DnnDetector dnndetector;
-  dnndetector.init(confThreshold, classes, scale, mean, swapRB, inpWidth, inpHeight);
 
 
   // Gstreamer
@@ -205,11 +167,40 @@ int main (int argc, char *argv[])
 
   // OpenCV detection loop
   cvNamedWindow("opencv feed",1);
-  HogSvmDetector hsdetector;
+
+  // Open file with classes names.
+  const char* classNames[] = {"background",
+                              "aeroplane", "bicycle", "bird", "boat",
+                              "bottle", "bus", "car", "cat", "chair",
+                              "cow", "diningtable", "dog", "horse",
+                              "motorbike", "person", "pottedplant",
+                              "sheep", "sofa", "train", "tvmonitor"};
+
+  size_t inWidth = 300;
+  size_t inHeight = 300;
+  float inScaleFactor = 0.007843f;
+  float meanVal = 127.5;
+  float confidenceThreshold = parser.get<float>("min_confidence");
+  String modelConfiguration = parser.get<string>("proto");
+  String modelBinary = parser.get<string>("model");
+  DnnDetector dnndetector;
+
+
+
+  dnndetector.init(classNames, 
+    inWidth, inHeight, 
+    inScaleFactor, meanVal, 
+    frameWidth, frameHeight, 
+    confidenceThreshold, 
+    modelConfiguration, modelBinary);
+
+
+  //HogSvmDetector hsdetector;
   while(1) {
         g_main_iteration(false);
         if(!frame.empty()){
-	          frame = hsdetector.run_detection(frame);
+	          //frame = hsdetector.run_detection(frame);
+            frame = dnndetector.run_dnn_detection(frame);
             imshow("opencv feed", frame);  
             char key = waitKey(30);
             if (key == 27 || key == 'q') // ESC
