@@ -1,8 +1,8 @@
-#include "DnnDetector.h"
+#include "MobileNetSSD.h"
 
 
 
-void DnnDetector::init(const char** classNames_,
+void MobileNetSSD::init(const char** classNames_,
         size_t inWidth_, 
         size_t inHeight_, 
         float inScaleFactor_,
@@ -50,7 +50,7 @@ void DnnDetector::init(const char** classNames_,
 
 
 
-Mat DnnDetector::run_dnn_detection(Mat frame){
+Mat MobileNetSSD::run_ssd(Mat frame){
   // Create a 4D blob from a frame.
 
     Mat inputBlob = blobFromImage(frame, inScaleFactor,

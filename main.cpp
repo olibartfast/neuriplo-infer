@@ -1,5 +1,5 @@
 #include "HogSvmDetector.h"
-#include "DnnDetector.h"
+#include "MobileNetSSD.h"
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 #include <stdlib.h>
@@ -9,10 +9,10 @@
 
 // ip camera frame size
 const int W = 1080;
-const int H = 720
+const int H = 720;
 
 Mat frame;
- 
+
 GstFlowReturn
 new_preroll(GstAppSink *appsink, gpointer data) {
     g_print ("Got preroll!\n");
@@ -188,9 +188,9 @@ int main (int argc, char *argv[])
   float confidenceThreshold = parser.get<float>("min_confidence");
   String modelConfiguration = parser.get<string>("proto");
   String modelBinary = parser.get<string>("model");
-  DnnDetector dnndetector;
+  MobileNetSSD mnssd;
 
-  dnndetector.init(classNames, 
+  mnssd.init(classNames, 
     inWidth, inHeight, 
     inScaleFactor, meanVal, 
     W, H, 
@@ -203,9 +203,9 @@ int main (int argc, char *argv[])
         g_main_iteration(false);
         if(!frame.empty()){
           #ifdef DNN 
-          frame = dnndetector.run_dnn_detection(frame);
+          frame = mnssd.run_ssd(frame);
           #else
-	  frame = hsdetector.run_detection(frame);
+	        frame = hsdetector.run_detection(frame);
           #endif
           imshow("opencv feed", frame);  
           char key = waitKey(50);

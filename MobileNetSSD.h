@@ -14,7 +14,7 @@ using namespace dnn;
 using namespace std;
 
 
-class DnnDetector{
+class MobileNetSSD{
   const char** classNames;
   size_t inWidth;
   size_t inHeight;
@@ -33,7 +33,7 @@ class DnnDetector{
   VideoWriter outputVideo;
 
 public:
-	DnnDetector(){}
+	MobileNetSSD(){}
     void init(const char** classNames_,
     	size_t inWidth_, 
     	size_t inHeight_, 
@@ -44,6 +44,6 @@ public:
  		float confidenceThreshold_,
     	String modelConfiguration_, 
     	String modelBinary_);
-    Mat run_dnn_detection(Mat frame);
+    Mat run_ssd(Mat frame);
 
 };
