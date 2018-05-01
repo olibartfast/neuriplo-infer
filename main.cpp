@@ -168,6 +168,7 @@ int main (int argc, char *argv[])
   // OpenCV detection loop
   cvNamedWindow("opencv feed",1);
 
+  #ifdef DNN 
   // Open file with classes names.
   const char* classNames[] = {"background",
                               "aeroplane", "bicycle", "bird", "boat",
@@ -193,21 +194,24 @@ int main (int argc, char *argv[])
     frameWidth, frameHeight, 
     confidenceThreshold, 
     modelConfiguration, modelBinary);
-
-
-  //HogSvmDetector hsdetector;
+  #else
+  HogSvmDetector hsdetector;
+  #endif  
   while(1) {
         g_main_iteration(false);
         if(!frame.empty()){
-	          //frame = hsdetector.run_detection(frame);
-            frame = dnndetector.run_dnn_detection(frame);
-            imshow("opencv feed", frame);  
-            char key = waitKey(30);
-            if (key == 27 || key == 'q') // ESC
-            {
-                cout << "Exit requested" << endl;
-                break;
-            }
+          #ifdef DNN 
+          frame = dnndetector.run_dnn_detection(frame);
+          #else
+	        frame = hsdetector.run_detection(frame);
+          #endif
+          imshow("opencv feed", frame);  
+          char key = waitKey(30);
+          if (key == 27 || key == 'q') // ESC
+          {
+            cout << "Exit requested" << endl;
+            break;
+          }
       }
   }
  
