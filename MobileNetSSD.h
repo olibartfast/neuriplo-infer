@@ -13,6 +13,11 @@ using namespace cv;
 using namespace dnn;
 using namespace std;
 
+// MobileNet Single-Shot Detector 
+// (https://arxiv.org/abs/1512.02325)
+// to detect objects on image, caffemodel model's file is avaliable here:
+// https://github.com/chuanqi305/MobileNet-SSD
+
 
 class MobileNetSSD{
   const char** classNames;
