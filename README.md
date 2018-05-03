@@ -8,6 +8,7 @@ https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp fo
 and Mikael Lepistö answer at:  
 https://stackoverflow.com/questions/10403588/adding-opencv-processing-to-gstreamer-application  
 
+
 To train your own HoG detector use:  
 https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 
@@ -17,4 +18,5 @@ GStreamer 1.0 and OpenCV (used version 3.3.1)
 ## Compilation and running 
 make  
 ./detector --link="rtsp://cameraip:port/somelivefeed"
-
+  
+ Tested with Sricam SP009 720P camera   
