@@ -1,4 +1,4 @@
-# People and object detection from IP camera RTSP video stream (in progress)
+# People and object detection from IP camera RTSP video stream 
 
 
 
