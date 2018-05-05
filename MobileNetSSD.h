@@ -1,3 +1,5 @@
+#ifndef MOBILENETSSD_H
+#define MOBILENETSSD_H
 #include <opencv2/objdetect.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -47,3 +49,4 @@ public:
     Mat run_ssd(Mat frame);
 
 };
+#endif
