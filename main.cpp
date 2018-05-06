@@ -2,14 +2,6 @@
 #include "Detector.h"
     
 
-// ip camera frame size
-const int W = 1080;
-const int H = 720;
-
-
-#define SVM ((architecture == "svm")  ? 1:0)
-#define YOLO ( ? 1:0)  
-
 static const string params = "{ help h   |   | print help message }"
       "{ arch     |   | yolo, mobilenet or svm      }"
       "{ link l   |   | capture video from ip camera}"
