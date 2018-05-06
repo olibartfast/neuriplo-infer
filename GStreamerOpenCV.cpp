@@ -10,6 +10,7 @@ GStreamerOpenCV::GStreamerOpenCV(GError *error){
 
 GStreamerOpenCV::~GStreamerOpenCV(){
     gst_object_unref (GST_OBJECT (pipeline_));
+    cout << "~GStreamerOpenCV()" << endl;
 }
 
 

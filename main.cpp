@@ -69,10 +69,9 @@ int main (int argc, char *argv[])
             } 
         }
     }
- 
     // Ending
     gstocv->set_state(GST_STATE_NULL);
-    delete gstocv;
     delete detector;
+    delete gstocv;
     return 0;  
 }

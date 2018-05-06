@@ -10,9 +10,12 @@ class Detector{
 	public:
 		Detector(string architecture, float confidenceThreshold = 0.20, const int W = 1080, const int H = 720){
 			architecture_ = architecture;
+			yolo_ = NULL;
+			hsdetector_ = NULL;   
+			mnssd_ = NULL; 
 		    if(architecture == "mobilenet"){
 		        // Open file with classes names.
-		        const char* classNames[] = {"background",
+		        static const char* classNames[] = {"background",
 		                                    "aeroplane", "bicycle", "bird", "boat",
 		                                    "bottle", "bus", "car", "cat", "chair",
 		                                    "cow", "diningtable", "dog", "horse",
@@ -46,6 +49,7 @@ class Detector{
 				delete yolo_;
 			if(hsdetector_ != NULL)
 				delete hsdetector_;
+			cout << "~Detector()" << endl;
 
 		}
 

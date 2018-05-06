@@ -36,6 +36,9 @@ class MobileNetSSD{
 
 public:
 	MobileNetSSD(){}
+  ~MobileNetSSD(){
+    cout << "~MobileNetSSD()" << endl;
+  }
     void init(const char** classNames_,
     	size_t inWidth_, 
     	size_t inHeight_, 
