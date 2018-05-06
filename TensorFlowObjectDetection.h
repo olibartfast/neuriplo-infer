@@ -41,7 +41,7 @@ public:
         inScaleFactor_ = inScaleFactor;
         meanVal_ = meanVal;
         confidenceThreshold_ = confidenceThreshold;		
-		net_ = readNetFromTensorflow(modelFile);
+		net_ = readNetFromTensorflow(modelFile, configFile);
 		if (net_.empty())
         {
             cerr << "Can't load network by using the mode file: " << std::endl;

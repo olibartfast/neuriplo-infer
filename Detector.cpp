@@ -68,10 +68,8 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
                             "cow", "diningtable", "dog", "horse",
                             "motorbike", "person", "pottedplant",
                             "sheep", "sofa", "train", "tvmonitor"}; 
-        String modelFile = "models/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb";
-        String configFile = "models/ssd_mobilenet_v2_coco_2018_03_29/pipeline.config";
-        //String modelFile = "models/ssd_mobilenet_v1_coco_2017_11_17/frozen_inference_graph.pb";
-        //String configFile = "models/ssd_mobilenet_v1_coco_2017_11_17/pipeline.config";
+        String modelFile = "models/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb";
+        String configFile = "models/ssd_mobilenet_v1_coco_11_06_2017/ssd_mobilenet_v1_coco.pbtxt";
         tfdetector_->init(classNames, modelFile, configFile, W, H);
     }
 }
