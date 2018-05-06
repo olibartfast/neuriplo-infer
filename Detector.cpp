@@ -13,6 +13,7 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
                                     "motorbike", "person", "pottedplant",
                                     "sheep", "sofa", "train", "tvmonitor"};    
 
+
         String modelConfiguration = "models/MobileNetSSD_deploy.prototxt";
         String modelBinary = "models/MobileNetSSD_deploy.caffemodel";
         mnssd_ = new MobileNetSSD();
@@ -27,6 +28,17 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
         // get the model and cfg files here: https://pjreddie.com/darknet/yolo/
         String modelConfiguration;
         String modelBinary;
+
+        const char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train",
+        "truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird",
+        "cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella",
+        "handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat",
+        "baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork",
+        "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog",
+        "pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv",
+        "laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink",
+        "refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush"};
+
         if(architecture == "yolov2-tiny"){
         	modelConfiguration = "models/yolov2-tiny.cfg";
         	modelBinary = "models/yolov2-tiny.weights";
@@ -39,7 +51,7 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
         	modelConfiguration = "models/yolov3.cfg";
         	modelBinary = "models/yolov3.weights";
         }
-        yolo_->init(modelConfiguration, modelBinary);
+        yolo_->init(modelConfiguration, modelBinary, coco_classes);
 
 
     }

@@ -15,6 +15,7 @@ using namespace cv::dnn;
 using namespace std;
 
 class Yolo{
+	const char** coco_classes;
 	Net net_;
 	size_t network_width_;
     size_t network_height_;
