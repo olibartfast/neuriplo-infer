@@ -64,26 +64,20 @@ void Yolo::run_yolo(Mat& frame){
 
 
 
-	        String label = String(coco_classes_[objectClass]) + ": " + confidence;
+
 
 	        std::cout << "Class: " << coco_classes_[objectClass] << std::endl;
 	        std::cout << "Confidence: " << confidence << std::endl;
 
-	        std::cout << " " << xLeftBottom
-	            << " " << yLeftBottom
-	            << " " << xRightTop
-	            << " " << yRightTop << std::endl;
-
-	        /*Rect object((int)xLeftBottom, (int)yLeftBottom,
+	        Rect object((int)xLeftBottom, (int)yLeftBottom,
 	            (int)(xRightTop - xLeftBottom),
 	            (int)(yRightTop - yLeftBottom));
 
-	        rectangle(frame, object, Scalar(0, 255, 0));*/
+
 	        int baseLine = 0;
+	        String label = String(coco_classes_[objectClass]) + ": " + confidence;
 	        Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-	        rectangle(frame, Rect(Point(xLeftBottom, yLeftBottom - labelSize.height),
-	                              Size(labelSize.width, labelSize.height + baseLine)),
-	                  Scalar(255, 255, 255), CV_FILLED);
+	        rectangle(frame, object, Scalar(0, 255, 0));
 	        putText(frame, label, Point(xLeftBottom, yLeftBottom),
 	                FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));    
 	    }
