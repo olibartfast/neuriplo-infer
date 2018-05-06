@@ -22,6 +22,11 @@ make
 
 ## running with HoG + SVM People Detector 
 ./detector --arch=svm --link="rtsp://cameraip:port/somelivefeed"
+
+## running with Yolo
+./detector --arch=yolov3(or yolov2 or yolov2-tiny) --link="rtsp://cameraip:port/somelivefeed"  
+weigths and cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
+
  
 
 Tested with Sricam SP009 720P camera   
