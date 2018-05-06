@@ -29,15 +29,17 @@ void TensorFlowObjectDetection::init(const char** classNames,
 
 
 void TensorFlowObjectDetection::run_tf(Mat& frame){
+    //Mat inputBlob = blobFromImage(frame,1./255,Size(300,300));
     Mat inputBlob = blobFromImage(frame, inScaleFactor_,
-                              Size(inWidth_, inHeight_), meanVal_, false); //Convert Mat to batch of images
+                                  Size(inWidth_, inHeight_), meanVal_, false);
     
     //! [Set input blob]
-	net_.setInput(inputBlob, "data");  //set the network input
+	net_.setInput(inputBlob);  //set the network input
 	//! [Set input blob]
 
 	//! [Make forward pass]
-	Mat detection = net_.forward("detection_out"); //compute output
+	//Mat detection = net_.forward("detection_out"); //compute output
+    Mat detection = net_.forward();
 	//! [Make forward pass]
     std::vector<double> layersTimings;
     double freq = getTickFrequency() / 1000;
