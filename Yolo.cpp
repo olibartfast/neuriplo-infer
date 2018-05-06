@@ -1,6 +1,8 @@
 #include "Yolo.h"
 
-void Yolo::init(const char** coco_classes, string modelConfiguration, string modelBinary, 
+void Yolo::init(const char** coco_classes, 
+	string modelConfiguration, 
+	string modelBinary, 
 	const size_t network_width,
     const size_t network_height,
 	float confidenceThreshold){

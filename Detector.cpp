@@ -29,7 +29,7 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
         String modelConfiguration;
         String modelBinary;
 
-        const char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train",
+        static const char *coco_classes[] = {"person","bicycle","car","motorcycle","airplane","bus","train",
         "truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird",
         "cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella",
         "handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat",
@@ -51,7 +51,7 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
         	modelConfiguration = "models/yolov3.cfg";
         	modelBinary = "models/yolov3.weights";
         }
-        yolo_->init(modelConfiguration, modelBinary, coco_classes);
+        yolo_->init(coco_classes, modelConfiguration, modelBinary);
 
 
     }

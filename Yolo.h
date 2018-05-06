@@ -15,14 +15,16 @@ using namespace cv::dnn;
 using namespace std;
 
 class Yolo{
-	const char** coco_classes;
+	const char** coco_classes_;
 	Net net_;
 	size_t network_width_;
     size_t network_height_;
     float confidenceThreshold_;
 public:
 	Yolo(){}
-	void init(string modelConfiguration, string modelBinary, 
+	void init(const char** coco_classes, 
+		string modelConfiguration, 
+		string modelBinary, 
 		const size_t network_width = 416,
         const size_t network_height = 416,
 		float confidenceThreshold = 0.25);
