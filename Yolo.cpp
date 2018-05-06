@@ -69,17 +69,23 @@ void Yolo::run_yolo(Mat& frame){
 	        std::cout << "Class: " << coco_classes_[objectClass] << std::endl;
 	        std::cout << "Confidence: " << confidence << std::endl;
 
-	        Rect object((int)xLeftBottom, (int)yLeftBottom,
-	            (int)(xRightTop - xLeftBottom),
-	            (int)(yRightTop - yLeftBottom));
+            ostringstream ss;
+            ss << confidence;
+            String conf(ss.str());
 
+            Rect object((int)xLeftBottom, (int)yLeftBottom,
+                        (int)(xRightTop - xLeftBottom),
+                        (int)(yRightTop - yLeftBottom));
 
-	        int baseLine = 0;
-	        String label = String(coco_classes_[objectClass]) + ": " + confidence;
-	        Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-	        rectangle(frame, object, Scalar(0, 255, 0));
-	        putText(frame, label, Point(xLeftBottom, yLeftBottom),
-	                FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));    
+            rectangle(frame, object, Scalar(0, 255, 0));
+            String label = String(coco_classes_[objectClass]) + ": " + conf;
+            int baseLine = 0;
+            Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+            rectangle(frame, Rect(Point(xLeftBottom, yLeftBottom - labelSize.height),
+                                  Size(labelSize.width, labelSize.height + baseLine)),
+                      Scalar(255, 255, 255), CV_FILLED);
+            putText(frame, label, Point(xLeftBottom, yLeftBottom),
+                    FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));  
 	    }
 	}
 
