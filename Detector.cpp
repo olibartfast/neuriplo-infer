@@ -19,7 +19,9 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
         mnssd_->init(classNames, modelConfiguration, modelBinary, W, H);
 
     }
-    else if (architecture.find("yolo") != string::npos){
+    else if ( architecture == "yolov2-tiny" ||
+    	architecture == "yolov2" ||
+    	architecture == "yolov3"){
     	yolo_ = new Yolo();
     	cout << "Yolo found" << endl;
         // get the model and cfg files here: https://pjreddie.com/darknet/yolo/
@@ -61,7 +63,9 @@ Detector::~Detector(){
 void Detector::run_detection(Mat& frame){
 	if(architecture_ == "mobilenet")
         mnssd_->run_ssd(frame);
-    else if (architecture_.find("yolo") != string::npos)
+    else if( architecture_ == "yolov2-tiny" ||
+    	architecture_ == "yolov2" ||
+    	architecture_ == "yolov3")
     	yolo_->run_yolo(frame);
     else if(architecture_ == "svm")	
         hsdetector_->run_detection(frame);
