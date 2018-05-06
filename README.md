@@ -15,8 +15,13 @@ https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 ##  Dependencies
 GStreamer 1.0 and OpenCV (used version 3.3.1)
 
-## Compilation and running 
+## Compilation  
 make  
-./detector --link="rtsp://cameraip:port/somelivefeed"
-  
- Tested with Sricam SP009 720P camera   
+## running with Mobilenet SSD 
+./detector --arch=mobilenet --link="rtsp://cameraip:port/somelivefeed"
+
+## running with HoG + SVM People Detector 
+./detector --arch=svm --link="rtsp://cameraip:port/somelivefeed"
+ 
+
+Tested with Sricam SP009 720P camera   
