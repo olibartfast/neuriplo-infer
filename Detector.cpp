@@ -4,6 +4,7 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
 	yolo_ = NULL;
 	hsdetector_ = NULL;   
 	mnssd_ = NULL; 
+    tfdetector_ = NULL;
     if(architecture == "mobilenet"){
         // Open file with classes names.
         static const char* classNames[] = {"background",
@@ -59,6 +60,18 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
         
     else if(architecture == "svm")
     	hsdetector_ = new HogSvmDetector();
+    else if(architecture == "tensorflow"){
+        tfdetector_ = new TensorFlowObjectDetection();
+        static const char* classNames[] = {"background",
+                            "aeroplane", "bicycle", "bird", "boat",
+                            "bottle", "bus", "car", "cat", "chair",
+                            "cow", "diningtable", "dog", "horse",
+                            "motorbike", "person", "pottedplant",
+                            "sheep", "sofa", "train", "tvmonitor"}; 
+        string modelFile = "models/ssid_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb";
+        string configFile = "models/ssid_mobilenet_v2_coco_2018_03_29/pipeline.config";
+        tfdetector_->init(classNames, modelFile, configFile, W, H);
+    }
 }
 
 Detector::~Detector(){
@@ -68,6 +81,8 @@ Detector::~Detector(){
 		delete yolo_;
 	if(hsdetector_ != NULL)
 		delete hsdetector_;
+    if(tfdetector_  != NULL)
+        delete tfdetector_;
 	cout << "~Detector()" << endl;
 
 }
@@ -81,4 +96,6 @@ void Detector::run_detection(Mat& frame){
     	yolo_->run_yolo(frame);
     else if(architecture_ == "svm")	
         hsdetector_->run_detection(frame);
+    else if(architecture_ == "tensorflow")
+        tfdetector_ ->run_tf(frame);
 }
