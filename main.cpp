@@ -1,6 +1,5 @@
-#include "HogSvmDetector.h"
-#include "MobileNetSSD.h"
 #include "GStreamerOpenCV.h"
+#include "Detector.h"
     
 
 // ip camera frame size
@@ -8,19 +7,19 @@ const int W = 1080;
 const int H = 720;
 
 
-static const string keys = "{ help h   |   | print help message }"
+#define SVM ((architecture == "svm")  ? 1:0)
+#define YOLO ( ? 1:0)  
+
+static const string params = "{ help h   |   | print help message }"
+      "{ arch     |   | yolo, mobilenet or svm      }"
       "{ link l   |   | capture video from ip camera}"
-      "{ proto          | models/MobileNetSSD_deploy.prototxt | model configuration }"
-      "{ model          | models/MobileNetSSD_deploy.caffemodel | model weights }"
-      "{ video          |       | video for detection }"
-      "{ out            |       | path to output video file}"
       "{ min_confidence | 0.5   | min confidence      }";
 
 int main (int argc, char *argv[])
 {
 
     // Command line parser
-    CommandLineParser parser(argc, argv, keys);
+    CommandLineParser parser(argc, argv, params);
     parser.about("Detect people from rtsp ip camera stream");
     if (parser.has("help")){
       parser.printMessage();
@@ -38,7 +37,7 @@ int main (int argc, char *argv[])
     }
 
 
-  
+    float confidenceThreshold = parser.get<float>("min_confidence");
     GError *error = NULL;
     GStreamerOpenCV *gstocv = new GStreamerOpenCV(error);
     gstocv->init_gst_library(argc, argv);
@@ -51,58 +50,29 @@ int main (int argc, char *argv[])
     gstocv->set_state(GST_STATE_PLAYING);
   
 
+    string architecture = parser.get<string>("arch");
+
     // OpenCV detection loop
     cvNamedWindow("opencv feed",1);
-
-    #ifdef DNN 
-    // Open file with classes names.
-    const char* classNames[] = {"background",
-                                "aeroplane", "bicycle", "bird", "boat",
-                                "bottle", "bus", "car", "cat", "chair",
-                                "cow", "diningtable", "dog", "horse",
-                                "motorbike", "person", "pottedplant",
-                                "sheep", "sofa", "train", "tvmonitor"};
-
-    size_t inWidth = 300;
-    size_t inHeight = 300;
-    float inScaleFactor = 0.007843f;
-    float meanVal = 127.5;
-    float confidenceThreshold = parser.get<float>("min_confidence");
-    String modelConfiguration = parser.get<string>("proto");
-    String modelBinary = parser.get<string>("model");
-    MobileNetSSD mnssd;
-
-    mnssd.init(classNames, 
-      inWidth, inHeight, 
-      inScaleFactor, meanVal, 
-      W, H, 
-      confidenceThreshold, 
-      modelConfiguration, modelBinary);
-    #else
-    HogSvmDetector hsdetector;
-    #endif  
+    Detector *detector = new Detector(architecture);
     while(1) {
-          gstocv->set_main_loop_event(false);
-          Mat frame = gstocv->get_frame();
-          if(!frame.empty()){
-              #ifdef DNN 
-              frame = mnssd.run_ssd(frame);
-              #else
-	            frame = hsdetector.run_detection(frame);
-              #endif
-              imshow("opencv feed", frame);  
-              char key = waitKey(50);
-              if (key == 27 || key == 'q') // ESC
-              {
-                  cout << "Exit requested" << endl;
-                  break;
-              }
-          }
+        gstocv->set_main_loop_event(false);
+        Mat frame = gstocv->get_frame();
+        if(!frame.empty()){
+            detector->run_detection(frame);
+            imshow("opencv feed", frame);  
+            char key = waitKey(50);
+            if (key == 27 || key == 'q') // ESC
+            {
+                cout << "Exit requested" << endl;
+                break;
+            } 
+        }
     }
  
-
     // Ending
     gstocv->set_state(GST_STATE_NULL);
     delete gstocv;
+    delete detector;
     return 0;  
 }
