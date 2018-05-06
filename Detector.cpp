@@ -1,5 +1,5 @@
 #include "Detector.h"
-Detector::Detector(string architecture, float confidenceThreshold, const int W, const int H){
+Detector::Detector(String architecture, float confidenceThreshold, const int W, const int H){
 	architecture_ = architecture;
 	yolo_ = NULL;
 	hsdetector_ = NULL;   
@@ -68,8 +68,10 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
                             "cow", "diningtable", "dog", "horse",
                             "motorbike", "person", "pottedplant",
                             "sheep", "sofa", "train", "tvmonitor"}; 
-        string modelFile = "models/ssid_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb";
-        string configFile = "models/ssid_mobilenet_v2_coco_2018_03_29/pipeline.config";
+        String modelFile = "models/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb";
+        String configFile = "models/ssd_mobilenet_v2_coco_2018_03_29/pipeline.config";
+        //String modelFile = "models/ssd_mobilenet_v1_coco_2017_11_17/frozen_inference_graph.pb";
+        //String configFile = "models/ssd_mobilenet_v1_coco_2017_11_17/pipeline.config";
         tfdetector_->init(classNames, modelFile, configFile, W, H);
     }
 }

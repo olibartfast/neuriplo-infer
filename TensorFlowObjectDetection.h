@@ -26,8 +26,8 @@ class TensorFlowObjectDetection{
     float confidenceThreshold_;
 public:
 	void init(const char** classNames,
-        string modelFile, 
-        string configFile,     
+        String modelFile, 
+        String configFile,     
         int frameWidth, 
         int frameHeight,        
         size_t inWidth = 300,
@@ -41,7 +41,7 @@ public:
         inScaleFactor_ = inScaleFactor;
         meanVal_ = meanVal;
         confidenceThreshold_ = confidenceThreshold;		
-		net_ = readNetFromTensorflow(modelFile, configFile);
+		net_ = readNetFromTensorflow(modelFile);
 		if (net_.empty())
         {
             cerr << "Can't load network by using the mode file: " << std::endl;
@@ -54,7 +54,6 @@ public:
 
 
 	void run_tf(Mat& frame){
-		cout << "running detection with tensorflow" << endl;
         Mat inputBlob = blobFromImage(frame, inScaleFactor_,
                                   Size(inWidth_, inHeight_), meanVal_, false); //Convert Mat to batch of images
         

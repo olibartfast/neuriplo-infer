@@ -10,7 +10,7 @@ class Detector{
 	 TensorFlowObjectDetection *tfdetector_;   
 	 string architecture_;
 public:
-	Detector(string architecture, float confidenceThreshold = 0.25, const int W = 1080, const int H = 720);
+	Detector(String architecture, float confidenceThreshold = 0.25, const int W = 1080, const int H = 720);
 	~Detector();
     void run_detection(Mat& frame);
 };
