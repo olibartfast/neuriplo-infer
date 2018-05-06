@@ -21,7 +21,7 @@ Detector::Detector(string architecture, float confidenceThreshold, const int W, 
     }
     else if (architecture.find("yolo") != string::npos){
     	yolo_ = new Yolo();
-
+    	cout << "Yolo found" << endl;
         // get the model and cfg files here: https://pjreddie.com/darknet/yolo/
         String modelConfiguration;
         String modelBinary;
