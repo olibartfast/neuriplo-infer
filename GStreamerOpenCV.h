@@ -1,3 +1,6 @@
+#ifndef GSTREAMEROPENCV_H
+#define GSTREAMEROPENCV_H
+
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 #include <stdlib.h>
@@ -34,3 +37,4 @@ public:
 	static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data);
 	static GstFlowReturn new_preroll(GstAppSink *appsink, gpointer data);
 };
+#endif

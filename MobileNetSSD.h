@@ -1,3 +1,5 @@
+#ifndef MOBILENETSSD_H
+#define MOBILENETSSD_H
 #include <opencv2/objdetect.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -39,6 +41,9 @@ class MobileNetSSD{
 
 public:
 	MobileNetSSD(){}
+  ~MobileNetSSD(){
+    cout << "~MobileNetSSD()" << endl;
+  }
     void init(const char** classNames_,
     	size_t inWidth_, 
     	size_t inHeight_, 
@@ -52,3 +57,4 @@ public:
     Mat run_ssd(Mat frame);
 
 };
+#endif

@@ -1,4 +1,3 @@
-DNN = 1
 DEBUG = 0
 
 CFLAGS=-Wall -Wfatal-errors 
@@ -10,10 +9,6 @@ OPTS=-Ofast -std=c++11
 endif
 
 CFLAGS+=$(OPTS)
-
-ifeq ($(DNN), 1) 
-CFLAGS+= -DDNN
-endif
 
 
 all:
