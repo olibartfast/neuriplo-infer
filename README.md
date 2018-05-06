@@ -28,7 +28,7 @@ caffemodel and prototxt for deploying(download inside models folder): https://gi
 ./detector --arch=yolov2(or yolov2-tiny) --link="rtsp://cameraip:port/somelivefeed"  
 weigths and cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
 
-## running object detection with TensorFlow 
+## running object detection with TensorFlow (currently not working)
 ./detector --arch=tensorflow --link="rtsp://cameraip:port/somelivefeed"  
 detection model and config file:  
 https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md

@@ -1,6 +1,21 @@
 #ifndef TENSORFLOWOBJECTDETECTION_H
 #define TENSORFLOWOBJECTDETECTION_H
 
+#include <opencv2/objdetect.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/dnn.hpp>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
+
+using namespace cv;
+using namespace dnn;
+using namespace std;
+
 class TensorFlowObjectDetection{
 	const char** classNames_;
 	Net net_;
@@ -39,7 +54,7 @@ public:
 
 
 	void run_tf(Mat& frame){
-
+		cout << "running detection with tensorflow" << endl;
         Mat inputBlob = blobFromImage(frame, inScaleFactor_,
                                   Size(inWidth_, inHeight_), meanVal_, false); //Convert Mat to batch of images
         
