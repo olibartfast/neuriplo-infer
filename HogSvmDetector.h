@@ -26,7 +26,7 @@ public:
     string modeName() const;
     vector<Rect> detect(InputArray img);
     void adjustRect(Rect & r) const;
-    Mat run_detection(Mat frame);
+    void run_detection(Mat& frame);
 
 };
 

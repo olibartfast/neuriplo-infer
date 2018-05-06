@@ -12,6 +12,6 @@ CFLAGS+=$(OPTS)
 
 
 all:
-	g++ -o detector  main.cpp GStreamerOpenCV.cpp HogSvmDetector.cpp MobileNetSSD.cpp $(COMMON) $(CFLAGS)  `pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0 opencv`
+	g++ -o detector  main.cpp GStreamerOpenCV.cpp Detector.cpp HogSvmDetector.cpp MobileNetSSD.cpp Yolo.cpp $(COMMON) $(CFLAGS)  `pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0 opencv`
 clean:
 	rm detector 

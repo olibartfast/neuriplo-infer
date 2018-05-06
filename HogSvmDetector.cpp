@@ -28,7 +28,7 @@ void HogSvmDetector::adjustRect(Rect & r) const
     r.height = cvRound(r.height*0.8);
 }
 
-Mat HogSvmDetector::run_detection(Mat frame){
+void HogSvmDetector::run_detection(Mat& frame){
     int64 t = getTickCount();
     vector<Rect> found = detect(frame);
     t = getTickCount() - t;
@@ -56,5 +56,4 @@ Mat HogSvmDetector::run_detection(Mat frame){
       string fname(buffer);
       imwrite(fname+".jpg", frame );
     }
-    return frame;
 }

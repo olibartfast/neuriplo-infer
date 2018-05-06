@@ -1,3 +1,4 @@
 detector
 *.jpg
 *.save
+models/*.weights

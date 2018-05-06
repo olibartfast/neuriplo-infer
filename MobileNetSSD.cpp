@@ -2,83 +2,80 @@
 
 
 
-void MobileNetSSD::init(const char** classNames_,
-        size_t inWidth_, 
-        size_t inHeight_, 
-        float inScaleFactor_,
-        float meanVal_, 
-        int frameWidth_, 
-        int frameHeight_,  
-        float confidenceThreshold_,       
-        String modelConfiguration_, 
-        String modelBinary_){
+void MobileNetSSD::init(const char** classNames,
+        String modelConfiguration, 
+        String modelBinary,     
+        int frameWidth, 
+        int frameHeight,    
+        size_t inWidth,
+        size_t inHeight,
+        float inScaleFactor,
+        float meanVal,
+        float confidenceThreshold){
 
-  classNames = classNames_;
-  inWidth = inWidth_;
-  inHeight = inHeight_;
-  inScaleFactor = inScaleFactor_;
-  meanVal = meanVal_;
-  modelConfiguration = modelConfiguration_;
-  modelBinary = modelBinary_;
-  WHRatio = inWidth / (float)inHeight;
+    classNames_ = classNames;
+    inWidth_ = inWidth;
+    inHeight_ = inHeight;
+    inScaleFactor_ = inScaleFactor;
+    meanVal_ = meanVal;
+    modelConfiguration_ = modelConfiguration;
+    modelBinary_ = modelBinary;
+    confidenceThreshold_ = confidenceThreshold;
+    
+    float WHRatio = inWidth / (float)inHeight;
+    Size inVideoSize = Size(frameWidth, frameHeight);
 
-  frameWidth = frameWidth_;
-  frameHeight = frameHeight_;
+    Size cropSize;
+    if (inVideoSize.width / (float)inVideoSize.height > WHRatio)
+    {
+        cropSize = Size(static_cast<int>(inVideoSize.height * WHRatio),
+                      inVideoSize.height);
+    }
+    else
+    {
+      cropSize = Size(inVideoSize.width,
+                          static_cast<int>(inVideoSize.width / WHRatio));
+    }
+    net_ = readNetFromCaffe(modelConfiguration, modelBinary);
 
-  confidenceThreshold = confidenceThreshold_;
-
-  inVideoSize = Size(frameWidth, frameHeight);
-
-  if (inVideoSize.width / (float)inVideoSize.height > WHRatio)
-  {
-    cropSize = Size(static_cast<int>(inVideoSize.height * WHRatio),
-                    inVideoSize.height);
-  }
-  else
-  {
-    cropSize = Size(inVideoSize.width,
-                        static_cast<int>(inVideoSize.width / WHRatio));
-  }
-  net = readNetFromCaffe(modelConfiguration, modelBinary);
-
-  crop = Rect(Point((inVideoSize.width - cropSize.width) / 2,
-                    (inVideoSize.height - cropSize.height) / 2),
-              cropSize);
+    crop_ = Rect(Point((inVideoSize.width - cropSize.width) / 2,
+                      (inVideoSize.height - cropSize.height) / 2),
+                cropSize);
 
 }
 
 
 
 
-Mat MobileNetSSD::run_ssd(Mat frame){
+void MobileNetSSD::run_ssd(Mat& frame){
   // Create a 4D blob from a frame.
 
-    Mat inputBlob = blobFromImage(frame, inScaleFactor,
-                                  Size(inWidth, inHeight), meanVal, false); //Convert Mat to batch of images
+    Mat inputBlob = blobFromImage(frame, inScaleFactor_,
+                                  Size(inWidth_, inHeight_), meanVal_, false); //Convert Mat to batch of images
     //! [Prepare blob]
 
     //! [Set input blob]
-    net.setInput(inputBlob, "data"); //set the network input
+    net_.setInput(inputBlob, "data"); //set the network input
     //! [Set input blob]
 
     //! [Make forward pass]
-    Mat detection = net.forward("detection_out"); //compute output
+    Mat detection = net_.forward("detection_out"); //compute output
     //! [Make forward pass]
 
     std::vector<double> layersTimings;
     double freq = getTickFrequency() / 1000;
-    double time = net.getPerfProfile(layersTimings) / freq;
+    double time = net_.getPerfProfile(layersTimings) / freq;
     cout << "Inference time, ms: " << time << endl;
 
     Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
-   // frame = frame(crop);
+   // frame = frame(crop_);
 
     for(int i = 0; i < detectionMat.rows; i++)
     {
         float confidence = detectionMat.at<float>(i, 2);
 
-        if(confidence > confidenceThreshold)
+        if(confidence > confidenceThreshold_)
         {
             size_t objectClass = (size_t)(detectionMat.at<float>(i, 1));
 
@@ -96,7 +93,7 @@ Mat MobileNetSSD::run_ssd(Mat frame){
                         (int)(yRightTop - yLeftBottom));
 
             rectangle(frame, object, Scalar(0, 255, 0));
-            String label = String(classNames[objectClass]) + ": " + conf;
+            String label = String(classNames_[objectClass]) + ": " + conf;
             int baseLine = 0;
             Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
             rectangle(frame, Rect(Point(xLeftBottom, yLeftBottom - labelSize.height),
@@ -106,7 +103,5 @@ Mat MobileNetSSD::run_ssd(Mat frame){
                     FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));
         }
     }
-
-  return frame;
 
 }
