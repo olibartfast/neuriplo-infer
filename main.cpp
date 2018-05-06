@@ -3,9 +3,9 @@
     
 
 static const string params = "{ help h   |   | print help message }"
-      "{ arch     |   | yolo, mobilenet or svm      }"
+      "{ arch     |  mobilenet | yolo, mobilenet or svm }"
       "{ link l   |   | capture video from ip camera}"
-      "{ min_confidence | 0.5   | min confidence      }";
+      "{ min_confidence | 0.5   | min confidence}";
 
 int main (int argc, char *argv[])
 {
