@@ -17,7 +17,7 @@ GStreamer 1.0 and OpenCV (used version 3.3.1)
 
 ## Compilation  
 make  
-## running with object detection Mobilenet SSD using Caffe framework
+## running object detection with Mobilenet SSD using Caffe framework
 ./detector --arch=mobilenet --link="rtsp://cameraip:port/somelivefeed"    
 caffemodel and prototxt for deploying(download inside models folder): https://github.com/chuanqi305/MobileNet-SSD
 
