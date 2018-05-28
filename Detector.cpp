@@ -4,7 +4,7 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
 	yolo_ = NULL;
 	hsdetector_ = NULL;   
 	mnssd_ = NULL; 
-    tfdetector_ = NULL;
+    //tfdetector_ = NULL;
     if(architecture == "mobilenet"){
         // Open file with classes names.
         static const char* classNames[] = {"background",
@@ -60,7 +60,7 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
         
     else if(architecture == "svm")
     	hsdetector_ = new HogSvmDetector();
-    else if(architecture == "tensorflow"){
+    /*else if(architecture == "tensorflow"){
         tfdetector_ = new TensorFlowObjectDetection();
         static const char* classNames[] = {"background",
                             "aeroplane", "bicycle", "bird", "boat",
@@ -71,7 +71,7 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
         String modelFile = "models/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb";
         String configFile = "models/ssd_mobilenet_v1_coco_11_06_2017/ssd_mobilenet_v1_coco.pbtxt";
         tfdetector_->init(classNames, modelFile, configFile, W, H);
-    }
+    }*/
 }
 
 Detector::~Detector(){
@@ -81,8 +81,8 @@ Detector::~Detector(){
 		delete yolo_;
 	if(hsdetector_ != NULL)
 		delete hsdetector_;
-    if(tfdetector_  != NULL)
-        delete tfdetector_;
+    //if(tfdetector_  != NULL)
+    //    delete tfdetector_;
 	cout << "~Detector()" << endl;
 
 }
@@ -96,6 +96,6 @@ void Detector::run_detection(Mat& frame){
     	yolo_->run_yolo(frame);
     else if(architecture_ == "svm")	
         hsdetector_->run_detection(frame);
-    else if(architecture_ == "tensorflow")
-        tfdetector_ ->run_tf(frame);
+    //else if(architecture_ == "tensorflow")
+    //    tfdetector_ ->run_tf(frame);
 }

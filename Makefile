@@ -10,8 +10,14 @@ endif
 
 CFLAGS+=$(OPTS)
 
+COMMON+=`pkg-config --cflags gstreamer-1.0 gstreamer-app-1.0 opencv`
+COMMON+= -I/opt/tensorflow  -I/opt/tensorflow/bazel-genfiles 
+COMMON+= -I/tmp/proto/include/ -I/tmp/eigen/include/eigen3/
+LDLIBS+=`pkg-config --libs gstreamer-1.0 gstreamer-app-1.0 opencv`
+LDLIBS+= -ltensorflow_cc -ltensorflow_framework 
+
 
 all:
-	g++ -o detector  main.cpp GStreamerOpenCV.cpp Detector.cpp HogSvmDetector.cpp MobileNetSSD.cpp TensorFlowObjectDetection.cpp Yolo.cpp $(COMMON) $(CFLAGS)  `pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0 opencv`
+	g++ -o detector  main.cpp GStreamerOpenCV.cpp Detector.cpp HogSvmDetector.cpp MobileNetSSD.cpp TensorFlowMultiboxDetector.cpp Yolo.cpp $(COMMON) $(CFLAGS) $(LDLIBS)  
 clean:
 	rm detector 
