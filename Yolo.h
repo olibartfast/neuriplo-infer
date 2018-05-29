@@ -25,9 +25,10 @@ public:
 	void init(const char** coco_classes, 
 		string modelConfiguration, 
 		string modelBinary, 
+		float confidenceThreshold = 0.25,
 		const size_t network_width = 416,
-        const size_t network_height = 416,
-		float confidenceThreshold = 0.25);
+        const size_t network_height = 416
+		);
 	void run_yolo(Mat& frame);
 };
 

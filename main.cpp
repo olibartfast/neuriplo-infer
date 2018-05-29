@@ -29,7 +29,7 @@ int main (int argc, char *argv[])
     }
 
 
-    float confidenceThreshold = parser.get<float>("min_confidence");
+
     GError *error = NULL;
     GStreamerOpenCV *gstocv = new GStreamerOpenCV(error);
     gstocv->init_gst_library(argc, argv);
@@ -43,10 +43,11 @@ int main (int argc, char *argv[])
   
 
     string architecture = parser.get<string>("arch");
+    float confidenceThreshold = parser.get<float>("min_confidence");
 
     // OpenCV detection loop
     cvNamedWindow("opencv feed",1);
-    Detector *detector = new Detector(architecture);
+    Detector *detector = new Detector(architecture, confidenceThreshold);
     while(1) {
         gstocv->set_main_loop_event(false);
         Mat frame = gstocv->get_frame();

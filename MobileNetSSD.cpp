@@ -4,14 +4,14 @@
 
 void MobileNetSSD::init(const char** classNames,
         String modelConfiguration, 
-        String modelBinary,     
+        String modelBinary,    
         int frameWidth, 
         int frameHeight,    
+        float confidenceThreshold, 
         size_t inWidth,
         size_t inHeight,
         float inScaleFactor,
-        float meanVal,
-        float confidenceThreshold){
+        float meanVal){
 
     classNames_ = classNames;
     inWidth_ = inWidth;

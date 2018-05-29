@@ -3,9 +3,9 @@
 void Yolo::init(const char** coco_classes, 
 	string modelConfiguration, 
 	string modelBinary, 
+	float confidenceThreshold,
 	const size_t network_width,
-    const size_t network_height,
-	float confidenceThreshold){
+    const size_t network_height){
 
 	coco_classes_ = coco_classes;
     network_width_ = network_width;

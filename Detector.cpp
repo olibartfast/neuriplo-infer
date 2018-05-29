@@ -18,12 +18,11 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
         String modelConfiguration = "models/MobileNetSSD_deploy.prototxt";
         String modelBinary = "models/MobileNetSSD_deploy.caffemodel";
         mnssd_ = new MobileNetSSD();
-        mnssd_->init(classNames, modelConfiguration, modelBinary, W, H);
+        mnssd_->init(classNames, modelConfiguration, modelBinary, W, H, confidenceThreshold );
 
     }
     else if ( architecture == "yolov2-tiny" ||
-    	architecture == "yolov2" ||
-    	architecture == "yolov3"){
+    	architecture == "yolov2"){
     	yolo_ = new Yolo();
     	cout << "Yolo found" << endl;
         // get the model and cfg files here: https://pjreddie.com/darknet/yolo/
@@ -52,7 +51,7 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
         	modelConfiguration = "models/yolov3.cfg";
         	modelBinary = "models/yolov3.weights";
         }
-        yolo_->init(coco_classes, modelConfiguration, modelBinary);
+        yolo_->init(coco_classes, modelConfiguration, modelBinary, confidenceThreshold);
 
 
     }

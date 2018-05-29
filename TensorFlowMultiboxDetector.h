@@ -71,7 +71,7 @@ void init(
 	int32 input_height = 224,
     int32 input_mean = 128,
     int32 input_std = 128,
-    int32 num_detections = 5,
+    int32 num_detections = 3,
 	int32 num_boxes = 784);	
 
 // Takes a file name, and loads a list of comma-separated box priors from it,

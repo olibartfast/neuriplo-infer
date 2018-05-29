@@ -43,12 +43,12 @@ public:
         String modelConfiguration, 
         String modelBinary,     
         int frameWidth, 
-        int frameHeight,        
+        int frameHeight,    
+        float confidenceThreshold = 0.25,    
         size_t inWidth = 300,
         size_t inHeight = 300,
         float inScaleFactor = 0.007843f,
-        float meanVal = 127.5,
-        float confidenceThreshold = 0.25);
+        float meanVal = 127.5);
     void run_ssd(Mat& frame);
 
 };
