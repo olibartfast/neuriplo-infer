@@ -18,14 +18,14 @@ GStreamer 1.0, OpenCV 3.3.1, TensorFlow 1.8
 ## Compilation  
 make  
 ## running object detection with Mobilenet SSD using Caffe framework
-./detector --arch=mobilenet --link="rtsp://cameraip:port/somelivefeed"    
+./detector --arch=mobilenet --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"    
 caffemodel and prototxt for deploying(download inside models folder): https://github.com/chuanqi305/MobileNet-SSD
 
 ## running with HoG + SVM People Detector 
 ./detector --arch=svm --link="rtsp://cameraip:port/somelivefeed"
 
 ## running object detection with Yolo
-./detector --arch=yolov2(or yolov2-tiny) --link="rtsp://cameraip:port/somelivefeed"  
+./detector --arch=yolov2 --min_confidence=0.60 --link="rtsp://cameraip:port/somelivefeed"  
 weigths and cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
 
 ## running people multibox detector with TensorFlow 1.8
