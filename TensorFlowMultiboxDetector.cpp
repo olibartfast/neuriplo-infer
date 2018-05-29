@@ -1,6 +1,8 @@
 #include "TensorFlowMultiboxDetector.h"
 
 
+
+
 // Takes a file name, and loads a list of comma-separated box priors from it,
 // one per line, and returns a vector of the values.
 Status TensorFlowMultiboxDetector::ReadLocationsFile(const string& file_name, std::vector<float>* result,
@@ -273,4 +275,76 @@ Status TensorFlowMultiboxDetector::PrintTopDetections(const std::vector<Tensor>&
     return SaveImage(*original_tensor, image_file_name);
   }
   return Status::OK();
+}
+
+
+void TensorFlowMultiboxDetector::init(string graph,
+	string box_priors,
+	int32 input_width,
+	int32 input_height,
+    int32 input_mean,
+    int32 input_std,
+    int32 num_detections,
+	int32 num_boxes){
+
+	graph_ = graph;
+	box_priors_ = box_priors;
+	input_width_ = input_width;
+	input_height_ = input_height;
+    input_mean_ = input_mean;
+    input_std_ = input_std;
+    num_detections_ = num_detections;
+	num_boxes_ = num_boxes;
+    
+    input_layer_ = "ResizeBilinear";
+    output_location_layer_ = "output_locations/Reshape";
+    output_score_layer_ = "output_scores/Reshape";
+    root_dir_ = "";
+
+	// First we load and initialize the model.
+    graph_path_ = tensorflow::io::JoinPath(root_dir_, graph_);
+    Status load_graph_status = LoadGraph(graph_path_, &session_);
+    if (!load_graph_status.ok()) {
+        LOG(ERROR) << load_graph_status;
+        return;
+    }
+}
+
+void TensorFlowMultiboxDetector::run_multibox_detector(Mat& frame){
+	
+    string image = "current_frame.png";
+    imwrite(image, frame);
+    string image_out = "image_out.png";
+    string image_path = tensorflow::io::JoinPath(root_dir_, image);
+
+    Status read_tensor_status =
+        ReadTensorFromImageFile(image_path, input_height_, input_width_, input_mean_,
+                              input_std_, &image_tensors_);
+    if (!read_tensor_status.ok()) {
+        LOG(ERROR) << read_tensor_status;
+        return;
+    }
+    const Tensor& resized_tensor = image_tensors_[0];
+
+    // Actually run the image through the model.
+    std::vector<Tensor> outputs;
+    Status run_status =
+        session_->Run({{input_layer_, resized_tensor}},
+                   {output_score_layer_, output_location_layer_}, {}, &outputs);
+    
+    if (!run_status.ok()) {
+        LOG(ERROR) << "Running model failed: " << run_status;
+        return;
+    }
+
+    Status print_status = PrintTopDetections(outputs, box_priors_, num_boxes_,
+                                           num_detections_, image_out,
+                                           &image_tensors_[1]);
+
+    if (!print_status.ok()) {
+      LOG(ERROR) << "Running print failed: " << print_status;
+      return;
+    }
+    frame = imread( image_out, 1 );
+
 }

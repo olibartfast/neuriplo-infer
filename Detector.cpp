@@ -72,6 +72,12 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
         String configFile = "models/ssd_mobilenet_v1_coco_11_06_2017/ssd_mobilenet_v1_coco.pbtxt";
         tfdetector_->init(classNames, modelFile, configFile, W, H);
     }*/
+    else if(architecture == "tf-multibox-detector"){
+        tfmbdetector_ = new TensorFlowMultiboxDetector();
+        string graph = "models/multibox_detector/multibox_model.pb";
+        string box_priors = "models/multibox_detector/multibox_location_priors.txt";
+        tfmbdetector_->init(graph, box_priors);
+    }
 }
 
 Detector::~Detector(){
@@ -83,6 +89,8 @@ Detector::~Detector(){
 		delete hsdetector_;
     //if(tfdetector_  != NULL)
     //    delete tfdetector_;
+    if(tfmbdetector_ != NULL)
+       delete  tfmbdetector_;
 	cout << "~Detector()" << endl;
 
 }
@@ -98,4 +106,7 @@ void Detector::run_detection(Mat& frame){
         hsdetector_->run_detection(frame);
     //else if(architecture_ == "tensorflow")
     //    tfdetector_ ->run_tf(frame);
+    else if(architecture_ == "tf-multibox-detector")
+        tfmbdetector_->run_multibox_detector(frame);
+
 }

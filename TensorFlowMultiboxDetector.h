@@ -4,6 +4,10 @@
 #include <fstream>
 #include <vector>
 
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
+
 #include "tensorflow/cc/ops/const_op.h"
 #include "tensorflow/cc/ops/image_ops.h"
 #include "tensorflow/cc/ops/standard_ops.h"
@@ -31,10 +35,44 @@ using tensorflow::string;
 using tensorflow::int32;
 using tensorflow::uint8;
 
+using namespace cv;
+using namespace std;
+
 
 class TensorFlowMultiboxDetector{
+	string graph_;
+	string image_;
+	string box_priors_;
+	int32 input_width_;
+	int32 input_height_;
+    int32 input_mean_;
+    int32 input_std_;
+    int32 num_detections_;
+	int32 num_boxes_;
+
+    string input_layer_;
+    string output_location_layer_;
+    string output_score_layer_;
+    string root_dir_;
+ 
+    string graph_path_; 
+	std::unique_ptr<tensorflow::Session> session_;
+	std::vector<Tensor> image_tensors_;
+
+
+
 
 public:
+TensorFlowMultiboxDetector(){}
+void init(
+	string graph,
+	string box_priors,
+	int32 input_width = 224,
+	int32 input_height = 224,
+    int32 input_mean = 128,
+    int32 input_std = 128,
+    int32 num_detections = 5,
+	int32 num_boxes = 784);	
 
 // Takes a file name, and loads a list of comma-separated box priors from it,
 // one per line, and returns a vector of the values.
@@ -80,6 +118,8 @@ Status PrintTopDetections(const std::vector<Tensor>& outputs,
                           const int num_detections,
                           const string& image_file_name,
                           Tensor* original_tensor);
+
+void run_multibox_detector(Mat& frame);
 
 
 };

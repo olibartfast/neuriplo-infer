@@ -28,11 +28,14 @@ caffemodel and prototxt for deploying(download inside models folder): https://gi
 ./detector --arch=yolov2(or yolov2-tiny) --link="rtsp://cameraip:port/somelivefeed"  
 weigths and cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
 
-## running object detection with TensorFlow 1.3 
-(currently not working,  maybe OpenCV 3.4.1 or higher is required as stated here: https://github.com/opencv/opencv/wiki/TensorFlow-Object-Detection-API)  
-./detector --arch=tensorflow --link="rtsp://cameraip:port/somelivefeed"  
-detection model and config file:  
-https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md  
-pay attention to download models compatible with the installed Tensorflow version
+## running people multibox detector with TensorFlow 1.8
+./detector --arch=tf-multibox-detector --link="rtsp://cameraip:port/somelivefeed"  
+Multibox detector code based on:  
+https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/multibox_detector/main.cc  
+To build Tensorflow shared library with Bazel follow:  
+https://tuatini.me/building-tensorflow-as-a-standalone-project/
+
+
+
 
 Tested with Sricam SP009 720P camera   

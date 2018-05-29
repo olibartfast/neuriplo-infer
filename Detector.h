@@ -9,8 +9,7 @@ class Detector{
 	 Yolo *yolo_;
 	 HogSvmDetector *hsdetector_; 
 	 //TensorFlowObjectDetection *tfdetector_;  
-	 TensorFlowMultiboxDetector tfmbdetector_; 
-
+	 TensorFlowMultiboxDetector *tfmbdetector_; 
 	 string architecture_;
 public:
 	Detector(String architecture, float confidenceThreshold = 0.25, const int W = 1080, const int H = 720);
