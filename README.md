@@ -13,7 +13,7 @@ To train your own HoG detector use:
 https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 
 ##  Dependencies
-GStreamer 1.0 and OpenCV 3.3.1
+GStreamer 1.0, OpenCV 3.3.1, TensorFlow 1.8
 
 ## Compilation  
 make  
