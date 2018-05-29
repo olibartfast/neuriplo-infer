@@ -3,7 +3,7 @@
     
 
 static const string params = "{ help h   |   | print help message }"
-      "{ arch     |  mobilenet | mobilenet, svm, yolo-tinyv2, yolov2, tf-multibox-detector }"
+      "{ arch     |  mobilenet | mobilenet, svm, yolov2-tiny, yolov2, tf-multibox-detector }"
       "{ link l   |   | capture video from ip camera}"
       "{ min_confidence | 0.5   | min confidence}";
 
