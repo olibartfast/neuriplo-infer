@@ -34,14 +34,18 @@ Multibox detector code based on:
 https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/multibox_detector/main.cc  
 
 ## running object detection with TensorFlow
-./detector --arch=tf-object-detector --min_confidence=0.6 --link=""rtsp://cameraip:port/livefeed  
-Object detection code based on:
+./detector --arch=tf-object-detector --min_confidence=0.6 --link="rtsp://cameraip:port/livefeed" 
+### Object detection code based on:
 https://github.com/tensorflow/models/issues/1741  and https://github.com/moorage/OpenCVTensorflowExample  
-Tensorflow detection model zoo(to download inside models folder):  
+### other useful links:
+https://github.com/lysukhin/tensorflow-object-detection-cpp  
+https://medium.com/@fanzongshaoxing/tensorflow-c-api-to-run-a-object-detection-model-4d5928893b02  
+
+### Tensorflow detection model zoo(to download inside models folder):  
 https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md
 
 
-To build Tensorflow shared library with Bazel follow:  
+### To build Tensorflow shared library with Bazel follow:  
 https://tuatini.me/building-tensorflow-as-a-standalone-project/
 
 
