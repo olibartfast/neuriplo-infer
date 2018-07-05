@@ -4,7 +4,8 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
 	yolo_ = NULL;
 	hsdetector_ = NULL;   
 	mnssd_ = NULL; 
-    //tfdetector_ = NULL;
+    tfodetector_ = NULL;
+    tfmbdetector_ = NULL;
     if(architecture == "mobilenet"){
         // Open file with classes names.
         static const char* classNames[] = {"background",
@@ -47,10 +48,6 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
         	modelConfiguration = "models/yolov2.cfg";
         	modelBinary = "models/yolov2.weights";
         }
-        if(architecture == "yolov3"){
-        	modelConfiguration = "models/yolov3.cfg";
-        	modelBinary = "models/yolov3.weights";
-        }
         yolo_->init(coco_classes, modelConfiguration, modelBinary, confidenceThreshold);
 
 
@@ -59,18 +56,31 @@ Detector::Detector(String architecture, float confidenceThreshold, const int W, 
         
     else if(architecture == "svm")
     	hsdetector_ = new HogSvmDetector();
-    /*else if(architecture == "tensorflow"){
-        tfdetector_ = new TensorFlowObjectDetection();
-        static const char* classNames[] = {"background",
-                            "aeroplane", "bicycle", "bird", "boat",
-                            "bottle", "bus", "car", "cat", "chair",
-                            "cow", "diningtable", "dog", "horse",
-                            "motorbike", "person", "pottedplant",
-                            "sheep", "sofa", "train", "tvmonitor"}; 
-        String modelFile = "models/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb";
-        String configFile = "models/ssd_mobilenet_v1_coco_11_06_2017/ssd_mobilenet_v1_coco.pbtxt";
-        tfdetector_->init(classNames, modelFile, configFile, W, H);
-    }*/
+    else if(architecture == "tf-object-detector"){
+         static const char *coco_classes[] = {//"empty",
+            "person", "bicycle", "car", "motorcycle", "airplane",
+         "bus", "train", "truck", "boat", "traffic light",
+          "fire hydrant", "empty", "stop sign", "parking meter", "bench",
+          "bird", "cat", "dog", "horse", "sheep",
+          "cow", "elephant", "bear","zebra","giraffe",
+          "empty", "backpack","umbrella", "empty", "empty",
+          "handbag","tie", "suitcase","frisbee","skis",
+          "snowboard","sports ball","kite","baseball bat","baseball glove", 
+            "skateboard","surfboard","tennis racket","bottle","empty",
+            "wine glass","cup","fork","knife","spoon",
+            "bowl","banana","apple","sandwich","orange",
+            "broccoli", "carrot","hot dog", "pizza","donut",
+             "cake", "chair","couch", "potted plant","bed", 
+             "empty","dining table", "empty", "empty", "toilet",
+              "empty", "tv", "laptop", "mouse","remote", 
+              "keyboard", "cell phone", "microwave", "oven","toaster", 
+              "sink", "refrigerator", "empty", "book", "clock", 
+               "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
+        tfodetector_ = new TensorFlowObjectDetection();
+        string graph = "models/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb";
+        string labels = "models/ssd_mobilenet_v1_coco_11_06_2017/mscoco_label_map.pbtxt";
+        tfodetector_->init(coco_classes, graph, labels, W, H, confidenceThreshold);
+    }
     else if(architecture == "tf-multibox-detector"){
         tfmbdetector_ = new TensorFlowMultiboxDetector();
         string graph = "models/multibox_detector/multibox_model.pb";
@@ -86,8 +96,8 @@ Detector::~Detector(){
 		delete yolo_;
 	if(hsdetector_ != NULL)
 		delete hsdetector_;
-    //if(tfdetector_  != NULL)
-    //    delete tfdetector_;
+    if(tfodetector_  != NULL)
+        delete tfodetector_;
     if(tfmbdetector_ != NULL)
        delete  tfmbdetector_;
 	cout << "~Detector()" << endl;
@@ -98,13 +108,12 @@ void Detector::run_detection(Mat& frame){
 	if(architecture_ == "mobilenet")
         mnssd_->run_ssd(frame);
     else if( architecture_ == "yolov2-tiny" ||
-    	architecture_ == "yolov2" ||
-    	architecture_ == "yolov3")
+    	architecture_ == "yolov2")
     	yolo_->run_yolo(frame);
     else if(architecture_ == "svm")	
         hsdetector_->run_detection(frame);
-    //else if(architecture_ == "tensorflow")
-    //    tfdetector_ ->run_tf(frame);
+    else if(architecture_ == "tf-object-detector")
+       tfodetector_ ->run_tf_object_detection(frame);
     else if(architecture_ == "tf-multibox-detector")
         tfmbdetector_->run_multibox_detector(frame);
 

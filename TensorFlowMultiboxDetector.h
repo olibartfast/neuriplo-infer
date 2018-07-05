@@ -58,6 +58,7 @@ class TensorFlowMultiboxDetector{
     string graph_path_; 
 	std::unique_ptr<tensorflow::Session> session_;
 	std::vector<Tensor> image_tensors_;
+  float confidenceThreshold_;
 
 
 
@@ -71,7 +72,7 @@ void init(
 	int32 input_height = 224,
     int32 input_mean = 128,
     int32 input_std = 128,
-    int32 num_detections = 3,
+    int32 num_detections = 1,
 	int32 num_boxes = 784);	
 
 // Takes a file name, and loads a list of comma-separated box priors from it,

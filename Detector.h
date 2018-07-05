@@ -2,13 +2,13 @@
 #include "MobileNetSSD.h"
 #include "Yolo.h"
 #include "TensorFlowMultiboxDetector.h"
-//#include "TensorFlowObjectDetection.h"
+#include "TensorFlowObjectDetection.h"
 
 class Detector{
 	 MobileNetSSD *mnssd_;
 	 Yolo *yolo_;
 	 HogSvmDetector *hsdetector_; 
-	 //TensorFlowObjectDetection *tfdetector_;  
+	 TensorFlowObjectDetection *tfodetector_;  
 	 TensorFlowMultiboxDetector *tfmbdetector_; 
 	 string architecture_;
 public:

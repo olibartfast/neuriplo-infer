@@ -13,25 +13,34 @@ To train your own HoG detector use:
 https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 
 ##  Dependencies
-GStreamer 1.0, OpenCV 3.3.1, TensorFlow 1.8
+GStreamer 1.0 and OpenCV 3.3.1
 
 ## Compilation  
 make  
 ## running object detection with Mobilenet SSD using Caffe framework
-./detector --arch=mobilenet --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"    
+./detector --arch=mobilenet --min_confidence=CONF_VALUE(for example 0.6) --link="rtsp://cameraip:port/somelivefeed"    
 caffemodel and prototxt for deploying(download inside models folder): https://github.com/chuanqi305/MobileNet-SSD
 
 ## running with HoG + SVM People Detector 
 ./detector --arch=svm --link="rtsp://cameraip:port/somelivefeed"
 
 ## running object detection with Yolo
-./detector --arch=yolov2 --min_confidence=0.60 --link="rtsp://cameraip:port/somelivefeed"  
+./detector --arch=yolov2(or yolov2-tiny) --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"  
 weigths and cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
 
-## running people multibox detector with TensorFlow 1.8
+## running people multibox detector with TensorFlow (1.8)
 ./detector --arch=tf-multibox-detector --link="rtsp://cameraip:port/somelivefeed"  
 Multibox detector code based on:  
 https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/multibox_detector/main.cc  
+
+## running object detection with TensorFlow
+./detector --arch=tf-object-detector --min_confidence=0.6 --link=""rtsp://cameraip:port/livefeed  
+Object detection code based on:
+https://github.com/tensorflow/models/issues/1741  and https://github.com/moorage/OpenCVTensorflowExample  
+Tensorflow detection model zoo(to download inside models folder):  
+https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md
+
+
 To build Tensorflow shared library with Bazel follow:  
 https://tuatini.me/building-tensorflow-as-a-standalone-project/
 
