@@ -217,11 +217,13 @@ void TensorFlowObjectDetection::run_tf_object_detection(Mat& frame){
             float y2 = float(frame.size().height) * boxes(0,i,2);
             
             std::ostringstream label;
-            label << coco_classes_[int(classes(i))-1] << ", confidence: " << (scores(i)  * 100) << "%";
+            label << coco_classes_[int(classes(i))-1] << ": " << int((scores(i)  * 100)) << "%";
             std::cout << "Detection " << (i+1) << ": class: " << boxClass << " " <<  label.str()  << std::endl;
 
             cv::rectangle(frame, cv::Point(x1, y1), cv::Point(x2, y2), Scalar(255, 255, 255));
-            cv::putText(frame, label.str(), cv::Point(x1, y1), 1, 1.0, Scalar(0,0,0));
+            cv::putText(frame, label.str(), cv::Point(x1, y1), cv::FONT_HERSHEY_DUPLEX
+
+              , 0.5, Scalar(0,0,255));
         }
 
     }
