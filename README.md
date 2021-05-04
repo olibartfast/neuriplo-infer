@@ -1,4 +1,4 @@
-# Object detection inference from IP camera RTSP and video stream using GStreamer HW acceleration and OpenCV
+### Object detection inference from IP camera RTSP and video stream using GStreamer HW acceleration and OpenCV
 
 Using GStreamer and OpenCV libraries combining the code from:   
 https://github.com/opencv/opencv/blob/master/samples/cpp/peopledetect.cpp for HoG + SVM detector  
