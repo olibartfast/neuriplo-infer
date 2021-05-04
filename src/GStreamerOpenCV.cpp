@@ -1,7 +1,7 @@
-#include "GStreamerOpenCV.h"
+#include "GStreamerOpenCV.hpp"
 
 
-Mat GStreamerOpenCV::frame_;
+cv::Mat GStreamerOpenCV::frame_;
 
 GStreamerOpenCV::GStreamerOpenCV(GError *error){
     error_ = error;
@@ -10,7 +10,6 @@ GStreamerOpenCV::GStreamerOpenCV(GError *error){
 
 GStreamerOpenCV::~GStreamerOpenCV(){
     gst_object_unref (GST_OBJECT (pipeline_));
-    cout << "~GStreamerOpenCV()" << endl;
 }
 
 
@@ -19,7 +18,7 @@ void GStreamerOpenCV::init_gst_library(int argc, char *argv[]){
 
 }
 
-void GStreamerOpenCV::run_pipeline(string pipeline_cmd){		
+void GStreamerOpenCV::run_pipeline(std::string pipeline_cmd){		
 	gchar *descr = g_strdup(pipeline_cmd.c_str());
 	pipeline_ = gst_parse_launch (descr, &error_);
 }
@@ -32,7 +31,7 @@ void GStreamerOpenCV::check_error(){
     }
 }
 
-Mat GStreamerOpenCV::get_frame() {
+cv::Mat GStreamerOpenCV::get_frame() {
 	return frame_; 
 }
 
@@ -57,7 +56,7 @@ GstFlowReturn GStreamerOpenCV::new_sample(GstAppSink *appsink, gpointer data) {
     if(!res)
     {
         g_print("Could not get image width and height from filter caps");
-        exit(-12);
+        return GST_FLOW_OK; 
     }
     
     // ---- Read frame and convert to opencv format ---------------
@@ -65,19 +64,13 @@ GstFlowReturn GStreamerOpenCV::new_sample(GstAppSink *appsink, gpointer data) {
     gst_buffer_map (buffer, &map, GST_MAP_READ);
 
     // convert gstreamer data to OpenCV Mat.
-    Mat mYUV(frameHeight + frameHeight/2, frameWidth, CV_8UC1, (void*) map.data);
-    Mat mRGB(frameHeight, frameWidth, CV_8UC3);
-    cvtColor(mYUV, mRGB,  CV_YUV2RGBA_YV12, 3);
+    cv::Mat mYUV(frameHeight + frameHeight/2, frameWidth, CV_8UC1, (void*) map.data);
+    cv::Mat mRGB(frameHeight, frameWidth, CV_8UC3);
+    cvtColor(mYUV, mRGB,  cv::COLOR_YUV2RGBA_YV12, 3);
     mRGB.copyTo(GStreamerOpenCV::frame_);
     int frameSize = map.size;
 
     gst_buffer_unmap(buffer, &map);
-
-    // ------------------------------------------------------------
-    // print dot every 30 frames
-    if (framecount%30 == 0) {
-      g_print (".");
-    }
 
     // show caps on first frame
     if (framecount == 1) {
@@ -88,7 +81,7 @@ GstFlowReturn GStreamerOpenCV::new_sample(GstAppSink *appsink, gpointer data) {
 }
 
 static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data) {
-    g_print ("Got %s message\n", GST_MESSAGE_TYPE_NAME (message));
+    //g_print ("Got %s message\n", GST_MESSAGE_TYPE_NAME (message));
     switch (GST_MESSAGE_TYPE (message)) {
         case GST_MESSAGE_ERROR: {
             GError *err;

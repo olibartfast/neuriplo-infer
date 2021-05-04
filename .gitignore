@@ -1,3 +1,4 @@
+ /usr/bin/env /bin/sh /tmp/Microsoft-MIEngine-Cmd-59dm67bn.xjb 
 detector
 *.jpg
 *.png
@@ -6,3 +7,5 @@ models/*.weights
 models/ssd_mobilenet_v2_coco_2018_03_29
 models/ssd_mobilenet_v1_coco_2017_11_17
 models/ssd_mobilenet_v1_coco_11_06_2017
+build
+.vscode
