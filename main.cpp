@@ -8,7 +8,7 @@
 //TensorFlowMultiboxDetector *tfmbdetector_; 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov3 | mobilenet, svm, yolov2-tiny, yolov2, tf-multibox-detector, tf-object-detector }"
+      "{ type     |  yolov2 | mobilenet, svm, yolov2-tiny, yolov2}"
       "{ link l   |   | capture video from ip camera}"
       "{ min_confidence | 0.5   | min confidence}";
 
@@ -36,16 +36,16 @@ std::unique_ptr<Detector> createDetector(const std::string& detectorType){
         modelBinary  = "models/MobileNetSSD_deploy.caffemodel";  
         return std::make_unique<MobileNetSSD>(classes, modelConfiguration, modelBinary);
     }
-    else if(detectorType == "yolov3" || detectorType == "yolov3-tiny")
+    else if(detectorType == "yolov2" || detectorType == "yolov2-tiny")
     {
         classes = readLabelNames("coco.names"); 
-        if(detectorType == "yolov3-tiny"){
-        	modelConfiguration = "models/yolov3-tiny.cfg";
-        	modelBinary = "models/yolov3-tiny.weights";
+        if(detectorType == "yolov2-tiny"){
+        	modelConfiguration = "models/yolov2-tiny.cfg";
+        	modelBinary = "models/yolov2-tiny.weights";
         }
-        else if(detectorType == "yolov3"){
-        	modelConfiguration = "models/yolov3.cfg";
-        	modelBinary = "models/yolov3.weights";
+        else if(detectorType == "yolov2"){
+        	modelConfiguration = "models/yolov2.cfg";
+        	modelBinary = "models/yolov2.weights";
         }        
         return std::make_unique<Yolo>(classes, modelConfiguration, modelBinary);
     }    
