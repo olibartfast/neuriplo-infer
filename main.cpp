@@ -10,10 +10,16 @@
 static const std::string params = "{ help h   |   | print help message }"
       "{ type     |  yolov2 | mobilenet, svm, yolov2-tiny, yolov2}"
       "{ link l   |   | capture video from ip camera}"
-      "{ min_confidence | 0.5   | min confidence}";
+      "{ labels lb   |  ../labels | path to class labels file}"
+      "{ model_path mp   |  ../models | path to models}"
+      "{ min_confidence | 0.25   | min confidence}";
 
 std::vector<std::string> readLabelNames(const std::string& fileName)
 {
+    if(!std::filesystem::exists(fileName)){
+        std::cerr << "Wrong path to labels " <<  fileName << std::endl;
+        exit(1);
+    } 
     std::vector<std::string> classes;
     std::ifstream ifs(fileName.c_str());
     std::string line;
@@ -22,7 +28,20 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
     return classes;   
 }
 
-std::unique_ptr<Detector> createDetector(const std::string& detectorType){
+auto modelSetup(const std::string& modelPath, const std::string& configName, const std::string& weigthName){
+    const auto modelConfiguration = modelPath + "/" + configName;
+    const auto modelBinary = modelPath + "/" + weigthName;
+    if(!std::filesystem::exists(modelConfiguration) || !std::filesystem::exists(modelBinary)){
+        std::cerr << "Wrong path to model " << std::endl;
+        exit(1);
+    }    
+    return std::make_tuple(modelConfiguration, modelBinary); 
+}
+
+std::unique_ptr<Detector> createDetector(
+    const std::string& detectorType,
+    const std::string& labelsPath,
+    const std::string& modelPath){
     std::vector<std::string> classes; 
     std::string modelConfiguration; 
     std::string modelBinary;  
@@ -31,22 +50,18 @@ std::unique_ptr<Detector> createDetector(const std::string& detectorType){
     }
     else if(detectorType == "mobilenet")
     {
-        classes = readLabelNames("voc.names"); 
-        modelConfiguration = "models/MobileNetSSD_deploy.prototxt"; 
-        modelBinary  = "models/MobileNetSSD_deploy.caffemodel";  
+        classes = readLabelNames(labelsPath + "/" + "voc.names");      
+        auto[modelConfiguration, modelBinary] = modelSetup(modelPath, "MobileNetSSD_deploy.prototxt",  "MobileNetSSD_deploy.caffemodel");
         return std::make_unique<MobileNetSSD>(classes, modelConfiguration, modelBinary);
     }
     else if(detectorType == "yolov2" || detectorType == "yolov2-tiny")
     {
-        classes = readLabelNames("coco.names"); 
-        if(detectorType == "yolov2-tiny"){
-        	modelConfiguration = "models/yolov2-tiny.cfg";
-        	modelBinary = "models/yolov2-tiny.weights";
-        }
-        else if(detectorType == "yolov2"){
-        	modelConfiguration = "models/yolov2.cfg";
-        	modelBinary = "models/yolov2.weights";
-        }        
+        std::string modelConfiguration, modelBinary;
+        classes = readLabelNames(labelsPath + "/" + "coco.names"); 
+        if(detectorType == "yolov2-tiny")
+            std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "yolov2-tiny.cfg",  "yolov2-tiny.weights");
+        else if(detectorType == "yolov2")
+        	std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "yolov2.cfg",  "yolov2.weights");    
         return std::make_unique<Yolo>(classes, modelConfiguration, modelBinary);
     }    
     return nullptr;
@@ -93,13 +108,14 @@ int main (int argc, char *argv[])
     gstocv->set_bus();
     gstocv->set_state(GST_STATE_PLAYING);
   
-
+    const std::string modelPath = parser.get<std::string>("model_path");
+    const std::string labelsPath = parser.get<std::string>("labels");
     const std::string detectorType = parser.get<std::string>("type");
     float confidenceThreshold = parser.get<float>("min_confidence");
 
     std::cout << "Current path is " << std::filesystem::current_path() << '\n'; // (1)
 
-    std::unique_ptr<Detector> detector = createDetector(detectorType); 
+    std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
 
     while(1) {
          gstocv->set_main_loop_event(false);
