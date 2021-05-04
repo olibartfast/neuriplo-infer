@@ -28,9 +28,10 @@ https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 
 ## running object detection with YoloV2
 * ./object-detection-inference --type=yolov2(or yolov2-tiny) --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"  
-weigths and cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
+* Weigths and cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
 
 ## TO DO
 * Planning to restore and update inference on tensorflow models from object detection API
 * Inference on more recent yolo models
+* Factory pattern for detector object creation
 * Add support for inference with openvino and tensorrt
