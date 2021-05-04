@@ -13,7 +13,7 @@ https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 ##  Dependencies
 * GStreamer 1.0 and OpenCV 4.2.0
 
-## Compilation  
+## To Build and Compile  
 * mkdir build
 * cd build
 * cmake ..
