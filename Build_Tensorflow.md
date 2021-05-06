@@ -1,16 +1,5 @@
 # Build Tensorflow 2.4.0 with Bazel 3.1.0 libs
 
-### Install python virtual env
-```
-sudo apt-get install python3-venv
-cd
-python3 -m venv --system-site-packages ./tensorflow_venv
-```
-* then to activate virtual env:
-```
-source tensorflow_venv/bin/activate
-```
-
 ### Install Bazel
 * pay attention! you must install a bazel version corrisponding to your installed tensorflow release,  check [tested build configurations](https://www.tensorflow.org/install/source#tested_build_configurations)
 
