@@ -16,7 +16,5 @@ bazel --version
 git clone https://github.com/tensorflow/tensorflow.git
 git checkout v2.4.0
 ./configure
-bazel build [--config=option] //tensorflow:libtensorflow_cc.so
-
+bazel build [--config=option] //tensorflow:libtensorflow_cc.so //tensorflow:install_headers
 ```
-* reference: https://tuatini.me/building-tensorflow-as-a-standalone-project/
