@@ -1,15 +1,5 @@
 ### Object detection inference from IP camera RTSP and video stream using GStreamer HW acceleration and OpenCV
 
-Using GStreamer and OpenCV libraries combining the code from:   
-https://github.com/opencv/opencv/blob/master/samples/cpp/peopledetect.cpp for HoG + SVM detector  
-https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp for object detection using dnn module    
-and Mikael Lepistö answer at:  
-https://stackoverflow.com/questions/10403588/adding-opencv-processing-to-gstreamer-application  
-
-
-To train your own HoG detector use:  
-https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
-
 ##  Dependencies
 * GStreamer 1.0 and OpenCV 4.2.0
 
@@ -47,3 +37,20 @@ https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 * Inference on more recent yolo models
 * Factory pattern for detector object creation
 * Add support for inference with openvino and tensorrt
+
+## References
+* Using GStreamer to receive a video stream and process it with OpenCV:  
+https://stackoverflow.com/questions/10403588/adding-opencv-processing-to-gstreamer-application 
+
+*  HoG + SVM detector:   
+https://github.com/opencv/opencv/blob/master/samples/cpp/peopledetect.cpp
+
+* Train your own HoG detector use:  
+https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
+
+* Object detection using dnn module:  
+https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp  
+
+
+
+
