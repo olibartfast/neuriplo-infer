@@ -9,22 +9,22 @@
 * cmake ..
 * make
 
-## running object detection with Mobilenet SSD using Caffe framework
+### Running object detection with Mobilenet SSD using Caffe framework
 ```
 ./object-detection-inference --type=mobilenet --min_confidence=CONF_VALUE(for example 0.6) --link="rtsp://cameraip:port/somelivefeed"  
 ```  
-* caffemodel and prototxt for deploying(download inside models folder): https://github.com/chuanqi305/MobileNet-SSD
+* Caffemodel and Prototxt for deploying(download inside models folder): https://github.com/chuanqi305/MobileNet-SSD
 
-## running with HoG + SVM People Detector 
+### Running with HoG + SVM People Detector 
 ```
 ./object-detection-inference --type=svm --link="rtsp://cameraip:port/somelivefeed"
 ```
 
-## running object detection with YoloV2
+### Running object detection with YoloV2
 ```
 ./object-detection-inference --type=yolov2(or yolov2-tiny) --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"  
 ```
-* Weigths and cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
+* Weigths and .cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
 
 ### To check all available options:
 ```
@@ -45,7 +45,7 @@ https://stackoverflow.com/questions/10403588/adding-opencv-processing-to-gstream
 *  HoG + SVM detector:   
 https://github.com/opencv/opencv/blob/master/samples/cpp/peopledetect.cpp
 
-* Train your own HoG detector use:  
+* Train your own HoG detector:  
 https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 
 * Object detection using dnn module:  
