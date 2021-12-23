@@ -26,6 +26,14 @@
 ./object-detection-inference --type=svm --link="rtsp://cameraip:port/somelivefeed"
 ```
 
+<<<<<<< HEAD
+=======
+### Running object detection with yolov4
+```
+./object-detection-inference --type=yolov4(or yolov4-tiny) --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"  
+```
+* Weigths and .cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
+>>>>>>> 4eccdc9bb6cadbcaec4d013810b593cca434e8fb
 
 ### To check all available options:
 ```
