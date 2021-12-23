@@ -9,6 +9,12 @@
 * cmake ..
 * make
 
+### Running object detection with yolov4
+```
+./object-detection-inference --type=yolov4(or yolov4-tiny) --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"  
+```
+* Weigths and .cfg files to download inside models folder from https://github.com/AlexeyAB/darknet/releases/tag/yolov4 
+
 ### Running object detection with Mobilenet SSD using Caffe framework
 ```
 ./object-detection-inference --type=mobilenet --min_confidence=CONF_VALUE(for example 0.6) --link="rtsp://cameraip:port/somelivefeed"  
@@ -20,11 +26,6 @@
 ./object-detection-inference --type=svm --link="rtsp://cameraip:port/somelivefeed"
 ```
 
-### Running object detection with yolov4
-```
-./object-detection-inference --type=yolov4(or yolov4-tiny) --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"  
-```
-* Weigths and .cfg files to download inside models folder from https://pjreddie.com/darknet/yolo/  
 
 ### To check all available options:
 ```
