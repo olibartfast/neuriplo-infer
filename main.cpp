@@ -4,11 +4,8 @@
 #include "MobileNetSSD.hpp"
 #include "Yolo.hpp"
 
-//TensorFlowObjectDetection *tfodetector_;  
-//TensorFlowMultiboxDetector *tfmbdetector_; 
-
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov2 | mobilenet, svm, yolov2-tiny, yolov2}"
+      "{ type     |  yolov4 | mobilenet, svm, yolov4-tiny, yolov4}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
       "{ model_path mp   |  ../models | path to models}"
@@ -54,14 +51,14 @@ std::unique_ptr<Detector> createDetector(
         auto[modelConfiguration, modelBinary] = modelSetup(modelPath, "MobileNetSSD_deploy.prototxt",  "MobileNetSSD_deploy.caffemodel");
         return std::make_unique<MobileNetSSD>(classes, modelConfiguration, modelBinary);
     }
-    else if(detectorType == "yolov2" || detectorType == "yolov2-tiny")
+    else if(detectorType == "yolov4" || detectorType == "yolov4-tiny")
     {
         std::string modelConfiguration, modelBinary;
         classes = readLabelNames(labelsPath + "/" + "coco.names"); 
-        if(detectorType == "yolov2-tiny")
-            std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "yolov2-tiny.cfg",  "yolov2-tiny.weights");
-        else if(detectorType == "yolov2")
-        	std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "yolov2.cfg",  "yolov2.weights");    
+        if(detectorType == "yolov4-tiny")
+            std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "yolov4-tiny.cfg",  "yolov4-tiny.weights");
+        else if(detectorType == "yolov4")
+        	std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "yolov4.cfg",  "yolov4.weights");    
         return std::make_unique<Yolo>(classes, modelConfiguration, modelBinary);
     }    
     return nullptr;
@@ -118,9 +115,10 @@ int main (int argc, char *argv[])
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
 
     while(1) {
-         gstocv->set_main_loop_event(false);
-         cv::Mat frame = gstocv->get_frame();
-        if(!frame.empty()){
+        gstocv->set_main_loop_event(false);
+        cv::Mat frame = gstocv->get_frame().clone();
+        if(!frame.empty())
+        {
             detector->run_detection(frame);
             imshow("opencv feed", frame);  
             char key = cv::waitKey(1);

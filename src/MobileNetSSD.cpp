@@ -25,7 +25,7 @@ MobileNetSSD::MobileNetSSD(
 
 
 
-void MobileNetSSD::run_detection(const cv::Mat& frame)
+void MobileNetSSD::run_detection(cv::Mat& frame)
 {
   // Create a 4D blob from a frame.
 

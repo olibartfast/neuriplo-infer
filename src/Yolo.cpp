@@ -24,59 +24,113 @@
 
 	}
 
-void Yolo::run_detection(const Mat& frame){
-	cv::Mat resized;
-	cv::resize(frame, resized, cv::Size(network_width_, network_height_));
-	cv::Mat inputBlob = blobFromImage(resized, 1 / 255.F); //Convert Mat to batch of images
+void Yolo::run_detection(Mat& frame){
+    cv::Mat inputBlob;
+    cv::dnn::blobFromImage(frame, inputBlob, 1 / 255.F, cv::Size(network_width_, network_height_), cv::Scalar(), true, false, CV_32F);
+    static std::vector<int> outLayers = net_.getUnconnectedOutLayers();
+    static std::string outLayerType = net_.getLayer(outLayers[0])->type;
+    std::vector<String> outNames = net_.getUnconnectedOutLayersNames();
+    std::vector<cv::Mat> outs;
+    std::vector<int> classIds;
+    std::vector<float> confidences;
+    std::vector<Rect> boxes;
+	net_.setInput(inputBlob);
+    net_.forward(outs, outNames);
 
-	net_.setInput(inputBlob, "data");                //set the network input
-	cv::Mat detectionMat = net_.forward("detection_out");	//compute output
+    for (size_t i = 0; i < outs.size(); ++i)
+    {
+        // Network produces output blob with a shape NxC where N is a number of
+        // detected objects and C is a number of classes + 4 where the first 4
+        // numbers are [center_x, center_y, width, height]
+        float* data = (float*)outs[i].data;
+        for (int j = 0; j < outs[i].rows; ++j, data += outs[i].cols)
+        {
+            Mat scores = outs[i].row(j).colRange(5, outs[i].cols);
+            Point classIdPoint;
+            double confidence;
+            minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
+            if (confidence > confidenceThreshold_)
+            {
+                int centerX = (int)(data[0] * frame.cols);
+                int centerY = (int)(data[1] * frame.rows);
+                int width = (int)(data[2] * frame.cols);
+                int height = (int)(data[3] * frame.rows);
+                int left = centerX - width / 2;
+                int top = centerY - height / 2;
 
-	for (int i = 0; i < detectionMat.rows; i++)
-	{
-	    const int probability_index = 5;
-	    const int probability_size = detectionMat.cols - probability_index;
-	    float *prob_array_ptr = &detectionMat.at<float>(i, probability_index);
+                classIds.push_back(classIdPoint.x);
+                confidences.push_back((float)confidence);
+                boxes.push_back(Rect(left, top, width, height));
+            }
+        }
+    }
 
-	    size_t objectClass = std::max_element(prob_array_ptr, prob_array_ptr + probability_size) - prob_array_ptr;
-	    float confidence = detectionMat.at<float>(i, (int)objectClass + probability_index);
+    // NMS is used inside Region layer only on DNN_BACKEND_OPENCV for another backends we need NMS in sample
+    // or NMS is required if number of outputs > 1
+    if (outLayers.size() > 1 || (outLayerType == "Region"))
+    {
+        std::map<int, std::vector<size_t> > class2indices;
+        for (size_t i = 0; i < classIds.size(); i++)
+        {
+            if (confidences[i] >= confidenceThreshold_)
+            {
+                class2indices[classIds[i]].push_back(i);
+            }
+        }
+        std::vector<Rect> nmsBoxes;
+        std::vector<float> nmsConfidences;
+        std::vector<int> nmsClassIds;
+        for (std::map<int, std::vector<size_t> >::iterator it = class2indices.begin(); it != class2indices.end(); ++it)
+        {
+            std::vector<Rect> localBoxes;
+            std::vector<float> localConfidences;
+            std::vector<size_t> classIndices = it->second;
+            for (size_t i = 0; i < classIndices.size(); i++)
+            {
+                localBoxes.push_back(boxes[classIndices[i]]);
+                localConfidences.push_back(confidences[classIndices[i]]);
+            }
+            std::vector<int> nmsIndices;
+            const auto nmsThreshold = 0.4;
+            NMSBoxes(localBoxes, localConfidences, confidenceThreshold_, nmsThreshold, nmsIndices);
+            for (size_t i = 0; i < nmsIndices.size(); i++)
+            {
+                size_t idx = nmsIndices[i];
+                nmsBoxes.push_back(localBoxes[idx]);
+                nmsConfidences.push_back(localConfidences[idx]);
+                nmsClassIds.push_back(it->first);
+            }
+        }
+        boxes = nmsBoxes;
+        classIds = nmsClassIds;
+        confidences = nmsConfidences;
+    }
+    for (size_t idx = 0; idx < boxes.size(); ++idx)
+    {
+        Rect box = boxes[idx];
+        drawPred(classIds[idx], confidences[idx], box.x, box.y,
+                 box.x + box.width, box.y + box.height, frame);
+    }    
 
-	    if (confidence > confidenceThreshold_)
-	    {
-	        float x = detectionMat.at<float>(i, 0);
-	        float y = detectionMat.at<float>(i, 1);
-	        float width = detectionMat.at<float>(i, 2);
-	        float height = detectionMat.at<float>(i, 3);
-	        float xLeftBottom = (x - width / 2) * frame.cols;
-	        float yLeftBottom = (y - height / 2) * frame.rows;
-	        float xRightTop = (x + width / 2) * frame.cols;
-	        float yRightTop = (y + height / 2) * frame.rows;
+}
 
 
+void Yolo::drawPred(int classId, float conf, int left, int top, int right, int bottom, Mat& frame)
+{
+    rectangle(frame, Point(left, top), Point(right, bottom), Scalar(0, 255, 0));
 
+    std::string label = format("%.2f", conf);
+    if (!classNames_.empty())
+    {
+        CV_Assert(classId < (int)classNames_.size());
+        label = classNames_[classId] + ": " + label;
+    }
 
+    int baseLine;
+    Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
 
-	        std::cout << "Class: " << classNames_[objectClass] << std::endl;
-	        std::cout << "Confidence: " << confidence << std::endl;
-
-            std::ostringstream ss;
-            ss << confidence;
-            std::string conf(ss.str());
-
-            cv::Rect object((int)xLeftBottom, (int)yLeftBottom,
-                        (int)(xRightTop - xLeftBottom),
-                        (int)(yRightTop - yLeftBottom));
-
-            cv::rectangle(frame, object, Scalar(0, 255, 0));
-            std::string label = std::string(classNames_[objectClass]) + ": " + conf;
-            int baseLine = 0;
-            cv::Size labelSize = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-            cv::rectangle(frame, cv::Rect(cv::Point(xLeftBottom, yLeftBottom - labelSize.height),
-                                  cv::Size(labelSize.width, labelSize.height + baseLine)),
-                      Scalar(255, 255, 255), cv::FILLED);
-            cv::putText(frame, label, Point(xLeftBottom, yLeftBottom),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));  
-	    }
-	}
-
+    top = max(top, labelSize.height);
+    rectangle(frame, Point(left, top - labelSize.height),
+              Point(left + labelSize.width, top + baseLine), Scalar::all(255), FILLED);
+    putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.5, Scalar());
 }
