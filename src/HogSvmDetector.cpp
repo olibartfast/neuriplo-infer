@@ -28,7 +28,7 @@ void HogSvmDetector::adjustRect(cv::Rect & r) const
     r.height = cvRound(r.height*0.8);
 }
 
-void HogSvmDetector::run_detection(const cv::Mat& frame){
+void HogSvmDetector::run_detection(cv::Mat& frame){
     int64 t = cv::getTickCount();
     std::vector<cv::Rect> found = detect(frame);
     t = cv::getTickCount() - t;

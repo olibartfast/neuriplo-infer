@@ -44,6 +44,6 @@ public:
 	{
 
 	}
-    virtual void run_detection(const cv::Mat& frame) = 0;
+    virtual void run_detection(cv::Mat& frame) = 0;
 	virtual ~Detector() = 0;
 };
