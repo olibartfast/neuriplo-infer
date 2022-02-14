@@ -50,7 +50,7 @@ https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 * Object detection using dnn module:  
 https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp  
 
-* Sort algorithm  
+* Sort algorithm:  
 https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tracking/cpp_inference/yoloSort
 
 
