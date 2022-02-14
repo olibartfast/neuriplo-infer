@@ -35,6 +35,7 @@
 * Planning to restore and update inference on tensorflow models from object detection API
 * Inference on pytorch models from torchvision object detection API
 * Add support for inference with onnxruntime, openvino and tensorrt
+* Multi-object Tracking (Sort?)
 
 ## References
 * Using GStreamer to receive a video stream and process it with OpenCV:  
@@ -48,6 +49,9 @@ https://github.com/opencv/opencv/blob/master/samples/cpp/train_HOG.cpp
 
 * Object detection using dnn module:  
 https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp  
+
+* Sort algorithm
+https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tracking/cpp_inference/yoloSort
 
 
 
