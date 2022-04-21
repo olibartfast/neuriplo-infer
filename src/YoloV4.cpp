@@ -1,6 +1,6 @@
-#include "Yolo.hpp"
+#include "YoloV4.hpp"
 
-    Yolo::Yolo(
+    YoloV4::YoloV4(
         const std::vector<std::string>& classNames,
  	    std::string modelConfiguration, 
         std::string modelBinary, 
@@ -24,7 +24,7 @@
 
 	}
 
-void Yolo::run_detection(Mat& frame){
+std::vector<Detection> YoloV4::run_detection(const Mat& frame){
     cv::Mat inputBlob;
     cv::dnn::blobFromImage(frame, inputBlob, 1 / 255.F, cv::Size(network_width_, network_height_), cv::Scalar(), true, false, CV_32F);
     static std::vector<int> outLayers = net_.getUnconnectedOutLayers();
@@ -65,6 +65,8 @@ void Yolo::run_detection(Mat& frame){
         }
     }
 
+    std::vector<Detection> detections;
+    
     // NMS is used inside Region layer only on DNN_BACKEND_OPENCV for another backends we need NMS in sample
     // or NMS is required if number of outputs > 1
     if (outLayers.size() > 1 || (outLayerType == "Region"))
@@ -77,9 +79,7 @@ void Yolo::run_detection(Mat& frame){
                 class2indices[classIds[i]].push_back(i);
             }
         }
-        std::vector<Rect> nmsBoxes;
-        std::vector<float> nmsConfidences;
-        std::vector<int> nmsClassIds;
+
         for (std::map<int, std::vector<size_t> >::iterator it = class2indices.begin(); it != class2indices.end(); ++it)
         {
             std::vector<Rect> localBoxes;
@@ -92,45 +92,19 @@ void Yolo::run_detection(Mat& frame){
             }
             std::vector<int> nmsIndices;
             const auto nmsThreshold = 0.4;
-            NMSBoxes(localBoxes, localConfidences, confidenceThreshold_, nmsThreshold, nmsIndices);
+            cv::dnn::NMSBoxes(localBoxes, localConfidences, confidenceThreshold_, nmsThreshold, nmsIndices);
             for (size_t i = 0; i < nmsIndices.size(); i++)
             {
+                Detection d;
                 size_t idx = nmsIndices[i];
-                nmsBoxes.push_back(localBoxes[idx]);
-                nmsConfidences.push_back(localConfidences[idx]);
-                nmsClassIds.push_back(it->first);
+                d.bbox = localBoxes[idx];
+                d.score = localConfidences[idx];
+                d.label = it->first;
+                detections.emplace_back(d);
+
             }
         }
-        boxes = nmsBoxes;
-        classIds = nmsClassIds;
-        confidences = nmsConfidences;
-    }
-    for (size_t idx = 0; idx < boxes.size(); ++idx)
-    {
-        Rect box = boxes[idx];
-        drawPred(classIds[idx], confidences[idx], box.x, box.y,
-                 box.x + box.width, box.y + box.height, frame);
-    }    
-
-}
-
-
-void Yolo::drawPred(int classId, float conf, int left, int top, int right, int bottom, Mat& frame)
-{
-    rectangle(frame, Point(left, top), Point(right, bottom), Scalar(0, 255, 0));
-
-    std::string label = format("%.2f", conf);
-    if (!classNames_.empty())
-    {
-        CV_Assert(classId < (int)classNames_.size());
-        label = classNames_[classId] + ": " + label;
     }
 
-    int baseLine;
-    Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-
-    top = max(top, labelSize.height);
-    rectangle(frame, Point(left, top - labelSize.height),
-              Point(left + labelSize.width, top + baseLine), Scalar::all(255), FILLED);
-    putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.5, Scalar());
+    return detections;
 }

@@ -1,6 +1,13 @@
 #pragma once
 #include "common.hpp"
 
+struct Detection
+{
+	cv::Rect bbox;
+	float score;
+	int label;
+};
+
 class Detector{
 protected:	
 	std::vector<std::string> classNames_; 
@@ -44,6 +51,7 @@ public:
 	{
 
 	}
-    virtual void run_detection(cv::Mat& frame) = 0;
+
+    virtual std::vector<Detection> run_detection(const cv::Mat& frame) = 0;
 	virtual ~Detector() = 0;
 };

@@ -23,6 +23,6 @@ public:
         float meanVal = 127.5);
 
     ~MobileNetSSD(){}
-    void run_detection(cv::Mat& frame) override;
+    std::vector<Detection> run_detection(const cv::Mat& frame) override;
 
 };

@@ -1,7 +1,7 @@
 ### Object detection inference from IP camera RTSP and video stream using GStreamer HW acceleration and OpenCV
 
 ##  Dependencies
-* GStreamer 1.18.5-1 and OpenCV 4.5.1
+* GStreamer 1.18.5-1 and OpenCV 4.5.5
 
 ## To Build and Compile  
 * mkdir build
@@ -9,11 +9,17 @@
 * cmake ..
 * make
 
-### Running object detection with yolov4
+### Running object detection with yolov4/yolov4-tiny
 ```
 ./object-detection-inference --type=yolov4(or yolov4-tiny) --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"  
 ```
 * Weigths and .cfg files to download inside models folder from https://github.com/AlexeyAB/darknet/releases/tag/yolov4 
+
+### Running object detection with yolov5s/m/l/x
+```
+./object-detection-inference --type=yolov5x(or other versions) --min_confidence=0.6 --link="rtsp://cameraip:port/somelivefeed"  
+```
+* Weigths to put inside models folder after exporting the pretrained .pt file in onnx format using the script from https://github.com/ultralytics/yolov5/blob/master/export.py
 
 ### Running object detection with Mobilenet SSD using Caffe framework
 ```
@@ -34,7 +40,7 @@
 ## TO DO
 * Planning to restore and update inference on tensorflow models from object detection API
 * Inference on pytorch models from torchvision object detection API
-* Add support for inference with onnxruntime, openvino and tensorrt
+* Add support for inference with onnxruntime, tensorrt
 * Multi-object Tracking (Sort?)
 
 ## References

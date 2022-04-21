@@ -28,32 +28,16 @@ void HogSvmDetector::adjustRect(cv::Rect & r) const
     r.height = cvRound(r.height*0.8);
 }
 
-void HogSvmDetector::run_detection(cv::Mat& frame){
-    int64 t = cv::getTickCount();
+std::vector<Detection> HogSvmDetector::run_detection(const cv::Mat& frame){
     std::vector<cv::Rect> found = detect(frame);
-    t = cv::getTickCount() - t;
-
-    // show the window
-    {
-        std::ostringstream buf;
-        buf << "Mode: " << modeName() << " ||| "
-            << "FPS: " << std::fixed << std::setprecision(1) << (cv::getTickFrequency() / (double)t);
-        putText(frame, buf.str(), cv::Point(10, 30), cv::FONT_HERSHEY_PLAIN, 2.0, cv::Scalar(0, 0, 255), 2, cv::LINE_AA);
-    }
+    std::vector<Detection> detections;
     for (std::vector<cv::Rect>::iterator i = found.begin(); i != found.end(); ++i)
     {
+        Detection d;
         cv::Rect &r = *i;
         adjustRect(r);
-        rectangle(frame, r.tl(), r.br(), cv::Scalar(0, 255, 0), 2);
+        d.bbox = r;
+        detections.emplace_back(d);
     }
-    if(found.size() > 0){
-      time_t rawtime;
-      struct tm * timeinfo;
-      char buffer[80];
-      time (&rawtime);
-      timeinfo = localtime(&rawtime);
-      strftime(buffer,sizeof(buffer),"%d%m%Y_%I%M%S",timeinfo);
-      std::string fname(buffer);
-      cv::imwrite(fname+".jpg", frame );
-    }
+    return detections;
 }

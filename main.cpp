@@ -2,14 +2,38 @@
 #include "Detector.hpp"
 #include "HogSvmDetector.hpp"
 #include "MobileNetSSD.hpp"
-#include "Yolo.hpp"
+#include "YoloV4.hpp"
+#include "YoloV5.hpp"
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov4 | mobilenet, svm, yolov4-tiny, yolov4}"
+      "{ type     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
       "{ model_path mp   |  ../models | path to models}"
       "{ min_confidence | 0.25   | min confidence}";
+
+
+void draw_label(cv::Mat& input_image, std::string label, int left, int top)
+{
+    
+    const float FONT_SCALE = 0.7;
+    const int FONT_FACE = cv::FONT_HERSHEY_SIMPLEX;
+    const int THICKNESS = 1;
+    cv::Scalar YELLOW = Scalar(0, 255, 255);
+
+    // Display the label at the top of the bounding box.
+    int baseLine;
+    cv::Size label_size = getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS, &baseLine);
+    top = cv::max(top, label_size.height);
+    // Top left corner.
+    Point tlc = cv::Point(left, top);
+    // Bottom right corner.
+    Point brc = cv::Point(left + label_size.width, top + label_size.height + baseLine);
+    // Draw black rectangle.
+    cv::rectangle(input_image, tlc, brc, cv::Scalar(255, 0, 255), FILLED);
+    // Put the label on the black rectangle.
+    cv::putText(input_image, label, Point(left, top + label_size.height), FONT_FACE, FONT_SCALE, YELLOW, THICKNESS);
+}
 
 std::vector<std::string> readLabelNames(const std::string& fileName)
 {
@@ -28,10 +52,11 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
 auto modelSetup(const std::string& modelPath, const std::string& configName, const std::string& weigthName){
     const auto modelConfiguration = modelPath + "/" + configName;
     const auto modelBinary = modelPath + "/" + weigthName;
-    if(!std::filesystem::exists(modelConfiguration) || !std::filesystem::exists(modelBinary)){
+    if(!std::filesystem::exists(modelConfiguration) || !std::filesystem::exists(modelBinary))
+    {
         std::cerr << "Wrong path to model " << std::endl;
         exit(1);
-    }    
+    }
     return std::make_tuple(modelConfiguration, modelBinary); 
 }
 
@@ -51,16 +76,20 @@ std::unique_ptr<Detector> createDetector(
         auto[modelConfiguration, modelBinary] = modelSetup(modelPath, "MobileNetSSD_deploy.prototxt",  "MobileNetSSD_deploy.caffemodel");
         return std::make_unique<MobileNetSSD>(classes, modelConfiguration, modelBinary);
     }
-    else if(detectorType == "yolov4" || detectorType == "yolov4-tiny")
+    else if(detectorType.find("yolov4") != std::string::npos)
     {
         std::string modelConfiguration, modelBinary;
         classes = readLabelNames(labelsPath + "/" + "coco.names"); 
-        if(detectorType == "yolov4-tiny")
-            std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "yolov4-tiny.cfg",  "yolov4-tiny.weights");
-        else if(detectorType == "yolov4")
-        	std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "yolov4.cfg",  "yolov4.weights");    
-        return std::make_unique<Yolo>(classes, modelConfiguration, modelBinary);
-    }    
+        std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, detectorType + ".cfg",  detectorType + ".weights");  
+        return std::make_unique<YoloV4>(classes, modelConfiguration, modelBinary);
+    }   
+    else if(detectorType.find("yolov5") != std::string::npos)  
+    {
+        std::string modelBinary;
+        classes = readLabelNames(labelsPath + "/" + "coco.names"); 
+        std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "",  detectorType + ".onnx");    
+        return std::make_unique<YoloV5>(classes, "", modelBinary);
+    }
     return nullptr;
 }
 
@@ -119,8 +148,12 @@ int main (int argc, char *argv[])
         cv::Mat frame = gstocv->get_frame().clone();
         if(!frame.empty())
         {
-            detector->run_detection(frame);
-            imshow("opencv feed", frame);  
+            std::vector<Detection> detections = detector->run_detection(frame);
+            for(auto&& d : detections)
+            {
+                cv::rectangle(frame, d.bbox, cv::Scalar(255, 0, 0), 3);
+            }
+            cv::imshow("opencv feed", frame);  
             char key = cv::waitKey(1);
             if (key == 27 || key == 'q') // ESC
             {

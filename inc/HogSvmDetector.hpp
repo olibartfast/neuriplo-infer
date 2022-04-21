@@ -14,7 +14,7 @@ public:
     std::string modeName() const;
     std::vector<cv::Rect> detect(cv::InputArray img);
     void adjustRect(cv::Rect & r) const;
-    void run_detection(cv::Mat& frame) override;
+    std::vector<Detection> run_detection(const cv::Mat& frame) override;
     ~HogSvmDetector(){};
 
 };

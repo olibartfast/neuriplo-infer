@@ -22,13 +22,8 @@ MobileNetSSD::MobileNetSSD(
 
 }
 
-
-
-
-void MobileNetSSD::run_detection(cv::Mat& frame)
+std::vector<Detection> MobileNetSSD::run_detection(const cv::Mat& frame)
 {
-  // Create a 4D blob from a frame.
-
     cv::Mat inputBlob = cv::dnn::blobFromImage(frame, inScaleFactor_,
                                   cv::Size(network_width_, network_height_), meanVal_, false); //Convert Mat to batch of images
     net_.setInput(inputBlob, "data"); //set the network input
@@ -40,8 +35,10 @@ void MobileNetSSD::run_detection(cv::Mat& frame)
 
     cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
+    std::vector<Detection> detections;
     for(int i = 0; i < detectionMat.rows; i++)
     {
+        Detection d;
         float confidence = detectionMat.at<float>(i, 2);
 
         if(confidence > confidenceThreshold_)
@@ -52,25 +49,15 @@ void MobileNetSSD::run_detection(cv::Mat& frame)
             int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
             int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
             int yRightTop = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
-
-            std::ostringstream ss;
-            ss << confidence;
-            std::string conf(ss.str());
-
             cv::Rect object((int)xLeftBottom, (int)yLeftBottom,
                         (int)(xRightTop - xLeftBottom),
                         (int)(yRightTop - yLeftBottom));
-
-            cv::rectangle(frame, object, cv::Scalar(0, 255, 0));
-            std::string label = std::string(classNames_[objectClass]) + ": " + conf;
-            int baseLine = 0;
-            cv::Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-            cv::rectangle(frame, Rect(Point(xLeftBottom, yLeftBottom - labelSize.height),
-                                  Size(labelSize.width, labelSize.height + baseLine)),
-                      Scalar(255, 255, 255), cv::FILLED);
-            cv::putText(frame, label, cv::Point(xLeftBottom, yLeftBottom),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,0,0));     
+            d.score = confidence;
+            d.bbox = object;
+            d.label = objectClass;
+            detections.emplace_back(d);
         }
     }
 
+    return detections;
 }
