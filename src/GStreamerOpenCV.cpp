@@ -4,6 +4,7 @@
 cv::Mat GStreamerOpenCV::frame_;
 
 GStreamerOpenCV::GStreamerOpenCV(){
+    error_ = NULL;
 }
 
 
