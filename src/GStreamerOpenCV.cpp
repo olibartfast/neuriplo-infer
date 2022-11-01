@@ -3,8 +3,7 @@
 
 cv::Mat GStreamerOpenCV::frame_;
 
-GStreamerOpenCV::GStreamerOpenCV(GError *error){
-    error_ = error;
+GStreamerOpenCV::GStreamerOpenCV(){
 }
 
 

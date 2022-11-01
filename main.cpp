@@ -121,10 +121,7 @@ int main (int argc, char *argv[])
         return 2;
     }
 
-
-
-    GError *error = NULL;
-    GStreamerOpenCV *gstocv = new GStreamerOpenCV(error);
+    std::unique_ptr<GStreamerOpenCV> gstocv = std::make_unique<GStreamerOpenCV>();
     gstocv->init_gst_library(argc, argv);
     std::string pipeline_cmd = getPipelineCommand(link);
     std::cout << pipeline_cmd.c_str() << std::endl;
@@ -164,6 +161,5 @@ int main (int argc, char *argv[])
     }
     
     gstocv->set_state(GST_STATE_NULL);
-    delete gstocv;
     return 0;  
 }

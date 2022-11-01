@@ -14,7 +14,7 @@ class GStreamerOpenCV{
 	static cv::Mat frame_;
 
 public:
-	GStreamerOpenCV(GError *error);
+	GStreamerOpenCV();
 	~GStreamerOpenCV();
 	void init_gst_library(int argc, char *argv[]);
 	void run_pipeline(std::string pipeline_cmd);

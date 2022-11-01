@@ -38,10 +38,8 @@
 ```
 
 ## TO DO
+* Add support for inference with onnxruntime, tensorrt, openvino
 * Planning to restore and update inference on tensorflow models from object detection API
-* Inference on pytorch models from torchvision object detection API
-* Add support for inference with onnxruntime, tensorrt
-* Multi-object Tracking (Sort?)
 
 ## References
 * Using GStreamer to receive a video stream and process it with OpenCV:  
