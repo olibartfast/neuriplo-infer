@@ -2,7 +2,7 @@
 
 ##  Dependencies
 * GStreamer 1.18.5-1 and OpenCV 4.5.5 (optionally Tensorflow prebuilt library from [
-Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc) ), switch option to ON in CMakeLists or set it using cmake from command line)
+Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc), switch option to ON in CMakeLists or set it using cmake from command line)
 
 ## To Build and Compile  
 * mkdir build
