@@ -53,5 +53,4 @@ public:
 	}
 
     virtual std::vector<Detection> run_detection(const cv::Mat& frame) = 0;
-	virtual ~Detector() = 0;
 };

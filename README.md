@@ -18,18 +18,17 @@
 ./object-detection-inference --help
 ```
 
-|Model|Model Type|Demo|Other info|
-|-----------|----------|----|------|
-|ssd|mobilenet|./object-detection-inference --type=mobilenet --link="rtsp://cameraip:port/somelivefeed"  |Caffemodel and Prototxt for deploying(download inside models folder): https://github.com/chuanqi305/MobileNet-SSD|
-|yolov4|yolov4/yolov4-tiny|./object-detection-inference --type=yolov4(or yolov4-tiny) --link="rtsp://cameraip:port/somelivefeed" | Weigths and .cfg files to download inside models folder from https://github.com/AlexeyAB/darknet/releases/tag/yolov4 |
-|yolov5|yolov5s/m/l/x|./object-detection-inference --type=yolov5x(or yolov5s/m/l) --link="rtsp://cameraip:port/somelivefeed"  |Weigths to put inside models folder after exporting the pretrained .pt file in onnx format using the script from https://github.com/ultralytics/yolov5/blob/master/export.py |
+|Model<img width=100/>|Model Type<img width=100/>|Demo<img width=400/>|Other info<img width=400/>|
+|---|---|---|---|
+|ssd|mobilenet|./object-detection-inference --type=mobilenet --link="rtsp://cameraip:port/somelivefeed"|Caffemodel and Prototxt for deploying(download inside models folder): https://github.com/chuanqi305/MobileNet-SSD|
+|yolov4|yolov4/yolov4-tiny|./object-detection-inference --type=yolov4(or yolov4-tiny) --link="rtsp://cameraip:port/somelivefeed"|Weigths and .cfg files to download inside models folder from https://github.com/AlexeyAB/darknet/releases/tag/yolov4 |
+|yolov5|yolov5s/m/l/x|./object-detection-inference --type=yolov5x(or yolov5s/m/l) --link="rtsp://cameraip:port/somelivefeed"|Weigths to put inside models folder after exporting the pretrained .pt file in onnx format using the script from https://github.com/ultralytics/yolov5/blob/master/export.py |
 |HoG + SVM People Detector |svm|./object-detection-inference --type=svm --link="rtsp://cameraip:port/somelivefeed"||
 
 
 
 ## TO DO
 * Add support for inference with onnxruntime, tensorrt, openvino
-* Planning to restore and update inference on tensorflow models from object detection API
 
 ## References
 * Using GStreamer to receive a video stream and process it with OpenCV:  

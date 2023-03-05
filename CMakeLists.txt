@@ -10,9 +10,26 @@ pkg_search_module(GLIB REQUIRED glib-2.0)
 pkg_search_module(GOBJECT REQUIRED gobject-2.0)
 set(CMAKE_CXX_STANDARD 17)
 
-set(SOURCES "main.cpp" "src/GStreamerOpenCV.cpp" "src/Detector.cpp"  "src/YoloV4.cpp" "src/YoloV5.cpp" "src/HogSvmDetector.cpp" "src/MobileNetSSD.cpp")
+
+# Define an option to enable/disable libtensorflow
+option(USE_TENSORFLOW "Use TensorFlow library" OFF)
+
+# Find libtensorflow if the option is enabled
+if(USE_TENSORFLOW)
+  find_package(TensorFlow QUIET)
+endif()
+
+
+set(SOURCES "main.cpp" "src/GStreamerOpenCV.cpp"
+"src/YoloV4.cpp" "src/YoloV5.cpp" "src/HogSvmDetector.cpp" "src/MobileNetSSD.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+# Add the TensorFlow sources to our target if the option is enabled
+if(TensorFlow_FOUND AND USE_TENSORFLOW)
+  set(TensorFlow_SOURCES src/TFDetectionAPI.cpp)
+  target_sources(${PROJECT_NAME} PRIVATE ${TensorFlow_SOURCES})
+endif()
 
 target_include_directories(
     ${PROJECT_NAME} PRIVATE 

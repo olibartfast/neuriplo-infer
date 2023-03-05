@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 
-message("Libtensorflow env path " $ENV{LIBTENSORFLOW_DIR})
 project(tensorflow_test)
+find_package(TensorFlow REQUIRED)
+find_package(OpenCV REQUIRED)
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/test.cpp)
-target_include_directories(${PROJECT_NAME} PUBLIC $ENV{LIBTENSORFLOW_DIR}/include $ENV{PROTOBUF_INC})
-target_link_directories(${PROJECT_NAME}  PUBLIC $ENV{LIBTENSORFLOW_DIR})
-target_link_libraries(${PROJECT_NAME} libtensorflow_cc.so libtensorflow_framework.so)
+target_include_directories(${PROJECT_NAME} PRIVATE ${TensorFlow_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${TensorFlow_LIBRARIES}  ${OpenCV_LIBS})

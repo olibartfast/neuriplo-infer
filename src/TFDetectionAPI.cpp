@@ -1,7 +1,7 @@
-#include "TensorflowObjectDetection.hpp"
+#include "TFDetectionAPI.hpp"
 
 
-TensorflowObjectDetection::TensorflowObjectDetection(
+TFDetectionAPI::TFDetectionAPI(
         const std::vector<std::string>& classNames,
         std::string modelConfiguration, 
         std::string modelBinary,      
@@ -18,7 +18,7 @@ TensorflowObjectDetection::TensorflowObjectDetection(
 
 }
 
-std::vector<Detection> TensorflowObjectDetection::run_detection(const cv::Mat& frame)
+std::vector<Detection> TFDetectionAPI::TFDetectionAPI run_detection(const cv::Mat& frame) 
 {
         return std::vector<Detection>{};
 }
