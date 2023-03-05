@@ -4,9 +4,10 @@
 #include "MobileNetSSD.hpp"
 #include "YoloV4.hpp"
 #include "YoloV5.hpp"
+#include "TFDetectionAPI.hpp"
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x}"
+      "{ type     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb   |  ../labels | path to class labels file}"
       "{ model_path mp   |  ../models | path to models}"
@@ -90,6 +91,10 @@ std::unique_ptr<Detector> createDetector(
         std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "",  detectorType + ".onnx");    
         return std::make_unique<YoloV5>(classes, "", modelBinary);
     }
+    else if(detectorType.find("tensorflow") != std::string::npos) 
+    {
+        return std::make_unique<TFDetectionAPI>(modelPath);
+    }
     return nullptr;
 }
 
@@ -139,6 +144,11 @@ int main (int argc, char *argv[])
     std::cout << "Current path is " << std::filesystem::current_path() << '\n'; // (1)
 
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
+    if(!detector)
+    {
+        std::cerr << "Detector creation fail!" << std::endl;
+        std::exit(1);
+    }
 
     while(1) {
         gstocv->set_main_loop_event(false);

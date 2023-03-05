@@ -39,9 +39,9 @@ public:
 	Detector(const std::vector<std::string>& classes, 
 	const std::string& modelConfiguration,
 	const std::string& modelBinary,
-	float confidenceThreshold, 
-  	size_t network_width,
-  	size_t network_height		
+	float confidenceThreshold = 0.5f, 
+  	size_t network_width = -1,
+  	size_t network_height = -1		
 	) : classNames_{classes}, 
 		modelConfiguration_{modelConfiguration},
 		modelBinary_{modelBinary},
