@@ -4,7 +4,9 @@
 #include "MobileNetSSD.hpp"
 #include "YoloV4.hpp"
 #include "YoloV5.hpp"
+#ifdef USE_TENSORFLOW
 #include "TFDetectionAPI.hpp"
+#endif
 
 static const std::string params = "{ help h   |   | print help message }"
       "{ type     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
@@ -91,10 +93,12 @@ std::unique_ptr<Detector> createDetector(
         std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "",  detectorType + ".onnx");    
         return std::make_unique<YoloV5>(classes, "", modelBinary);
     }
+#ifdef USE_TENSORFLOW      
     else if(detectorType.find("tensorflow") != std::string::npos) 
     {
         return std::make_unique<TFDetectionAPI>(modelPath);
     }
+#endif      
     return nullptr;
 }
 
