@@ -8,6 +8,8 @@
 #ifdef USE_TENSORFLOW
 #include "TFDetectionAPI.hpp"
 #endif
+#include <chrono>
+
 
 static const std::string params = "{ help h   |   | print help message }"
       "{ type     |  yolov8x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
@@ -162,23 +164,28 @@ int main (int argc, char *argv[])
         std::exit(1);
     }
 
-    while(1) {
+    while (true) 
+    {
         gstocv->set_main_loop_event(false);
         cv::Mat frame = gstocv->get_frame().clone();
-        if(!frame.empty())
+        if (!frame.empty())
         {
+            auto start = std::chrono::steady_clock::now();
             std::vector<Detection> detections = detector->run_detection(frame);
-            for(auto&& d : detections)
-            {
+            auto end = std::chrono::steady_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            double fps = 1000.0 / duration;
+            std::string fpsText = "FPS: " + std::to_string(fps);
+            cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
+            for (const auto& d : detections) {
                 cv::rectangle(frame, d.bbox, cv::Scalar(255, 0, 0), 3);
             }
-            cv::imshow("opencv feed", frame);  
+            cv::imshow("opencv feed", frame);
             char key = cv::waitKey(1);
-            if (key == 27 || key == 'q') // ESC
-            {
+            if (key == 27 || key == 'q') {
                 std::cout << "Exit requested" << std::endl;
                 break;
-            } 
+            }
         }
     }
     
