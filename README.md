@@ -18,14 +18,18 @@ Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_c
 ```
 ./object-detection-inference --help
 ```
-| Model                    | Model Type           | Demo                                                                                        | Notes                                                                                                                                                                                                                                     |
-| ----------------------- | -------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ssd                     | mobilenet            | `./object-detection-inference`<br/>`--type= mobilenet --link="rtsp://cameraip:port/somelivefeed"`  | Caffemodel and Prototxt for deploying (download inside models folder): [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD)                                                                                                      |
-| yolov4                  | yolov4/yolov4-tiny   | `./object-detection-inference`<br/>`--type= yolov4 (or yolov4-tiny) --link="rtsp://cameraip:port/somelivefeed"` | Weights and .cfg files to download inside models folder from [yolov4](https://github.com/AlexeyAB/darknet/releases/tag/yolov4)                                                                                                            |
-| yolov5                  | yolov5s/m/l/x        | `./object-detection-inference`<br/>`--type= yolov5x (or yolov5s/m/l) --link="rtsp://cameraip:port/somelivefeed"` | Weights to put inside models folder after exporting the pretrained .pt file in ONNX format using the script from [yolov5](https://github.com/ultralytics/yolov5/blob/master/export.py). It's assumed you call the binary with the same name as the model type (i.e., yolov5x.onnx) |
-| yolov8                  | yolov8s/m/l/x        | `./object-detection-inference`<br/>`--type= yolov8x (or yolov8s/m/l) --model_path=/path/to/binary/folder --link="rtsp://cameraip:port/somelivefeed"` | Weights to put inside models folder after exporting the pretrained .pt file in ONNX format, [same way as yolov5](https://github.com/ultralytics/ultralytics/tree/main/examples/YOLOv8-CPP-Inference). It's assumed that you name the binary the same as the model type, for example, "yolov8x.onnx." |
-| One of the models from TF2 Object Detection API model zoo | tensorflow | `./object-detection-inference`<br/>`--type= tensorflow --model_path="path/to/saved_model" --link="rtsp://cameraip:port/somelivefeed"` | Download from [model zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md) and set `model_path` to the `saved_model` folder where `saved_model.pb` is stored. Tested models: `ssd_resnet50_v1_fpn_640x640_coco17_tpu-8`, `ssd_mobilenet_v2_320x320_coco17_tpu-8`, `ssd_resnet101_v1_fpn_640x640_coco17_tpu-8` |
-| HoG + SVM People Detector | svm                  | `./object-detection-inference`<br/>`--type= svm --link="rtsp://cameraip:port/somelivefeed"`     |                                                                                                                                                                                                                                           |
+
+> **Note:** The table below lists different models for object detection.
+>
+> Available Model Types:
+> - MobileNet
+> - YOLOv4/YOLOv4-tiny
+> - YOLOv5s/m/l/x
+> - YOLOv8s/m/l/x
+> - TensorFlow
+> - HoG + SVM People Detector
+
+[Link to Table](TablePage.md#table-of-models)
 
 
 ## TO DO
