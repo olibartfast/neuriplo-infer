@@ -1,7 +1,7 @@
 ### Object detection inference from IP camera RTSP and video stream using GStreamer HW acceleration and OpenCV
 
 ##  Dependencies
-* GStreamer 1.18.5-1 and OpenCV 4.5.5 (optionally Tensorflow prebuilt library from [
+* GStreamer 1.20.3 and OpenCV 4.7.0 (optionally Tensorflow prebuilt library from [
 Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc), switch option to ON in CMakeLists or set it using cmake from command line)
 
 ## To Build and Compile  
