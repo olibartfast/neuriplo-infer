@@ -99,14 +99,6 @@ std::unique_ptr<Detector> createDetector(
     return nullptr;
 }
 
-std::string getPipelineCommand(const std::string& link){
-    if (link.find("rtsp") != std::string::npos)
-        return "rtspsrc location=" + link + " ! decodebin ! appsink name=autovideosink";
-    else
-        return "filesrc location=" + link + " ! decodebin ! appsink name=autovideosink";    
-
-}
-
 int main (int argc, char *argv[])
 {
     // Command line parser
@@ -128,14 +120,12 @@ int main (int argc, char *argv[])
     }
 
     std::unique_ptr<GStreamerOpenCV> gstocv = std::make_unique<GStreamerOpenCV>();
-    gstocv->init_gst_library(argc, argv);
-    std::string pipeline_cmd = getPipelineCommand(link);
-    std::cout << pipeline_cmd.c_str() << std::endl;
-    gstocv->run_pipeline(pipeline_cmd);
-    gstocv->check_error();
-    gstocv->get_sink();
-    gstocv->set_bus();
-    gstocv->set_state(GST_STATE_PLAYING);
+    gstocv->initGstLibrary(argc, argv);
+    gstocv->runPipeline(link);
+    gstocv->checkError();
+    gstocv->getSink();
+    gstocv->setBus();
+    gstocv->setState(GST_STATE_PLAYING);
   
     const std::string weights = parser.get<std::string>("weights");
     const std::string labelsPath = parser.get<std::string>("labels");
@@ -154,8 +144,8 @@ int main (int argc, char *argv[])
 
     while (true) 
     {
-        gstocv->set_main_loop_event(false);
-        cv::Mat frame = gstocv->get_frame().clone();
+        gstocv->setMainLoopEvent(false);
+        cv::Mat frame = gstocv->getFrame().clone();
         if (!frame.empty())
         {
             auto start = std::chrono::steady_clock::now();
@@ -177,6 +167,6 @@ int main (int argc, char *argv[])
         }
     }
     
-    gstocv->set_state(GST_STATE_NULL);
+    gstocv->setState(GST_STATE_NULL);
     return 0;  
 }

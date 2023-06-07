@@ -2,29 +2,33 @@
 #include "common.hpp"
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
-#include <stdlib.h>
-#include <glib.h>
-#include <stdbool.h> 
+#include <string>
+#include <memory>
 
-class GStreamerOpenCV{
-	GError *error_;
-	GstElement *pipeline_;
-	GstElement *sink_;
-	GstBus *bus_;
-	static cv::Mat frame_;
+class GStreamerOpenCV {
+    GError* error_ = nullptr;
+    GstElement* pipeline_ = nullptr;
+    GstElement* sink_ = nullptr;
+    GstBus* bus_ = nullptr;
+    inline static cv::Mat frame_;
+
+    std::string getPipelineCommand(const std::string& link) const;
 
 public:
-	GStreamerOpenCV();
-	~GStreamerOpenCV();
-	void init_gst_library(int argc, char *argv[]);
-	void run_pipeline(std::string pipeline_cmd);
-	void check_error();
-	void get_sink();
-	void set_bus();
-	void set_state(GstState state);
-	void set_main_loop_event(bool event);
-	cv::Mat get_frame();
-	void set_frame(cv::Mat &frame);
-	static GstFlowReturn new_sample(GstAppSink *appsink, gpointer data);
-	static GstFlowReturn new_preroll(GstAppSink *appsink, gpointer data);
+    GStreamerOpenCV();
+    ~GStreamerOpenCV();
+    void initGstLibrary(int argc, char* argv[]);
+    void runPipeline(const std::string& link);
+    void checkError();
+    void getSink();
+    void setBus();
+    void setState(GstState state);
+    void setMainLoopEvent(bool event);
+    cv::Mat getFrame() const;
+    void setFrame(const cv::Mat& frame);
+
+private:
+    static GstFlowReturn newPreroll(GstAppSink* appsink, gpointer data);
+    static GstFlowReturn newSample(GstAppSink* appsink, gpointer data);
+    static gboolean myBusCallback(GstBus* bus, GstMessage* message, gpointer data);
 };

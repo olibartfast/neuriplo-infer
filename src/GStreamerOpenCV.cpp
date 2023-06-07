@@ -1,135 +1,138 @@
 #include "GStreamerOpenCV.hpp"
 
-
-cv::Mat GStreamerOpenCV::frame_;
-
-GStreamerOpenCV::GStreamerOpenCV(){
-    error_ = NULL;
+GStreamerOpenCV::GStreamerOpenCV() {
+    error_ = nullptr;
 }
 
-
-GStreamerOpenCV::~GStreamerOpenCV(){
-    gst_object_unref (GST_OBJECT (pipeline_));
-}
-
-
-void GStreamerOpenCV::init_gst_library(int argc, char *argv[]){
-    gst_init (&argc, &argv);
-
-}
-
-void GStreamerOpenCV::run_pipeline(std::string pipeline_cmd){		
-	gchar *descr = g_strdup(pipeline_cmd.c_str());
-	pipeline_ = gst_parse_launch (descr, &error_);
-}
-
-void GStreamerOpenCV::check_error(){
-	if (error_ != NULL) {
-        g_print ("could not construct pipeline: %s\n", error_->message);
-        g_error_free (error_);
-        exit (-1);
+GStreamerOpenCV::~GStreamerOpenCV() {
+    if (pipeline_) {
+        gst_object_unref(GST_OBJECT(pipeline_));
+        pipeline_ = nullptr;
     }
 }
 
-cv::Mat GStreamerOpenCV::get_frame() {
-	return frame_; 
+void GStreamerOpenCV::initGstLibrary(int argc, char* argv[]) {
+    gst_init(&argc, &argv);
 }
 
-GstFlowReturn GStreamerOpenCV::new_preroll(GstAppSink *appsink, gpointer data) {
-    g_print ("Got preroll!\n");
+void GStreamerOpenCV::runPipeline(const std::string& link) {
+    const std::string pipelineCmd = getPipelineCommand(link);
+    gchar* descr = g_strdup(pipelineCmd.c_str());
+    pipeline_ = gst_parse_launch(descr, &error_);
+    g_free(descr);
+}
+
+void GStreamerOpenCV::checkError() {
+    if (error_ != nullptr) {
+        g_print("Could not construct pipeline: %s\n", error_->message);
+        g_error_free(error_);
+        error_ = nullptr;
+        exit(-1);
+    }
+}
+
+cv::Mat GStreamerOpenCV::getFrame() const {
+    return frame_;
+}
+
+void GStreamerOpenCV::setFrame(const cv::Mat& frame) {
+    frame.copyTo(frame_);
+}
+
+std::string GStreamerOpenCV::getPipelineCommand(const std::string& link) const {
+    if (link.find("rtsp") != std::string::npos)
+        return "rtspsrc location=" + link + " ! decodebin ! appsink name=autovideosink";
+    else
+        return "filesrc location=" + link + " ! decodebin ! appsink name=autovideosink";
+}
+
+GstFlowReturn GStreamerOpenCV::newPreroll(GstAppSink* appsink, gpointer data) {
+    g_print("Got preroll!\n");
     return GST_FLOW_OK;
 }
 
-GstFlowReturn GStreamerOpenCV::new_sample(GstAppSink *appsink, gpointer data) {
-    static int frameWidth=0, frameHeight=0 ;
+GstFlowReturn GStreamerOpenCV::newSample(GstAppSink* appsink, gpointer data) {
+    static int frameWidth = 0, frameHeight = 0;
     static int framecount = 0;
     framecount++;
 
-    GstSample *sample = gst_app_sink_pull_sample(appsink);
-    GstCaps *caps = gst_sample_get_caps(sample);
-    GstBuffer *buffer = gst_sample_get_buffer(sample);
-    const GstStructure *info = gst_sample_get_info(sample);
-    static GstStructure *s;
-    s = gst_caps_get_structure(caps,0);
+    GstSample* sample = gst_app_sink_pull_sample(appsink);
+    GstCaps* caps = gst_sample_get_caps(sample);
+    GstBuffer* buffer = gst_sample_get_buffer(sample);
+    const GstStructure* info = gst_sample_get_info(sample);
+    const GstStructure* s = gst_caps_get_structure(caps, 0);
+
     gboolean res = gst_structure_get_int(s, "width", &frameWidth);
     res |= gst_structure_get_int(s, "height", &frameHeight);
-    if(!res)
-    {
-        g_print("Could not get image width and height from filter caps");
-        return GST_FLOW_OK; 
+    if (!res) {
+        g_print("Could not get image width and height from filter caps\n");
+        return GST_FLOW_OK;
     }
-    
-    // ---- Read frame and convert to opencv format ---------------
-    GstMapInfo map;
-    gst_buffer_map (buffer, &map, GST_MAP_READ);
 
-    // convert gstreamer data to OpenCV Mat.
-    cv::Mat mYUV(frameHeight + frameHeight/2, frameWidth, CV_8UC1, (void*) map.data);
+    // Read frame and convert to OpenCV format
+    GstMapInfo map;
+    gst_buffer_map(buffer, &map, GST_MAP_READ);
+
+    // Convert GStreamer data to OpenCV Mat
+    cv::Mat mYUV(frameHeight + frameHeight / 2, frameWidth, CV_8UC1, map.data);
     cv::Mat mRGB(frameHeight, frameWidth, CV_8UC3);
-    cvtColor(mYUV, mRGB,  cv::COLOR_YUV2RGBA_YV12, 3);
+    cvtColor(mYUV, mRGB, cv::COLOR_YUV2RGBA_YV12, 3);
     mRGB.copyTo(GStreamerOpenCV::frame_);
     int frameSize = map.size;
 
     gst_buffer_unmap(buffer, &map);
 
-    // show caps on first frame
+    // Show caps on the first frame
     if (framecount == 1) {
-      g_print ("%s\n", gst_caps_to_string(caps));
+        g_print("%s\n", gst_caps_to_string(caps));
     }
-    gst_sample_unref (sample);
+
+    gst_sample_unref(sample);
     return GST_FLOW_OK;
 }
 
-static gboolean my_bus_callback (GstBus *bus, GstMessage *message, gpointer data) {
-    //g_print ("Got %s message\n", GST_MESSAGE_TYPE_NAME (message));
-    switch (GST_MESSAGE_TYPE (message)) {
+gboolean GStreamerOpenCV::myBusCallback(GstBus* bus, GstMessage* message, gpointer data) {
+    switch (GST_MESSAGE_TYPE(message)) {
         case GST_MESSAGE_ERROR: {
-            GError *err;
-            gchar *debug;
-
-            gst_message_parse_error (message, &err, &debug);
-            g_print ("Error: %s\n", err->message);
-            g_error_free (err);
-            g_free (debug);    
+            GError* err;
+            gchar* debug;
+            gst_message_parse_error(message, &err, &debug);
+            g_print("Error: %s\n", err->message);
+            g_error_free(err);
+            g_free(debug);
             break;
         }
         case GST_MESSAGE_EOS:
-            // end-of-stream 
+            // End-of-stream
             break;
         default:
-            // unhandled message 
+            // Unhandled message
             break;
     }
-    /* we want to be notified again the next time there is a message
-    * on the bus, so returning TRUE (FALSE means we want to stop watching
-    * for messages on the bus and our callback should not be called again)
-    */
+
+    // Return TRUE to be notified again the next time there is a message on the bus
     return TRUE;
 }
 
-void GStreamerOpenCV::get_sink(){
-	sink_ = gst_bin_get_by_name (GST_BIN (pipeline_), "autovideosink");
-	gst_app_sink_set_emit_signals((GstAppSink*)sink_, true);
-	gst_app_sink_set_drop((GstAppSink*)sink_, true);
-	gst_app_sink_set_max_buffers((GstAppSink*)sink_, 1);
-	static GstAppSinkCallbacks callbacks_ = { NULL, new_preroll, new_sample };
-	gst_app_sink_set_callbacks (GST_APP_SINK(sink_), &callbacks_, NULL, NULL);
+void GStreamerOpenCV::getSink() {
+    sink_ = gst_bin_get_by_name(GST_BIN(pipeline_), "autovideosink");
+    gst_app_sink_set_emit_signals(GST_APP_SINK(sink_), true);
+    gst_app_sink_set_drop(GST_APP_SINK(sink_), true);
+    gst_app_sink_set_max_buffers(GST_APP_SINK(sink_), 1);
+    GstAppSinkCallbacks callbacks = { nullptr, newPreroll, newSample };
+    gst_app_sink_set_callbacks(GST_APP_SINK(sink_), &callbacks, nullptr, nullptr);
 }
 
-
-void GStreamerOpenCV::set_bus(){
-	guint bus_watch_id;
-	bus_ = gst_pipeline_get_bus (GST_PIPELINE (pipeline_));
-	bus_watch_id = gst_bus_add_watch (bus_, my_bus_callback, NULL);
-	gst_object_unref (bus_);
+void GStreamerOpenCV::setBus() {
+    bus_ = gst_pipeline_get_bus(GST_PIPELINE(pipeline_));
+    gst_bus_add_watch(bus_, myBusCallback, nullptr);
+    gst_object_unref(bus_);
 }
 
-
-void GStreamerOpenCV::set_state(GstState state){
-	gst_element_set_state (GST_ELEMENT (pipeline_), state);
+void GStreamerOpenCV::setState(GstState state) {
+    gst_element_set_state(GST_ELEMENT(pipeline_), state);
 }
 
-void GStreamerOpenCV::set_main_loop_event(bool event){
-	g_main_iteration(event);
+void GStreamerOpenCV::setMainLoopEvent(bool event) {
+    g_main_iteration(event);
 }
-
