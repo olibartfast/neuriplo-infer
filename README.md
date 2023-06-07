@@ -19,7 +19,7 @@ Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_c
 ./object-detection-inference --help
 ```
 
-> **Note:** The table provides information about different models for object detection. Each row represents a specific model and includes the model name, model type, demo command, and additional notes.
+> **Note:** The table below provides information about different models for object detection. Each row represents a specific model and includes the model name, model type, demo command, and additional notes.
 >
 > Available Model Types:
 > - MobileNet
