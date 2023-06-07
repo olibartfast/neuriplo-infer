@@ -22,7 +22,7 @@ endif()
 
 
 set(SOURCES "main.cpp" "src/GStreamerOpenCV.cpp"
-"src/YoloV4.cpp" "src/YoloV5.cpp" "src/HogSvmDetector.cpp" "src/MobileNetSSD.cpp")
+"src/YoloV4.cpp" "src/YoloV5.cpp" "src/YoloV8.cpp" "src/HogSvmDetector.cpp" "src/MobileNetSSD.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 

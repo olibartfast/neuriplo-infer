@@ -89,8 +89,8 @@ std::vector<Detection> YoloV5::run_detection(const Mat& frame){
 
     float *data = (float *)outs[0].data;
 
-    const int dimensions = 85;
-    const int rows = 25200;
+    int rows = outs[0].size[1];
+    int dimensions = outs[0].size[2];
     // Iterate through 25200 detections.
     for (int i = 0; i < rows; ++i) 
     {
@@ -120,7 +120,7 @@ std::vector<Detection> YoloV5::run_detection(const Mat& frame){
 
         }
         // Jump to the next column.
-        data += 85;
+        data += dimensions;
     }
 
     // Perform Non Maximum Suppression and draw predictions.
@@ -135,15 +135,6 @@ std::vector<Detection> YoloV5::run_detection(const Mat& frame){
         det.bbox = boxes[idx];
         det.score = confidences[idx];
         detections.emplace_back(det);
-
-        // Draw bounding box.
-        //cv::rectangle(frame, cv::Point(left, top), cv::Point(left + width, top + height), cv::Scalar(255, 0, 0));
-
-        // Get the label for the class name and its confidence.
-        //string label = format("%.2f", confidences[idx]);
-        //label = classNames_[classIds[idx]] + ":" + label;
-        // Draw class labels.
-        //draw_label(frame, label, left, top);
 
     }
 

@@ -4,14 +4,15 @@
 #include "MobileNetSSD.hpp"
 #include "YoloV4.hpp"
 #include "YoloV5.hpp"
+#include "YoloV8.hpp"
 #ifdef USE_TENSORFLOW
 #include "TFDetectionAPI.hpp"
 #endif
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov5x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
+      "{ type     |  yolov8x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
       "{ link l   |   | capture video from ip camera}"
-      "{ labels lb   |  ../labels | path to class labels file}"
+      "{ labels lb   |  labels | path to class labels file}"
       "{ model_path mp   |  ../models | path to models}"
       "{ min_confidence | 0.25   | min confidence}";
 
@@ -57,7 +58,7 @@ auto modelSetup(const std::string& modelPath, const std::string& configName, con
     const auto modelBinary = modelPath + "/" + weigthName;
     if(!std::filesystem::exists(modelConfiguration) || !std::filesystem::exists(modelBinary))
     {
-        std::cerr << "Wrong path to model " << std::endl;
+        std::cerr << "Wrong path to model " << modelBinary << std::endl;
         exit(1);
     }
     return std::make_tuple(modelConfiguration, modelBinary); 
@@ -93,6 +94,13 @@ std::unique_ptr<Detector> createDetector(
         std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "",  detectorType + ".onnx");    
         return std::make_unique<YoloV5>(classes, "", modelBinary);
     }
+    else if(detectorType.find("yolov8") != std::string::npos)  
+    {
+        std::string modelBinary;
+        classes = readLabelNames(labelsPath + "/" + "coco.names"); 
+        std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "",  detectorType + ".onnx");    
+        return std::make_unique<YoloV8>(classes, "", modelBinary);
+    }    
 #ifdef USE_TENSORFLOW      
     else if(detectorType.find("tensorflow") != std::string::npos) 
     {
