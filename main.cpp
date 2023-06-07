@@ -1,7 +1,5 @@
 #include "GStreamerOpenCV.hpp"
 #include "Detector.hpp"
-#include "HogSvmDetector.hpp"
-#include "MobileNetSSD.hpp"
 #include "YoloV4.hpp"
 #include "YoloV5.hpp"
 #include "YoloV8.hpp"
@@ -12,10 +10,11 @@
 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov8x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
+      "{ type     |  yolov8x | yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
       "{ link l   |   | capture video from ip camera}"
-      "{ labels lb   |  ../labels | path to class labels path folder}"
-      "{ model_path mp   |  ../models | path to models folder}"
+      "{ labels lb  |  | path to class labels}"
+      "{ conf c   |   | model configuration file}"
+      "{ weights w  |   | path to models weights}"
       "{ min_confidence | 0.25   | min confidence}";
 
 
@@ -55,53 +54,34 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
     return classes;   
 }
 
-auto modelSetup(const std::string& modelPath, const std::string& configName, const std::string& weigthName){
-    const auto modelConfiguration = modelPath + "/" + configName;
-    const auto modelBinary = modelPath + "/" + weigthName;
-    if(!std::filesystem::exists(modelConfiguration) || !std::filesystem::exists(modelBinary))
-    {
-        std::cerr << "Wrong path to model " << modelBinary << std::endl;
-        exit(1);
-    }
-    return std::make_tuple(modelConfiguration, modelBinary); 
-}
 
 std::unique_ptr<Detector> createDetector(
     const std::string& detectorType,
-    const std::string& labelsPath,
-    const std::string& modelPath){
-    std::vector<std::string> classes; 
-    std::string modelConfiguration; 
-    std::string modelBinary;  
-    if(detectorType == "svm"){
-        return std::make_unique<HogSvmDetector>();
-    }
-    else if(detectorType == "mobilenet")
+    const std::string& labels,
+    const std::string& weights,
+    const std::string& modelConfiguration = ""){
+    std::vector<std::string> classes = readLabelNames(labels); 
+
+    if(detectorType.find("yolov4") != std::string::npos)
     {
-        classes = readLabelNames(labelsPath + "/" + "voc.names");      
-        auto[modelConfiguration, modelBinary] = modelSetup(modelPath, "MobileNetSSD_deploy.prototxt",  "MobileNetSSD_deploy.caffemodel");
-        return std::make_unique<MobileNetSSD>(classes, modelConfiguration, modelBinary);
-    }
-    else if(detectorType.find("yolov4") != std::string::npos)
-    {
-        std::string modelConfiguration, modelBinary;
-        classes = readLabelNames(labelsPath + "/" + "coco.names"); 
-        std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, detectorType + ".cfg",  detectorType + ".weights");  
-        return std::make_unique<YoloV4>(classes, modelConfiguration, modelBinary);
+        if(modelConfiguration.empty() || !std::filesystem::exists(modelConfiguration))
+        {
+            std::cerr << "YoloV4 needs a configuration file" << std::endl;
+            return nullptr;
+        }    
+        return std::make_unique<YoloV4>(classes, modelConfiguration, weights);
     }   
     else if(detectorType.find("yolov5") != std::string::npos)  
     {
         std::string modelBinary;
-        classes = readLabelNames(labelsPath + "/" + "coco.names"); 
-        std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "",  detectorType + ".onnx");    
-        return std::make_unique<YoloV5>(classes, "", modelBinary);
+        classes = readLabelNames(labels); 
+        return std::make_unique<YoloV5>(classes, "", weights);
     }
     else if(detectorType.find("yolov8") != std::string::npos)  
     {
         std::string modelBinary;
-        classes = readLabelNames(labelsPath + "/" + "coco.names"); 
-        std::tie(modelConfiguration, modelBinary) = modelSetup(modelPath, "",  detectorType + ".onnx");    
-        return std::make_unique<YoloV8>(classes, "", modelBinary);
+        classes = readLabelNames(labels);   
+        return std::make_unique<YoloV8>(classes, "", weights);
     }    
 #ifdef USE_TENSORFLOW      
     else if(detectorType.find("tensorflow") != std::string::npos) 
@@ -150,14 +130,15 @@ int main (int argc, char *argv[])
     gstocv->set_bus();
     gstocv->set_state(GST_STATE_PLAYING);
   
-    const std::string modelPath = parser.get<std::string>("model_path");
+    const std::string weights = parser.get<std::string>("weights");
     const std::string labelsPath = parser.get<std::string>("labels");
     const std::string detectorType = parser.get<std::string>("type");
+    const std::string conf =  parser.get<std::string>("conf");
     float confidenceThreshold = parser.get<float>("min_confidence");
 
     std::cout << "Current path is " << std::filesystem::current_path() << '\n'; // (1)
 
-    std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, modelPath); 
+    std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, weights, conf); 
     if(!detector)
     {
         std::cerr << "Detector creation fail!" << std::endl;

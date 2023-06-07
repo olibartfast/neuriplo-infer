@@ -99,7 +99,7 @@ std::vector<Detection> YoloV5::run_detection(const Mat& frame){
         if (confidence >= confidenceThreshold_) 
         {
             float * classes_scores = data + 5;
-            // Create a 1x85 Mat and store class scores of 80 classes.
+            // Create a 1xDimensions Mat and store class scores of N classes.
             cv::Mat scores(1, classNames_.size(), CV_32FC1, classes_scores);
             // Perform minMaxLoc and acquire index of best class score.
             Point class_id;
