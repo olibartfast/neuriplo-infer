@@ -12,7 +12,7 @@ Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_c
 
 ## Usage
 ```
-./object-detection-inference --type=<Model Type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") [--min_confidence=<Conf Value>] [--labels=</path/to/labels/file>] [--weights=<path/to/model/weights>] [--conf=</path/to/model/config>]
+./object-detection-inference --type=<Model Type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") --labels=</path/to/labels/file>  --weights=<path/to/model/weights> --conf=</path/to/model/config> [--min_confidence=<Conf Value>] 
 ``` 
 ### To check all available options:
 ```
