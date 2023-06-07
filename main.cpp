@@ -10,7 +10,7 @@
 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov8x | yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
+      "{ type     |  yolov8 | yolov4, yolov5, tensorflow}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb  |  | path to class labels}"
       "{ conf c   |   | model configuration file}"

@@ -19,12 +19,12 @@ Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_c
 ./object-detection-inference --help
 ```
 
-> **Note:** The table below provides information about different models for object detection. Each row represents a specific model and includes the model name, model type, demo command, and additional notes.
+> **Note:** The table below provides information about different models for object detection. Each row represents a specific model and includes the model name, type, demo command, and additional notes.
 >
-> Available Model Types:
+> Available Models:
 > - YOLOv4/YOLOv4-tiny
-> - YOLOv5n/s/m/l/x
-> - YOLOv8n/s/m/l/x
+> - YOLOv5n/s/m/l/x...
+> - YOLOv8n/s/m/l/x...
 > - TensorFlow Object Detection API
 
 [Link to Table](TablePage.md#table-of-models)
