@@ -12,8 +12,8 @@
 static const std::string params = "{ help h   |   | print help message }"
       "{ type     |  yolov8x | mobilenet, svm, yolov4-tiny, yolov4, yolov5s, yolov5x, tensorflow}"
       "{ link l   |   | capture video from ip camera}"
-      "{ labels lb   |  labels | path to class labels file}"
-      "{ model_path mp   |  ../models | path to models}"
+      "{ labels lb   |  ../labels | path to class labels path folder}"
+      "{ model_path mp   |  ../models | path to models folder}"
       "{ min_confidence | 0.25   | min confidence}";
 
 
