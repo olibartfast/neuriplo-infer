@@ -6,7 +6,22 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}" ${CMAKE_MODULE_PATH})
 
 find_package(OpenCV)
 find_package(CUDA REQUIRED)
-set(CUDA_NVCC_PLAGS ${CUDA_NVCC_PLAGS};-g;-G;-gencode;arch=compute_75;code=sm_75)
+
+# Get CUDA architecture and code
+execute_process(
+  COMMAND ${CUDA_NVCC_EXECUTABLE} --run -arch
+  OUTPUT_VARIABLE CUDA_ARCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process(
+  COMMAND ${CUDA_NVCC_EXECUTABLE} --run -code
+  OUTPUT_VARIABLE CUDA_CODE
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Set CUDA_NVCC_FLAGS
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-g;-G;-gencode;arch=${CUDA_ARCH};code=${CUDA_CODE}")
 
 message(STATUS "Set TensorRT Dir to:" $ENV{TENSORRT_DIR})
 
