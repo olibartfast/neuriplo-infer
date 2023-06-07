@@ -1,4 +1,12 @@
 
+The table represents a specific model and includes the following details:
+
+- **Model**: The name or identifier of the model.
+- **Model Type**: The type of the model, indicating the underlying architecture or framework used.
+- **Demo**: The command-line demo to execute the object detection inference using the model. It includes the necessary parameters, such as the model type and input video stream.
+- **Notes**: Additional notes or instructions related to the model, such as where to download the model files, required file formats, or specific considerations.
+
+
 | Model                    | Model Type           | Demo                                                                                        | Notes                                                                                                                                                                                                                                     |
 | ----------------------- | -------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ssd                     | mobilenet            | `./object-detection-inference --type=mobilenet --link="rtsp://cameraip:port/somelivefeed"`  | Caffemodel and Prototxt for deploying (download inside models folder): [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD)                                                                                                      |
