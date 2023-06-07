@@ -18,6 +18,11 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ min_confidence | 0.25   | min confidence}";
 
 
+bool isDirectory(const std::string& path) {
+    std::filesystem::path fsPath(path);
+    return std::filesystem::is_directory(fsPath);
+}
+
 void draw_label(cv::Mat& input_image, std::string label, int left, int top)
 {
     
@@ -73,20 +78,22 @@ std::unique_ptr<Detector> createDetector(
     }   
     else if(detectorType.find("yolov5") != std::string::npos)  
     {
-        std::string modelBinary;
-        classes = readLabelNames(labels); 
-        return std::make_unique<YoloV5>(classes, "", weights);
+        return std::make_unique<YoloV5>(classes, weights);
     }
     else if(detectorType.find("yolov8") != std::string::npos)  
     {
-        std::string modelBinary;
-        classes = readLabelNames(labels);   
-        return std::make_unique<YoloV8>(classes, "", weights);
+        return std::make_unique<YoloV8>(classes, weights);
     }    
 #ifdef USE_TENSORFLOW      
     else if(detectorType.find("tensorflow") != std::string::npos) 
     {
-        return std::make_unique<TFDetectionAPI>(modelPath);
+        if(isDirectory(weights))
+            return std::make_unique<TFDetectionAPI>(weights);
+        else
+        {
+            std::cerr << "In case of Tensorflow weights must be a path to the saved model folder" << std::endl;
+            return nullptr;   
+        }    
     }
 #endif      
     return nullptr;

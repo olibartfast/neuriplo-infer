@@ -11,7 +11,6 @@ struct Detection
 class Detector{
 protected:	
 	std::vector<std::string> classNames_; 
-  	std::string modelConfiguration_;
   	std::string modelBinary_; 
 	float confidenceThreshold_; 	  
   	size_t network_width_;
@@ -21,7 +20,6 @@ public:
 
 	Detector(const Detector& d){
 		classNames_ = d.classNames_;
-		modelConfiguration_ = d.modelConfiguration_;
   		modelBinary_ = d.modelBinary_; 
 		confidenceThreshold_ = d.confidenceThreshold_;  
 		network_width_ = d.network_width_;
@@ -29,7 +27,6 @@ public:
 	}
 	Detector(Detector&& d){
 		classNames_ = d.classNames_;
-		modelConfiguration_ = d.modelConfiguration_;
   		modelBinary_ = d.modelBinary_; 
 		confidenceThreshold_ = d.confidenceThreshold_;    
 		network_width_ = d.network_width_;
@@ -37,13 +34,11 @@ public:
 	}
 
 	Detector(const std::vector<std::string>& classes, 
-	const std::string& modelConfiguration,
 	const std::string& modelBinary,
 	float confidenceThreshold = 0.5f, 
   	size_t network_width = -1,
   	size_t network_height = -1		
 	) : classNames_{classes}, 
-		modelConfiguration_{modelConfiguration},
 		modelBinary_{modelBinary},
 		confidenceThreshold_{confidenceThreshold},
 		network_width_ {network_width},

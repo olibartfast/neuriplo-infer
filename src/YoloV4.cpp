@@ -10,7 +10,7 @@
     ) : 
 		net_ {cv::dnn::readNetFromDarknet(modelConfiguration, modelBinary)}, 
         Detector{classNames, 
-        modelConfiguration, modelBinary, confidenceThreshold,
+        modelBinary, confidenceThreshold,
         network_width,
         network_height}
 	{

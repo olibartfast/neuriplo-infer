@@ -2,7 +2,6 @@
 
 YoloV5::YoloV5(
     const std::vector<std::string>& classNames,
-    std::string modelConfiguration, 
     std::string modelBinary, 
     float confidenceThreshold,
     size_t network_width,
@@ -10,14 +9,13 @@ YoloV5::YoloV5(
 ) : 
     net_ {cv::dnn::readNet(modelBinary)}, 
     Detector{classNames, 
-    modelConfiguration, modelBinary, confidenceThreshold,
+    modelBinary, confidenceThreshold,
     network_width,
     network_height}
 {
     if (net_.empty())
     {
         std::cerr << "Can't load network by using the following files: " << std::endl;
-        std::cerr << "cfg-file:     " << modelConfiguration << std::endl;
         std::cerr << "weights-file: " << modelBinary << std::endl;
         exit(-1);
     }

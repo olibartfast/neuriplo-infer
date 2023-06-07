@@ -8,7 +8,6 @@ class YoloV5 : public Detector{
 
 public:
     YoloV5(const std::vector<std::string>& classNames,
- 	    std::string modelConfiguration, 
         std::string modelBinary, 
         float confidenceThreshold = 0.25,
         size_t network_width = 640,
