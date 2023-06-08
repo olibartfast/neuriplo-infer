@@ -10,7 +10,7 @@
 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov8 | yolov4, yolov5, yolov6, tensorflow}"
+      "{ type     |  yolov8 | yolov4, yolov5, yolov6, yolov7, tensorflow}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb  |  | path to class labels}"
       "{ conf c   |   | model configuration file}"
@@ -76,7 +76,9 @@ std::unique_ptr<Detector> createDetector(
         }    
         return std::make_unique<YoloV4>(classes, modelConfiguration, weights);
     }   
-    else if(detectorType.find("yolov5") != std::string::npos || detectorType.find("yolov6") != std::string::npos)  
+    else if(detectorType.find("yolov5") != std::string::npos || 
+        detectorType.find("yolov6") != std::string::npos  ||
+        detectorType.find("yolov7") != std::string::npos)  
     {
         return std::make_unique<YoloV5>(classes, weights);
     }
@@ -105,18 +107,18 @@ int main (int argc, char *argv[])
     cv::CommandLineParser parser(argc, argv, params);
     parser.about("Detect people from rtsp ip camera stream");
     if (parser.has("help")){
-      parser.printMessage();
-      return 0;  
+        parser.printMessage();
+        std::exit(1);  
     }
     std::string link = parser.get<std::string>("link");
     if (!parser.check())
     {
         parser.printErrors();
-        return 1;
+        std::exit(1);
     }
     if (link.empty()){
         std::cout << "Can not open video stream" << std::endl;
-        return 2;
+        std::exit(1);
     }
 
     std::unique_ptr<GStreamerOpenCV> gstocv = std::make_unique<GStreamerOpenCV>();

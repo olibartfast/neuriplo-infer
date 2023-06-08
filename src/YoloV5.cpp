@@ -89,7 +89,7 @@ std::vector<Detection> YoloV5::run_detection(const Mat& frame){
 
     int rows = outs[0].size[1];
     int dimensions = outs[0].size[2];
-    // Iterate through 25200 detections.
+    // Iterate through detections.
     for (int i = 0; i < rows; ++i) 
     {
         float confidence = data[4];
