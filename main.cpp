@@ -10,7 +10,7 @@
 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov8 | yolov4, yolov5, tensorflow}"
+      "{ type     |  yolov8 | yolov4, yolov5, yolov6, tensorflow}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb  |  | path to class labels}"
       "{ conf c   |   | model configuration file}"
@@ -76,7 +76,7 @@ std::unique_ptr<Detector> createDetector(
         }    
         return std::make_unique<YoloV4>(classes, modelConfiguration, weights);
     }   
-    else if(detectorType.find("yolov5") != std::string::npos)  
+    else if(detectorType.find("yolov5") != std::string::npos || detectorType.find("yolov6") != std::string::npos)  
     {
         return std::make_unique<YoloV5>(classes, weights);
     }
