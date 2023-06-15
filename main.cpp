@@ -139,7 +139,7 @@ int main (int argc, char *argv[])
     const std::string detectorType = parser.get<std::string>("type");
     const std::string conf =  parser.get<std::string>("conf");
     float confidenceThreshold = parser.get<float>("min_confidence");
-
+    std::vector<std::string> classes = readLabelNames(labelsPath); 
     std::cout << "Current path is " << std::filesystem::current_path() << '\n'; // (1)
 
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, weights, conf); 
@@ -164,7 +164,9 @@ int main (int argc, char *argv[])
             cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
             for (const auto& d : detections) {
                 cv::rectangle(frame, d.bbox, cv::Scalar(255, 0, 0), 3);
+                draw_label(frame, classes[d.label], d.bbox.x, d.bbox.y);
             }
+
             cv::imshow("opencv feed", frame);
             char key = cv::waitKey(1);
             if (key == 27 || key == 'q') {
