@@ -3,6 +3,7 @@
 #include "YoloV4.hpp"
 #include "YoloV5.hpp"
 #include "YoloV8.hpp"
+#include "YoloNas.hpp"
 #ifdef USE_TENSORFLOW
 #include "TFDetectionAPI.hpp"
 #endif
@@ -86,6 +87,10 @@ std::unique_ptr<Detector> createDetector(
     {
         return std::make_unique<YoloV8>(classes, weights);
     }    
+    else if(detectorType.find("yolonas") != std::string::npos)  
+    {
+        return std::make_unique<YoloNas>(classes, weights);
+    }     
 #ifdef USE_TENSORFLOW      
     else if(detectorType.find("tensorflow") != std::string::npos) 
     {

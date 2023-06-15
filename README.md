@@ -27,6 +27,7 @@ Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_c
 > - YOLOv5n/s/m/l/x
 > - YOLOv6n/s/m/l
 > - YOLOv8n/s/m/l/x
+> - YOLO-NAS-s/m/l/x
 > - TensorFlow Object Detection API
 
 [Link to Table](TablePage.md#table-of-models)
