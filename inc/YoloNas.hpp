@@ -7,8 +7,7 @@ class YoloNas : public Detector{
 
 
 public:
-    YoloNas(const std::vector<std::string>& classNames,
-        std::string modelBinary, 
+    YoloNas(std::string modelBinary, 
         float confidenceThreshold = 0.25,
         size_t network_width = 640,
         size_t network_height = 640); 

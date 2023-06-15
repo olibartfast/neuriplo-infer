@@ -1,15 +1,13 @@
 #include "YoloV5.hpp"
 
 YoloV5::YoloV5(
-    const std::vector<std::string>& classNames,
     std::string modelBinary, 
     float confidenceThreshold,
     size_t network_width,
     size_t network_height    
 ) : 
     net_ {cv::dnn::readNet(modelBinary)}, 
-    Detector{classNames, 
-    modelBinary, confidenceThreshold,
+    Detector{modelBinary, confidenceThreshold,
     network_width,
     network_height}
 {
@@ -98,7 +96,7 @@ std::vector<Detection> YoloV5::run_detection(const Mat& frame){
         {
             float * classes_scores = data + 5;
             // Create a 1xDimensions Mat and store class scores of N classes.
-            cv::Mat scores(1, classNames_.size(), CV_32FC1, classes_scores);
+            cv::Mat scores(1, dimensions - 5, CV_32FC1, classes_scores);
             // Perform minMaxLoc and acquire index of best class score.
             Point class_id;
             double max_class_score;

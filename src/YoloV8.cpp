@@ -1,15 +1,12 @@
 #include "YoloV8.hpp"
 
-YoloV8::YoloV8(
-    const std::vector<std::string>& classNames,
-    std::string modelBinary, 
+YoloV8::YoloV8(std::string modelBinary, 
     float confidenceThreshold,
     size_t network_width,
     size_t network_height    
 ) : 
     net_ {cv::dnn::readNet(modelBinary)}, 
-    Detector{classNames, 
-    modelBinary, confidenceThreshold,
+    Detector{modelBinary, confidenceThreshold,
     network_width,
     network_height}
 {
@@ -106,7 +103,7 @@ std::vector<Detection> YoloV8::run_detection(const Mat& frame){
     {
         float *classes_scores = data+4;
 
-        cv::Mat scores(1, classNames_.size(), CV_32FC1, classes_scores);
+        cv::Mat scores(1, dimensions-4, CV_32FC1, classes_scores);
         cv::Point class_id;
         double maxClassScore;
 

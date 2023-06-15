@@ -66,7 +66,6 @@ std::unique_ptr<Detector> createDetector(
     const std::string& labels,
     const std::string& weights,
     const std::string& modelConfiguration = ""){
-    std::vector<std::string> classes = readLabelNames(labels); 
 
     if(detectorType.find("yolov4") != std::string::npos)
     {
@@ -75,21 +74,21 @@ std::unique_ptr<Detector> createDetector(
             std::cerr << "YoloV4 needs a configuration file" << std::endl;
             return nullptr;
         }    
-        return std::make_unique<YoloV4>(classes, modelConfiguration, weights);
+        return std::make_unique<YoloV4>(modelConfiguration, weights);
     }   
     else if(detectorType.find("yolov5") != std::string::npos || 
         detectorType.find("yolov6") != std::string::npos  ||
         detectorType.find("yolov7") != std::string::npos)  
     {
-        return std::make_unique<YoloV5>(classes, weights);
+        return std::make_unique<YoloV5>(weights);
     }
     else if(detectorType.find("yolov8") != std::string::npos)  
     {
-        return std::make_unique<YoloV8>(classes, weights);
+        return std::make_unique<YoloV8>(weights);
     }    
     else if(detectorType.find("yolonas") != std::string::npos)  
     {
-        return std::make_unique<YoloNas>(classes, weights);
+        return std::make_unique<YoloNas>(weights);
     }     
 #ifdef USE_TENSORFLOW      
     else if(detectorType.find("tensorflow") != std::string::npos) 

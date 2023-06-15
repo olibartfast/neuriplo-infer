@@ -1,7 +1,6 @@
 #include "YoloV4.hpp"
 
     YoloV4::YoloV4(
-        const std::vector<std::string>& classNames,
  	    std::string modelConfiguration, 
         std::string modelBinary, 
         float confidenceThreshold,
@@ -9,8 +8,8 @@
         size_t network_height    
     ) : 
 		net_ {cv::dnn::readNetFromDarknet(modelConfiguration, modelBinary)}, 
-        Detector{classNames, 
-        modelBinary, confidenceThreshold,
+        Detector{modelBinary, 
+        confidenceThreshold,
         network_width,
         network_height}
 	{

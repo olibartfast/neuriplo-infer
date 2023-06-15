@@ -1,15 +1,13 @@
 #include "YoloNas.hpp"
 
 YoloNas::YoloNas(
-    const std::vector<std::string>& classNames,
     std::string modelBinary, 
     float confidenceThreshold,
     size_t network_width,
     size_t network_height    
 ) : 
     net_ {cv::dnn::readNet(modelBinary)}, 
-    Detector{classNames, 
-    modelBinary, confidenceThreshold,
+    Detector{modelBinary, confidenceThreshold,
     network_width,
     network_height}
 {
@@ -44,7 +42,7 @@ std::vector<Detection> YoloNas::run_detection(const Mat& frame){
     // Iterate through detections.
     for (int i = 0; i < rows; ++i) 
     {
-        cv::Mat scores(1, classNames_.size(), CV_32FC1, scores_data);
+        cv::Mat scores(1, dimensions_scores, CV_32FC1, scores_data);
         cv::Point class_id;
         double maxClassScore;
         minMaxLoc(scores, 0, &maxClassScore, 0, &class_id);
