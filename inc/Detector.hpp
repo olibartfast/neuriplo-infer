@@ -15,20 +15,6 @@ protected:
   	size_t network_width_;
   	size_t network_height_;	
 public:
-	Detector(){}
-
-	Detector(const Detector& d){
-  		modelBinary_ = d.modelBinary_; 
-		confidenceThreshold_ = d.confidenceThreshold_;  
-		network_width_ = d.network_width_;
-  		network_height_ = d.network_height_;	
-	}
-	Detector(Detector&& d){
-  		modelBinary_ = d.modelBinary_; 
-		confidenceThreshold_ = d.confidenceThreshold_;    
-		network_width_ = d.network_width_;
-  		network_height_ = d.network_height_;			
-	}
 
 	Detector(const std::string& modelBinary,
 	float confidenceThreshold = 0.5f, 
@@ -41,6 +27,5 @@ public:
 	{
 
 	}
-
     virtual std::vector<Detection> run_detection(const cv::Mat& frame) = 0;
 };

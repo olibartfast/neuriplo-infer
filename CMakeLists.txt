@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.2)
 project (object-detection-inference)
 
 find_package( OpenCV REQUIRED )
@@ -11,14 +11,83 @@ pkg_search_module(GOBJECT REQUIRED gobject-2.0)
 set(CMAKE_CXX_STANDARD 17)
 
 
-# Define an option to enable/disable libtensorflow
-option(USE_TENSORFLOW "Use TensorFlow library" OFF)
+# Set the path to the selected framework (modify accordingly)
+set(FRAMEWORK "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW
 
-# Find libtensorflow if the option is enabled
-if(USE_TENSORFLOW)
-  find_package(TensorFlow REQUIRED)
-  message(status ${TensorFlow_FOUND})
+
+# Define the supported backends
+set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT")
+
+# Check if the specified backend is supported
+list(FIND SUPPORTED_BACKENDS ${FRAMEWORK} SUPPORTED_BACKEND_INDEX)
+if(SUPPORTED_BACKEND_INDEX EQUAL -1)
+    message(FATAL_ERROR "Unsupported default backend: ${FRAMEWORK}")
 endif()
+
+# Set the source files for your project
+set(SOURCES main.cpp)
+
+# Include directories for OpenCV
+include_directories(${OpenCV_INCLUDE_DIRS} include src)
+
+# Unset cache compiler definitions for the selected framework
+if (FRAMEWORK STREQUAL "ONNX_RUNTIME")
+    unset(USE_LIBTORCH CACHE)
+    unset(USE_TENSORRT CACHE)
+    message(STATUS "Set ONNX Runtime")
+    add_compile_definitions(USE_ONNX_RUNTIME)
+    # Set the path to ONNX Runtime (modify accordingly)
+    set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-1.15.1)
+    find_package(CUDA)
+    if (CUDA_FOUND)
+        message(STATUS "Found CUDA")
+        set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda-11.8)
+    else ()
+        message(WARNING "CUDA not found. GPU support will be disabled.")
+        # Handle the case when CUDA is not found
+        # You can set alternative behavior or show an error message
+        # depending on your project requirements.
+    endif ()
+    include_directories(${ONNX_RUNTIME_DIR}/include)
+    link_directories(${ONNX_RUNTIME_DIR}/lib)
+
+elseif(FRAMEWORK STREQUAL "LIBTORCH")
+    unset(USE_ONNX_RUNTIME CACHE)
+    unset(USE_TENSORRT CACHE)
+    message(STATUS "Set libtorch")
+    add_compile_definitions(USE_LIBTORCH)
+    # Set the path to LibTorch (modify accordingly)
+    set(Torch_DIR $ENV{HOME}/libtorch/share/cmake/Torch/)
+    message(STATUS "${Torch_DIR}")
+    find_package(Torch REQUIRED)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
+elseif(FRAMEWORK STREQUAL "TENSORRT")
+    unset(USE_ONNX_RUNTIME CACHE)
+    unset(USE_LIBTORCH CACHE)
+    message(STATUS "Set tensorrt")
+    add_compile_definitions(USE_TENSORRT)
+    # Set the path to TensorRT (modify accordingly)
+    set(TENSORRT_DIR $ENV{HOME}/TensorRT-8.6.1.6/)
+    set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda)
+    find_package(CUDA REQUIRED)
+    set(CUDA_NVCC_PLAGS ${CUDA_NVCC_PLAGS};-g;-G;-gencode;arch=compute_75;code=sm_75)
+    include_directories(/usr/local/cuda/include)
+    link_directories(/usr/local/cuda/lib64)
+    include_directories(${TENSORRT_DIR}/include)
+    link_directories(${TENSORRT_DIR}/lib)
+elseif(USE_TENSORFLOW)
+    unset(USE_LIBTORCH CACHE)
+    unset(USE_TENSORRT CACHE)
+    unset(USE_ONNX_RUNTIME CACHE)
+    add_compile_definitions(USE_TENSORFLOW)
+    find_package(TensorFlow REQUIRED)
+    message(status ${TensorFlow_FOUND})
+else()
+    message(status "No framework selected, using OpenCV-DNN as default inference backend")
+endif()
+
+
 
 
 set(SOURCES "main.cpp" "src/GStreamerOpenCV.cpp"
@@ -46,8 +115,37 @@ target_link_libraries(
 )
 
 
+# Link against the ONNX Runtime library if selected
+if(FRAMEWORK STREQUAL "ONNX_RUNTIME")
+    target_link_libraries(${PROJECT_NAME}
+        ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so
+    )
+endif()
+
+# Link against the LibTorch library if selected
+if(FRAMEWORK STREQUAL "LIBTORCH")
+    target_link_libraries(${PROJECT_NAME}
+        ${TORCH_LIBRARIES}
+    )
+endif()
+
+# Link against the TensorRT library if selected
+if(FRAMEWORK STREQUAL "TENSORRT")
+    target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser cudart)
+endif()
+
+# Set the appropriate compiler flags
+if(CMAKE_CUDA_COMPILER AND FRAMEWORK STREQUAL "TENSORRT")
+    # If CUDA is available and TensorRT is selected, set the CUDA flags
+    set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")
+else()
+    # If CUDA is not available or a different framework is selected, set the CPU flags
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+endif()
+
 # Add the TensorFlow sources to our target if the option is enabled
-if(TensorFlow_FOUND AND USE_TENSORFLOW)
+if(TensorFlow_FOUND AND FRAMEWORK STREQUAL "LIBTENSORFLOW")
   set(TensorFlow_SOURCES src/TFDetectionAPI.cpp)
   target_sources(${PROJECT_NAME} PRIVATE ${TensorFlow_SOURCES})
   target_include_directories(

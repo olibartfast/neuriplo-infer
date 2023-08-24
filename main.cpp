@@ -16,6 +16,9 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ labels lb  |  | path to class labels}"
       "{ conf c   |   | model configuration file}"
       "{ weights w  |   | path to models weights}"
+      "{ backend b  |   | inference backend framework}"
+      "{ use_opencv_dnn   | true  | use opencv dnn module to do inference}"
+      "{ use_gpu   | false  | activate gpu support}"
       "{ min_confidence | 0.25   | min confidence}";
 
 
