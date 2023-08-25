@@ -123,7 +123,7 @@ target_link_libraries(
 
 
 if(DEFAULT_BACKEND STREQUAL "OPENCV_DNN")
-set(OPENCV_DNN_SOURCES src/opencv-dnn/YoloV5Dnn.cpp)
+set(OPENCV_DNN_SOURCES src/opencv-dnn/Yolo.cpp src/opencv-dnn/YoloNas.cpp src/opencv-dnn/YoloV8.cpp src/opencv-dnn/YoloV4.cpp)
 target_sources(${PROJECT_NAME} PRIVATE ${OPENCV_DNN_SOURCES})
 include_directories(src/opencv-dnn)
 endif()
