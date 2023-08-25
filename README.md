@@ -12,9 +12,9 @@
 * ONNX Runtime (1.15.1 gpu package)
 * LibTorch (2.0.1-cu118)
 * TensorRT (8.6.1.6)
-### Note
+### Notes
  If needed specific inference backend, switch option to ON in CMakeLists or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
- 
+
 ## To Build and Compile  
 * mkdir build
 * cd build
@@ -30,8 +30,8 @@
 ./object-detection-inference --help
 ```
 
-> **Note:** The table below provides information about different models for object detection. Each row represents a specific model and includes the model name, type, demo command, and additional notes.
->
+> **Note:** The table below provides information about models for object detection and supported framework backends. 
+
 > Available Models:
 > - YOLOv4/YOLOv4-tiny
 > - YOLOv7x/YOLOv7-tiny
