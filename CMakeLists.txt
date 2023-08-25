@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "OPENCV_DNN")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
 
 
 # Define the supported backends
