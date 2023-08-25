@@ -3,16 +3,17 @@ The table represents a specific model and includes the following details:
 
 - **Model**: The name or identifier of the model.
 - **Model Type**: The type of the model, indicating the underlying architecture or framework used.
+
+
+| Model                                              | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | LibTensorflow |
+|----------------------------------------------------|------------|------------|----------|----------|--------------|---------------|
+| yolov4/yolov4-tiny                                 | yolov4     | o          | x        | x        | x            | x             |
+| Any yolov5 640p model                              | yolov5     | o          | x        | x        | x            | x             |
+| Any yolov6 640p model                              | yolov6     | o          | x        | x        | x            | x             |
+| Any yolov7 640p model                              | yolov7     | o          | x        | x        | x            | x             |
+| Any yolov8 640p model                              | yolov8     | o          | x        | x        | x            | x             |
+| Any yolo-nas 640p model                            | yolonas    | o          | x        | x        | x            | x             |
+| Any models from TF2 Object Detection API model zoo | tensorflow | x          | x        | x        | x            | o             |
+
 - **Demo**: The command-line demo to execute the object detection inference using the model. It includes the necessary parameters, such as the model type and input video stream.
 - **Notes**: Additional notes or instructions related to the model, such as where to download the model files, required file formats, or specific considerations.
-
-
-| Model                    | Model Type           | Demo                                                                                        | Notes                                                                                                                                                                                                                                     |
-| ----------------------- | -------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|yolov4/yolov4-tiny |  yolov4  | `./object-detection-inference  --type=yolov4  --link="rtsp://cameraip:port/somelivefeed" --weights=/path/to/yolov4[yolov4-tiny].weights --conf=/path/to/conf.cfg --labels=/path/to/labels/file` | Weights and .cfg files to download from [yolov4](https://github.com/AlexeyAB/darknet/releases/tag/yolov4)|
-| Any yolov5 640p model |  yolov5 | `./object-detection-inference --type=yolov5 --link="rtsp://cameraip:port/somelivefeed" --weights=/path/to/yolov5[n][s][m][l][x].onnx --labels=/path/to/labels/file` | Weights to export in ONNX format using the script from [yolov5 repo](https://github.com/ultralytics/yolov5/blob/master/export.py).|
-| Any yolov6 640p model |  yolov6 | `./object-detection-inference --type=yolov6 --link="rtsp://cameraip:port/somelivefeed" --weights=/path/to/yolov6[n][s][m][l].onnx --labels=/path/to/labels/file` | Weights to export in ONNX format or download from [yolov6 repo](https://github.com/meituan/YOLOv6/tree/main/deploy/ONNX). Posteprocessing code is identical to yolov5|
-| Any yolov7 640p model|  yolov7 | `./object-detection-inference --type=yolov7 --link="rtsp://cameraip:port/somelivefeed" --weights=/path/to/yolov7[tiny][x].onnx --labels=/path/to/labels/file` | Check YoloV7 [export](https://github.com/WongKinYiu/yolov7#export) section, don't use --end2end parameter. Same postprocess code of yolov5 and yolov6|
-| Any yolov8 640p model| yolov8  | `./object-detection-inference --type=yolov8 --link="rtsp://cameraip:port/somelivefeed" --weights=/path/to/yolov8[n][s][m][l][x].onnx --labels=/path/to/labels/file` | Weights to export in ONNX format, [same way as yolov5](https://github.com/ultralytics/ultralytics/tree/main/examples/YOLOv8-CPP-Inference).|
-| Any yolo-nas 640p model| yolonas  | `./object-detection-inference --type=yolonas --link="rtsp://cameraip:port/somelivefeed" --weights=/path/to/yolonas[s][m][l][x].onnx --labels=/path/to/labels/file` | Weights to export in ONNX format like in [YOLO-NAS Quickstart](https://github.com/Deci-AI/super-gradients/blob/master/documentation/source/YoloNASQuickstart.md).|
-| Any models from TF2 Object Detection API model zoo | tensorflow | `./object-detection-inference --type=tensorflow --weights="path/to/saved_model" --link="rtsp://cameraip:port/somelivefeed"` | Download from [model zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md) and set `weights` to the `saved_model` folder where `saved_model.pb` is stored. Tested models: `ssd_resnet50_v1_fpn_640x640_coco17_tpu-8`, `ssd_mobilenet_v2_320x320_coco17_tpu-8`, `ssd_resnet101_v1_fpn_640x640_coco17_tpu-8` |                                                                                                                                                                                                                                     
