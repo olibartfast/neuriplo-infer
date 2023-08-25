@@ -15,6 +15,9 @@
 ### Notes
  If needed specific inference backend, switch option to ON in CMakeLists or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
 
+ ### Export the model for the inference
+ [YoloV8](ExportInstructions.md#yolov8)
+
 ## To Build and Compile  
 * mkdir build
 * cd build
