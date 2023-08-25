@@ -9,7 +9,19 @@
 #endif
 
 
-#include <chrono>
+// Define a global logger variable
+std::shared_ptr<spdlog::logger> logger;
+
+void initializeLogger() {
+
+    std::vector<spdlog::sink_ptr> sinks;
+    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+    sinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>("output.log", 1024*1024*10, 3, true));
+    logger = std::make_shared<spdlog::logger>("logger", begin(sinks), end(sinks));
+
+    spdlog::register_logger(logger);
+    logger->flush_on(spdlog::level::info);
+}
 
 
 static const std::string params = "{ help h   |   | print help message }"
@@ -114,6 +126,11 @@ std::unique_ptr<Detector> createDetector(
 
 int main (int argc, char *argv[])
 {
+    initializeLogger();
+
+    // Use the logger for logging
+    logger->info("Initializing application");
+
     // Command line parser
     cv::CommandLineParser parser(argc, argv, params);
     parser.about("Detect people from rtsp ip camera stream");
@@ -128,7 +145,7 @@ int main (int argc, char *argv[])
         std::exit(1);
     }
     if (link.empty()){
-        std::cout << "Can not open video stream" << std::endl;
+        logger->error("Can not open video stream" );
         std::exit(1);
     }
 
@@ -149,7 +166,7 @@ int main (int argc, char *argv[])
     const std::string conf =  parser.get<std::string>("conf");
     float confidenceThreshold = parser.get<float>("min_confidence");
     std::vector<std::string> classes = readLabelNames(labelsPath); 
-    std::cout << "Current path is " << std::filesystem::current_path() << '\n'; 
+    logger->info("Current path is {}", std::filesystem::current_path().c_str()); 
 
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, weights, conf); 
     if(!detector)
@@ -179,7 +196,7 @@ int main (int argc, char *argv[])
             cv::imshow("opencv feed", frame);
             char key = cv::waitKey(1);
             if (key == 27 || key == 'q') {
-                std::cout << "Exit requested" << std::endl;
+                logger->info("Exit requested");
                 break;
             }
         }

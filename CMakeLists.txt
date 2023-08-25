@@ -97,7 +97,6 @@ endif()
 
 
 set(SOURCES "main.cpp" "src/GStreamerOpenCV.cpp")
-#"src/YoloV4.cpp" "src/YoloV5.cpp" "src/YoloV8.cpp" "src/YoloNas.cpp" )
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(
