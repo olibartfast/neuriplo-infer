@@ -1,15 +1,14 @@
-
 #include "Detector.hpp"
-class YoloV5Dnn : public Detector{ 
-protected: 
- 	  cv::dnn::Net net_;   
+
+class YoloV8 : public Detector{
+	  cv::dnn::Net net_;
       float score_threshold_ = 0.5;
       float nms_threshold_ = 0.4;
 
 
 public:
-    YoloV5Dnn(std::string modelBinary, 
-		bool use_gpu = false,
+    YoloV8(std::string modelBinary, 
+        bool use_gpu = false,
         float confidenceThreshold = 0.25,
         size_t network_width = 640,
         size_t network_height = 640); 

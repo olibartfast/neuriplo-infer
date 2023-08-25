@@ -1,5 +1,5 @@
-#include "YoloV5Dnn.hpp"
-YoloV5Dnn::YoloV5Dnn(
+#include "Yolo.hpp"
+Yolo::Yolo(
     std::string modelBinary, 
     bool use_gpu,
     float confidenceThreshold,
@@ -20,7 +20,7 @@ YoloV5Dnn::YoloV5Dnn(
 
 }
 
-cv::Mat YoloV5Dnn::preprocess_img(const cv::Mat& img) {
+cv::Mat Yolo::preprocess_img(const cv::Mat& img) {
     int w, h, x, y;
     float r_w = network_width_ / (img.cols*1.0);
     float r_h = network_height_ / (img.rows*1.0);
@@ -42,7 +42,7 @@ cv::Mat YoloV5Dnn::preprocess_img(const cv::Mat& img) {
     return out;
 }
 
-cv::Rect YoloV5Dnn::get_rect(const cv::Size& imgSize, const std::vector<float>& bbox) 
+cv::Rect Yolo::get_rect(const cv::Size& imgSize, const std::vector<float>& bbox) 
 {
     float l, r, t, b;
     float r_w = network_width_/ (imgSize.width * 1.0);
@@ -69,7 +69,7 @@ cv::Rect YoloV5Dnn::get_rect(const cv::Size& imgSize, const std::vector<float>& 
     return cv::Rect(round(l), round(t), round(r - l), round(b - t));
 }
 
-std::vector<Detection> YoloV5Dnn::run_detection(const cv::Mat& frame){    
+std::vector<Detection> Yolo::run_detection(const cv::Mat& frame){    
     cv::Mat inputBlob = preprocess_img(frame);
     cv::dnn::blobFromImage(inputBlob, inputBlob, 1 / 255.F, cv::Size(), cv::Scalar(), true, false);
     std::vector<cv::Mat> outs;

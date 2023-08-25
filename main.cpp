@@ -1,6 +1,13 @@
 #include "GStreamerOpenCV.hpp"
 #include "Detector.hpp"
-#include "YoloV5Dnn.hpp"
+#include "Yolo.hpp"
+#include "YoloV4.hpp"
+#include "YoloV8.hpp"
+#include "YoloNas.hpp"
+#ifdef USE_TENSORFLOW
+#include "TFDetectionAPI.hpp"
+#endif
+
 
 #include <chrono>
 
@@ -67,10 +74,41 @@ std::unique_ptr<Detector> createDetector(
     const std::string& modelConfiguration = "")
  {
 
-#ifdef USE_OPENCV_DNN
-        return std::make_unique<YoloV5Dnn>(weights);
-#endif        
-
+    if(detectorType.find("yolov4") != std::string::npos)
+    {
+        if(modelConfiguration.empty() || !std::filesystem::exists(modelConfiguration))
+        {
+            std::cerr << "YoloV4 needs a configuration file" << std::endl;
+            return nullptr;
+        }    
+        return std::make_unique<YoloV4>(modelConfiguration, weights);
+    }   
+    else if(detectorType.find("yolov5") != std::string::npos || 
+        detectorType.find("yolov6") != std::string::npos  ||
+        detectorType.find("yolov7") != std::string::npos)  
+    {
+        return std::make_unique<Yolo>(weights);
+    }
+    else if(detectorType.find("yolov8") != std::string::npos)  
+    {
+        return std::make_unique<YoloV8>(weights);
+    }    
+    else if(detectorType.find("yolonas") != std::string::npos)  
+    {
+        return std::make_unique<YoloNas>(weights);
+    }     
+#ifdef USE_TENSORFLOW      
+    else if(detectorType.find("tensorflow") != std::string::npos) 
+    {
+        if(isDirectory(weights))
+            return std::make_unique<TFDetectionAPI>(weights);
+        else
+        {
+            std::cerr << "In case of Tensorflow weights must be a path to the saved model folder" << std::endl;
+            return nullptr;   
+        }    
+    }
+#endif      
     return nullptr;
 }
 
