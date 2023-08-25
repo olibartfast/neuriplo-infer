@@ -10,7 +10,3 @@
 #include <iomanip>
 #include <ctime>
 #include <filesystem>
-
-using namespace cv;
-using namespace dnn;
-using namespace std;

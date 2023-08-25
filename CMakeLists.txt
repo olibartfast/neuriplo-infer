@@ -12,16 +12,17 @@ set(CMAKE_CXX_STANDARD 17)
 
 
 # Set the path to the selected framework (modify accordingly)
-set(FRAMEWORK "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW
+set(DEFAULT_BACKEND "")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
 
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT")
 
 # Check if the specified backend is supported
-list(FIND SUPPORTED_BACKENDS ${FRAMEWORK} SUPPORTED_BACKEND_INDEX)
+list(FIND SUPPORTED_BACKENDS ${DEFAULT_BACKEND} SUPPORTED_BACKEND_INDEX)
 if(SUPPORTED_BACKEND_INDEX EQUAL -1)
-    message(FATAL_ERROR "Unsupported default backend: ${FRAMEWORK}")
+    message(STATUS "Unsupported default backend: ${DEFAULT_BACKEND}")
+    set(DEFAULT_BACKEND "OPENCV_DNN") 
 endif()
 
 # Set the source files for your project
@@ -31,7 +32,7 @@ set(SOURCES main.cpp)
 include_directories(${OpenCV_INCLUDE_DIRS} include src)
 
 # Unset cache compiler definitions for the selected framework
-if (FRAMEWORK STREQUAL "ONNX_RUNTIME")
+if (DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
     unset(USE_LIBTORCH CACHE)
     unset(USE_TENSORRT CACHE)
     message(STATUS "Set ONNX Runtime")
@@ -51,7 +52,7 @@ if (FRAMEWORK STREQUAL "ONNX_RUNTIME")
     include_directories(${ONNX_RUNTIME_DIR}/include)
     link_directories(${ONNX_RUNTIME_DIR}/lib)
 
-elseif(FRAMEWORK STREQUAL "LIBTORCH")
+elseif(DEFAULT_BACKEND STREQUAL "LIBTORCH")
     unset(USE_ONNX_RUNTIME CACHE)
     unset(USE_TENSORRT CACHE)
     message(STATUS "Set libtorch")
@@ -62,7 +63,7 @@ elseif(FRAMEWORK STREQUAL "LIBTORCH")
     find_package(Torch REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
-elseif(FRAMEWORK STREQUAL "TENSORRT")
+elseif(DEFAULT_BACKEND STREQUAL "TENSORRT")
     unset(USE_ONNX_RUNTIME CACHE)
     unset(USE_LIBTORCH CACHE)
     message(STATUS "Set tensorrt")
@@ -84,20 +85,24 @@ elseif(USE_TENSORFLOW)
     find_package(TensorFlow REQUIRED)
     message(status ${TensorFlow_FOUND})
 else()
-    message(status "No framework selected, using OpenCV-DNN as default inference backend")
+    unset(USE_LIBTORCH CACHE)
+    unset(USE_TENSORRT CACHE)
+    unset(USE_ONNX_RUNTIME CACHE)
+    unset(USE_TENSORFLOW CACHE)
+    message(status ": using ${DEFAULT_BACKEND} as default inference backend")
+    add_compile_definitions(USE_OPENCV_DNN)
 endif()
 
 
 
 
-set(SOURCES "main.cpp" "src/GStreamerOpenCV.cpp"
-"src/YoloV4.cpp" "src/YoloV5.cpp" "src/YoloV8.cpp" "src/YoloNas.cpp" )
-
+set(SOURCES "main.cpp" "src/GStreamerOpenCV.cpp")
+#"src/YoloV4.cpp" "src/YoloV5.cpp" "src/YoloV8.cpp" "src/YoloNas.cpp" )
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(
     ${PROJECT_NAME} PRIVATE 
-    inc 
+    inc src
     ${OpenCV_INCLUDE_DIRS} 
     ${GSTREAMER_INCLUDE_DIRS} 
     ${GST_APP_INCLUDE_DIRS} 
@@ -115,27 +120,35 @@ target_link_libraries(
 )
 
 
+
+
+if(DEFAULT_BACKEND STREQUAL "OPENCV_DNN")
+set(OPENCV_DNN_SOURCES src/opencv-dnn/YoloV5Dnn.cpp)
+target_sources(${PROJECT_NAME} PRIVATE ${OPENCV_DNN_SOURCES})
+include_directories(src/opencv-dnn)
+endif()
+
 # Link against the ONNX Runtime library if selected
-if(FRAMEWORK STREQUAL "ONNX_RUNTIME")
+if(DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
     target_link_libraries(${PROJECT_NAME}
         ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so
     )
 endif()
 
 # Link against the LibTorch library if selected
-if(FRAMEWORK STREQUAL "LIBTORCH")
+if(DEFAULT_BACKEND STREQUAL "LIBTORCH")
     target_link_libraries(${PROJECT_NAME}
         ${TORCH_LIBRARIES}
     )
 endif()
 
 # Link against the TensorRT library if selected
-if(FRAMEWORK STREQUAL "TENSORRT")
+if(DEFAULT_BACKEND STREQUAL "TENSORRT")
     target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser cudart)
 endif()
 
 # Set the appropriate compiler flags
-if(CMAKE_CUDA_COMPILER AND FRAMEWORK STREQUAL "TENSORRT")
+if(CMAKE_CUDA_COMPILER AND DEFAULT_BACKEND STREQUAL "TENSORRT")
     # If CUDA is available and TensorRT is selected, set the CUDA flags
     set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-extended-lambda")
@@ -145,8 +158,8 @@ else()
 endif()
 
 # Add the TensorFlow sources to our target if the option is enabled
-if(TensorFlow_FOUND AND FRAMEWORK STREQUAL "LIBTENSORFLOW")
-  set(TensorFlow_SOURCES src/TFDetectionAPI.cpp)
+if(TensorFlow_FOUND AND DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW")
+  set(TensorFlow_SOURCES src/libtensorflow/TFDetectionAPI.cpp)
   target_sources(${PROJECT_NAME} PRIVATE ${TensorFlow_SOURCES})
   target_include_directories(
     ${PROJECT_NAME} PRIVATE  ${TensorFlow_INCLUDE_DIRS}) 

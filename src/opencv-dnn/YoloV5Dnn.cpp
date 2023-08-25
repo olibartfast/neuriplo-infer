@@ -1,12 +1,13 @@
-#include "YoloV8.hpp"
-
-YoloV8::YoloV8(std::string modelBinary, 
+#include "YoloV5Dnn.hpp"
+YoloV5Dnn::YoloV5Dnn(
+    std::string modelBinary, 
+    bool use_gpu,
     float confidenceThreshold,
     size_t network_width,
     size_t network_height    
 ) : 
     net_ {cv::dnn::readNet(modelBinary)}, 
-    Detector{modelBinary, confidenceThreshold,
+    Detector{modelBinary, use_gpu, confidenceThreshold,
     network_width,
     network_height}
 {
@@ -19,7 +20,7 @@ YoloV8::YoloV8(std::string modelBinary,
 
 }
 
-cv::Mat YoloV8::preprocess_img(const cv::Mat& img) {
+cv::Mat YoloV5Dnn::preprocess_img(const cv::Mat& img) {
     int w, h, x, y;
     float r_w = network_width_ / (img.cols*1.0);
     float r_h = network_height_ / (img.rows*1.0);
@@ -41,7 +42,7 @@ cv::Mat YoloV8::preprocess_img(const cv::Mat& img) {
     return out;
 }
 
-cv::Rect YoloV8::get_rect(const cv::Size& imgSize, const std::vector<float>& bbox) 
+cv::Rect YoloV5Dnn::get_rect(const cv::Size& imgSize, const std::vector<float>& bbox) 
 {
     float l, r, t, b;
     float r_w = network_width_/ (imgSize.width * 1.0);
@@ -68,14 +69,13 @@ cv::Rect YoloV8::get_rect(const cv::Size& imgSize, const std::vector<float>& bbo
     return cv::Rect(round(l), round(t), round(r - l), round(b - t));
 }
 
-std::vector<Detection> YoloV8::run_detection(const Mat& frame){    
-    cv::Mat inputPreprocessed = preprocess_img(frame);
-    cv::Mat inputBlob;
-    cv::dnn::blobFromImage(inputPreprocessed, inputBlob, 1 / 255.F, cv::Size(inputPreprocessed.rows, inputPreprocessed.cols), cv::Scalar(), true, false);
+std::vector<Detection> YoloV5Dnn::run_detection(const cv::Mat& frame){    
+    cv::Mat inputBlob = preprocess_img(frame);
+    cv::dnn::blobFromImage(inputBlob, inputBlob, 1 / 255.F, cv::Size(), cv::Scalar(), true, false);
     std::vector<cv::Mat> outs;
     std::vector<int> classIds;
     std::vector<float> confidences;
-    std::vector<Rect> boxes;
+    std::vector<cv::Rect> boxes;
 	net_.setInput(inputBlob);
     net_.forward(outs, net_.getUnconnectedOutLayersNames());
 
@@ -83,41 +83,39 @@ std::vector<Detection> YoloV8::run_detection(const Mat& frame){
     float x_factor = frame.cols / network_width_;
     float y_factor = frame.rows / network_height_;
 
-
+    float *data = (float *)outs[0].data;
 
     int rows = outs[0].size[1];
     int dimensions = outs[0].size[2];
-
-    if (dimensions > rows) 
+    // Iterate through detections.
+    for (int i = 0; i < rows; ++i) 
     {
-        rows = outs[0].size[2];
-        dimensions = outs[0].size[1];
-
-        outs[0] = outs[0].reshape(1, dimensions);
-        cv::transpose(outs[0], outs[0]);
-    }   
-
-    float *data = (float *)outs[0].data;
-  
-    for (int i = 0; i < rows; ++i)
-    {
-        float *classes_scores = data+4;
-
-        cv::Mat scores(1, dimensions-4, CV_32FC1, classes_scores);
-        cv::Point class_id;
-        double maxClassScore;
-
-        minMaxLoc(scores, 0, &maxClassScore, 0, &class_id);
-
-        if (maxClassScore > score_threshold_)
+        float confidence = data[4];
+        // Discard bad detections and continue.
+        if (confidence >= confidenceThreshold_) 
         {
-            confidences.push_back(maxClassScore);
-            classIds.push_back(class_id.x);
-            std::vector<float> bbox(&data[0], &data[4]);
-            cv::Rect r = get_rect(frame.size(), bbox);
+            float * classes_scores = data + 5;
+            // Create a 1xDimensions Mat and store class scores of N classes.
+            cv::Mat scores(1, dimensions - 5, CV_32FC1, classes_scores);
+            // Perform minMaxLoc and acquire index of best class score.
+            cv::Point class_id;
+            double max_class_score;
+            minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
+            // Continue if the class score is above the threshold.
+            if (max_class_score > score_threshold_) 
+            {
+                // Store class ID and confidence in the pre-defined respective vectors.
+                std::vector<float> bbox(&data[0], &data[4]);
+                confidences.push_back(confidence);
+                classIds.push_back(class_id.x);
+                cv::Rect r = get_rect(frame.size(), bbox);
 
-            boxes.push_back(r);
+                // Store good detections in the boxes vector.
+                boxes.push_back(r);
+            }
+
         }
+        // Jump to the next column.
         data += dimensions;
     }
 

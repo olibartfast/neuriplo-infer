@@ -1,12 +1,7 @@
 #include "GStreamerOpenCV.hpp"
 #include "Detector.hpp"
-#include "YoloV4.hpp"
-#include "YoloV5.hpp"
-#include "YoloV8.hpp"
-#include "YoloNas.hpp"
-#ifdef USE_TENSORFLOW
-#include "TFDetectionAPI.hpp"
-#endif
+#include "YoloV5Dnn.hpp"
+
 #include <chrono>
 
 
@@ -16,7 +11,6 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ labels lb  |  | path to class labels}"
       "{ conf c   |   | model configuration file}"
       "{ weights w  |   | path to models weights}"
-      "{ backend b  |   | inference backend framework}"
       "{ use_opencv_dnn   | true  | use opencv dnn module to do inference}"
       "{ use_gpu   | false  | activate gpu support}"
       "{ min_confidence | 0.25   | min confidence}";
@@ -27,26 +21,28 @@ bool isDirectory(const std::string& path) {
     return std::filesystem::is_directory(fsPath);
 }
 
+
+
 void draw_label(cv::Mat& input_image, std::string label, int left, int top)
 {
     
     const float FONT_SCALE = 0.7;
     const int FONT_FACE = cv::FONT_HERSHEY_SIMPLEX;
     const int THICKNESS = 1;
-    cv::Scalar YELLOW = Scalar(0, 255, 255);
+    cv::Scalar YELLOW = cv::Scalar(0, 255, 255);
 
     // Display the label at the top of the bounding box.
     int baseLine;
-    cv::Size label_size = getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS, &baseLine);
+    cv::Size label_size = cv::getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS, &baseLine);
     top = cv::max(top, label_size.height);
     // Top left corner.
-    Point tlc = cv::Point(left, top);
+    cv::Point tlc = cv::Point(left, top);
     // Bottom right corner.
-    Point brc = cv::Point(left + label_size.width, top + label_size.height + baseLine);
+    cv::Point brc = cv::Point(left + label_size.width, top + label_size.height + baseLine);
     // Draw black rectangle.
-    cv::rectangle(input_image, tlc, brc, cv::Scalar(255, 0, 255), FILLED);
+    cv::rectangle(input_image, tlc, brc, cv::Scalar(255, 0, 255), cv::FILLED);
     // Put the label on the black rectangle.
-    cv::putText(input_image, label, Point(left, top + label_size.height), FONT_FACE, FONT_SCALE, YELLOW, THICKNESS);
+    cv::putText(input_image, label, cv::Point(left, top + label_size.height), FONT_FACE, FONT_SCALE, YELLOW, THICKNESS);
 }
 
 std::vector<std::string> readLabelNames(const std::string& fileName)
@@ -68,43 +64,13 @@ std::unique_ptr<Detector> createDetector(
     const std::string& detectorType,
     const std::string& labels,
     const std::string& weights,
-    const std::string& modelConfiguration = ""){
+    const std::string& modelConfiguration = "")
+ {
 
-    if(detectorType.find("yolov4") != std::string::npos)
-    {
-        if(modelConfiguration.empty() || !std::filesystem::exists(modelConfiguration))
-        {
-            std::cerr << "YoloV4 needs a configuration file" << std::endl;
-            return nullptr;
-        }    
-        return std::make_unique<YoloV4>(modelConfiguration, weights);
-    }   
-    else if(detectorType.find("yolov5") != std::string::npos || 
-        detectorType.find("yolov6") != std::string::npos  ||
-        detectorType.find("yolov7") != std::string::npos)  
-    {
-        return std::make_unique<YoloV5>(weights);
-    }
-    else if(detectorType.find("yolov8") != std::string::npos)  
-    {
-        return std::make_unique<YoloV8>(weights);
-    }    
-    else if(detectorType.find("yolonas") != std::string::npos)  
-    {
-        return std::make_unique<YoloNas>(weights);
-    }     
-#ifdef USE_TENSORFLOW      
-    else if(detectorType.find("tensorflow") != std::string::npos) 
-    {
-        if(isDirectory(weights))
-            return std::make_unique<TFDetectionAPI>(weights);
-        else
-        {
-            std::cerr << "In case of Tensorflow weights must be a path to the saved model folder" << std::endl;
-            return nullptr;   
-        }    
-    }
-#endif      
+#ifdef USE_OPENCV_DNN
+        return std::make_unique<YoloV5Dnn>(weights);
+#endif        
+
     return nullptr;
 }
 
@@ -128,6 +94,9 @@ int main (int argc, char *argv[])
         std::exit(1);
     }
 
+    const bool use_opencv_dnn = parser.get<bool>("use_opencv_dnn");
+    const bool use_gpu = parser.get<bool>("use_gpu");
+
     std::unique_ptr<GStreamerOpenCV> gstocv = std::make_unique<GStreamerOpenCV>();
     gstocv->initGstLibrary(argc, argv);
     gstocv->runPipeline(link);
@@ -142,7 +111,7 @@ int main (int argc, char *argv[])
     const std::string conf =  parser.get<std::string>("conf");
     float confidenceThreshold = parser.get<float>("min_confidence");
     std::vector<std::string> classes = readLabelNames(labelsPath); 
-    std::cout << "Current path is " << std::filesystem::current_path() << '\n'; // (1)
+    std::cout << "Current path is " << std::filesystem::current_path() << '\n'; 
 
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, weights, conf); 
     if(!detector)

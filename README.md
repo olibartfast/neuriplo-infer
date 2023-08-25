@@ -7,14 +7,14 @@
 * OpenCV (4.7.0) 
 * C++ compiler with C++17 support
 ### Optionally 
- - If needed specific inference backend, switch option to ON in CMakeLists or set it using cmake from command line. 
- - If not inference backend is specified OpenCV-dnn is used as default 
 * Tensorflow prebuilt library from [Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc)
 * CUDA (if you want to use GPU, CUDA 12 is supported for LibTorch and TensorRT, I used CUDA 11.8 for onnx-rt)
 * ONNX Runtime (1.15.1 gpu package)
 * LibTorch (2.0.1-cu118)
 * TensorRT (8.6.1.6)
-
+### Note
+ If needed specific inference backend, switch option to ON in CMakeLists or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
+ 
 ## To Build and Compile  
 * mkdir build
 * cd build
