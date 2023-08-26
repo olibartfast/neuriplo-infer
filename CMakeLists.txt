@@ -140,6 +140,8 @@ endif()
 
 # Link against the LibTorch library if selected
 if(DEFAULT_BACKEND STREQUAL "LIBTORCH")
+set(LIBTORCH_SOURCES src/libtorch/YoloV8.cpp)
+target_sources(${PROJECT_NAME} PRIVATE ${LIBTORCH_SOURCES})
     target_link_libraries(${PROJECT_NAME}
         ${TORCH_LIBRARIES}
     )
