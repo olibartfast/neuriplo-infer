@@ -1,4 +1,4 @@
-### Object detection inference from IP camera RTSP and video stream using GStreamer HW acceleration and varius inference engine backends
+### Object detection inference from IP camer (or video) stream using GStreamer 
 
 ##  Dependencies (In parentheses version used in this project)
 ### Required
