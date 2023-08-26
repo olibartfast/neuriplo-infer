@@ -131,6 +131,8 @@ endif()
 
 # Link against the ONNX Runtime library if selected
 if(DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
+set(ONNX_RUNTIME_SOURCES src/onnx-runtime/YoloV8.cpp)
+target_sources(${PROJECT_NAME} PRIVATE ${ONNX_RUNTIME_SOURCES})
     target_link_libraries(${PROJECT_NAME}
         ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so
     )
@@ -145,6 +147,8 @@ endif()
 
 # Link against the TensorRT library if selected
 if(DEFAULT_BACKEND STREQUAL "TENSORRT")
+    set(TENSORRT_SOURCES src/tensorrt/YoloV8.cpp)
+    target_sources(${PROJECT_NAME} PRIVATE ${TENSORRT_SOURCES})
     target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser cudart)
 endif()
 
