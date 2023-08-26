@@ -11,6 +11,7 @@ class GStreamerOpenCV {
     GstElement* sink_ = nullptr;
     GstBus* bus_ = nullptr;
     inline static cv::Mat frame_;
+    static bool end_of_stream_;
 
     std::string getPipelineCommand(const std::string& link) const;
 
@@ -26,6 +27,9 @@ public:
     void setMainLoopEvent(bool event);
     cv::Mat getFrame() const;
     void setFrame(const cv::Mat& frame);
+
+    static void setEndOfStream(bool value);
+    static bool isEndOfStream();
 
 private:
     static GstFlowReturn newPreroll(GstAppSink* appsink, gpointer data);
