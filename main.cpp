@@ -82,13 +82,14 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
 
 std::unique_ptr<Detector> createDetector(
     const std::string& detectorType,
+    bool use_gpu,
     const std::string& labels,
     const std::string& weights,
     const std::string& modelConfiguration = "")
  {
     if(detectorType.find("yolov8") != std::string::npos)  
     {
-        return std::make_unique<YoloV8>(weights);
+        return std::make_unique<YoloV8>(weights, use_gpu);
     }       
 #ifdef USE_OPENCV_DNN
     else if(detectorType.find("yolov4") != std::string::npos)
@@ -172,7 +173,7 @@ int main (int argc, char *argv[])
     logger->info("Current path is {}", std::filesystem::current_path().c_str()); 
 
     Detector::SetLogger(logger);
-    std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, weights, conf); 
+    std::unique_ptr<Detector> detector = createDetector(detectorType, use_gpu, labelsPath, weights, conf); 
     if(!detector)
     {
         std::cerr << "Detector creation fail!" << std::endl;
