@@ -101,7 +101,7 @@ endif()
 
 
 
-set(SOURCES main.cpp src/GStreamerOpenCV.cpp src/Detector.cpp)
+set(SOURCES main.cpp src/GStreamerOpenCV.cpp src/Detector.cpp src/Yolo.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(
