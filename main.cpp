@@ -1,13 +1,15 @@
 #include "GStreamerOpenCV.hpp"
+#ifdef USE_TENSORFLOW
+#include "TFDetectionAPI.hpp"
+#elif USE_OPENCV_DNN
 #include "YoloV8.hpp"
-#ifdef USE_OPENCV_DNN
 #include "YoloV4.hpp"
 #include "YoloVn.hpp"
 #include "YoloNas.hpp"
+#else
+#include "YoloV8.hpp"
 #endif
-#ifdef USE_TENSORFLOW
-#include "TFDetectionAPI.hpp"
-#endif
+
 
 
 // Define a global logger variable
@@ -87,11 +89,24 @@ std::unique_ptr<Detector> createDetector(
     const std::string& weights,
     const std::string& modelConfiguration = "")
  {
+#ifdef USE_TENSORFLOW      
+    if(detectorType.find("tensorflow") != std::string::npos) 
+    {
+        if(isDirectory(weights))
+            return std::make_unique<TFDetectionAPI>(weights);
+        else
+        {
+            std::cerr << "In case of Tensorflow weights must be a path to the saved model folder" << std::endl;
+            return nullptr;   
+        }    
+    }
+
+      
+#elif USE_OPENCV_DNN
     if(detectorType.find("yolov8") != std::string::npos)  
     {
         return std::make_unique<YoloV8>(weights, use_gpu);
-    }       
-#ifdef USE_OPENCV_DNN
+    } 
     else if(detectorType.find("yolov4") != std::string::npos)
     {
         if(modelConfiguration.empty() || !std::filesystem::exists(modelConfiguration))
@@ -110,20 +125,14 @@ std::unique_ptr<Detector> createDetector(
     else if(detectorType.find("yolonas") != std::string::npos)  
     {
         return std::make_unique<YoloNas>(weights);
-    }     
-#endif    
-#ifdef USE_TENSORFLOW      
-    else if(detectorType.find("tensorflow") != std::string::npos) 
+    }   
+#else
+    if(detectorType.find("yolov8") != std::string::npos)  
     {
-        if(isDirectory(weights))
-            return std::make_unique<TFDetectionAPI>(weights);
-        else
-        {
-            std::cerr << "In case of Tensorflow weights must be a path to the saved model folder" << std::endl;
-            return nullptr;   
-        }    
-    }
-#endif      
+        return std::make_unique<YoloV8>(weights, use_gpu);
+    }       
+#endif    
+    
     else
     return nullptr;
 }
