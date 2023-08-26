@@ -1,6 +1,7 @@
-#include "Detector.hpp"
+#pragma once
+#include "Yolo.hpp"
 
-class YoloV4 : public Detector{
+class YoloV4 : public Yolo{
 	  cv::dnn::Net net_;
 
 public:

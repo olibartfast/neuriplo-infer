@@ -1,11 +1,10 @@
 #include "GStreamerOpenCV.hpp"
-#include "Detector.hpp"
-//#include "Yolo.hpp"
+#include "YoloV8.hpp"
 #ifdef USE_OPENCV_DNN
 #include "YoloV4.hpp"
+#include "YoloVn.hpp"
+#include "YoloNas.hpp"
 #endif
-#include "YoloV8.hpp"
-//#include "YoloNas.hpp"
 #ifdef USE_TENSORFLOW
 #include "TFDetectionAPI.hpp"
 #endif
@@ -87,8 +86,12 @@ std::unique_ptr<Detector> createDetector(
     const std::string& weights,
     const std::string& modelConfiguration = "")
  {
+    if(detectorType.find("yolov8") != std::string::npos)  
+    {
+        return std::make_unique<YoloV8>(weights);
+    }       
 #ifdef USE_OPENCV_DNN
-    if(detectorType.find("yolov4") != std::string::npos)
+    else if(detectorType.find("yolov4") != std::string::npos)
     {
         if(modelConfiguration.empty() || !std::filesystem::exists(modelConfiguration))
         {
@@ -97,23 +100,17 @@ std::unique_ptr<Detector> createDetector(
         }    
         return std::make_unique<YoloV4>(modelConfiguration, weights);
     }   
-    else
-#endif    
-    // if(detectorType.find("yolov5") != std::string::npos || 
-    //     detectorType.find("yolov6") != std::string::npos  ||
-    //     detectorType.find("yolov7") != std::string::npos)  
-    // {
-    //     return std::make_unique<Yolo>(weights);
-    // }
-    // else 
-    if(detectorType.find("yolov8") != std::string::npos)  
+    else if(detectorType.find("yolov5") != std::string::npos || 
+        detectorType.find("yolov6") != std::string::npos  ||
+        detectorType.find("yolov7") != std::string::npos)  
     {
-        return std::make_unique<YoloV8>(weights);
-    }    
-    // else if(detectorType.find("yolonas") != std::string::npos)  
-    // {
-    //     return std::make_unique<YoloNas>(weights);
-    // }     
+        return std::make_unique<YoloVn>(weights);
+    }
+    else if(detectorType.find("yolonas") != std::string::npos)  
+    {
+        return std::make_unique<YoloNas>(weights);
+    }     
+#endif    
 #ifdef USE_TENSORFLOW      
     else if(detectorType.find("tensorflow") != std::string::npos) 
     {

@@ -3,8 +3,6 @@
 
 class Yolo : public Detector{
 
-    protected:
-
     public:
     Yolo(const std::string& model_path, bool use_gpu = false,
         float confidenceThreshold = 0.25,
@@ -161,6 +159,27 @@ class Yolo : public Detector{
         return detections;
     }
 
+    cv::Mat preprocess_image_mat(const cv::Mat& img) {
+        int w, h, x, y;
+        float r_w = network_width_ / (img.cols*1.0);
+        float r_h = network_height_ / (img.rows*1.0);
+        if (r_h > r_w) {
+            w = network_width_;
+            h = r_w * img.rows;
+            x = 0;
+            y = (network_height_ - h) / 2;
+        } else {
+            w = r_h * img.cols;
+            h = network_height_;
+            x = (network_width_ - w) / 2;
+            y = 0;
+        }
+        cv::Mat re(h, w, CV_8UC3);
+        cv::resize(img, re, re.size(), 0, 0, cv::INTER_LINEAR);
+        cv::Mat out(network_width_, network_height_, CV_8UC3, cv::Scalar(128, 128, 128));
+        re.copyTo(out(cv::Rect(x, y, re.cols, re.rows)));
+        return out;
+    }
 
 
 };

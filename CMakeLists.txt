@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "LIBTORCH")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "OPENCV_DNN")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT")
@@ -101,7 +101,7 @@ endif()
 
 
 
-set(SOURCES "main.cpp" "src/GStreamerOpenCV.cpp")
+set(SOURCES main.cpp src/GStreamerOpenCV.cpp src/Detector.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(
@@ -124,7 +124,7 @@ target_link_libraries(
 )
 
 if(DEFAULT_BACKEND STREQUAL "OPENCV_DNN")
-set(OPENCV_DNN_SOURCES src/opencv-dnn/Yolo.cpp src/opencv-dnn/YoloNas.cpp src/opencv-dnn/YoloV8.cpp src/opencv-dnn/YoloV4.cpp)
+set(OPENCV_DNN_SOURCES src/opencv-dnn/YoloVn.cpp src/opencv-dnn/YoloNas.cpp src/opencv-dnn/YoloV8.cpp src/opencv-dnn/YoloV4.cpp)
 target_sources(${PROJECT_NAME} PRIVATE ${OPENCV_DNN_SOURCES})
 include_directories(src/opencv-dnn)
 endif()

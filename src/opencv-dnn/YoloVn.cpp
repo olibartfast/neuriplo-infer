@@ -1,5 +1,5 @@
-#include "Yolo.hpp"
-Yolo::Yolo(
+#include "YoloVn.hpp"
+YoloVn::YoloVn(
     std::string modelBinary, 
     bool use_gpu,
     float confidenceThreshold,
@@ -7,7 +7,7 @@ Yolo::Yolo(
     size_t network_height    
 ) : 
     net_ {cv::dnn::readNet(modelBinary)}, 
-    Detector{modelBinary, use_gpu, confidenceThreshold,
+    Yolo{modelBinary, use_gpu, confidenceThreshold,
     network_width,
     network_height}
 {
@@ -20,57 +20,9 @@ Yolo::Yolo(
 
 }
 
-cv::Mat Yolo::preprocess_img(const cv::Mat& img) {
-    int w, h, x, y;
-    float r_w = network_width_ / (img.cols*1.0);
-    float r_h = network_height_ / (img.rows*1.0);
-    if (r_h > r_w) {
-        w = network_width_;
-        h = r_w * img.rows;
-        x = 0;
-        y = (network_height_ - h) / 2;
-    } else {
-        w = r_h * img.cols;
-        h = network_height_;
-        x = (network_width_ - w) / 2;
-        y = 0;
-    }
-    cv::Mat re(h, w, CV_8UC3);
-    cv::resize(img, re, re.size(), 0, 0, cv::INTER_LINEAR);
-    cv::Mat out(network_width_, network_height_, CV_8UC3, cv::Scalar(128, 128, 128));
-    re.copyTo(out(cv::Rect(x, y, re.cols, re.rows)));
-    return out;
-}
 
-cv::Rect Yolo::get_rect(const cv::Size& imgSize, const std::vector<float>& bbox) 
-{
-    float l, r, t, b;
-    float r_w = network_width_/ (imgSize.width * 1.0);
-    float r_h = network_height_ / (imgSize.height * 1.0);
-    if (r_h > r_w) {
-        l = bbox[0] - bbox[2] / 2.f;
-        r = bbox[0] + bbox[2] / 2.f;
-        t = bbox[1] - bbox[3] / 2.f - (network_height_- r_w * imgSize.height) / 2;
-        b = bbox[1] + bbox[3] / 2.f - (network_height_ - r_w * imgSize.height) / 2;
-        l = l / r_w;
-        r = r / r_w;
-        t = t / r_w;
-        b = b / r_w;
-    } else {
-        l = bbox[0] - bbox[2] / 2.f - (network_width_- r_h * imgSize.width) / 2;
-        r = bbox[0] + bbox[2] / 2.f - (network_width_- r_h * imgSize.width) / 2;
-        t = bbox[1] - bbox[3] / 2.f;
-        b = bbox[1] + bbox[3] / 2.f;
-        l = l / r_h;
-        r = r / r_h;
-        t = t / r_h;
-        b = b / r_h;
-    }
-    return cv::Rect(round(l), round(t), round(r - l), round(b - t));
-}
-
-std::vector<Detection> Yolo::run_detection(const cv::Mat& frame){    
-    cv::Mat inputBlob = preprocess_img(frame);
+std::vector<Detection> YoloVn::run_detection(const cv::Mat& frame){    
+    cv::Mat inputBlob = preprocess_image_mat(frame);
     cv::dnn::blobFromImage(inputBlob, inputBlob, 1 / 255.F, cv::Size(), cv::Scalar(), true, false);
     std::vector<cv::Mat> outs;
     std::vector<int> classIds;

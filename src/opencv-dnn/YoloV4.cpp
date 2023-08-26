@@ -9,7 +9,7 @@
         size_t network_height    
     ) : 
 		net_ {cv::dnn::readNetFromDarknet(modelConfiguration, modelBinary)}, 
-        Detector{modelBinary, use_gpu,
+        Yolo{modelBinary, use_gpu,
         confidenceThreshold,
         network_width,
         network_height}

@@ -8,7 +8,7 @@ YoloNas::YoloNas(
     size_t network_height    
 ) : 
     net_ {cv::dnn::readNet(modelBinary)}, 
-    Detector{modelBinary, use_gpu, confidenceThreshold,
+    Yolo{modelBinary, use_gpu, confidenceThreshold,
     network_width,
     network_height}
 {
