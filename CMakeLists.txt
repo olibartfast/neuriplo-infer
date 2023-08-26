@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "LIBTORCH")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT")
@@ -55,7 +55,10 @@ if (DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
 
 elseif(DEFAULT_BACKEND STREQUAL "LIBTORCH")
     unset(USE_ONNX_RUNTIME CACHE)
+    unset(USE_LIBTORCH CACHE)
     unset(USE_TENSORRT CACHE)
+    unset(USE_OPENCV_DNN CACHE)
+    unset(USE_TENSORFLOW CACHE)
     message(STATUS "Set libtorch")
     add_compile_definitions(USE_LIBTORCH)
     # Set the path to LibTorch (modify accordingly)
@@ -63,6 +66,7 @@ elseif(DEFAULT_BACKEND STREQUAL "LIBTORCH")
     message(STATUS "${Torch_DIR}")
     find_package(Torch REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+    include_directories(src/libtorch)
 
 elseif(DEFAULT_BACKEND STREQUAL "TENSORRT")
     unset(USE_ONNX_RUNTIME CACHE)
@@ -118,9 +122,6 @@ target_link_libraries(
     ${GST_VIDEO_LIBRARIES} 
     ${GLIB_LIBRARIES}  ${GOBJECT_LIBRARIES}
 )
-
-
-
 
 if(DEFAULT_BACKEND STREQUAL "OPENCV_DNN")
 set(OPENCV_DNN_SOURCES src/opencv-dnn/Yolo.cpp src/opencv-dnn/YoloNas.cpp src/opencv-dnn/YoloV8.cpp src/opencv-dnn/YoloV4.cpp)

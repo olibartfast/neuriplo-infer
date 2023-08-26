@@ -206,6 +206,11 @@ int main (int argc, char *argv[])
                 logger->info("Exit requested");
                 break;
             }
+            if (GStreamerOpenCV::isEndOfStream()) {
+                logger->info("Video stream has finished");
+                break;
+            }
+    
         }
     }
     

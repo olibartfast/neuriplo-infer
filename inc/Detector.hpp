@@ -17,6 +17,10 @@ protected:
 	std::string backend_;
 	bool use_gpu_;
 	static std::shared_ptr<spdlog::logger> logger_; // Logger instance
+    int input_width_{ -1 };
+    int input_height_{ -1 };
+    int channels_{ -1 };
+
 public:
 	Detector(const std::string& modelBinary,
 	bool use_gpu = false, 
