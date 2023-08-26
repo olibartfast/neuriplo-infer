@@ -12,8 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "OPENCV_DNN")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
-
+set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT")
@@ -35,7 +34,9 @@ include_directories(${OpenCV_INCLUDE_DIRS} include src)
 if (DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
     unset(USE_LIBTORCH CACHE)
     unset(USE_TENSORRT CACHE)
-    message(STATUS "Set ONNX Runtime")
+    unset(USE_OPENCV_DNN CACHE)
+    unset(USE_TENSORFLOW CACHE)
+    message(STATUS ": Set ONNX Runtime")
     add_compile_definitions(USE_ONNX_RUNTIME)
     # Set the path to ONNX Runtime (modify accordingly)
     set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-1.15.1)
@@ -49,7 +50,7 @@ if (DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
         # You can set alternative behavior or show an error message
         # depending on your project requirements.
     endif ()
-    include_directories(${ONNX_RUNTIME_DIR}/include)
+    include_directories(${ONNX_RUNTIME_DIR}/include src/onnx-runtime)
     link_directories(${ONNX_RUNTIME_DIR}/lib)
 
 elseif(DEFAULT_BACKEND STREQUAL "LIBTORCH")

@@ -16,6 +16,7 @@ protected:
   	size_t network_height_;	
 	std::string backend_;
 	bool use_gpu_;
+	static std::shared_ptr<spdlog::logger> logger_; // Logger instance
 public:
 	Detector(const std::string& modelBinary,
 	bool use_gpu = false, 
@@ -30,5 +31,12 @@ public:
 	{
 	}
 
+	static void SetLogger(const std::shared_ptr<spdlog::logger>& logger) 
+    {
+    	logger_ = logger;
+    }
+
     virtual std::vector<Detection> run_detection(const cv::Mat& frame) = 0;
 };
+
+std::shared_ptr<spdlog::logger> Detector::logger_;
