@@ -1,13 +1,29 @@
 #include "GStreamerOpenCV.hpp"
 #include "Detector.hpp"
+//#include "Yolo.hpp"
+#ifdef USE_OPENCV_DNN
 #include "YoloV4.hpp"
-#include "YoloV5.hpp"
+#endif
 #include "YoloV8.hpp"
-#include "YoloNas.hpp"
+//#include "YoloNas.hpp"
 #ifdef USE_TENSORFLOW
 #include "TFDetectionAPI.hpp"
 #endif
-#include <chrono>
+
+
+// Define a global logger variable
+std::shared_ptr<spdlog::logger> logger;
+
+void initializeLogger() {
+
+    std::vector<spdlog::sink_ptr> sinks;
+    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+    sinks.push_back( std::make_shared<spdlog::sinks::rotating_file_sink_mt>("output.log", 1024*1024*10, 3, true));
+    logger = std::make_shared<spdlog::logger>("logger", begin(sinks), end(sinks));
+
+    spdlog::register_logger(logger);
+    logger->flush_on(spdlog::level::info);
+}
 
 
 static const std::string params = "{ help h   |   | print help message }"
@@ -16,6 +32,8 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ labels lb  |  | path to class labels}"
       "{ conf c   |   | model configuration file}"
       "{ weights w  |   | path to models weights}"
+      "{ use_opencv_dnn   | true  | use opencv dnn module to do inference}"
+      "{ use_gpu   | false  | activate gpu support}"
       "{ min_confidence | 0.25   | min confidence}";
 
 
@@ -24,26 +42,28 @@ bool isDirectory(const std::string& path) {
     return std::filesystem::is_directory(fsPath);
 }
 
+
+
 void draw_label(cv::Mat& input_image, std::string label, int left, int top)
 {
     
     const float FONT_SCALE = 0.7;
     const int FONT_FACE = cv::FONT_HERSHEY_SIMPLEX;
     const int THICKNESS = 1;
-    cv::Scalar YELLOW = Scalar(0, 255, 255);
+    cv::Scalar YELLOW = cv::Scalar(0, 255, 255);
 
     // Display the label at the top of the bounding box.
     int baseLine;
-    cv::Size label_size = getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS, &baseLine);
+    cv::Size label_size = cv::getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS, &baseLine);
     top = cv::max(top, label_size.height);
     // Top left corner.
-    Point tlc = cv::Point(left, top);
+    cv::Point tlc = cv::Point(left, top);
     // Bottom right corner.
-    Point brc = cv::Point(left + label_size.width, top + label_size.height + baseLine);
+    cv::Point brc = cv::Point(left + label_size.width, top + label_size.height + baseLine);
     // Draw black rectangle.
-    cv::rectangle(input_image, tlc, brc, cv::Scalar(255, 0, 255), FILLED);
+    cv::rectangle(input_image, tlc, brc, cv::Scalar(255, 0, 255), cv::FILLED);
     // Put the label on the black rectangle.
-    cv::putText(input_image, label, Point(left, top + label_size.height), FONT_FACE, FONT_SCALE, YELLOW, THICKNESS);
+    cv::putText(input_image, label, cv::Point(left, top + label_size.height), FONT_FACE, FONT_SCALE, YELLOW, THICKNESS);
 }
 
 std::vector<std::string> readLabelNames(const std::string& fileName)
@@ -65,8 +85,9 @@ std::unique_ptr<Detector> createDetector(
     const std::string& detectorType,
     const std::string& labels,
     const std::string& weights,
-    const std::string& modelConfiguration = ""){
-
+    const std::string& modelConfiguration = "")
+ {
+#ifdef USE_OPENCV_DNN
     if(detectorType.find("yolov4") != std::string::npos)
     {
         if(modelConfiguration.empty() || !std::filesystem::exists(modelConfiguration))
@@ -76,20 +97,23 @@ std::unique_ptr<Detector> createDetector(
         }    
         return std::make_unique<YoloV4>(modelConfiguration, weights);
     }   
-    else if(detectorType.find("yolov5") != std::string::npos || 
-        detectorType.find("yolov6") != std::string::npos  ||
-        detectorType.find("yolov7") != std::string::npos)  
-    {
-        return std::make_unique<YoloV5>(weights);
-    }
-    else if(detectorType.find("yolov8") != std::string::npos)  
+    else
+#endif    
+    // if(detectorType.find("yolov5") != std::string::npos || 
+    //     detectorType.find("yolov6") != std::string::npos  ||
+    //     detectorType.find("yolov7") != std::string::npos)  
+    // {
+    //     return std::make_unique<Yolo>(weights);
+    // }
+    // else 
+    if(detectorType.find("yolov8") != std::string::npos)  
     {
         return std::make_unique<YoloV8>(weights);
     }    
-    else if(detectorType.find("yolonas") != std::string::npos)  
-    {
-        return std::make_unique<YoloNas>(weights);
-    }     
+    // else if(detectorType.find("yolonas") != std::string::npos)  
+    // {
+    //     return std::make_unique<YoloNas>(weights);
+    // }     
 #ifdef USE_TENSORFLOW      
     else if(detectorType.find("tensorflow") != std::string::npos) 
     {
@@ -102,11 +126,17 @@ std::unique_ptr<Detector> createDetector(
         }    
     }
 #endif      
+    else
     return nullptr;
 }
 
 int main (int argc, char *argv[])
 {
+    initializeLogger();
+
+    // Use the logger for logging
+    logger->info("Initializing application");
+
     // Command line parser
     cv::CommandLineParser parser(argc, argv, params);
     parser.about("Detect people from rtsp ip camera stream");
@@ -121,9 +151,12 @@ int main (int argc, char *argv[])
         std::exit(1);
     }
     if (link.empty()){
-        std::cout << "Can not open video stream" << std::endl;
+        logger->error("Can not open video stream" );
         std::exit(1);
     }
+
+    const bool use_opencv_dnn = parser.get<bool>("use_opencv_dnn");
+    const bool use_gpu = parser.get<bool>("use_gpu");
 
     std::unique_ptr<GStreamerOpenCV> gstocv = std::make_unique<GStreamerOpenCV>();
     gstocv->initGstLibrary(argc, argv);
@@ -139,8 +172,9 @@ int main (int argc, char *argv[])
     const std::string conf =  parser.get<std::string>("conf");
     float confidenceThreshold = parser.get<float>("min_confidence");
     std::vector<std::string> classes = readLabelNames(labelsPath); 
-    std::cout << "Current path is " << std::filesystem::current_path() << '\n'; // (1)
+    logger->info("Current path is {}", std::filesystem::current_path().c_str()); 
 
+    Detector::SetLogger(logger);
     std::unique_ptr<Detector> detector = createDetector(detectorType, labelsPath, weights, conf); 
     if(!detector)
     {
@@ -169,9 +203,14 @@ int main (int argc, char *argv[])
             cv::imshow("opencv feed", frame);
             char key = cv::waitKey(1);
             if (key == 27 || key == 'q') {
-                std::cout << "Exit requested" << std::endl;
+                logger->info("Exit requested");
                 break;
             }
+            if (GStreamerOpenCV::isEndOfStream()) {
+                logger->info("Video stream has finished");
+                break;
+            }
+    
         }
     }
     

@@ -1,8 +1,22 @@
-### Object detection inference from IP camera RTSP and video stream using GStreamer HW acceleration and OpenCV
+### Object detection inference from IP camera RTSP and video stream using GStreamer HW acceleration and varius inference engine backends
 
-##  Dependencies
-* GStreamer 1.20.3 and OpenCV 4.7.0 (optionally Tensorflow prebuilt library from [
-Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc), switch option to ON in CMakeLists or set it using cmake from command line)
+##  Dependencies (In parentheses version used in this project)
+### Required
+* CMake (3.22.1)
+* GStreamer (1.20.3)
+* OpenCV (4.7.0) 
+* C++ compiler with C++17 support
+### Optionally 
+* Tensorflow prebuilt library from [Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc)
+* CUDA (if you want to use GPU, CUDA 12 is supported for LibTorch and TensorRT, I used CUDA 11.8 for onnx-rt)
+* ONNX Runtime (1.15.1 gpu package)
+* LibTorch (2.0.1-cu118)
+* TensorRT (8.6.1.6)
+### Notes
+ If needed specific inference backend, switch option to ON in CMakeLists or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
+
+ ### Export the model for the inference
+ [YoloV8](ExportInstructions.md#yolov8)
 
 ## To Build and Compile  
 * mkdir build
@@ -12,15 +26,15 @@ Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_c
 
 ## Usage
 ```
-./object-detection-inference --type=<Model Type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") --labels=</path/to/labels/file>  --weights=<path/to/model/weights> --conf=</path/to/model/config> [--min_confidence=<Conf Value>] 
+./object-detection-inference --type=<Model Type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") --labels=</path/to/labels/file>  --weights=<path/to/model/weights> --conf=</path/to/model/config> [--min_confidence=<Conf Value>]  --backend=<chosen-inference-backend>
 ``` 
 ### To check all available options:
 ```
 ./object-detection-inference --help
 ```
 
-> **Note:** The table below provides information about different models for object detection. Each row represents a specific model and includes the model name, type, demo command, and additional notes.
->
+> **Note:** The table below provides information about models for object detection and supported framework backends. 
+
 > Available Models:
 > - YOLOv4/YOLOv4-tiny
 > - YOLOv7x/YOLOv7-tiny
@@ -32,9 +46,6 @@ Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_c
 
 [Link to Table](TablePage.md#table-of-models)
 
-
-## TO DO
-* Add support for inference with onnxruntime, tensorrt, openvino
 
 ## References
 * Using GStreamer to receive a video stream and process it with OpenCV:  

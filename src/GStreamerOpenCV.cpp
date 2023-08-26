@@ -4,6 +4,17 @@ GStreamerOpenCV::GStreamerOpenCV() {
     error_ = nullptr;
 }
 
+bool GStreamerOpenCV::end_of_stream_ = false;
+
+
+void GStreamerOpenCV::setEndOfStream(bool value) {
+    end_of_stream_ = value;
+}
+
+bool GStreamerOpenCV::isEndOfStream() {
+    return end_of_stream_;
+}
+
 GStreamerOpenCV::~GStreamerOpenCV() {
     if (pipeline_) {
         gst_object_unref(GST_OBJECT(pipeline_));
@@ -102,9 +113,12 @@ gboolean GStreamerOpenCV::myBusCallback(GstBus* bus, GstMessage* message, gpoint
             g_free(debug);
             break;
         }
-        case GST_MESSAGE_EOS:
-            // End-of-stream
+        case GST_MESSAGE_EOS:{
+			g_message ("End of stream");
+            setEndOfStream(true); 
             break;
+        }
+
         default:
             // Unhandled message
             break;

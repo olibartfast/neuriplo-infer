@@ -14,33 +14,33 @@ protected:
 	float confidenceThreshold_; 	  
   	size_t network_width_;
   	size_t network_height_;	
+	std::string backend_;
+	bool use_gpu_;
+	static std::shared_ptr<spdlog::logger> logger_; // Logger instance
+    int input_width_{ -1 };
+    int input_height_{ -1 };
+    int channels_{ -1 };
+
 public:
-	Detector(){}
-
-	Detector(const Detector& d){
-  		modelBinary_ = d.modelBinary_; 
-		confidenceThreshold_ = d.confidenceThreshold_;  
-		network_width_ = d.network_width_;
-  		network_height_ = d.network_height_;	
-	}
-	Detector(Detector&& d){
-  		modelBinary_ = d.modelBinary_; 
-		confidenceThreshold_ = d.confidenceThreshold_;    
-		network_width_ = d.network_width_;
-  		network_height_ = d.network_height_;			
-	}
-
 	Detector(const std::string& modelBinary,
+	bool use_gpu = false, 
 	float confidenceThreshold = 0.5f, 
   	size_t network_width = -1,
   	size_t network_height = -1		
 	) : modelBinary_{modelBinary},
+		use_gpu_{use_gpu},
 		confidenceThreshold_{confidenceThreshold},
 		network_width_ {network_width},
   		network_height_ {network_height}		 
 	{
-
 	}
+
+	static void SetLogger(const std::shared_ptr<spdlog::logger>& logger) 
+    {
+    	logger_ = logger;
+    }
 
     virtual std::vector<Detection> run_detection(const cv::Mat& frame) = 0;
 };
+
+std::shared_ptr<spdlog::logger> Detector::logger_;
