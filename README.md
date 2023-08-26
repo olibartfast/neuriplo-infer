@@ -13,7 +13,7 @@
 * LibTorch (2.0.1-cu118)
 * TensorRT (8.6.1.6)
 ### Notes
- If needed specific inference backend, set DEFAULT_BACKEND in CMakeLists with proper option or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
+ If needed specific inference backend, set DEFAULT_BACKEND in CMakeLists with proper option(i.e  ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN) or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
 
  ### Export the model for the inference
  [YoloV8](ExportInstructions.md#yolov8)
