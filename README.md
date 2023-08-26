@@ -26,7 +26,7 @@
 
 ## Usage
 ```
-./object-detection-inference --type=<Model Type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") --labels=</path/to/labels/file>  --weights=<path/to/model/weights> --conf=</path/to/model/config> [--min_confidence=<Conf Value>]  --backend=<chosen-inference-backend>
+./object-detection-inference --type=<Model Type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") --labels=</path/to/labels/file>  --weights=<path/to/model/weights> [--conf=</path/to/model/config>] [--min_confidence=<Conf Value>]
 ``` 
 ### To check all available options:
 ```
