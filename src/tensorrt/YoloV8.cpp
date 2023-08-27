@@ -53,8 +53,8 @@ void YoloV8::createContextAndAllocateBuffers(nvinfer1::ICudaEngine* engine, nvin
         if (engine->bindingIsInput(i))
         {
             const auto input_shape = std::vector{ dims.d[0], dims.d[1], dims.d[2], dims.d[3] };
-            input_width_ = dims.d[3];
-            input_height_ = dims.d[2];
+            network_width_ = dims.d[3];
+            network_height_ = dims.d[2];
             channels_ = dims.d[1];
         }
         else

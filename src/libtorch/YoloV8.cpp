@@ -21,8 +21,8 @@ YoloV8::YoloV8(const std::string& model_path, bool use_gpu,
     module_ = torch::jit::load(model_path, device_);
 
     // In libtorch i didn't find a way to get the input layer
-    input_width_ = 640;
-    input_height_ = 640;
+    network_width_ = 640;
+    network_height_ = 640;
     channels_ = 3;
 }
 
@@ -32,7 +32,7 @@ std::vector<Detection> YoloV8::run_detection(const cv::Mat& image)
     std::vector<float> input_tensor = preprocess_image(image);
 
     // Convert the input tensor to a Torch tensor
-    torch::Tensor input = torch::from_blob(input_tensor.data(), { 1, channels_, input_height_, input_width_ }, torch::kFloat32);
+    torch::Tensor input = torch::from_blob(input_tensor.data(), { 1, channels_, network_height_, network_width_ }, torch::kFloat32);
     input = input.to(device_);
 
     // Run inference

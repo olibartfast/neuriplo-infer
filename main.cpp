@@ -8,6 +8,7 @@
 #include "YoloNas.hpp"
 #else
 #include "YoloV8.hpp"
+#include "YoloNas.hpp"
 #endif
 
 
@@ -130,7 +131,11 @@ std::unique_ptr<Detector> createDetector(
     if(detectorType.find("yolov8") != std::string::npos)  
     {
         return std::make_unique<YoloV8>(weights, use_gpu);
-    }       
+    }    
+    else if(detectorType.find("yolonas") != std::string::npos)  
+    {
+        return std::make_unique<YoloNas>(weights, use_gpu);
+    }         
 #endif    
     
     else

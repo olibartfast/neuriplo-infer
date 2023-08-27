@@ -73,12 +73,12 @@ YoloV8::YoloV8(const std::string& model_path, bool use_gpu,
         logger_->info("\t{} : {}", input_names_.at(i), print_shape(input_shapes));
         input_shapes_.emplace_back(input_shapes);
     }
-    input_width_ = static_cast<int>(input_shapes_[0][3]);
-    input_height_ = static_cast<int>(input_shapes_[0][2]);
+    network_width_ = static_cast<int>(input_shapes_[0][3]);
+    network_height_ = static_cast<int>(input_shapes_[0][2]);
     channels_ = static_cast<int>(input_shapes_[0][1]);
     logger_->info("channels {}", channels_);
-    logger_->info("w {}", input_width_);
-    logger_->info("h {}", input_height_);
+    logger_->info("w {}", network_width_);
+    logger_->info("h {}", network_height_);
 
     // print name/shape of outputs
     logger_->info("Output Node Name/Shape ({}):", session_.GetOutputCount());

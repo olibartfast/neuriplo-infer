@@ -33,12 +33,12 @@ std::vector<Detection> YoloNas::run_detection(const cv::Mat& frame){
 	net_.setInput(inputBlob);
     net_.forward(outs, net_.getUnconnectedOutLayersNames());
 
-    float *scores_data = (float *)outs[0].data;
-    float *boxes_data = (float *)outs[1].data;
+    float *scores_data = (float *)outs[1].data;
+    float *boxes_data = (float *)outs[0].data;
 
     int rows = outs[0].size[1];
-    int dimensions_scores = outs[0].size[2];
-    int dimensions_boxes = outs[1].size[2];
+    int dimensions_boxes = outs[0].size[2]; 
+    int dimensions_scores = outs[1].size[2];
 
     // Iterate through detections.
     for (int i = 0; i < rows; ++i) 
