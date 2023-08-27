@@ -118,8 +118,7 @@ std::vector<Detection> Yolo::postprocess(const float*  output0, const  std::vect
     std::vector<cv::Rect> boxes;
     std::vector<float> confs;
     std::vector<int> classIds;
-    const auto conf_threshold = 0.25f;
-    const auto iou_threshold = 0.4f;
+
     
     std::vector<std::vector<float>> picked_proposals;
 
@@ -130,7 +129,7 @@ std::vector<Detection> Yolo::postprocess(const float*  output0, const  std::vect
         const float* scoresPtr = bboxesPtr + 4;
         auto maxSPtr = std::max_element(scoresPtr, scoresPtr + num_classes);
         float score = *maxSPtr;
-        if (score > conf_threshold) {
+        if (score > confidenceThreshold_) {
             boxes.emplace_back(get_rect(frame_size, std::vector<float>(bboxesPtr, bboxesPtr + 4)));
             int label = maxSPtr - scoresPtr;
             confs.emplace_back(score);
@@ -140,7 +139,7 @@ std::vector<Detection> Yolo::postprocess(const float*  output0, const  std::vect
 
     // Perform Non Maximum Suppression and draw predictions.
     std::vector<int> indices;
-    cv::dnn::NMSBoxes(boxes, confs, conf_threshold, iou_threshold, indices);
+    cv::dnn::NMSBoxes(boxes, confs, confidenceThreshold_, nms_threshold_, indices);
     std::vector<Detection> detections;
     for (int i = 0; i < indices.size(); i++)
     {

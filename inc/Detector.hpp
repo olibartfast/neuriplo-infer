@@ -11,7 +11,8 @@ struct Detection
 class Detector{
 protected:	
   	std::string modelBinary_; 
-	float confidenceThreshold_; 	  
+	float confidenceThreshold_; 
+	float nms_threshold_ = 0.4f;	  
   	size_t network_width_;
   	size_t network_height_;	
 	std::string backend_;

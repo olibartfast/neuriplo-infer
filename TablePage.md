@@ -14,5 +14,5 @@ The table represents a specific model and includes the following details:
 | Any yolov6 model                              | yolov6     | o          | x        | x        | x            | x             |
 | Any yolov7 model                              | yolov7     | o          | x        | x        | x            | x             |
 | Any yolov8 model                              | yolov8     | o          | o        | o        | o            | x             |
-| Any yolo-nas model                            | yolonas    | o          | x        | x        | x            | x             |
+| Any yolo-nas model                            | yolonas    | o          | x        | x        | o            | x             |
 | Any models from TF2 Object Detection API model zoo | tensorflow | x          | x        | x        | x            | o             |

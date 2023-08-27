@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.20)
 project (object-detection-inference)
 
 find_package( OpenCV REQUIRED )
@@ -10,9 +10,8 @@ pkg_search_module(GLIB REQUIRED glib-2.0)
 pkg_search_module(GOBJECT REQUIRED gobject-2.0)
 set(CMAKE_CXX_STANDARD 17)
 
-
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "OPENCV_DNN")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT")
@@ -23,9 +22,6 @@ if(SUPPORTED_BACKEND_INDEX EQUAL -1)
     message(STATUS "Unsupported default backend: ${DEFAULT_BACKEND}")
     set(DEFAULT_BACKEND "OPENCV_DNN") 
 endif()
-
-# Set the source files for your project
-set(SOURCES main.cpp)
 
 # Include directories for OpenCV
 include_directories(${OpenCV_INCLUDE_DIRS} include src)
@@ -100,8 +96,6 @@ else()
     message(status ": using ${DEFAULT_BACKEND} as default inference backend")
     add_compile_definitions(USE_OPENCV_DNN)
 endif()
-
-
 
 
 set(SOURCES main.cpp src/GStreamerOpenCV.cpp src/Detector.cpp src/Yolo.cpp)

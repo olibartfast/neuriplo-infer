@@ -61,7 +61,7 @@ std::vector<Detection> YoloV8::run_detection(const cv::Mat& frame){
 
         minMaxLoc(scores, 0, &maxClassScore, 0, &class_id);
 
-        if (maxClassScore > score_threshold_)
+        if (maxClassScore > confidenceThreshold_)
         {
             confidences.push_back(maxClassScore);
             classIds.push_back(class_id.x);
@@ -75,7 +75,7 @@ std::vector<Detection> YoloV8::run_detection(const cv::Mat& frame){
 
     // Perform Non Maximum Suppression and draw predictions.
     std::vector<int> indices;
-    cv::dnn::NMSBoxes(boxes, confidences, score_threshold_, nms_threshold_, indices);
+    cv::dnn::NMSBoxes(boxes, confidences, confidenceThreshold_, nms_threshold_, indices);
     std::vector<Detection> detections;
     for (int i = 0; i < indices.size(); i++) 
     {

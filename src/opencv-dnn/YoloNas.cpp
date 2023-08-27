@@ -37,8 +37,8 @@ std::vector<Detection> YoloNas::run_detection(const cv::Mat& frame){
     float *boxes_data = (float *)outs[0].data;
 
     int rows = outs[0].size[1];
-    int dimensions_boxes = outs[0].size[2]; 
-    int dimensions_scores = outs[1].size[2];
+    int dimensions_boxes = outs[0].size[2];  // 4
+    int dimensions_scores = outs[1].size[2]; // num classes (80)
 
     // Iterate through detections.
     for (int i = 0; i < rows; ++i) 
