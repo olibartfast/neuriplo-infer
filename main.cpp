@@ -6,9 +6,11 @@
 #include "YoloV4.hpp"
 #include "YoloVn.hpp"
 #include "YoloNas.hpp"
-#else
+#elif USE_ONNX_RUNTIME
 #include "YoloV8.hpp"
 #include "YoloNas.hpp"
+#else
+#include "YoloV8.hpp"
 #endif
 
 
@@ -43,6 +45,11 @@ bool isDirectory(const std::string& path) {
     std::filesystem::path fsPath(path);
     return std::filesystem::is_directory(fsPath);
 }
+
+bool isFile(const std::string& path) {
+    return std::filesystem::exists(path);
+}
+
 
 
 
@@ -126,8 +133,8 @@ std::unique_ptr<Detector> createDetector(
     else if(detectorType.find("yolonas") != std::string::npos)  
     {
         return std::make_unique<YoloNas>(weights);
-    }   
-#else
+    }  
+#elif USE_ONNX_RUNTIME
     if(detectorType.find("yolov8") != std::string::npos)  
     {
         return std::make_unique<YoloV8>(weights, use_gpu);
@@ -135,7 +142,12 @@ std::unique_ptr<Detector> createDetector(
     else if(detectorType.find("yolonas") != std::string::npos)  
     {
         return std::make_unique<YoloNas>(weights, use_gpu);
-    }         
+    } 
+#else
+    if(detectorType.find("yolov8") != std::string::npos)  
+    {
+        return std::make_unique<YoloV8>(weights, use_gpu);
+    }          
 #endif    
     
     else
@@ -179,9 +191,27 @@ int main (int argc, char *argv[])
     gstocv->setState(GST_STATE_PLAYING);
   
     const std::string weights = parser.get<std::string>("weights");
+    if(!isFile(weights))
+    {
+         logger->error("weights file {} doesn't exist", weights);
+         std::exit(1);
+    }
+
     const std::string labelsPath = parser.get<std::string>("labels");
-    const std::string detectorType = parser.get<std::string>("type");
+    if(!isFile(labelsPath))
+    {
+         logger->error("labels file {} doesn't exist", labelsPath);
+         std::exit(1);
+    }
+
     const std::string conf =  parser.get<std::string>("conf");
+    if(!conf.empty() && !isFile(conf))
+    {
+         logger->error("conf file {} doesn't exist", conf);
+         std::exit(1);
+    }
+
+    const std::string detectorType = parser.get<std::string>("type");
     float confidenceThreshold = parser.get<float>("min_confidence");
     std::vector<std::string> classes = readLabelNames(labelsPath); 
     logger->info("Current path is {}", std::filesystem::current_path().c_str()); 
@@ -190,7 +220,7 @@ int main (int argc, char *argv[])
     std::unique_ptr<Detector> detector = createDetector(detectorType, use_gpu, labelsPath, weights, conf); 
     if(!detector)
     {
-        std::cerr << "Detector creation fail!" << std::endl;
+        logger->error("Detector creation fail!");
         std::exit(1);
     }
 

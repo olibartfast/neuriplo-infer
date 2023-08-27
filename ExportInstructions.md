@@ -10,7 +10,7 @@ Install YoloV8 [following official documentation](https://docs.ultralytics.com/q
 To export the model in the TorchScript format:
 
 ```
-yolo export model=best.pt format=torchscript device=0
+yolo export model=best.pt format=torchscript
 ```
 
 #### OnnxRuntime
@@ -26,7 +26,7 @@ yolo export model=best.pt format=onnx
 To export the model in the TensorRT format:
 
 ```
-yolo export model=best.pt format=engine device=0
+yolo export model=best.pt format=engine
 ```
 
 Please note that when using TensorRT, ensure that the version installed under Ultralytics python environment matches the C++ version you plan to use for inference. Another way to export the model is to use `trtexec` with the following command:
@@ -35,4 +35,4 @@ Please note that when using TensorRT, ensure that the version installed under Ul
 trtexec --onnx=best.onnx --saveEngine=best.engine
 ```
 
-By following these steps, you can successfully export the model in the desired formats for further inference.
+### YoloNas
