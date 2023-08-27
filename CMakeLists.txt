@@ -134,7 +134,7 @@ endif()
 
 # Link against the ONNX Runtime library if selected
 if(DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
-set(ONNX_RUNTIME_SOURCES src/onnx-runtime/YoloV8.cpp)
+set(ONNX_RUNTIME_SOURCES src/onnx-runtime/YoloV8.cpp src/onnx-runtime/YoloNas.cpp)
 target_sources(${PROJECT_NAME} PRIVATE ${ONNX_RUNTIME_SOURCES})
     target_link_libraries(${PROJECT_NAME}
         ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so
