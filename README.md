@@ -16,8 +16,11 @@
  If needed specific inference backend, set DEFAULT_BACKEND in CMakeLists with proper option(i.e  ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN) or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
 
  ### Export the model for the inference
-[YoloV8](ExportInstructions.md#yolov8)
-[YoloNas](ExportInstructions.md#yolonas)
+* [YoloV8](ExportInstructions.md#yolov8)
+* [YoloNas](ExportInstructions.md#yolonas)
+* [YoloV5](ExportInstructions.md#yolov5)
+* [YoloV6](ExportInstructions.md#yolov6)
+* [YoloV7](ExportInstructions.md#yolov7)
 
 ## To Build and Compile  
 * mkdir build
