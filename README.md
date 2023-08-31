@@ -5,7 +5,7 @@
 * CMake (3.22.1)
 * GStreamer (1.20.3)
 * OpenCV (4.7.0) 
-* C++ compiler with C++17 support
+* C++ compiler with C++17 support (i.e. GCC 8.0 and newer)
 ### Optionally 
 * Tensorflow prebuilt library from [Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc)
 * CUDA (if you want to use GPU, CUDA 12 is supported for LibTorch and TensorRT, I used CUDA 11.8 for onnx-rt)
@@ -25,8 +25,8 @@
 ## To Build and Compile  
 * mkdir build
 * cd build
-* cmake ..
-* make
+* cmake -DDEFAULT_BACKEND=<chosen backend> -DCMAKE_BUILD_TYPE=Release .. 
+* cmake --build .
 
 ## Usage
 ```
