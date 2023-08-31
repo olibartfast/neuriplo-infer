@@ -25,7 +25,7 @@
 ## To Build and Compile  
 * mkdir build
 * cd build
-* cmake -DDEFAULT_BACKEND=<chosen backend> -DCMAKE_BUILD_TYPE=Release .. 
+* cmake -DDEFAULT_BACKEND=chosen_backend -DCMAKE_BUILD_TYPE=Release .. 
 * cmake --build .
 
 ## Usage
