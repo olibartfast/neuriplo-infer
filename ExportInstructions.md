@@ -3,7 +3,7 @@
 ### Export the model for the inference
 ## YoloV8
 
-Install YoloV8 [following official documentation](https://docs.ultralytics.com/quickstart/) and export the model in different formats, you can use the following commands:
+Install YoloV8 [following Ultralytics official documentation](https://docs.ultralytics.com/quickstart/) and export the model in different formats, you can use the following commands:
 
 #### Torchscript
 
@@ -46,10 +46,11 @@ Weights to export in ONNX format or download from [yolov6 repo](https://github.c
 
 ## RT-DETR
 #### OnnxRuntime
-[following official documentation](https://docs.ultralytics.com/quickstart/) and export the model in different formats, you can use the following commands:
-yolo export model=best.pt(a trained or ptretrained rtdetr-l or trdetr-x) format=onnx
-
-
+Always using [Ultralytics pip package](https://docs.ultralytics.com/quickstart/) export the model to onnx using the following command:
+```
+yolo export model=best.pt(in this case best.pt is a trained rtdetr-l or rtdetr-x model) format=onnx
+```
+More infos here: https://docs.ultralytics.com/models/rtdetr/
 
 ## YoloV7
 #### OnnxRuntime
