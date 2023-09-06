@@ -9,6 +9,7 @@
 #elif USE_ONNX_RUNTIME
 #include "YoloV8.hpp"
 #include "YoloNas.hpp"
+#include "RtDetr.hpp"
 #else
 #include "YoloV8.hpp"
 #endif
@@ -31,7 +32,7 @@ void initializeLogger() {
 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov8 | yolov4, yolov5, yolov6, yolov7, tensorflow}"
+      "{ type     |  yolov8 | yolov4, yolov5, yolov6, yolov7, tensorflow, rtdetr}"
       "{ link l   |   | capture video from ip camera}"
       "{ labels lb  |  | path to class labels}"
       "{ conf c   |   | model configuration file}"
@@ -142,7 +143,11 @@ std::unique_ptr<Detector> createDetector(
     else if(detectorType.find("yolonas") != std::string::npos)  
     {
         return std::make_unique<YoloNas>(weights, use_gpu);
-    } 
+    }
+    else if(detectorType.find("rtdetr") != std::string::npos)  
+    {
+        return std::make_unique<RtDetr>(weights, use_gpu);
+    }     
 #else
     if(detectorType.find("yolov8") != std::string::npos)  
     {

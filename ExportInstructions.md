@@ -10,7 +10,7 @@ Install YoloV8 [following official documentation](https://docs.ultralytics.com/q
 To export the model in the TorchScript format:
 
 ```
-yolo export model=best.pt format=torchscript
+yolo export model=best.pt(the best corrisponding to your trained yolov8n/s/m/x) format=torchscript
 ```
 
 #### OnnxRuntime
@@ -43,6 +43,13 @@ trtexec --onnx=best.onnx --saveEngine=best.engine
 ## YoloV6
 #### OnnxRuntime
 Weights to export in ONNX format or download from [yolov6 repo](https://github.com/meituan/YOLOv6/tree/main/deploy/ONNX). Posteprocessing code is identical to yolov5-v7.
+
+## RT-DETR
+#### OnnxRuntime
+[following official documentation](https://docs.ultralytics.com/quickstart/) and export the model in different formats, you can use the following commands:
+yolo export model=best.pt(a trained or ptretrained rtdetr-l or trdetr-x) format=onnx
+
+
 
 ## YoloV7
 #### OnnxRuntime
