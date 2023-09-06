@@ -15,13 +15,6 @@
 ### Notes
  If needed specific inference backend, set DEFAULT_BACKEND in CMakeLists with proper option(i.e  ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN) or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
 
- ### Export the model for the inference
-* [YoloV8](ExportInstructions.md#yolov8)
-* [YoloNas](ExportInstructions.md#yolonas)
-* [YoloV5](ExportInstructions.md#yolov5)
-* [YoloV6](ExportInstructions.md#yolov6)
-* [YoloV7](ExportInstructions.md#yolov7)
-* [RT-DETR](ExportInstructions.md#RT-DETR)
 
 ## To Build and Compile  
 * mkdir build
@@ -37,6 +30,18 @@
 ```
 ./object-detection-inference --help
 ```
+### Run demo example
+Run inference using yolov8s and TensorRT backend:  
+build setting for cmake DEFAULT_BACKEND=TENSORRT, then launch
+```
+./object-detection-inference --type=yolov8 --weights=/path/to/weights/your_yolov8s.engine --link=/path/to/video.mp4 --labels=/path/to/labels.names
+```
+
+Run inference using rtdetr-l and Onnx-runtime backend:  
+build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then launch
+```
+./object-detection-inference --type=rtdetr --weights=/path/to/weights/your_rtdetr-l.onnx --link=/path/to/video.mp4 --labels=/path/to/labels.names
+```
 
 > **Note:** The table below provides information about models for object detection and supported framework backends. 
 
@@ -51,6 +56,14 @@
 
 [Link to Table](TablePage.md#table-of-models)
 
+
+ ### Export the model for the inference
+* [YoloV8](ExportInstructions.md#yolov8)
+* [YoloNas](ExportInstructions.md#yolonas)
+* [YoloV5](ExportInstructions.md#yolov5)
+* [YoloV6](ExportInstructions.md#yolov6)
+* [YoloV7](ExportInstructions.md#yolov7)
+* [RT-DETR](ExportInstructions.md#RT-DETR)
 
 ## References
 * Using GStreamer to receive a video stream and process it with OpenCV:  
