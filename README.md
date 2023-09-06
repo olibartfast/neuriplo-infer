@@ -21,6 +21,7 @@
 * [YoloV5](ExportInstructions.md#yolov5)
 * [YoloV6](ExportInstructions.md#yolov6)
 * [YoloV7](ExportInstructions.md#yolov7)
+* [RT-DETR](ExportInstructions.md#RT-DETR)
 
 ## To Build and Compile  
 * mkdir build
