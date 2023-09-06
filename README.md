@@ -30,7 +30,7 @@
 ```
 ./object-detection-inference --help
 ```
-### Run demo example
+### Run demo example:
 Run inference using yolov8s and TensorRT backend:  
 build setting for cmake DEFAULT_BACKEND=TENSORRT, then launch
 ```
@@ -43,21 +43,13 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then launch
 ./object-detection-inference --type=rtdetr --weights=/path/to/weights/your_rtdetr-l.onnx --link=/path/to/video.mp4 --labels=/path/to/labels.names
 ```
 
-> **Note:** The table below provides information about models for object detection and supported framework backends. 
+## Available Models
 
-> Available Models:
-> - YOLOv4/YOLOv4-tiny
-> - YOLOv7x/YOLOv7-tiny
-> - YOLOv5n/s/m/l/x
-> - YOLOv6n/s/m/l
-> - YOLOv8n/s/m/l/x
-> - YOLO-NAS-s/m/l/x
-> - TensorFlow Object Detection API
-
-[Link to Table](TablePage.md#table-of-models)
+* The table below provides information about available models for object detection and supported framework backends: 
+[Link to Table Page](TablePage.md#table-of-models)
 
 
- ### Export the model for the inference
+ ### Export a model for the inference
 * [YoloV8](ExportInstructions.md#yolov8)
 * [YoloNas](ExportInstructions.md#yolonas)
 * [YoloV5](ExportInstructions.md#yolov5)
