@@ -1,5 +1,5 @@
-### Object detection inference from IP camer (or video) stream using GStreamer 
-
+### Object detection inference
+* Inference for object detection from an IP camera or video stream using GStreamer for video capture, along with the integration of multiple switchable frameworks to manage the inference process.
 ##  Dependencies (In parentheses version used in this project)
 ### Required
 * CMake (3.22.1)
