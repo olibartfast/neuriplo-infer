@@ -137,7 +137,7 @@ endif()
 
 # Link against the LibTorch library if selected
 if(DEFAULT_BACKEND STREQUAL "LIBTORCH")
-set(LIBTORCH_SOURCES src/libtorch/YoloV8.cpp)
+set(LIBTORCH_SOURCES src/libtorch/YoloV8.cpp src/libtorch/RtDetr.cpp)
 target_sources(${PROJECT_NAME} PRIVATE ${LIBTORCH_SOURCES})
     target_link_libraries(${PROJECT_NAME}
         ${TORCH_LIBRARIES}
@@ -146,7 +146,7 @@ endif()
 
 # Link against the TensorRT library if selected
 if(DEFAULT_BACKEND STREQUAL "TENSORRT")
-    set(TENSORRT_SOURCES src/tensorrt/YoloV8.cpp)
+    set(TENSORRT_SOURCES src/tensorrt/YoloV8.cpp src/tensorrt/RtDetr.cpp)
     target_sources(${PROJECT_NAME} PRIVATE ${TENSORRT_SOURCES})
     target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser cudart)
 endif()
