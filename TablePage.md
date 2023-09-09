@@ -15,5 +15,5 @@ The table represents a specific model and includes the following details:
 | yolov7 models                              | yolov7     | o          | x        | x        | x            | x             |
 | yolov8 models                           | yolov8     | o          | o        | o        | o            | x             |
 | yolo-nas models                            | yolonas    | o          | x        | x        | o            | x             |
-| rt-detr models                            | rtdetr    |x          | x        | o        | o            | x             |
+| rt-detr models                            | rtdetr    |x          | o        | o        | o            | x             |
 | models from TF2 Object Detection API model zoo | tensorflow | x          | x        | x        | x            | o             |
