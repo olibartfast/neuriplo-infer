@@ -56,6 +56,19 @@ As previous for onnx case, change format=torchscript, i.e.
 yolo export model=best.pt format=torchscript 
 ```
 More infos here: https://docs.ultralytics.com/models/rtdetr/
+
+#### TensorRT
+Same as explained for YoloV8 above:
+
+```
+trtexec --onnx=yourmodel.onnx --saveEngine=yourmodel.engine
+```
+or 
+
+```
+yolo export model=yourmodel.pt format=engine
+```
+
 ## YoloV7
 #### OnnxRuntime
 * Run from [yolov7 repo](https://github.com/WongKinYiu/yolov7#export): ```python export.py --weights <yolov7_version>.pt --grid  --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --img-size 640 640 --max-wh 640``` (Don't use end-to-end parameter)
@@ -71,6 +84,7 @@ from super_gradients.training import models
 net = models.get("yolo_nas_s", pretrained_weights="coco")
 models.convert_to_onnx(model=net, input_shape=(3,640,640), out_path="yolo_nas_s.onnx", torch_onnx_export_kwargs={"input_names": ['input'], "output_names": ['output0', 'output1']})
 ```
+
 
 ## Note
 Opencv-dnn module loads onnx models
