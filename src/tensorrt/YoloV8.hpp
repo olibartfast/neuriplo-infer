@@ -4,18 +4,7 @@
 #include <cuda_runtime_api.h>  // for CUDA runtime API
 #include <fstream>
 
-class Logger : public nvinfer1::ILogger
-{
-public:
-    void log(Severity severity, const char* msg) noexcept override
-    {
-        // Implement logging behavior here, e.g., print the log message
-        if (severity != Severity::kINFO)
-        {
-            std::cout << "TensorRT Logger: " << msg << std::endl;
-        }
-    }
-};
+#include "Logger.hpp"
 
 class YoloV8 : public Yolo
 {

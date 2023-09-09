@@ -15,6 +15,7 @@
 #include "RtDetr.hpp"
 #else // supported from all backends
 #include "YoloV8.hpp"
+#include "RtDetr.hpp"
 #endif
 
 
@@ -164,7 +165,11 @@ std::unique_ptr<Detector> createDetector(
     if(detectorType.find("yolov8") != std::string::npos)  
     {
         return std::make_unique<YoloV8>(weights, use_gpu);
-    }          
+    }      
+    else if(detectorType.find("rtdetr") != std::string::npos)  
+    {
+        return std::make_unique<RtDetr>(weights, use_gpu);
+    }         
 #endif    
     
     else

@@ -146,7 +146,7 @@ endif()
 
 # Link against the TensorRT library if selected
 if(DEFAULT_BACKEND STREQUAL "TENSORRT")
-    set(TENSORRT_SOURCES src/tensorrt/YoloV8.cpp)
+    set(TENSORRT_SOURCES src/tensorrt/YoloV8.cpp src/tensorrt/RtDetr.cpp)
     target_sources(${PROJECT_NAME} PRIVATE ${TENSORRT_SOURCES})
     target_link_libraries(${PROJECT_NAME} nvinfer nvonnxparser cudart)
 endif()
