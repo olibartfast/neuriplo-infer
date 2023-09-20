@@ -11,7 +11,7 @@ pkg_search_module(GOBJECT REQUIRED gobject-2.0)
 set(CMAKE_CXX_STANDARD 17)
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "OPENCV_DNN")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "LIBTORCH")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT")
@@ -137,7 +137,7 @@ endif()
 
 # Link against the LibTorch library if selected
 if(DEFAULT_BACKEND STREQUAL "LIBTORCH")
-set(LIBTORCH_SOURCES src/libtorch/YoloV8.cpp src/libtorch/RtDetr.cpp)
+set(LIBTORCH_SOURCES src/libtorch/YoloV8.cpp src/libtorch/RtDetr.cpp src/libtorch/YoloVn.cpp)
 target_sources(${PROJECT_NAME} PRIVATE ${LIBTORCH_SOURCES})
     target_link_libraries(${PROJECT_NAME}
         ${TORCH_LIBRARIES}
