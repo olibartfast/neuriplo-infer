@@ -13,6 +13,7 @@
 #elif USE_LIBTORCH
 #include "YoloV8.hpp"
 #include "RtDetr.hpp"
+#include "YoloVn.hpp"
 #else // supported from all backends
 #include "YoloV8.hpp"
 #include "RtDetr.hpp"
@@ -160,7 +161,13 @@ std::unique_ptr<Detector> createDetector(
     else if(detectorType.find("rtdetr") != std::string::npos)  
     {
         return std::make_unique<RtDetr>(weights, use_gpu);
-    }     
+    } 
+    else if(detectorType.find("yolov5") != std::string::npos || 
+        detectorType.find("yolov6") != std::string::npos  ||
+        detectorType.find("yolov7") != std::string::npos)  
+    {
+        return std::make_unique<YoloVn>(weights);
+    }        
 #else
     if(detectorType.find("yolov8") != std::string::npos)  
     {
