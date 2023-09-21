@@ -1,55 +1,55 @@
-### Object detection inference
-* Inference for object detection from an IP camera or video stream using GStreamer for video capture, along with the integration of multiple switchable frameworks to manage the inference process.
-##  Dependencies (In parentheses version used in this project)
-### Required
+### Object Detection Inference
+* Inference for object detection from an IP camera or video stream using GStreamer for video capture, along with the integration of several switchable frameworks to manage the inference process.
+## Dependencies (In parentheses, version used in this project)
+## Required
 * CMake (3.22.1)
 * GStreamer (1.20.3)
 * OpenCV (4.7.0) 
-* C++ compiler with C++17 support (i.e. GCC 8.0 and newer)
-### Optionally 
+* C++ compiler with C++17 support (i.e. GCC 8.0 and later)
+### Optional 
 * Tensorflow prebuilt library from [Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc)
 * CUDA (if you want to use GPU, CUDA 12 is supported for LibTorch and TensorRT, I used CUDA 11.8 for onnx-rt)
 * ONNX Runtime (1.15.1 gpu package)
 * LibTorch (2.0.1-cu118)
 * TensorRT (8.6.1.6)
 ### Notes
- If needed specific inference backend, set DEFAULT_BACKEND in CMakeLists with proper option(i.e  ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN) or set it using cmake from command line. If not inference backend is specified OpenCV-DNN module is used as default 
+ If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default. 
 
 
-## To Build and Compile  
+## To build and compile  
 * mkdir build
 * cd build
-* cmake -DDEFAULT_BACKEND=chosen_backend -DCMAKE_BUILD_TYPE=Release .. 
+* cmake -DDEFAULT_BACKEND=chosen_backend -DCMAKE_BUILD_TYPE=Release ... 
 * cmake --build .
 
 ## Usage
 ```
-./object-detection-inference --type=<Model Type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") --labels=</path/to/labels/file>  --weights=<path/to/model/weights> [--conf=</path/to/model/config>] [--min_confidence=<Conf Value>]
+./object-detection-inference --type=<model type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") --labels=</path/to/labels/file> --weights=<path/to/model/weights> [--conf=</path/to/model/config>] [--min_confidence=<confidence value>].
 ``` 
 ### To check all available options:
 ```
 ./object-detection-inference --help
 ```
-### Run demo example:
-Run inference using yolov8s and TensorRT backend:  
-build setting for cmake DEFAULT_BACKEND=TENSORRT, then launch
+### Run the demo example:
+Running inference with yolov8s and the TensorRT backend:  
+build setting for cmake DEFAULT_BACKEND=TENSORRT, then run
 ```
 ./object-detection-inference --type=yolov8 --weights=/path/to/weights/your_yolov8s.engine --link=/path/to/video.mp4 --labels=/path/to/labels.names
 ```
 
-Run inference using rtdetr-l and Onnx-runtime backend:  
-build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then launch
+Run the inference with rtdetr-l and the Onnx runtime backend:  
+build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 ```
 ./object-detection-inference --type=rtdetr --weights=/path/to/weights/your_rtdetr-l.onnx --link=/path/to/video.mp4 --labels=/path/to/labels.names
 ```
 
-## Available Models
+## Available models
 
-* The table below provides information about available models for object detection and supported framework backends: 
+* The following table provides information about available object recognition models and supported framework backends: 
 [Link to Table Page](TablePage.md#table-of-models)
 
 
- ### Export a model for the inference
+ ### Exporting a model for inference
 * [YoloV8](ExportInstructions.md#yolov8)
 * [YoloNas](ExportInstructions.md#yolonas)
 * [YoloV5](ExportInstructions.md#yolov5)
@@ -58,14 +58,6 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then launch
 * [RT-DETR](ExportInstructions.md#RT-DETR)
 
 ## References
-* Using GStreamer to receive a video stream and process it with OpenCV:  
-https://stackoverflow.com/questions/10403588/adding-opencv-processing-to-gstreamer-application 
 
-
-* Object detection using dnn module:  
-https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp  
-
-
-
-
-
+* Object detection using the dnn module:  
+https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp
