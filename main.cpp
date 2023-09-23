@@ -1,11 +1,4 @@
-#include "VideoCaptureInterface.hpp"
-
-#ifdef USE_GSTREAMER
-#include "GStreamerCapture.hpp"
-#else
-#include "OpenCVCapture.hpp"
-#endif
-
+#include "VideoCaptureFactory.hpp"
 #include "DetectorFactory.hpp"
 #include "Logger.hpp"
 #include "utils.hpp"
@@ -84,13 +77,7 @@ int main (int argc, char *argv[])
         std::exit(1);
     }
 
-    std::unique_ptr<VideoCaptureInterface> videoInterface;
-
-#ifdef USE_GSTREAMER
-        videoInterface = std::make_unique<GStreamerCapture>();
-#else
-        videoInterface = std::make_unique<OpenCVCapture>();
-#endif
+    std::unique_ptr<VideoCaptureInterface> videoInterface = createVideoInterface();
 
     if (!videoInterface->initialize(link)) {
         logger->error("Failed to initialize video capture");

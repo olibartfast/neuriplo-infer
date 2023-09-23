@@ -60,16 +60,16 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 ## Available models
 
 * The following table provides information about available object recognition models and supported framework backends: 
-[Link to Table Page](TablePage.md#table-of-models)
+[Link to Table Page](docs/TablePage.md#table-of-models)
 
 
  ### Exporting a model for inference
-* [YoloV8](ExportInstructions.md#yolov8)
-* [YoloNas](ExportInstructions.md#yolonas)
-* [YoloV5](ExportInstructions.md#yolov5)
-* [YoloV6](ExportInstructions.md#yolov6)
-* [YoloV7](ExportInstructions.md#yolov7)
-* [RT-DETR](ExportInstructions.md#RT-DETR)
+* [YoloV8](docs/ExportInstructions.md#yolov8)
+* [YoloNas](docs/ExportInstructions.md#yolonas)
+* [YoloV5](docs/ExportInstructions.md#yolov5)
+* [YoloV6](docs/ExportInstructions.md#yolov6)
+* [YoloV7](docs/ExportInstructions.md#yolov7)
+* [RT-DETR](docs/ExportInstructions.md#RT-DETR)
 
 ## References
 * [Object detection using the opencv dnn module](https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp)
