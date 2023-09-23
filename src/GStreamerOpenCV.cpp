@@ -1,11 +1,15 @@
 #include "GStreamerOpenCV.hpp"
 
+std::mutex GStreamerOpenCV::frameMutex_;
+std::condition_variable  GStreamerOpenCV::frameAvailable_; 
+cv::Mat GStreamerOpenCV::frame_;
+bool GStreamerOpenCV::end_of_stream_ = false;
+bool GStreamerOpenCV::isFrameReady_ = false;
+
+
 GStreamerOpenCV::GStreamerOpenCV() {
     error_ = nullptr;
 }
-
-bool GStreamerOpenCV::end_of_stream_ = false;
-
 
 void GStreamerOpenCV::setEndOfStream(bool value) {
     end_of_stream_ = value;
@@ -63,6 +67,7 @@ GstFlowReturn GStreamerOpenCV::newPreroll(GstAppSink* appsink, gpointer data) {
 }
 
 GstFlowReturn GStreamerOpenCV::newSample(GstAppSink* appsink, gpointer data) {
+    isFrameReady_ = false;
     static int frameWidth = 0, frameHeight = 0;
     static int framecount = 0;
     framecount++;
@@ -88,9 +93,16 @@ GstFlowReturn GStreamerOpenCV::newSample(GstAppSink* appsink, gpointer data) {
     cv::Mat mYUV(frameHeight + frameHeight / 2, frameWidth, CV_8UC1, map.data);
     cv::Mat mRGB(frameHeight, frameWidth, CV_8UC3);
     cvtColor(mYUV, mRGB, cv::COLOR_YUV2RGBA_YV12, 3);
-    mRGB.copyTo(GStreamerOpenCV::frame_);
-    int frameSize = map.size;
+  
+    // Signal that a new frame is available
+    {
+        std::lock_guard<std::mutex> lock(frameMutex_);
+        mRGB.copyTo(GStreamerOpenCV::frame_);
+        isFrameReady_ = true;
+        frameAvailable_.notify_one();
+    }
 
+    int frameSize = map.size;
     gst_buffer_unmap(buffer, &map);
 
     // Show caps on the first frame
@@ -99,6 +111,10 @@ GstFlowReturn GStreamerOpenCV::newSample(GstAppSink* appsink, gpointer data) {
     }
 
     gst_sample_unref(sample);
+
+
+
+
     return GST_FLOW_OK;
 }
 

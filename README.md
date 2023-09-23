@@ -1,12 +1,12 @@
 ### Object Detection Inference
-* Inference for object detection from an IP camera or video stream using GStreamer for video capture, along with the integration of several switchable frameworks to manage the inference process.
+* Inference for object detection from an IP camera or video stream, with support for multiple switchable frameworks to manage the inference process, and optional GStreamer integration for video capture.
 ## Dependencies (In parentheses, version used in this project)
 ## Required
 * CMake (3.22.1)
-* GStreamer (1.20.3)
 * OpenCV (4.7.0) 
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
 ### Optional 
+* GStreamer (1.20.3) 
 * Tensorflow prebuilt library from [Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc)
 * CUDA (if you want to use GPU, CUDA 12 is supported for LibTorch and TensorRT, I used CUDA 11.8 for onnx-rt)
 * ONNX Runtime (1.15.1 gpu package)

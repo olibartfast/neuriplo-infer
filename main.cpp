@@ -1,4 +1,11 @@
-#include "GStreamerOpenCV.hpp"
+#include "VideoCaptureInterface.hpp"
+
+#ifdef USE_GSTREAMER
+#include "GStreamerCapture.hpp"
+#else
+#include "OpenCVCapture.hpp"
+#endif
+
 #include "DetectorFactory.hpp"
 #include "Logger.hpp"
 #include "utils.hpp"
@@ -43,14 +50,6 @@ int main (int argc, char *argv[])
     const bool use_opencv_dnn = parser.get<bool>("use_opencv_dnn");
     const bool use_gpu = parser.get<bool>("use_gpu");
 
-    std::unique_ptr<GStreamerOpenCV> gstocv = std::make_unique<GStreamerOpenCV>();
-    gstocv->initGstLibrary(argc, argv);
-    gstocv->runPipeline(link);
-    gstocv->checkError();
-    gstocv->getSink();
-    gstocv->setBus();
-    gstocv->setState(GST_STATE_PLAYING);
-  
     const std::string weights = parser.get<std::string>("weights");
     if(!isFile(weights))
     {
@@ -85,38 +84,42 @@ int main (int argc, char *argv[])
         std::exit(1);
     }
 
-    while (true) 
-    {
-        gstocv->setMainLoopEvent(false);
-        cv::Mat frame = gstocv->getFrame().clone();
-        if (!frame.empty())
-        {
-            auto start = std::chrono::steady_clock::now();
-            std::vector<Detection> detections = detector->run_detection(frame);
-            auto end = std::chrono::steady_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-            double fps = 1000.0 / duration;
-            std::string fpsText = "FPS: " + std::to_string(fps);
-            cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
-            for (const auto& d : detections) {
-                cv::rectangle(frame, d.bbox, cv::Scalar(255, 0, 0), 3);
-                draw_label(frame, classes[d.label], d.bbox.x, d.bbox.y);
-            }
+    std::unique_ptr<VideoCaptureInterface> videoInterface;
 
-            cv::imshow("opencv feed", frame);
-            char key = cv::waitKey(1);
-            if (key == 27 || key == 'q') {
-                logger->info("Exit requested");
-                break;
-            }
-            if (GStreamerOpenCV::isEndOfStream()) {
-                logger->info("Video stream has finished");
-                break;
-            }
-    
+#ifdef USE_GSTREAMER
+        videoInterface = std::make_unique<GStreamerCapture>();
+#else
+        videoInterface = std::make_unique<OpenCVCapture>();
+#endif
+
+    if (!videoInterface->initialize(link)) {
+        logger->error("Failed to initialize video capture");
+        return 1;
+    }    
+
+    cv::Mat frame;
+    while ( videoInterface->readFrame(frame)) 
+    {
+        auto start = std::chrono::steady_clock::now();
+        std::vector<Detection> detections = detector->run_detection(frame);
+        auto end = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        double fps = 1000.0 / duration;
+        std::string fpsText = "FPS: " + std::to_string(fps);
+        cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
+        for (const auto& d : detections) {
+            cv::rectangle(frame, d.bbox, cv::Scalar(255, 0, 0), 3);
+            draw_label(frame, classes[d.label], d.bbox.x, d.bbox.y);
+        }
+
+        cv::imshow("opencv feed", frame);
+        char key = cv::waitKey(1);
+        if (key == 27 || key == 'q') {
+            logger->info("Exit requested");
+            break;
         }
     }
     
-    gstocv->setState(GST_STATE_NULL);
+    videoInterface->release();
     return 0;  
 }
