@@ -17,10 +17,24 @@
 
 
 ## To build and compile  
-* mkdir build
-* cd build
-* cmake -DDEFAULT_BACKEND=chosen_backend -DCMAKE_BUILD_TYPE=Release ... 
-* cmake --build .
+```
+mkdir build
+cd build
+cmake -DDEFAULT_BACKEND=chosen_backend -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+To enable GStreamer support, you can add -DUSE_GSTREAMER=ON when running cmake, like this:
+```
+mkdir build
+cd build
+cmake -DDEFAULT_BACKEND=chosen_backend -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+This will set the USE_GSTREAMER option to "ON" during the CMake configuration process, enabling GStreamer support in your project.  
+Remember to replace chosen_backend with your actual backend selection.
+
 
 ## Usage
 ```
