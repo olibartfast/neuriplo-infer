@@ -4,6 +4,8 @@ project(object-detection-inference)
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(OpenCV REQUIRED)
+find_package(spdlog REQUIRED)
+
 
 # Define an option to enable or disable GStreamer support (default is ON)
 unset(USE_GSTREAMER CACHE)
@@ -35,6 +37,7 @@ endif()
 include(SelectBackend)
 
 
+
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Include directories and link libraries
@@ -42,11 +45,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     inc
     src
     ${OpenCV_INCLUDE_DIRS}
+    ${spdlog_INCLUDE_DIRS}
 )
 
+
 # Link libraries
-target_link_libraries(${PROJECT_NAME}
-    ${OpenCV_LIBS}
+target_link_libraries(${PROJECT_NAME}  spdlog::spdlog_header_only ${OpenCV_LIBS}
 )
 
 # Link against GStreamer libraries if USE_GSTREAMER is ON

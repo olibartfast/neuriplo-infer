@@ -4,6 +4,7 @@
 ## Required
 * CMake (3.22.1)
 * OpenCV (4.7.0) 
+* spdlog (1:1.9.2+ds-0.2) (apt-get install libspdlog-dev)
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
 ### Optional 
 * GStreamer (1.20.3) 
