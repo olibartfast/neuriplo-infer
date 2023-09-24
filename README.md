@@ -38,7 +38,11 @@ Remember to replace chosen_backend with your actual backend selection.
 
 ## Usage
 ```
-./object-detection-inference --type=<model type> --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") --labels=</path/to/labels/file> --weights=<path/to/model/weights> [--conf=</path/to/model/config>] [--min_confidence=<confidence value>].
+./object-detection-inference \
+    --type=<model type> \
+    --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") \
+    --labels=</path/to/labels/file> \
+    --weights=<path/to/model/weights> [--conf=</path/to/model/config>] [--min_confidence=<confidence value>].
 ``` 
 ### To check all available options:
 ```
@@ -48,13 +52,21 @@ Remember to replace chosen_backend with your actual backend selection.
 Running inference with yolov8s and the TensorRT backend:  
 build setting for cmake DEFAULT_BACKEND=TENSORRT, then run
 ```
-./object-detection-inference --type=yolov8 --weights=/path/to/weights/your_yolov8s.engine --link=/path/to/video.mp4 --labels=/path/to/labels.names
+./object-detection-inference \
+    --type=yolov8 \
+    --weights=/path/to/weights/your_yolov8s.engine \
+    --link=/path/to/video.mp4 \
+    --labels=/path/to/labels.names
 ```
 
 Run the inference with rtdetr-l and the Onnx runtime backend:  
 build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 ```
-./object-detection-inference --type=rtdetr --weights=/path/to/weights/your_rtdetr-l.onnx --link=/path/to/video.mp4 --labels=/path/to/labels.names
+./object-detection-inference  \
+    --type=rtdetr \
+    --weights=/path/to/weights/your_rtdetr-l.onnx \
+    --link=/path/to/video.mp4 \
+    --labels=/path/to/labels.names [--use-gpu]
 ```
 
 ## Available models
