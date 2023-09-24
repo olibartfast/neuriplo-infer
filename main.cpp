@@ -6,13 +6,12 @@
 
 static const std::string params = "{ help h   |   | print help message }"
       "{ type     |  yolov8 | yolov4, yolov5, yolov6, yolov7, tensorflow, rtdetr}"
-      "{ link l   |   | capture video from ip camera}"
+      "{ source s   |   | path to image or video source}"
       "{ labels lb  |  | path to class labels}"
-      "{ conf c   |   | model configuration file}"
+      "{ conf c   |   | optional model configuration file}"
       "{ weights w  |   | path to models weights}"
-      "{ use_opencv_dnn   | true  | use opencv dnn module to do inference}"
       "{ use_gpu   | false  | activate gpu support}"
-      "{ min_confidence | 0.25   | min confidence}";
+      "{ min_confidence | 0.25   | optional min confidence}";
 
 
 int main (int argc, char *argv[])
@@ -29,18 +28,17 @@ int main (int argc, char *argv[])
         parser.printMessage();
         std::exit(1);  
     }
-    std::string link = parser.get<std::string>("link");
+    std::string source = parser.get<std::string>("source");
     if (!parser.check())
     {
         parser.printErrors();
         std::exit(1);
     }
-    if (link.empty()){
+    if (source.empty()){
         logger->error("Can not open video stream" );
         std::exit(1);
     }
 
-    const bool use_opencv_dnn = parser.get<bool>("use_opencv_dnn");
     const bool use_gpu = parser.get<bool>("use_gpu");
 
     const std::string weights = parser.get<std::string>("weights");
@@ -79,8 +77,8 @@ int main (int argc, char *argv[])
 
     std::unique_ptr<VideoCaptureInterface> videoInterface = createVideoInterface();
 
-    if (!videoInterface->initialize(link)) {
-        logger->error("Failed to initialize video capture");
+    if (!videoInterface->initialize(source)) {
+        logger->error("Failed to initialize video capture for input: {}", source);
         return 1;
     }    
 

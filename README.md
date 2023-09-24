@@ -41,7 +41,7 @@ Remember to replace chosen_backend with your actual backend selection.
 ```
 ./object-detection-inference \
     --type=<model type> \
-    --link="rtsp://cameraip:port/somelivefeed" (or --link="path/to/video.format") \
+    --source="rtsp://cameraip:port/somelivefeed" (or --source="path/to/video.format") \
     --labels=</path/to/labels/file> \
     --weights=<path/to/model/weights> [--conf=</path/to/model/config>] [--min_confidence=<confidence value>].
 ``` 
@@ -56,7 +56,7 @@ build setting for cmake DEFAULT_BACKEND=TENSORRT, then run
 ./object-detection-inference \
     --type=yolov8 \
     --weights=/path/to/weights/your_yolov8s.engine \
-    --link=/path/to/video.mp4 \
+    --source=/path/to/video.mp4 \
     --labels=/path/to/labels.names
 ```
 
@@ -66,7 +66,7 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 ./object-detection-inference  \
     --type=rtdetr \
     --weights=/path/to/weights/your_rtdetr-l.onnx \
-    --link=/path/to/video.mp4 \
+    --source=/path/to/video.mp4 \
     --labels=/path/to/labels.names [--use-gpu]
 ```
 
