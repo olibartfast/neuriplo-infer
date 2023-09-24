@@ -23,7 +23,7 @@ int main (int argc, char *argv[])
 
     // Command line parser
     cv::CommandLineParser parser(argc, argv, params);
-    parser.about("Detect people from rtsp ip camera stream");
+    parser.about("Detect objets from video or image input source");
     if (parser.has("help")){
         parser.printMessage();
         std::exit(1);  
@@ -75,6 +75,23 @@ int main (int argc, char *argv[])
         std::exit(1);
     }
 
+    if (source.find(".jpg") != std::string::npos || source.find(".png") != std::string::npos) 
+    {
+        cv::Mat image = cv::imread(source);
+        auto start = std::chrono::steady_clock::now();
+        std::vector<Detection> detections = detector->run_detection(image);
+        auto end = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        logger->info("Inference time: {} ms", duration);
+        for (const auto& d : detections) 
+        {
+            cv::rectangle(image, d.bbox, cv::Scalar(255, 0, 0), 3);
+            draw_label(image, classes[d.label], d.score, d.bbox.x, d.bbox.y);
+        }        
+        cv::imwrite("data/processed.jpg", image);
+        return 0;
+    }
+
     std::unique_ptr<VideoCaptureInterface> videoInterface = createVideoInterface();
 
     if (!videoInterface->initialize(source)) {
@@ -94,7 +111,7 @@ int main (int argc, char *argv[])
         cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
         for (const auto& d : detections) {
             cv::rectangle(frame, d.bbox, cv::Scalar(255, 0, 0), 3);
-            draw_label(frame, classes[d.label], d.bbox.x, d.bbox.y);
+            draw_label(frame, classes[d.label], d.score, d.bbox.x, d.bbox.y);
         }
 
         cv::imshow("opencv feed", frame);

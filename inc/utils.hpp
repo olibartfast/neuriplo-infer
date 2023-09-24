@@ -12,29 +12,31 @@ bool isFile(const std::string& path) {
 }
 
 
-
-
-void draw_label(cv::Mat& input_image, std::string label, int left, int top)
+void draw_label(cv::Mat& input_image, const std::string& label, float confidence, int left, int top)
 {
-    
     const float FONT_SCALE = 0.7;
-    const int FONT_FACE = cv::FONT_HERSHEY_SIMPLEX;
-    const int THICKNESS = 1;
+    const int FONT_FACE = cv::FONT_HERSHEY_DUPLEX; // Change font type to what you think is better for you
+    const int THICKNESS = 2;
     cv::Scalar YELLOW = cv::Scalar(0, 255, 255);
 
-    // Display the label at the top of the bounding box.
+    // Display the label and confidence at the top of the bounding box.
     int baseLine;
-    cv::Size label_size = cv::getTextSize(label, FONT_FACE, FONT_SCALE, THICKNESS, &baseLine);
+    std::string display_text = label + ": " + std::to_string(confidence);
+    cv::Size label_size = cv::getTextSize(display_text, FONT_FACE, FONT_SCALE, THICKNESS, &baseLine);
     top = cv::max(top, label_size.height);
+
     // Top left corner.
     cv::Point tlc = cv::Point(left, top);
     // Bottom right corner.
     cv::Point brc = cv::Point(left + label_size.width, top + label_size.height + baseLine);
+
     // Draw black rectangle.
     cv::rectangle(input_image, tlc, brc, cv::Scalar(255, 0, 255), cv::FILLED);
-    // Put the label on the black rectangle.
-    cv::putText(input_image, label, cv::Point(left, top + label_size.height), FONT_FACE, FONT_SCALE, YELLOW, THICKNESS);
+
+    // Put the label and confidence on the black rectangle.
+    cv::putText(input_image, display_text, cv::Point(left, top + label_size.height), FONT_FACE, FONT_SCALE, YELLOW, THICKNESS);
 }
+
 
 std::vector<std::string> readLabelNames(const std::string& fileName)
 {

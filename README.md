@@ -1,5 +1,5 @@
 ### Object Detection Inference
-* Inference for object detection from an IP camera or video stream, with support for multiple switchable frameworks to manage the inference process, and optional GStreamer integration for video capture.
+* Inference for object detection from a video or image input source, with support for multiple switchable frameworks to manage the inference process, and optional GStreamer integration for video capture.
 ## Dependencies (In parentheses, version used in this project)
 ## Required
 * CMake (3.22.1)
@@ -41,7 +41,7 @@ Remember to replace chosen_backend with your actual backend selection.
 ```
 ./object-detection-inference \
     --type=<model type> \
-    --source="rtsp://cameraip:port/somelivefeed" (or --source="path/to/video.format") \
+    --source="rtsp://cameraip:port/somelivefeed" (or --source="path/to/video.format") (or --source="path/to/image.format") \
     --labels=</path/to/labels/file> \
     --weights=<path/to/model/weights> [--conf=</path/to/model/config>] [--min_confidence=<confidence value>].
 ``` 
