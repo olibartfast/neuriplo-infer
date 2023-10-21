@@ -6,13 +6,13 @@ set(Torch_DIR $ENV{HOME}/libtorch/share/cmake/Torch/)
 # Find LibTorch
 find_package(Torch REQUIRED)
 
-# Set C++ flags from LibTorch
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 set(LIBTORCH_SOURCES
     src/libtorch/YoloV8.cpp
     src/libtorch/RtDetr.cpp
     src/libtorch/YoloVn.cpp
+    src/libtorch/Yolo.cpp
+    src/libtorch/LibtorchInfer.cpp
     # Add more LibTorch source files here if needed
 )
 
