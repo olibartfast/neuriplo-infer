@@ -61,7 +61,6 @@ void TRTInfer::createContextAndAllocateBuffers()
 {
     context_ = engine_->createExecutionContext();
     buffers_.resize(engine_->getNbBindings());
-    std::vector<nvinfer1::Dims> output_dims;
     for (int i = 0; i < engine_->getNbBindings(); ++i)
     {
         nvinfer1::Dims dims = engine_->getBindingDimensions(i);
@@ -69,20 +68,16 @@ void TRTInfer::createContextAndAllocateBuffers()
         cudaMalloc(&buffers_[i], binding_size);
         if (engine_->bindingIsInput(i))
         {
-            const auto input_shape = std::vector{ dims.d[0], dims.d[1], dims.d[2], dims.d[3] };
             network_width_ = dims.d[3];
             network_height_ = dims.d[2];
             channels_ = dims.d[1];
         }
         else
         {
-            output_dims.emplace_back(engine_->getBindingDimensions(i));
             auto size = getSizeByDim(dims);
             h_outputs_.emplace_back(std::vector<float>(size));
-
-            const int* shape_boxes_ptr = reinterpret_cast<const int*>(output_dims[i].d);
-            std::vector<int64_t> shape(shape_boxes_ptr, shape_boxes_ptr + output_dims[i].nbDims);
-            output_shapes_.emplace_back(shape);
+            const auto out_shape = std::vector<int64_t>{ dims.d[0], dims.d[1], dims.d[2], dims.d[3] };
+            output_shapes_.emplace_back(out_shape);
         }
     }
 }
@@ -103,3 +98,12 @@ void TRTInfer::infer()
     }
     
 }
+
+std::vector<Detection> TRTInfer::run_detection(const cv::Mat& image)
+{
+    std::vector<float> h_input_data = preprocess_image(image);
+    cudaMemcpy(buffers_[0], h_input_data.data(), sizeof(float)*h_input_data.size(), cudaMemcpyHostToDevice);
+    infer();
+    cv::Size frame_size(image.cols, image.rows);
+    return postprocess(frame_size);   
+}  

@@ -88,7 +88,7 @@ int main (int argc, char *argv[])
             cv::rectangle(image, d.bbox, cv::Scalar(255, 0, 0), 3);
             draw_label(image, classes[d.label], d.score, d.bbox.x, d.bbox.y);
         }        
-        cv::imwrite("data/processed.jpg", image);
+        cv::imwrite("data/processed.png", image);
         return 0;
     }
 

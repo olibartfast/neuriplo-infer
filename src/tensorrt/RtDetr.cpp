@@ -39,17 +39,6 @@ std::vector<float> RtDetr::preprocess_image(const cv::Mat& image)
 }
 
 
-
-std::vector<Detection> RtDetr::run_detection(const cv::Mat& image)
-{
-    std::vector<float> h_input_data = preprocess_image(image);
-    cudaMemcpy(buffers_[0], h_input_data.data(), sizeof(float)*h_input_data.size(), cudaMemcpyHostToDevice);
-    infer();
-    cv::Size frame_size(image.cols, image.rows);
-    return postprocess(frame_size);   
-}  
-
-
 std::vector<Detection> RtDetr::postprocess(const cv::Size& frame_size)
 {
 

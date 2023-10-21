@@ -32,6 +32,8 @@ class TRTInfer : public Detector
 
         void infer();
 
+        std::vector<Detection> run_detection(const cv::Mat& image) override;    
+
         ~TRTInfer()
         {
             for (void* buffer : buffers_)

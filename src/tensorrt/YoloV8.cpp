@@ -12,19 +12,6 @@ YoloV8::YoloV8(const std::string& model_path, bool use_gpu,
     initializeBuffers(model_path);
 }
 
-
-
-std::vector<Detection> YoloV8::run_detection(const cv::Mat& image)
-{
-    std::vector<float> h_input_data = preprocess_image(image);
-    cudaMemcpy(buffers_[0], h_input_data.data(), sizeof(float)*h_input_data.size(), cudaMemcpyHostToDevice);
-    infer();
-    cv::Size frame_size(image.cols, image.rows);
-    return postprocess(frame_size);   
-}  
-
-
-
 cv::Rect YoloV8::get_rect(const cv::Size& imgSz, const std::vector<float>& bbox)
 {
     float r_w = network_width_ / static_cast<float>(imgSz.width);

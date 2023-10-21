@@ -25,5 +25,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 # Combine CUDA flags with common flags
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAG}")
 
+message("CMake CXX Flags Debug: ${CMAKE_CXX_FLAGS_DEBUG}")
 message("CMake CXX Flags: ${CMAKE_CXX_FLAGS}")
 message("CMake CUDA Flags: ${CMAKE_CUDA_FLAGS}")

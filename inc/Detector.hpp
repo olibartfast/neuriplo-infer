@@ -39,5 +39,9 @@ public:
     	logger_ = logger;
     }
 
+
+    virtual std::vector<float> preprocess_image(const cv::Mat& image) = 0; 
+    virtual std::vector<Detection> postprocess(const cv::Size& frame_size) = 0;  
+
     virtual std::vector<Detection> run_detection(const cv::Mat& frame) = 0;
 };
