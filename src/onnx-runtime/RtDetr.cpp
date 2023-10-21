@@ -4,7 +4,7 @@ RtDetr::RtDetr(const std::string& model_path, bool use_gpu,
     float confidenceThreshold,
     size_t network_width,
     size_t network_height) : 
-    OnnxRuntimeInference{model_path, use_gpu, confidenceThreshold,
+    ORTInfer{model_path, use_gpu, confidenceThreshold,
             network_width,
             network_height}
 {

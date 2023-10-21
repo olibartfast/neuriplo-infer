@@ -14,7 +14,7 @@ endif()
 
 # Define ONNX Runtime-specific source files
 set(ONNX_RUNTIME_SOURCES
-    src/onnx-runtime/OnnxRuntimeInference.cpp
+    src/onnx-runtime/ORTInfer.cpp
     src/onnx-runtime/YoloVn.cpp # for yolov5, v6, v7 models
     src/onnx-runtime/YoloV8.cpp
     src/onnx-runtime/YoloNas.cpp

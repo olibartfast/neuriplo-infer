@@ -1,7 +1,7 @@
 #pragma once
-#include "OnnxRuntimeInference.hpp"
+#include "ORTInfer.hpp"
 
-class YoloV8 : public OnnxRuntimeInference
+class YoloV8 : public ORTInfer
 {
 public:
     YoloV8(const std::string& model_path, bool use_gpu = false,

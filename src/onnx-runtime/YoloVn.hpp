@@ -1,7 +1,7 @@
 #pragma once
-#include "OnnxRuntimeInference.hpp"
+#include "ORTInfer.hpp"
 
-class YoloVn : public OnnxRuntimeInference
+class YoloVn : public ORTInfer
 {
 
 public:

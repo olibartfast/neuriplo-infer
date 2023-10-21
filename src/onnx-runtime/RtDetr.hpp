@@ -1,7 +1,7 @@
 #pragma once
-#include "OnnxRuntimeInference.hpp"
+#include "ORTInfer.hpp"
 
-class RtDetr : public OnnxRuntimeInference
+class RtDetr : public ORTInfer
 {
 
 public:

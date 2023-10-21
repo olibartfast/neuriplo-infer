@@ -1,6 +1,6 @@
-#include "OnnxRuntimeInference.hpp"
+#include "ORTInfer.hpp"
 
-OnnxRuntimeInference::OnnxRuntimeInference(const std::string& model_path, bool use_gpu,
+ORTInfer::ORTInfer(const std::string& model_path, bool use_gpu,
     float confidenceThreshold,
     size_t network_width,
     size_t network_height) : 
@@ -81,7 +81,7 @@ OnnxRuntimeInference::OnnxRuntimeInference(const std::string& model_path, bool u
     }
 }
 
-std::string OnnxRuntimeInference::print_shape(const std::vector<std::int64_t>& v)
+std::string ORTInfer::print_shape(const std::vector<std::int64_t>& v)
 {
     std::stringstream ss("");
     for (std::size_t i = 0; i < v.size() - 1; i++)
