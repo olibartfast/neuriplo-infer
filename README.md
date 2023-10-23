@@ -92,5 +92,5 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 ## TO DO
 - Add tests
 
-# Feedback
+## Feedback
 - Any feedback is greatly appreciated, if you have any suggestions, bug reports or questions don't hesitate to open an [issue](https://github.com/olibartfast/object-detection-inference/issues).
