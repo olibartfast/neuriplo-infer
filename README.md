@@ -88,3 +88,9 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 * [Object detection using the opencv dnn module](https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp)
 * [TensorRTx](https://github.com/wang-xinyu/tensorrtx)
 * [rtdetr-onnxruntime-deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
+
+## TO DO
+- Add tests
+
+# Feedback
+- Any feedback is greatly appreciated, if you have any suggestions, bug reports or questions don't hesitate to open an [issue](https://github.com/olibartfast/object-detection-inference/issues).
