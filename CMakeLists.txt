@@ -11,11 +11,14 @@ find_package(spdlog REQUIRED)
 unset(USE_GSTREAMER CACHE)
 option(USE_GSTREAMER "Use GStreamer for video capture (optional)" ON)
 
+option(BUILD_TESTS "Build test target" OFF) # Work in progress...
+# option(BUILD_BENCHMARKS "Build benchmark target" OFF) TODO
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 message(STATUS ${CMAKE_MODULE_PATH})
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "TENSORRT")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT")
@@ -36,7 +39,12 @@ endif()
 
 include(SelectBackend)
 
-
+if(BUILD_TESTS) # Work in progress ...
+    message(STATUS "Test enabled")
+    find_package(GTest REQUIRED)
+    enable_testing()
+    add_subdirectory(tests)  # Create a "tests" subdirectory for your test CMakeLists.txt
+endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
