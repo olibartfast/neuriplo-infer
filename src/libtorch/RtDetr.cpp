@@ -7,23 +7,6 @@ RtDetr::RtDetr(const std::string& model_path, bool use_gpu,
            network_width, network_height}
 {
     logger_->info("Initializing RT-DETR Libtorch");
-    if (use_gpu && torch::cuda::is_available())
-    {
-        device_ = torch::kCUDA;
-        logger_->info("Using CUDA GPU");
-    }
-    else
-    {
-        device_ = torch::kCPU;
-        logger_->info("Using CPU");
-    }
-
-    module_ = torch::jit::load(model_path, device_);
-
-    // In libtorch i didn't find a way to get the input layer
-    network_width_ = 640;
-    network_height_ = 640;
-    channels_ = 3;
 }
 
 

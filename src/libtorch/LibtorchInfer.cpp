@@ -9,7 +9,20 @@ LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu,
             network_width,
             network_height}
 {
+    if (use_gpu && torch::cuda::is_available())
+    {
+        device_ = torch::kCUDA;
+        logger_->info("Using CUDA GPU");
+    }
+    else
+    {
+        device_ = torch::kCPU;
+        logger_->info("Using CPU");
+    }
 
+    module_ = torch::jit::load(model_path, device_);
+
+    channels_ = 3;
 }
 
 std::vector<Detection> LibtorchInfer::run_detection(const cv::Mat& image)
@@ -35,6 +48,8 @@ std::vector<Detection> LibtorchInfer::run_detection(const cv::Mat& image)
         auto tuple_outputs = output.toTuple()->elements();
 
         for (const auto& output_tensor : tuple_outputs) {
+            if(!output_tensor.isTensor())
+                continue;
             torch::Tensor tensor = output_tensor.toTensor().to(torch::kCPU).contiguous();
 
             // Get the output data as a float pointer
