@@ -11,7 +11,6 @@ set(LIBTORCH_SOURCES
     src/libtorch/YoloV8.cpp
     src/libtorch/RtDetr.cpp
     src/libtorch/YoloVn.cpp
-    src/libtorch/Yolo.cpp
     src/libtorch/LibtorchInfer.cpp
     # Add more LibTorch source files here if needed
 )

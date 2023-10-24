@@ -3,7 +3,7 @@
 RtDetr::RtDetr(const std::string& model_path, bool use_gpu,
                float confidenceThreshold, size_t network_width,
                size_t network_height)
-    : Detector{model_path, use_gpu, confidenceThreshold,
+    : LibtorchInfer{model_path, use_gpu, confidenceThreshold,
            network_width, network_height}
 {
     logger_->info("Initializing RT-DETR Libtorch");
@@ -50,39 +50,16 @@ std::vector<float> RtDetr::preprocess_image(const cv::Mat& image)
     return input_data;    
 }
 
-std::vector<Detection> RtDetr::run_detection(const cv::Mat& image)
-{
-    // Preprocess the input image
-    std::vector<float> input_tensor = preprocess_image(image);
-
-    // Convert the input tensor to a Torch tensor
-    torch::Tensor input = torch::from_blob(input_tensor.data(), { 1, channels_, network_height_, network_width_ }, torch::kFloat32);
-    input = input.to(device_);
-
-    // Run inference
-    std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(input);
-    auto output = module_.forward(inputs);
-    torch::Tensor output_tensor0 = output.toTensor();
-
-    // Convert the output tensors to CPU and extract data
-    output_tensor0 = output_tensor0.to(torch::kCPU).contiguous();
-    const float* output0 = output_tensor0.data_ptr<float>();
-
-    // Get the shapes of the output tensors
-    std::vector<int64_t> shape0 = output_tensor0.sizes().vec();
-    cv::Size frame_size(image.cols, image.rows);
-
-    // Perform post-processing on the output and return the detections
-    return postprocess(output0, shape0, frame_size);
-}
 
 
 
-std::vector<Detection> RtDetr::postprocess(const float*  output0, const  std::vector<int64_t>& shape0,  const cv::Size& frame_size)
+std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
 {
 
-     std::vector<int> classIds;
+    const float*  output0 = outputs.front().data();
+    const  std::vector<int64_t> shape0 = shapes.front();
+
+    std::vector<int> classIds;
     std::vector<float> confidences;
     std::vector<cv::Rect> boxes;
 

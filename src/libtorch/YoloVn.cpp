@@ -3,7 +3,7 @@
 YoloVn::YoloVn(const std::string& model_path, bool use_gpu,
                float confidenceThreshold, size_t network_width,
                size_t network_height)
-    : Detector{model_path, use_gpu, confidenceThreshold,
+    : LibtorchInfer{model_path, use_gpu, confidenceThreshold,
            network_width, network_height}
 {
     logger_->info("Initializing Libtorch from model {}", model_path);
@@ -64,34 +64,6 @@ cv::Rect YoloVn::get_rect(const cv::Size& imgSz, const std::vector<float>& bbox)
 }
 
 
-std::vector<Detection> YoloVn::run_detection(const cv::Mat& image)
-{
-    // Preprocess the input image
-    std::vector<float> input_tensor = preprocess_image(image);
-
-    // Convert the input tensor to a Torch tensor
-    torch::Tensor input = torch::from_blob(input_tensor.data(), { 1, channels_, network_height_, network_width_ }, torch::kFloat32);
-    input = input.to(device_);
-
-    // Run inference
-    std::vector<torch::jit::IValue> inputs;
-    inputs.push_back(input);
-    auto output = module_.forward(inputs);
-    torch::Tensor output_tensor0 = output.toTuple()->elements()[0].toTensor();
-
-    // Convert the output tensors to CPU and extract data
-    output_tensor0 = output_tensor0.to(torch::kCPU).contiguous();
-    const float* output0 = output_tensor0.data_ptr<float>();
-
-    // Get the shapes of the output tensors
-    std::vector<int64_t> shape0 = output_tensor0.sizes().vec();
-    cv::Size frame_size(image.cols, image.rows);
-
-    // Perform post-processing on the output and return the detections
-    return postprocess(output0, shape0, frame_size);
-}
-
-
 
 
 std::vector<float> YoloVn::preprocess_image(const cv::Mat &image)
@@ -137,9 +109,11 @@ std::vector<float> YoloVn::preprocess_image(const cv::Mat &image)
     return input_data;
 }
 
-std::vector<Detection> YoloVn::postprocess(const float*  output0, const  std::vector<int64_t>& shape0,  const cv::Size& frame_size)
+std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
 {
 
+    const float*  output0 = outputs.front().data();
+    const  std::vector<int64_t> shape0 = shapes.front();
     const auto offset = 5;
     const auto num_classes = shape0[2] - offset; // 1 x 25200 x 85
 
