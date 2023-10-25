@@ -12,55 +12,6 @@ YoloV8::YoloV8(const std::string& model_path, bool use_gpu,
 }
 
 
-std::vector<Detection> YoloV8::run_detection(const cv::Mat& image)
-{
-    std::vector<std::vector<float>> input_tensors(session_.GetInputCount());
-    std::vector<Ort::Value> in_ort_tensors;
-    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
-
-    for (size_t i = 0; i < session_.GetInputCount(); ++i)
-    {
-        input_tensors[i] = preprocess_image(image);
-        in_ort_tensors.emplace_back(Ort::Value::CreateTensor<float>(
-            memory_info,
-            input_tensors[i].data(),
-            input_tensors[i].size(),
-            input_shapes_[i].data(),
-            input_shapes_[i].size()
-        ));
-    }
-
-    // Run inference
-    std::vector<const char*> input_names_char(input_names_.size());
-    std::transform(input_names_.begin(), input_names_.end(), input_names_char.begin(),
-        [](const std::string& str) { return str.c_str(); });
-
-    std::vector<const char*> output_names_char(output_names_.size());
-    std::transform(output_names_.begin(), output_names_.end(), output_names_char.begin(),
-        [](const std::string& str) { return str.c_str(); });
-
-    std::vector<Ort::Value> output_ort_tensors = session_.Run(
-        Ort::RunOptions{ nullptr },
-        input_names_char.data(),
-        in_ort_tensors.data(),
-        in_ort_tensors.size(),
-        output_names_char.data(),
-        output_names_.size()
-    );
-
-    // Process output tensors
-    assert(output_ort_tensors.size() == output_names_.size());
-
-    const float* output0 = output_ort_tensors[0].GetTensorData<float>();
-
-    const auto& shape0_ref = output_ort_tensors[0].GetTensorTypeAndShapeInfo().GetShape();
-
-    std::vector<int64_t> shape0(shape0_ref.begin(), shape0_ref.end());
-    cv::Size frame_size(image.cols, image.rows);
-    return postprocess(output0, shape0, frame_size);
-}
-
-
 cv::Rect YoloV8::get_rect(const cv::Size& imgSz, const std::vector<float>& bbox)
 {
     float r_w = network_width_ / static_cast<float>(imgSz.width);
@@ -142,8 +93,10 @@ std::vector<float> YoloV8::preprocess_image(const cv::Mat &image)
 }
 
 
-std::vector<Detection> YoloV8::postprocess(const float*  output0, const  std::vector<int64_t>& shape0,  const cv::Size& frame_size)
+std::vector<Detection> YoloV8::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
 {
+    const float*  output0 = outputs.front().data();
+    const  std::vector<int64_t> shape0 = shapes.front();
 
     const auto offset = 4;
     const auto num_classes = shape0[1] - offset;

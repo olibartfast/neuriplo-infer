@@ -11,7 +11,7 @@ public:
         size_t network_height = 640);
 
     cv::Rect get_rect(const cv::Size& imgSz, const std::vector<float>& bbox);
-    std::vector<Detection> run_detection(const cv::Mat& image) override;
-    std::vector<float> preprocess_image(const cv::Mat& image);
-    std::vector<Detection> postprocess(const float* output0, const std::vector<int64_t>& shape0, const cv::Size& frame_size);
+
+    std::vector<float> preprocess_image(const cv::Mat& image) override;
+    std::vector<Detection> postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) override;    
 };

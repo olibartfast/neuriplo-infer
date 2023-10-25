@@ -2,3 +2,4 @@ models
 build
 .vscode
 *.log
+data/processed.png
