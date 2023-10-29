@@ -3,7 +3,7 @@
 ## Dependencies (In parentheses, version used in this project)
 ## Required
 * CMake (3.22.1)
-* OpenCV (4.7.0) 
+* OpenCV (4.7.0) (apt install libopencv-dev)
 * spdlog (1:1.9.2+ds-0.2) (apt-get install libspdlog-dev)
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
 ### Optional 
@@ -13,6 +13,7 @@
 * ONNX Runtime (1.15.1 gpu package)
 * LibTorch (2.0.1-cu118)
 * TensorRT (8.6.1.6)
+* OpenVino (2023.1.0.12185) (Work in progress integration...)
 ### Notes
  If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default. 
 
@@ -90,6 +91,7 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 * [rtdetr-onnxruntime-deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
 ## TO DO
+- OpenVino inference backend
 - Add tests
 
 ## Feedback

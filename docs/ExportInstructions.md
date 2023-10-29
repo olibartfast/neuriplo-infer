@@ -1,5 +1,9 @@
 ## Instructions
 
+
+## Note
+Opencv-dnn module loads onnx models
+
 ### Export the model for the inference
 ## YOLOv8
 
@@ -7,23 +11,24 @@ Install YOLOv8 [following Ultralytics official documentation](https://docs.ultra
 
 #### Torchscript
 
-To export the model in the TorchScript format:
-
 ```
 yolo export model=best.pt(the best corrisponding to your trained yolov8n/s/m/x) format=torchscript
 ```
 
 #### OnnxRuntime
 
-To export the model in the ONNXRuntime format:
-
 ```
 yolo export model=best.pt format=onnx
 ```
 
-#### TensorRT
+#### OpenVino
 
-To export the model in the TensorRT format:
+```
+yolo export model=best.pt format=openvino
+
+```
+
+#### TensorRT
 
 ```
 yolo export model=best.pt format=engine
@@ -87,8 +92,3 @@ from super_gradients.training import models
 net = models.get("yolo_nas_s", pretrained_weights="coco")
 models.convert_to_onnx(model=net, input_shape=(3,640,640), out_path="yolo_nas_s.onnx", torch_onnx_export_kwargs={"input_names": ['input'], "output_names": ['output0', 'output1']})
 ```
-
-
-## Note
-Opencv-dnn module loads onnx models
-

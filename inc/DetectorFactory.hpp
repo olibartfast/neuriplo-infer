@@ -16,7 +16,9 @@
 #include "YoloV8.hpp"
 #include "RtDetr.hpp"
 #include "YoloVn.hpp"
-#else // supported from all backends
+#elif USE_OPENVINO
+#include "YoloVn.hpp"
+#elif USE_TENSORRT
 #include "YoloV8.hpp"
 #include "RtDetr.hpp"
 #endif
@@ -29,6 +31,7 @@ std::unique_ptr<Detector> createDetector(
     const std::string& weights,
     const std::string& modelConfiguration = "")
  {
+    std::unique_ptr<Detector> detector{nullptr};
 #ifdef USE_TENSORFLOW      
     if(detectorType.find("tensorflow") != std::string::npos) 
     {
@@ -39,9 +42,7 @@ std::unique_ptr<Detector> createDetector(
             std::cerr << "In case of Tensorflow weights must be a path to the saved model folder" << std::endl;
             return nullptr;   
         }    
-    }
-
-      
+    }      
 #elif USE_OPENCV_DNN
     if(detectorType.find("yolov8") != std::string::npos)  
     {
@@ -100,7 +101,7 @@ std::unique_ptr<Detector> createDetector(
     {
         return std::make_unique<YoloVn>(weights);
     }        
-#else
+#elif USE_TENSORRT
     if(detectorType.find("yolov8") != std::string::npos)  
     {
         return std::make_unique<YoloV8>(weights, use_gpu);
@@ -109,8 +110,7 @@ std::unique_ptr<Detector> createDetector(
     {
         return std::make_unique<RtDetr>(weights, use_gpu);
     }         
+#elif USE_OPENVINO
 #endif    
-    
-    else
-    return nullptr;
+    return detector;
 }

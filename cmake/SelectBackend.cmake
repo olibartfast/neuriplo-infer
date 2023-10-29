@@ -13,5 +13,8 @@ elseif (DEFAULT_BACKEND STREQUAL "TENSORRT")
 elseif (DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW")
     # Set TensorFlow
     include(LibTensorFlow)
+elseif (DEFAULT_BACKEND STREQUAL "OPENVINO")
+    # Set OpenVino
+    include(OpenVino)    
 endif()
 
