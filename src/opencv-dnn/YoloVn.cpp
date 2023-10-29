@@ -54,7 +54,7 @@ std::vector<Detection> YoloVn::run_detection(const cv::Mat& frame){
             double max_class_score;
             minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
             // Continue if the class score is above the threshold.
-            if (max_class_score > score_threshold_) 
+            if (max_class_score * confidence > score_threshold_) 
             {
                 // Store class ID and confidence in the pre-defined respective vectors.
                 std::vector<float> bbox(&data[0], &data[4]);

@@ -113,7 +113,7 @@ std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<float>>
         {
             const float* scoresPtr = output0 + 5;
             auto maxSPtr = std::max_element(scoresPtr, scoresPtr + num_classes);
-            float score = *maxSPtr;
+            float score = *maxSPtr * output0[4];
             if (score > confidenceThreshold_) {
                 boxes.emplace_back(get_rect(frame_size, std::vector<float>(output0, output0 + 4)));
                 int label = maxSPtr - scoresPtr;
