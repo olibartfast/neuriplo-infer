@@ -70,6 +70,8 @@ Same as explained for YoloV8 above:
 
 ```
 trtexec --onnx=yourmodel.onnx --saveEngine=yourmodel.engine
+export with dynamic axis example:
+trtexec --onnx=yourmodel.onnx --minShapes=images:1x3x640x640 --optShapes=images:16x3x640x640 --maxShapes=images:32x3x640x640   --saveEngine=yourmodel.engine --fp16
 ```
 or 
 
