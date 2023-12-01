@@ -39,7 +39,6 @@ void TRTInfer::initializeBuffers(const std::string& engine_path)
         [](nvinfer1::ICudaEngine* engine) { engine->destroy(); });
 
 
-
     // Create execution context and allocate input/output buffers
     createContextAndAllocateBuffers();
 }
@@ -50,6 +49,10 @@ size_t TRTInfer::getSizeByDim(const nvinfer1::Dims& dims)
     size_t size = 1;
     for (size_t i = 0; i < dims.nbDims; ++i)
     {
+        if(dims.d[i] == -1 || dims.d[i] == 0)
+        {
+            continue;
+        }
         size *= dims.d[i];
     }
     return size;
@@ -59,12 +62,15 @@ size_t TRTInfer::getSizeByDim(const nvinfer1::Dims& dims)
 
 void TRTInfer::createContextAndAllocateBuffers()
 {
+    nvinfer1::Dims profile_dims = engine_->getProfileDimensions(0, 0 /* max batch size index */, nvinfer1::OptProfileSelector::kMIN);
+    int max_batch_size = profile_dims.d[0];
     context_ = engine_->createExecutionContext();
+    context_->setBindingDimensions(0, profile_dims);
     buffers_.resize(engine_->getNbBindings());
     for (int i = 0; i < engine_->getNbBindings(); ++i)
     {
         nvinfer1::Dims dims = engine_->getBindingDimensions(i);
-        auto binding_size = getSizeByDim(engine_->getBindingDimensions(i)) * sizeof(float);
+        auto binding_size = getSizeByDim(dims) * sizeof(float);
         cudaMalloc(&buffers_[i], binding_size);
         if (engine_->bindingIsInput(i))
         {
@@ -76,7 +82,8 @@ void TRTInfer::createContextAndAllocateBuffers()
         {
             auto size = getSizeByDim(dims);
             h_outputs_.emplace_back(std::vector<float>(size));
-            const auto out_shape = std::vector<int64_t>{ dims.d[0], dims.d[1], dims.d[2], dims.d[3] };
+            const int64_t curr_batch = dims.d[0] == -1 ? 1 : dims.d[0];
+            const auto out_shape = std::vector<int64_t>{curr_batch, dims.d[1], dims.d[2], dims.d[3] };
             output_shapes_.emplace_back(out_shape);
         }
     }
@@ -90,7 +97,7 @@ void TRTInfer::infer()
         logger_->error("Forward Error !");
         std::exit(1);
     }
-        
+            
 
     for (size_t i = 0; i < h_outputs_.size(); i++)
     {
