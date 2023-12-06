@@ -40,6 +40,11 @@ Please note that when using TensorRT, ensure that the version installed under Ul
 trtexec --onnx=best.onnx --saveEngine=best.engine
 ```
 
+Export with dynamic axis example:
+```
+trtexec --onnx=yourmodel.onnx --minShapes=images:1x3x640x640 --optShapes=images:1x3x640x640 --maxShapes=images:32x3x640x640   --saveEngine=yourmodel.engine --fp16
+```
+
 
 ## YOLOv5 
 #### OnnxRuntime
@@ -70,8 +75,6 @@ Same as explained for YoloV8 above:
 
 ```
 trtexec --onnx=yourmodel.onnx --saveEngine=yourmodel.engine
-export with dynamic axis example:
-trtexec --onnx=yourmodel.onnx --minShapes=images:1x3x640x640 --optShapes=images:16x3x640x640 --maxShapes=images:32x3x640x640   --saveEngine=yourmodel.engine --fp16
 ```
 or 
 
