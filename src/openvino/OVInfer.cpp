@@ -8,4 +8,8 @@ OVInfer::OVInfer(const std::string& model_path, bool use_gpu,
             network_width,
             network_height}
 {
+
+    model_ = core_.read_model(model_path);
+    compiled_model_ = core_.compile_model(model_);
+    infer_request_ = compiled_model_.create_infer_request();
 }
