@@ -91,7 +91,6 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 * [rtdetr-onnxruntime-deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
 ## TO DO
-- OpenVino inference backend
 - Add tests
 
 ## Feedback
