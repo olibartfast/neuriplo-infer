@@ -13,9 +13,9 @@
 * ONNX Runtime (1.15.1 gpu package)
 * LibTorch (2.0.1-cu118)
 * TensorRT (8.6.1.6)
-* OpenVino (2023.1.0.12185) (Work in progress integration...)
+* OpenVino (2023.2) 
 ### Notes
- If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default. 
+ If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN, OPENVINO) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default. 
 
 
 ## To build and compile  
