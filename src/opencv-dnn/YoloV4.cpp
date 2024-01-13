@@ -53,7 +53,7 @@ std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<float>>
         for (int j = 0; j < shapes[i][0]; ++j, data += shapes[i][1])
         {
             const float* scoresPtr = data + 5;
-            auto maxSPtr = std::max_element(scoresPtr, scoresPtr + shapes[i][1] -5 );
+            auto maxSPtr = std::max_element(scoresPtr, scoresPtr + shapes[i][1] - 5);
             float score = *maxSPtr;
             if (score > confidenceThreshold_)
             {
@@ -97,8 +97,7 @@ std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<float>>
                 localConfidences.push_back(confidences[classIndices[i]]);
             }
             std::vector<int> nmsIndices;
-            const auto nmsThreshold = 0.4;
-            cv::dnn::NMSBoxes(localBoxes, localConfidences, confidenceThreshold_, nmsThreshold, nmsIndices);
+            cv::dnn::NMSBoxes(localBoxes, localConfidences, confidenceThreshold_, nms_threshold_, nmsIndices);
             for (size_t i = 0; i < nmsIndices.size(); i++)
             {
                 Detection d;

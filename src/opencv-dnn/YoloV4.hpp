@@ -8,8 +8,8 @@ public:
         std::string modelBinary, 
         bool use_gpu = false,
         float confidenceThreshold = 0.25,
-        size_t network_width = 608,
-        size_t network_height = 608); 
+        size_t network_width = 416,
+        size_t network_height = 416); 
     std::vector<Detection> postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) override;
     cv::Mat preprocess_image(const cv::Mat& image) override; 
 };
