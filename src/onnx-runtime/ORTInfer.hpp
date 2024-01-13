@@ -21,5 +21,6 @@ public:
         size_t network_height = 640);
 
     std::vector<Detection> run_detection(const cv::Mat& image) override;
+    virtual std::vector<float> preprocess_image(const cv::Mat& image) = 0; 
     virtual std::vector<Detection> postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) = 0;       
 };

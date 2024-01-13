@@ -6,85 +6,84 @@ YoloVn::YoloVn(
     size_t network_width,
     size_t network_height    
 ) : 
-    net_ {cv::dnn::readNet(modelBinary)}, 
-    Yolo{modelBinary, use_gpu, confidenceThreshold,
+    OCVDNNInfer{"", modelBinary, use_gpu, confidenceThreshold,
     network_width,
     network_height}
 {
-    if (net_.empty())
-    {
-        std::cerr << "Can't load network by using the following files: " << std::endl;
-        std::cerr << "weights-file: " << modelBinary << std::endl;
-        exit(-1);
-    }
+
 
 }
 
 
-std::vector<Detection> YoloVn::run_detection(const cv::Mat& frame){    
-    cv::Mat inputBlob = preprocess_image_mat(frame);
-    cv::dnn::blobFromImage(inputBlob, inputBlob, 1 / 255.F, cv::Size(), cv::Scalar(), true, false);
-    std::vector<cv::Mat> outs;
-    std::vector<int> classIds;
-    std::vector<float> confidences;
+cv::Mat YoloVn::preprocess_image(const cv::Mat& img) {
+    int w, h, x, y;
+    float r_w = network_width_ / (img.cols*1.0);
+    float r_h = network_height_ / (img.rows*1.0);
+    if (r_h > r_w) {
+        w = network_width_;
+        h = r_w * img.rows;
+        x = 0;
+        y = (network_height_ - h) / 2;
+    } else {
+        w = r_h * img.cols;
+        h = network_height_;
+        x = (network_width_ - w) / 2;
+        y = 0;
+    }
+    cv::Mat re(h, w, CV_8UC3);
+    cv::resize(img, re, re.size(), 0, 0, cv::INTER_LINEAR);
+    cv::Mat out(network_width_, network_height_, CV_8UC3, cv::Scalar(128, 128, 128));
+    re.copyTo(out(cv::Rect(x, y, re.cols, re.rows)));
+    cv::dnn::blobFromImage(out, out, 1 / 255.F, cv::Size(), cv::Scalar(), true, false);
+    return out;
+}
+
+
+std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
+{
+    const float*  output0 = outputs.front().data();
+    const  std::vector<int64_t> shape0 = shapes.front();    
+    
+    const auto offset = 5;
+    const auto num_classes = shape0[2] - offset; // 1 x 25200 x 85
+
     std::vector<cv::Rect> boxes;
-	net_.setInput(inputBlob);
-    net_.forward(outs, net_.getUnconnectedOutLayersNames());
+    std::vector<float> confs;
+    std::vector<int> classIds;
 
-    // Resizing factor.
-    float x_factor = frame.cols / network_width_;
-    float y_factor = frame.rows / network_height_;
+    
+    std::vector<std::vector<float>> picked_proposals;
 
-    float *data = (float *)outs[0].data;
-
-    int rows = outs[0].size[1];
-    int dimensions = outs[0].size[2];
-    // Iterate through detections.
-    for (int i = 0; i < rows; ++i) 
-    {
-        float confidence = data[4];
-        // Discard bad detections and continue.
-        if (confidence >= confidenceThreshold_) 
+    // Get all the YOLO proposals
+    for (int i = 0; i < shape0[1]; ++i) {
+        if(output0[4] > confidenceThreshold_)
         {
-            float * classes_scores = data + 5;
-            // Create a 1xDimensions Mat and store class scores of N classes.
-            cv::Mat scores(1, dimensions - 5, CV_32FC1, classes_scores);
-            // Perform minMaxLoc and acquire index of best class score.
-            cv::Point class_id;
-            double max_class_score;
-            minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
-            // Continue if the class score is above the threshold.
-            if (max_class_score * confidence > score_threshold_) 
-            {
-                // Store class ID and confidence in the pre-defined respective vectors.
-                std::vector<float> bbox(&data[0], &data[4]);
-                confidences.push_back(confidence);
-                classIds.push_back(class_id.x);
-                cv::Rect r = get_rect(frame.size(), bbox);
-
-                // Store good detections in the boxes vector.
-                boxes.push_back(r);
+            const float* scoresPtr = output0 + 5;
+            auto maxSPtr = std::max_element(scoresPtr, scoresPtr + num_classes);
+            float score = *maxSPtr * output0[4];
+            if (score > confidenceThreshold_) {
+                boxes.emplace_back(get_rect(frame_size, std::vector<float>(output0, output0 + 4)));
+                int label = maxSPtr - scoresPtr;
+                confs.emplace_back(score);
+                classIds.emplace_back(label);
             }
 
         }
-        // Jump to the next column.
-        data += dimensions;
+        output0 += shape0[2]; 
     }
 
     // Perform Non Maximum Suppression and draw predictions.
     std::vector<int> indices;
-    cv::dnn::NMSBoxes(boxes, confidences, score_threshold_, nms_threshold_, indices);
+    cv::dnn::NMSBoxes(boxes, confs, confidenceThreshold_, nms_threshold_, indices);
     std::vector<Detection> detections;
-    for (int i = 0; i < indices.size(); i++) 
+    for (int i = 0; i < indices.size(); i++)
     {
         Detection det;
         int idx = indices[i];
         det.label = classIds[idx];
         det.bbox = boxes[idx];
-        det.score = confidences[idx];
+        det.score = confs[idx];
         detections.emplace_back(det);
-
     }
-
     return detections;
 }

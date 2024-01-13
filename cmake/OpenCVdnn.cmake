@@ -3,7 +3,7 @@ src/opencv-dnn/YoloVn.cpp
 src/opencv-dnn/YoloNas.cpp
 src/opencv-dnn/YoloV8.cpp
 src/opencv-dnn/YoloV4.cpp
-src/opencv-dnn/Yolo.cpp
+src/opencv-dnn/OCVDNNInfer.cpp
 # Add more OpenCV DNN source files here if needed
 )
 

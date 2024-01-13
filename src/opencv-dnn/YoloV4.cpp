@@ -8,58 +8,64 @@
         size_t network_width,
         size_t network_height    
     ) : 
-		net_ {cv::dnn::readNetFromDarknet(modelConfiguration, modelBinary)}, 
-        Yolo{modelBinary, use_gpu,
+
+        OCVDNNInfer{modelConfiguration,modelBinary, use_gpu,
         confidenceThreshold,
         network_width,
         network_height}
 	{
-        if (net_.empty())
-        {
-            std::cerr << "Can't load network by using the following files: " << std::endl;
-            std::cerr << "cfg-file:     " << modelConfiguration << std::endl;
-            std::cerr << "weights-file: " << modelBinary << std::endl;
-            exit(-1);
-        }
 
 	}
 
-std::vector<Detection> YoloV4::run_detection(const cv::Mat& frame){
-    cv::Mat inputBlob;
-    cv::dnn::blobFromImage(frame, inputBlob, 1 / 255.F, cv::Size(network_width_, network_height_), cv::Scalar(), true, false, CV_32F);
-    static std::vector<int> outLayers = net_.getUnconnectedOutLayers();
-    static std::string outLayerType = net_.getLayer(outLayers[0])->type;
-    std::vector<std::string> outNames = net_.getUnconnectedOutLayersNames();
-    std::vector<cv::Mat> outs;
+
+cv::Mat YoloV4::preprocess_image(const cv::Mat& image)
+{
+    cv::Mat blob;
+    cv::dnn::blobFromImage(image, blob, 1 / 255.F, cv::Size(network_width_, network_height_), cv::Scalar(), true, false, CV_32F);   
+    return blob;    
+}
+
+
+std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
+{
+// outs[0].rows shapes[0][0]
+// 1083
+// outs[1].rows shapes[0][1]
+// 4332
+// outs[1].cols shapes[1][1]
+// 85
+// outs[0].cols shapes[0][1]
+// 85
+
     std::vector<int> classIds;
     std::vector<float> confidences;
     std::vector<cv::Rect> boxes;
-	net_.setInput(inputBlob);
-    net_.forward(outs, outNames);
 
-    for (size_t i = 0; i < outs.size(); ++i)
+    const auto cols = frame_size.width;
+    const auto rows = frame_size.height;
+
+    for (size_t i = 0; i < outputs.size(); ++i)
     {
         // Network produces output blob with a shape NxC where N is a number of
         // detected objects and C is a number of classes + 4 where the first 4
         // numbers are [center_x, center_y, width, height]
-        float* data = (float*)outs[i].data;
-        for (int j = 0; j < outs[i].rows; ++j, data += outs[i].cols)
+        const float* data = (float*)outputs[i].data();
+        for (int j = 0; j < shapes[i][0]; ++j, data += shapes[i][1])
         {
-            cv::Mat scores = outs[i].row(j).colRange(5, outs[i].cols);
-            cv::Point classIdPoint;
-            double confidence;
-            cv::minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
-            if (confidence > confidenceThreshold_)
+            const float* scoresPtr = data + 5;
+            auto maxSPtr = std::max_element(scoresPtr, scoresPtr + shapes[i][1] -5 );
+            float score = *maxSPtr;
+            if (score > confidenceThreshold_)
             {
-                int centerX = (int)(data[0] * frame.cols);
-                int centerY = (int)(data[1] * frame.rows);
-                int width = (int)(data[2] * frame.cols);
-                int height = (int)(data[3] * frame.rows);
+                int centerX = (int)(data[0] * cols);
+                int centerY = (int)(data[1] * rows);
+                int width = (int)(data[2] * cols);
+                int height = (int)(data[3] * rows);
                 int left = centerX - width / 2;
                 int top = centerY - height / 2;
-
-                classIds.push_back(classIdPoint.x);
-                confidences.push_back((float)confidence);
+                int label = maxSPtr - scoresPtr;
+                classIds.push_back(label);
+                confidences.push_back(score);
                 boxes.push_back(cv::Rect(left, top, width, height));
             }
         }
@@ -69,7 +75,7 @@ std::vector<Detection> YoloV4::run_detection(const cv::Mat& frame){
     
     // NMS is used inside Region layer only on DNN_BACKEND_OPENCV for another backends we need NMS in sample
     // or NMS is required if number of outputs > 1
-    if (outLayers.size() > 1 || (outLayerType == "Region"))
+    if (outLayers_.size() > 1 || (outLayerType_ == "Region"))
     {
         std::map<int, std::vector<size_t> > class2indices;
         for (size_t i = 0; i < classIds.size(); i++)
