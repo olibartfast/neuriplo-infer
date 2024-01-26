@@ -1,12 +1,10 @@
 #include "YoloVn.hpp"
 YoloVn::YoloVn(
-    std::string modelBinary, 
-    bool use_gpu,
     float confidenceThreshold,
     size_t network_width,
     size_t network_height    
 ) : 
-    OCVDNNInfer{"", modelBinary, use_gpu, confidenceThreshold,
+    Detector{confidenceThreshold,
     network_width,
     network_height}
 {

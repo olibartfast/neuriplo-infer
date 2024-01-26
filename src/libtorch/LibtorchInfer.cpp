@@ -4,10 +4,7 @@
 LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu,
     float confidenceThreshold,
     size_t network_width,
-    size_t network_height) : 
-    Detector{model_path, use_gpu, confidenceThreshold,
-            network_width,
-            network_height}
+    size_t network_height) 
 {
     if (use_gpu && torch::cuda::is_available())
     {

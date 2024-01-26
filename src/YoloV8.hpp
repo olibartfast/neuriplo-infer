@@ -1,10 +1,9 @@
 #pragma once
-#include "OCVDNNInfer.hpp"
-class YoloVn : public OCVDNNInfer{ 
+#include "Detector.hpp"
+class YoloV8 : public Detector{ 
 
 public:
-    YoloVn(std::string modelBinary, 
-		bool use_gpu = false,
+    YoloV8(
         float confidenceThreshold = 0.25,
         size_t network_width = 640,
         size_t network_height = 640);    

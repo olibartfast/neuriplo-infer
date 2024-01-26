@@ -1,15 +1,12 @@
 #include "YoloV4.hpp"
 
     YoloV4::YoloV4(
- 	    std::string modelConfiguration, 
-        std::string modelBinary, 
-        bool use_gpu,
         float confidenceThreshold,
         size_t network_width,
         size_t network_height    
     ) : 
 
-        OCVDNNInfer{modelConfiguration,modelBinary, use_gpu,
+        Detector{
         confidenceThreshold,
         network_width,
         network_height}
@@ -72,42 +69,36 @@ std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<float>>
     }
 
     std::vector<Detection> detections;
-    
-    // NMS is used inside Region layer only on DNN_BACKEND_OPENCV for another backends we need NMS in sample
-    // or NMS is required if number of outputs > 1
-    if (outLayers_.size() > 1 || (outLayerType_ == "Region"))
+    std::map<int, std::vector<size_t> > class2indices;
+    for (size_t i = 0; i < classIds.size(); i++)
     {
-        std::map<int, std::vector<size_t> > class2indices;
-        for (size_t i = 0; i < classIds.size(); i++)
+        if (confidences[i] >= confidenceThreshold_)
         {
-            if (confidences[i] >= confidenceThreshold_)
-            {
-                class2indices[classIds[i]].push_back(i);
-            }
+            class2indices[classIds[i]].push_back(i);
         }
+    }
 
-        for (std::map<int, std::vector<size_t> >::iterator it = class2indices.begin(); it != class2indices.end(); ++it)
+    for (std::map<int, std::vector<size_t> >::iterator it = class2indices.begin(); it != class2indices.end(); ++it)
+    {
+        std::vector<cv::Rect> localBoxes;
+        std::vector<float> localConfidences;
+        std::vector<size_t> classIndices = it->second;
+        for (size_t i = 0; i < classIndices.size(); i++)
         {
-            std::vector<cv::Rect> localBoxes;
-            std::vector<float> localConfidences;
-            std::vector<size_t> classIndices = it->second;
-            for (size_t i = 0; i < classIndices.size(); i++)
-            {
-                localBoxes.push_back(boxes[classIndices[i]]);
-                localConfidences.push_back(confidences[classIndices[i]]);
-            }
-            std::vector<int> nmsIndices;
-            cv::dnn::NMSBoxes(localBoxes, localConfidences, confidenceThreshold_, nms_threshold_, nmsIndices);
-            for (size_t i = 0; i < nmsIndices.size(); i++)
-            {
-                Detection d;
-                size_t idx = nmsIndices[i];
-                d.bbox = localBoxes[idx];
-                d.score = localConfidences[idx];
-                d.label = it->first;
-                detections.emplace_back(d);
+            localBoxes.push_back(boxes[classIndices[i]]);
+            localConfidences.push_back(confidences[classIndices[i]]);
+        }
+        std::vector<int> nmsIndices;
+        cv::dnn::NMSBoxes(localBoxes, localConfidences, confidenceThreshold_, nms_threshold_, nmsIndices);
+        for (size_t i = 0; i < nmsIndices.size(); i++)
+        {
+            Detection d;
+            size_t idx = nmsIndices[i];
+            d.bbox = localBoxes[idx];
+            d.score = localConfidences[idx];
+            d.label = it->first;
+            detections.emplace_back(d);
 
-            }
         }
     }
 

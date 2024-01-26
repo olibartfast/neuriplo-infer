@@ -1,11 +1,10 @@
 #pragma once
-#include "OCVDNNInfer.hpp"
+#include "Detector.hpp"
 
-class YoloNas : public OCVDNNInfer{
+class YoloNas : public Detector{
 
 public:
-    YoloNas(std::string modelBinary, 
-		bool use_gpu = false,
+    YoloNas(
         float confidenceThreshold = 0.25,
         size_t network_width = 640,
         size_t network_height = 640);    

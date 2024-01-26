@@ -1,7 +1,7 @@
 #pragma once
-#include "Detector.hpp"
+#include "InferenceEngine.hpp"
 
-class OCVDNNInfer : public Detector
+class OCVDNNInfer : public InferenceEngine
 {
 protected:
 	cv::dnn::Net net_;
@@ -11,14 +11,7 @@ protected:
         
 public:
     OCVDNNInfer(const std::string& modelConfiguration, 
-         const std::string& modelBinary,
-         bool use_gpu = false,
-         float confidenceThreshold = 0.25,
-         size_t network_width = 640,
-         size_t network_height = 640);
+         const std::string& modelBinary);
 
-    cv::Rect get_rect(const cv::Size& imgSz, const std::vector<float>& bbox);
-    std::vector<Detection> run_detection(const cv::Mat& frame) override;
-    virtual std::vector<Detection> postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) = 0;
-    virtual cv::Mat preprocess_image(const cv::Mat& image) = 0; 
+    std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
 };

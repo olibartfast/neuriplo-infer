@@ -46,8 +46,6 @@ endif()
 
 
 set(TENSORRT_SOURCES
-    src/tensorrt/YoloV8.cpp
-    src/tensorrt/RtDetr.cpp
     src/tensorrt/TRTInfer.cpp
     # Add more TensorRT source files here if needed
 )

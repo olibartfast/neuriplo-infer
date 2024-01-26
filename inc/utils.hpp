@@ -51,3 +51,23 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
     classes.push_back(line);
     return classes;   
 }
+
+std::vector<float> mat2vector(const cv::Mat& input_blob)
+{
+
+    const auto channels = input_blob.channels();
+    const auto network_width = input_blob.cols;
+    const auto network_height = input_blob.rows;
+    size_t img_byte_size = input_blob.total() * input_blob.elemSize();  // Allocate a buffer to hold all image elements.
+    std::vector<float> input_data = std::vector<float>(network_width * network_height * channels);
+    std::memcpy(input_data.data(), input_blob.data, img_byte_size);
+
+    std::vector<cv::Mat> chw;
+    for (size_t i = 0; i < channels; ++i)
+    {
+        chw.emplace_back(cv::Mat(cv::Size(network_width, network_height), CV_32FC1, &(input_data[i * network_width * network_height])));
+    }
+    cv::split(input_blob, chw);
+
+    return input_data;    
+}

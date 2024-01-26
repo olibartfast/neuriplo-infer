@@ -1,5 +1,6 @@
 #include "VideoCaptureFactory.hpp"
-#include "DetectorFactory.hpp"
+#include "DetectorSetup.hpp"
+#include "InferenceEngineSetup.hpp"
 #include "Logger.hpp"
 #include "utils.hpp"
 
@@ -68,7 +69,11 @@ int main (int argc, char *argv[])
     logger->info("Current path is {}", std::filesystem::current_path().c_str()); 
 
     Detector::SetLogger(logger);
-    std::unique_ptr<Detector> detector = createDetector(detectorType, use_gpu, labelsPath, weights, conf); 
+    std::unique_ptr<Detector> detector = createDetector(detectorType); 
+    
+    InferenceEngine::SetLogger(logger);
+    std::unique_ptr<InferenceEngine> engine = setup_inference_engine();
+
     if(!detector)
     {
         logger->error("Detector creation fail!");
@@ -79,7 +84,9 @@ int main (int argc, char *argv[])
     {
         cv::Mat image = cv::imread(source);
         auto start = std::chrono::steady_clock::now();
-        std::vector<Detection> detections = detector->run_detection(image);
+        const auto input_blob = detector->preprocess_image(image);
+        const auto[outputs, shapes] = engine->get_infer_results(input_blob);
+        std::vector<Detection> detections = detector->postprocess(outputs, shapes, image.size());
         auto end = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         logger->info("Inference time: {} ms", duration);
@@ -103,7 +110,9 @@ int main (int argc, char *argv[])
     while ( videoInterface->readFrame(frame)) 
     {
         auto start = std::chrono::steady_clock::now();
-        std::vector<Detection> detections = detector->run_detection(frame);
+        const auto input_blob = detector->preprocess_image(frame);
+        const auto[outputs, shapes] = engine->get_infer_results(input_blob);
+        std::vector<Detection> detections = detector->postprocess(outputs, shapes, frame.size());
         auto end = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         double fps = 1000.0 / duration;

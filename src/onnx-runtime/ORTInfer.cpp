@@ -1,12 +1,6 @@
 #include "ORTInfer.hpp"
 
-ORTInfer::ORTInfer(const std::string& model_path, bool use_gpu,
-    float confidenceThreshold,
-    size_t network_width,
-    size_t network_height) : 
-    Detector{model_path, use_gpu, confidenceThreshold,
-            network_width,
-            network_height}
+ORTInfer::ORTInfer(const std::string& model_path, bool use_gpu) 
 {
     env_=Ort::Env(ORT_LOGGING_LEVEL_WARNING, "Onnx Runtime Inference");
 

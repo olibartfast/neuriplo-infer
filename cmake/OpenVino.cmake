@@ -1,7 +1,5 @@
 set(OPENVINO_SOURCES
 src/openvino/OVInfer.cpp
-src/openvino/YoloVn.cpp
-
 # Add more OPENVINO source files here if needed
 )
 
