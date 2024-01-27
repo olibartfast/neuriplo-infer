@@ -18,7 +18,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 message(STATUS ${CMAKE_MODULE_PATH})
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "OPENCV_DNN")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT", "OPENVINO")
@@ -32,7 +32,7 @@ endif()
 
 message(STATUS "Default backend: ${DEFAULT_BACKEND}")
 
-set(SOURCES main.cpp src/Detector.cpp src/InferenceEngine.cpp src/YoloNas.cpp src/RtDetr.cpp src/YoloV4.cpp src/YoloV8.cpp src/YoloVn.cpp )
+set(SOURCES main.cpp src/Detector.cpp src/inference-engines/InferenceEngine.cpp src/YoloNas.cpp src/RtDetr.cpp src/YoloV4.cpp src/YoloV8.cpp src/YoloVn.cpp )
 
 # Include GStreamer-related settings and source files if USE_GSTREAMER is ON
 if (USE_GSTREAMER)
@@ -54,6 +54,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE
     inc
     src
+    src/inference-engines
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
 )

@@ -8,7 +8,7 @@ find_package(Torch REQUIRED)
 
 
 set(LIBTORCH_SOURCES
-    src/libtorch/LibtorchInfer.cpp
+    src/inference-engines/libtorch/LibtorchInfer.cpp
     # Add more LibTorch source files here if needed
 )
 

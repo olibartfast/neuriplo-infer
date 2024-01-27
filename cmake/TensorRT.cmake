@@ -46,7 +46,7 @@ endif()
 
 
 set(TENSORRT_SOURCES
-    src/tensorrt/TRTInfer.cpp
+    src/inference-engines/tensorrt/TRTInfer.cpp
     # Add more TensorRT source files here if needed
 )
 list(APPEND SOURCES ${TENSORRT_SOURCES})

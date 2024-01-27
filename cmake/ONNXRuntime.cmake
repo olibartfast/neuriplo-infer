@@ -14,7 +14,7 @@ endif()
 
 # Define ONNX Runtime-specific source files
 set(ONNX_RUNTIME_SOURCES
-    src/onnx-runtime/ORTInfer.cpp
+    src/inference-engines/onnx-runtime/ORTInfer.cpp
     # Add more ONNX Runtime source files here if needed
 )
 
