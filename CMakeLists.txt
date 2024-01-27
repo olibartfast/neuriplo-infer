@@ -32,7 +32,16 @@ endif()
 
 message(STATUS "Default backend: ${DEFAULT_BACKEND}")
 
-set(SOURCES main.cpp src/Detector.cpp src/inference-engines/InferenceEngine.cpp src/YoloNas.cpp src/RtDetr.cpp src/YoloV4.cpp src/YoloV8.cpp src/YoloVn.cpp )
+set(DETECTORS_ROOT src/detectors)
+set(DETECTORS_SOURCES 
+    ${DETECTORS_ROOT}/Detector.cpp 
+    ${DETECTORS_ROOT}/YoloNas.cpp 
+    ${DETECTORS_ROOT}/RtDetr.cpp 
+    ${DETECTORS_ROOT}/YoloV4.cpp 
+    ${DETECTORS_ROOT}/YoloV8.cpp 
+    ${DETECTORS_ROOT}/YoloVn.cpp)
+
+set(SOURCES main.cpp src/inference-engines/InferenceEngine.cpp ${DETECTORS_SOURCES})
 
 # Include GStreamer-related settings and source files if USE_GSTREAMER is ON
 if (USE_GSTREAMER)
@@ -54,7 +63,9 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE
     inc
     src
+    src/detectors
     src/inference-engines
+    src/videocapture
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
 )
