@@ -1,22 +1,36 @@
 #pragma once
 #include "common.hpp"
 #include "InferenceEngine.hpp"
-#ifdef ONNX_RUNTIME
+#ifdef USE_ONNX_RUNTIME
 #include "ORTInfer.hpp"
-#elif LIBTORCH 
+#elif USE_LIBTORCH 
 #include "LibtorchInfer.hpp"
-#elif LIBTENSORFLOW 
+#elif USE_LIBTENSORFLOW 
 #include "TFDetectionAPI.hpp"
-#elif OPENCV_DNN 
+#elif USE_OPENCV_DNN 
 #include "OCVDNNInfer.hpp"
-#elif TENSORRT
+#elif USE_TENSORRT
 #include "TRTInfer.hpp"
-#elif OPENVINO
+#elif USE_OPENVINO
 #include "OVInfer.hpp"
 #endif
 
-std::unique_ptr<InferenceEngine> setup_inference_engine()
+std::unique_ptr<InferenceEngine> setup_inference_engine(const std::string& weights, const std::string& modelConfiguration )
 {
+    #ifdef USE_ONNX_RUNTIME
 
-    return std::unique_ptr<OCVDNNInfer>{}; 
+    #elif USE_LIBTORCH 
+
+    #elif USE_LIBTENSORFLOW 
+
+    #elif USE_OPENCV_DNN 
+    return std::make_unique<OCVDNNInfer>(weights, modelConfiguration); 
+    #elif USE_TENSORRT
+
+    #elif USE_OPENVINO
+
+    #endif
+    return nullptr;
+
+
 }

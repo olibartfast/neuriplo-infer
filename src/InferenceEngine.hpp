@@ -4,8 +4,7 @@
 class InferenceEngine{
     	
     public:
-        InferenceEngine(const std::string& modelConfiguration, 
-         const std::string& modelBinary,
+        InferenceEngine(const std::string& weights, const std::string& modelConfiguration,
          bool use_gpu = false)
         {
 

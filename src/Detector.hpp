@@ -57,7 +57,6 @@ protected:
 
 public:
 	Detector(
-	bool use_gpu = false, 
 	float confidenceThreshold = 0.5f, 
   	size_t network_width = -1,
   	size_t network_height = -1		

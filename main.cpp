@@ -9,7 +9,7 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ type     |  yolov8 | yolov4, yolov5, yolov6, yolov7, tensorflow, rtdetr}"
       "{ source s   |   | path to image or video source}"
       "{ labels lb  |  | path to class labels}"
-      "{ conf c   |   | optional model configuration file}"
+      "{ config c   |   | optional model configuration file}"
       "{ weights w  |   | path to models weights}"
       "{ use_gpu   | false  | activate gpu support}"
       "{ min_confidence | 0.25   | optional min confidence}";
@@ -56,10 +56,10 @@ int main (int argc, char *argv[])
          std::exit(1);
     }
 
-    const std::string conf =  parser.get<std::string>("conf");
-    if(!conf.empty() && !isFile(conf))
+    const std::string config =  parser.get<std::string>("config");
+    if(!config.empty() && !isFile(config))
     {
-         logger->error("conf file {} doesn't exist", conf);
+         logger->error("conf file {} doesn't exist", config);
          std::exit(1);
     }
 
@@ -72,7 +72,7 @@ int main (int argc, char *argv[])
     std::unique_ptr<Detector> detector = createDetector(detectorType); 
     
     InferenceEngine::SetLogger(logger);
-    std::unique_ptr<InferenceEngine> engine = setup_inference_engine();
+    std::unique_ptr<InferenceEngine> engine = setup_inference_engine(weights, config);
 
     if(!detector)
     {

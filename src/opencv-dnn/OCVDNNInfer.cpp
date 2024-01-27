@@ -1,15 +1,14 @@
 #include "OCVDNNInfer.hpp"
 
-OCVDNNInfer::OCVDNNInfer(const std::string& modelConfiguration,
-    const std::string& modelBinary) : InferenceEngine{modelConfiguration, modelBinary} 
+OCVDNNInfer::OCVDNNInfer(const std::string& weights, const std::string& modelConfiguration) : InferenceEngine{weights, modelConfiguration} 
 {
 
-        logger_->info("Running {} using OpenCV DNN runtime", modelBinary);
-        net_ = modelConfiguration.empty() ? cv::dnn::readNet(modelBinary) : cv::dnn::readNetFromDarknet(modelConfiguration, modelBinary);
+        logger_->info("Running {} using OpenCV DNN runtime", weights);
+        net_ = modelConfiguration.empty() ? cv::dnn::readNet(weights) : cv::dnn::readNetFromDarknet(modelConfiguration, weights);
         if (net_.empty())
         {
             std::cerr << "Can't load network by using the following files: " << std::endl;
-            std::cerr << "weights-file: " << modelBinary << std::endl;
+            std::cerr << "weights-file: " << weights << std::endl;
             exit(-1);
         }
         outLayers_ = net_.getUnconnectedOutLayers();
