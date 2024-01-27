@@ -55,6 +55,7 @@ protected:
 		return cv::Rect(l, t, r - l, b - t);
 	}
 
+
 public:
 	Detector(
 	float confidenceThreshold = 0.5f, 

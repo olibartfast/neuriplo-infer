@@ -18,7 +18,7 @@
 std::unique_ptr<InferenceEngine> setup_inference_engine(const std::string& weights, const std::string& modelConfiguration )
 {
     #ifdef USE_ONNX_RUNTIME
-
+    return std::make_unique<ORTInfer>(weights, false); 
     #elif USE_LIBTORCH 
 
     #elif USE_LIBTENSORFLOW 

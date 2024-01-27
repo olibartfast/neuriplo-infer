@@ -6,7 +6,6 @@
 #include "YoloV8.hpp"
 #include "RtDetr.hpp"
 
-#include "utils.hpp"
 
 std::unique_ptr<Detector> createDetector(
     const std::string& detectorType)

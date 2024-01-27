@@ -3,7 +3,7 @@
 
 class OCVDNNInfer : public InferenceEngine
 {
-protected:
+private:
 	cv::dnn::Net net_;
     std::vector<int> outLayers_;
     std::string outLayerType_;

@@ -1,6 +1,6 @@
 #include "ORTInfer.hpp"
 
-ORTInfer::ORTInfer(const std::string& model_path, bool use_gpu) 
+ORTInfer::ORTInfer(const std::string& model_path, bool use_gpu) : InferenceEngine{model_path, "", use_gpu}
 {
     env_=Ort::Env(ORT_LOGGING_LEVEL_WARNING, "Onnx Runtime Inference");
 
@@ -57,12 +57,12 @@ ORTInfer::ORTInfer(const std::string& model_path, bool use_gpu)
         logger_->info("\t{} : {}", input_names_.at(i), print_shape(input_shapes));
         input_shapes_.emplace_back(input_shapes);
     }
-    network_width_ = static_cast<int>(input_shapes_[0][3]);
-    network_height_ = static_cast<int>(input_shapes_[0][2]);
-    channels_ = static_cast<int>(input_shapes_[0][1]);
-    logger_->info("channels {}", channels_);
-    logger_->info("width {}", network_width_);
-    logger_->info("height {}", network_height_);
+    const auto network_width = static_cast<int>(input_shapes_[0][3]);
+    const auto network_height = static_cast<int>(input_shapes_[0][2]);
+    const auto channels = static_cast<int>(input_shapes_[0][1]);
+    logger_->info("channels {}", channels);
+    logger_->info("width {}", network_width);
+    logger_->info("height {}", network_height);
 
     // print name/shape of outputs
     logger_->info("Output Node Name/Shape ({}):", session_.GetOutputCount());
@@ -83,7 +83,7 @@ std::string ORTInfer::print_shape(const std::vector<std::int64_t>& v)
     ss << v[v.size() - 1];
     return ss.str();
 }
-std::vector<Detection> ORTInfer::run_detection(const cv::Mat& image)
+ std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> ORTInfer::get_infer_results(const cv::Mat& input_blob)
 {
     std::vector<std::vector<float>> outputs;
     std::vector<std::vector<int64_t>> shapes;
@@ -91,17 +91,14 @@ std::vector<Detection> ORTInfer::run_detection(const cv::Mat& image)
     std::vector<Ort::Value> in_ort_tensors;
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
-    for (size_t i = 0; i < session_.GetInputCount(); ++i)
-    {
-        input_tensors[i] = preprocess_image(image);
-        in_ort_tensors.emplace_back(Ort::Value::CreateTensor<float>(
-            memory_info,
-            input_tensors[i].data(),
-            input_tensors[i].size(),
-            input_shapes_[i].data(),
-            input_shapes_[i].size()
-        ));
-    }
+    input_tensors[0] = blob2vec(input_blob);
+    in_ort_tensors.emplace_back(Ort::Value::CreateTensor<float>(
+        memory_info,
+        input_tensors[0].data(),
+        input_tensors[0].size(),
+        input_shapes_[0].data(),
+        input_shapes_[0].size()
+    ));
 
     // Run inference
     std::vector<const char*> input_names_char(input_names_.size());
@@ -139,7 +136,5 @@ std::vector<Detection> ORTInfer::run_detection(const cv::Mat& image)
         shapes.emplace_back(shape);
     }
 
-    // Assuming postprocess function takes outputs and shapes as arguments
-    cv::Size frame_size(image.cols, image.rows);
-    return postprocess(outputs, shapes, frame_size);
+    return std::make_tuple(outputs, shapes);
 }

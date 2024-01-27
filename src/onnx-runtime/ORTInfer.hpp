@@ -1,11 +1,11 @@
 #pragma once
-#include "Detector.hpp"
+#include "InferenceEngine.hpp"
 #include <onnxruntime_cxx_api.h>  // for ONNX Runtime C++ API
 #include <onnxruntime_c_api.h>    // for CUDA execution provider (if using CUDA)
 
-class ORTInfer
+class ORTInfer : public InferenceEngine
 {
-protected:
+private:
     Ort::Env env_;
     Ort::Session session_{ nullptr };
     std::vector<std::string> input_names_;  // Store input layer names
@@ -17,5 +17,5 @@ public:
     std::string print_shape(const std::vector<std::int64_t>& v);
     ORTInfer(const std::string& model_path, bool use_gpu = false);
 
-    std::vector<Detection> run_detection(const cv::Mat& image) override;    
+    std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
 };
