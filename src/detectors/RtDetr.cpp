@@ -72,24 +72,7 @@ std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<float>>
 
 cv::Mat RtDetr::preprocess_image(const cv::Mat& image)
 {
-    cv::Mat blob;
-    cv::cvtColor(image, blob, cv::COLOR_BGR2RGB);
-    cv::Mat resized_image(network_height_, network_width_, CV_8UC3);
-    cv::resize(blob, resized_image, resized_image.size(), 0, 0, cv::INTER_LINEAR);
-    cv::Mat output_image;
-    resized_image.convertTo(output_image, CV_32FC3, 1.f / 255.f);        
-
-    // size_t img_byte_size = output_image.total() * output_image.elemSize();  // Allocate a buffer to hold all image elements.
-    // std::vector<float> input_data = std::vector<float>(network_width_ * network_height_ * channels_);
-    // std::memcpy(input_data.data(), output_image.data, img_byte_size);
-
-    // std::vector<cv::Mat> chw;
-    // for (size_t i = 0; i < channels_; ++i)
-    // {
-    //     chw.emplace_back(cv::Mat(cv::Size(network_width_, network_height_), CV_32FC1, &(input_data[i * network_width_ * network_height_])));
-    // }
-    // cv::split(output_image, chw);
-
-    // return input_data;    
+    cv::Mat output_image;   
+    cv::dnn::blobFromImage(image, output_image, 1.f / 255.f, cv::Size(network_height_, network_width_), cv::Scalar(), true, false);
     return output_image;
 }

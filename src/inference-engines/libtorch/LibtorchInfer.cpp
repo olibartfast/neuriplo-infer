@@ -21,11 +21,8 @@ LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu) : Infe
 std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> LibtorchInfer::get_infer_results(const cv::Mat& input_blob)
 {
 
-    // Preprocess the input image
-    //std::vector<float> input_tensor = preprocess_image(image);
-
     // Convert the input tensor to a Torch tensor
-    torch::Tensor input = torch::from_blob(input_blob.data, { 1, input_blob.size[1], input_blob.size[1], input_blob.size[1] }, torch::kFloat32);
+    torch::Tensor input = torch::from_blob(input_blob.data, { 1, input_blob.size[1], input_blob.size[2], input_blob.size[3] }, torch::kFloat32);
     input = input.to(device_);
 
     // Run inference

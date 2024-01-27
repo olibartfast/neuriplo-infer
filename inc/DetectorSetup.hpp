@@ -28,6 +28,10 @@ std::unique_ptr<Detector> createDetector(
     else if(detectorType.find("yolonas") != std::string::npos)  
     {
         return std::make_unique<YoloNas>();
-    }    
+    } 
+    else if(detectorType.find("rtdetr") != std::string::npos)  
+    {
+        return std::make_unique<RtDetr>();
+    }     
     return detector;
 }
