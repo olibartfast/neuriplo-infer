@@ -20,7 +20,7 @@ std::unique_ptr<InferenceEngine> setup_inference_engine(const std::string& weigh
     #ifdef USE_ONNX_RUNTIME
     return std::make_unique<ORTInfer>(weights, false); 
     #elif USE_LIBTORCH 
-
+    return std::make_unique<LibtorchInfer>(weights, false); 
     #elif USE_LIBTENSORFLOW 
 
     #elif USE_OPENCV_DNN 

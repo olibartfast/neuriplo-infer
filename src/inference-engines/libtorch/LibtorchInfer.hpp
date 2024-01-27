@@ -1,20 +1,17 @@
 #pragma once
-#include "Detector.hpp"
+#include "InferenceEngine.hpp"
 #include <torch/torch.h>
 #include <torch/script.h>
 
-class LibtorchInfer 
+class LibtorchInfer : public InferenceEngine
 {
 protected:
     torch::DeviceType device_;
     torch::jit::script::Module module_;
 
 public:
-    LibtorchInfer(const std::string& model_path, bool use_gpu = true,
-    float confidenceThreshold = 0.25,
-    size_t network_width = 640,
-    size_t network_height = 640);
+    LibtorchInfer(const std::string& model_path, bool use_gpu = true);
 
-    std::vector<Detection> run_detection(const cv::Mat& image) override; 
+    std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
   
 };

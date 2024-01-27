@@ -1,10 +1,7 @@
 #include "LibtorchInfer.hpp"
 
 
-LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu,
-    float confidenceThreshold,
-    size_t network_width,
-    size_t network_height) 
+LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu) : InferenceEngine{model_path, "", use_gpu}
 {
     if (use_gpu && torch::cuda::is_available())
     {
@@ -19,17 +16,16 @@ LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu,
 
     module_ = torch::jit::load(model_path, device_);
 
-    channels_ = 3;
 }
 
-std::vector<Detection> LibtorchInfer::run_detection(const cv::Mat& image)
+std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> LibtorchInfer::get_infer_results(const cv::Mat& input_blob)
 {
 
     // Preprocess the input image
-    std::vector<float> input_tensor = preprocess_image(image);
+    //std::vector<float> input_tensor = preprocess_image(image);
 
     // Convert the input tensor to a Torch tensor
-    torch::Tensor input = torch::from_blob(input_tensor.data(), { 1, channels_, network_height_, network_width_ }, torch::kFloat32);
+    torch::Tensor input = torch::from_blob(input_blob.data, { 1, input_blob.size[1], input_blob.size[1], input_blob.size[1] }, torch::kFloat32);
     input = input.to(device_);
 
     // Run inference
@@ -87,8 +83,5 @@ std::vector<Detection> LibtorchInfer::run_detection(const cv::Mat& image)
 
     }
 
-    cv::Size frame_size(image.cols, image.rows);
-
-    // Perform post-processing on the output and return the detections
-    return postprocess(output_vectors, shape_vectors, frame_size);
+    return std::make_tuple(output_vectors, shape_vectors);
 }
