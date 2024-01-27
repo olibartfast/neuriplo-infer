@@ -44,7 +44,7 @@ Remember to replace chosen_backend with your actual backend selection.
     --type=<model type> \
     --source="rtsp://cameraip:port/somelivefeed" (or --source="path/to/video.format") (or --source="path/to/image.format") \
     --labels=</path/to/labels/file> \
-    --weights=<path/to/model/weights> [--conf=</path/to/model/config>] [--min_confidence=<confidence value>].
+    --weights=<path/to/model/weights> [--config=</path/to/model/config>] [--min_confidence=<confidence value>].
 ``` 
 ### To check all available options:
 ```

@@ -2,7 +2,7 @@
 
 
 ## Note
-Opencv-dnn module loads onnx models
+Opencv-dnn module loads onnx models except for yolov4 .weights  
 
 ### Export the model for the inference
 ## YOLOv8
