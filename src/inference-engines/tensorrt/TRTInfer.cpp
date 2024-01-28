@@ -1,8 +1,10 @@
 #include "TRTInfer.hpp"
 
-TRTInfer::TRTInfer(const std::string& model_path)
+TRTInfer::TRTInfer(const std::string& model_path) : InferenceInterface{model_path, "", true}
 {
 
+    logger_->info("Initializing TensorRT for model {}", model_path);
+    initializeBuffers(model_path);
 }
 
 void TRTInfer::initializeBuffers(const std::string& engine_path)
@@ -67,19 +69,12 @@ void TRTInfer::createContextAndAllocateBuffers()
         auto binding_size = getSizeByDim(dims) * sizeof(float);
         cudaMalloc(&buffers_[i], binding_size);
         if (engine_->bindingIsInput(i))
-        {
-            network_width_ = dims.d[3];
-            network_height_ = dims.d[2];
-            channels_ = dims.d[1];
-        }
-        else
-        {
-            auto size = getSizeByDim(dims);
-            h_outputs_.emplace_back(std::vector<float>(size));
-            const int64_t curr_batch = dims.d[0] == -1 ? 1 : dims.d[0];
-            const auto out_shape = std::vector<int64_t>{curr_batch, dims.d[1], dims.d[2], dims.d[3] };
-            output_shapes_.emplace_back(out_shape);
-        }
+            continue;
+        auto size = getSizeByDim(dims);
+        h_outputs_.emplace_back(std::vector<float>(size));
+        const int64_t curr_batch = dims.d[0] == -1 ? 1 : dims.d[0];
+        const auto out_shape = std::vector<int64_t>{curr_batch, dims.d[1], dims.d[2], dims.d[3] };
+        output_shapes_.emplace_back(out_shape);
     }
 }
 
@@ -100,11 +95,10 @@ void TRTInfer::infer()
     
 }
 
-std::vector<Detection> TRTInfer::run_detection(const cv::Mat& image)
+std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> TRTInfer::get_infer_results(const cv::Mat& input_blob) 
 {
-    std::vector<float> h_input_data = preprocess_image(image);
-    cudaMemcpy(buffers_[0], h_input_data.data(), sizeof(float)*h_input_data.size(), cudaMemcpyHostToDevice);
+
+    cudaMemcpy(buffers_[0], input_blob.data, sizeof(float)* get_blob_size(input_blob), cudaMemcpyHostToDevice);
     infer();
-    cv::Size frame_size(image.cols, image.rows);
-    return postprocess(frame_size);   
+    return std::make_tuple(h_outputs_, output_shapes_);
 }  
