@@ -1,22 +1,16 @@
 #pragma once
-#include "Detector.hpp"
+#include "InferenceInterface.hpp"
 #include <tensorflow/cc/saved_model/loader.h>
 #include <tensorflow/cc/saved_model/tag_constants.h>
 #include <tensorflow/core/framework/tensor.h>
 #include <tensorflow/core/public/session.h>
 #include "opencv2/opencv.hpp"
 
-class TFDetectionAPI : public Detector{
+class TFDetectionAPI : public InferenceInterface{
 
 public:
-    TFDetectionAPI(const std::string& model_path, 
-        bool use_gpu = false, 
-        float score_threshold = 0.5f,          
-        size_t network_width = -1,
-        size_t network_height = -1) :
-    Detector{model_path, use_gpu, score_threshold,
-            network_width,
-            network_height}
+    TFDetectionAPI(const std::string& model_path) :
+    InferenceInterface{model_path, "", false}
     {
         tensorflow::SessionOptions session_options;
         tensorflow::RunOptions run_options; 
@@ -40,17 +34,11 @@ public:
         }
     }
 
-   
-    std::vector<Detection> run_detection(const cv::Mat& frame) override;
-
 private:
-    float compute_iou(const Detection& a, const Detection& b);
-    std::vector<int> ApplyNMS(const std::vector<Detection>& detections, float iou_threshold);
-    tensorflow::Tensor preprocess(const cv::Mat& frame);
 
     std::string model_path_;
-    float score_threshold_;
-    bool use_gpu_;
     tensorflow::SavedModelBundle bundle_;   
-    std::unique_ptr<tensorflow::Session> session_;     
+    std::unique_ptr<tensorflow::Session> session_; 
+    
+    std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;    
 };

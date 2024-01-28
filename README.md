@@ -8,7 +8,6 @@
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
 ### Optional 
 * GStreamer (1.20.3) 
-* Tensorflow prebuilt library from [Institut für Kraftfahrzeuge](https://github.com/ika-rwth-aachen/libtensorflow_cc)
 * CUDA (if you want to use GPU, CUDA 12 is supported for LibTorch and TensorRT, I used CUDA 11.8 for onnx-rt)
 * ONNX Runtime (1.15.1 gpu package)
 * LibTorch (2.0.1-cu118)
@@ -91,6 +90,7 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 * [rtdetr-onnxruntime-deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
 ## TO DO
+- Reimplement Libtensorflow backend
 - Add tests
 
 ## Feedback
