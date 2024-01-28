@@ -1,12 +1,12 @@
 #pragma once
-#include "Detector.hpp"
+#include "InferenceInterface.hpp"
 #include <NvInfer.h>  // for TensorRT API
 #include <cuda_runtime_api.h>  // for CUDA runtime API
 #include <fstream>
 
 #include "Logger.hpp"
 
-class TRTInfer 
+class TRTInfer : public InferenceInterface
 {
     protected:
         std::shared_ptr<nvinfer1::ICudaEngine> engine_{nullptr};
@@ -17,7 +17,7 @@ class TRTInfer
         nvinfer1::IRuntime* runtime_{nullptr};
 
     public:
-        TRTInfer(const std::string& model_path;
+        TRTInfer(const std::string& model_path);
 
         // Create execution context and allocate input/output buffers
         void createContextAndAllocateBuffers();
@@ -29,7 +29,7 @@ class TRTInfer
 
         void infer();
 
-        std::vector<Detection> run_detection(const cv::Mat& image) override;    
+        std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
 
         ~TRTInfer()
         {

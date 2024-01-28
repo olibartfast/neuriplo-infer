@@ -22,6 +22,7 @@ class InferenceInterface{
 
     protected:
         std::vector<float> blob2vec(const cv::Mat& input_blob);
+        size_t get_blob_size(const cv::Mat& input_blob);
         static std::shared_ptr<spdlog::logger> logger_; 
 
 

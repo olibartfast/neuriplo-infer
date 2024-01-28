@@ -72,9 +72,21 @@ int main (int argc, char *argv[])
 
     Detector::SetLogger(logger);
     std::unique_ptr<Detector> detector = createDetector(detectorType); 
+
+    if(!detector)
+    {
+        logger->error("Can't setup a detector {}", detectorType);
+        std::exit(1);
+    }
     
     InferenceInterface::SetLogger(logger);
     std::unique_ptr<InferenceInterface> engine = setup_inference_engine(weights, config);
+    if(!engine)
+    {
+        logger->error("Can't setup an inference engine for{} {}", weights, config);
+        std::exit(1);
+    }
+
 
     if(!detector)
     {

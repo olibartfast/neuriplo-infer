@@ -26,7 +26,7 @@ std::unique_ptr<InferenceInterface> setup_inference_engine(const std::string& we
     #elif USE_OPENCV_DNN 
     return std::make_unique<OCVDNNInfer>(weights, modelConfiguration); 
     #elif USE_TENSORRT
-
+    return std::make_unique<TRTInfer>(weights); 
     #elif USE_OPENVINO
     return std::make_unique<OVInfer>("", modelConfiguration, false); 
     #endif
