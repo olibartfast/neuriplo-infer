@@ -42,8 +42,16 @@ int main (int argc, char *argv[])
 
     const bool use_gpu = parser.get<bool>("use_gpu");
 
+    const std::string config =  parser.get<std::string>("config");
+    if(!config.empty() && !isFile(config))
+    {
+         logger->error("conf file {} doesn't exist", config);
+         std::exit(1);
+    }
+
+
     const std::string weights = parser.get<std::string>("weights");
-    if(!isFile(weights))
+    if(!isFile(weights) && getFileExtension(config) != "xml")
     {
          logger->error("weights file {} doesn't exist", weights);
          std::exit(1);
@@ -56,12 +64,6 @@ int main (int argc, char *argv[])
          std::exit(1);
     }
 
-    const std::string config =  parser.get<std::string>("config");
-    if(!config.empty() && !isFile(config))
-    {
-         logger->error("conf file {} doesn't exist", config);
-         std::exit(1);
-    }
 
     const std::string detectorType = parser.get<std::string>("type");
     float confidenceThreshold = parser.get<float>("min_confidence");

@@ -51,3 +51,11 @@ std::vector<std::string> readLabelNames(const std::string& fileName)
     classes.push_back(line);
     return classes;   
 }
+
+std::string getFileExtension(const std::string& filename) {
+    size_t dotPos = filename.find_last_of(".");
+    if (dotPos != std::string::npos) {
+        return filename.substr(dotPos + 1);
+    }
+    return ""; // Return empty string if no extension found
+}

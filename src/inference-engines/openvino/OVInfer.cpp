@@ -4,7 +4,7 @@ OVInfer::OVInfer(const std::string& model_path, const std::string& model_config,
     InferenceInterface{model_path, model_config, use_gpu}
 {
 
-    model_ = core_.read_model(model_path);
+    model_ = core_.read_model(model_config);
     compiled_model_ = core_.compile_model(model_);
     infer_request_ = compiled_model_.create_infer_request();
     ov::Shape s = compiled_model_.input().get_shape();
