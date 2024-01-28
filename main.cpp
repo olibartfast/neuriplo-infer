@@ -1,6 +1,6 @@
 #include "VideoCaptureFactory.hpp"
 #include "DetectorSetup.hpp"
-#include "InferenceEngineSetup.hpp"
+#include "InferenceBackendSetup.hpp"
 #include "Logger.hpp"
 #include "utils.hpp"
 
@@ -71,8 +71,8 @@ int main (int argc, char *argv[])
     Detector::SetLogger(logger);
     std::unique_ptr<Detector> detector = createDetector(detectorType); 
     
-    InferenceEngine::SetLogger(logger);
-    std::unique_ptr<InferenceEngine> engine = setup_inference_engine(weights, config);
+    InferenceInterface::SetLogger(logger);
+    std::unique_ptr<InferenceInterface> engine = setup_inference_engine(weights, config);
 
     if(!detector)
     {

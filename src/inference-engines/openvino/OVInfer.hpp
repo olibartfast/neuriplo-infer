@@ -1,20 +1,17 @@
 #pragma once
-#include "Detector.hpp"
+#include "InferenceInterface.hpp"
 #include <openvino/openvino.hpp>
 
 
-class OVInfer 
+class OVInfer : public InferenceInterface
 {
 protected:
 
 
 public:
-    OVInfer(const std::string& model_path, bool use_gpu = true,
-    float confidenceThreshold = 0.25,
-    size_t network_width = 640,
-    size_t network_height = 640);
+    OVInfer(const std::string& model_path = "", const std::string& modelConfiguration = "", bool use_gpu = true);
 
-    std::vector<Detection> run_detection(const cv::Mat& image) override;
+    std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
   
     ov::Core core_;
     ov::Tensor input_tensor_;

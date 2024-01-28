@@ -1,6 +1,6 @@
 #pragma once
 #include "common.hpp"
-#include "InferenceEngine.hpp"
+#include "InferenceInterface.hpp"
 #ifdef USE_ONNX_RUNTIME
 #include "ORTInfer.hpp"
 #elif USE_LIBTORCH 
@@ -15,7 +15,7 @@
 #include "OVInfer.hpp"
 #endif
 
-std::unique_ptr<InferenceEngine> setup_inference_engine(const std::string& weights, const std::string& modelConfiguration )
+std::unique_ptr<InferenceInterface> setup_inference_engine(const std::string& weights, const std::string& modelConfiguration )
 {
     #ifdef USE_ONNX_RUNTIME
     return std::make_unique<ORTInfer>(weights, false); 
@@ -28,7 +28,7 @@ std::unique_ptr<InferenceEngine> setup_inference_engine(const std::string& weigh
     #elif USE_TENSORRT
 
     #elif USE_OPENVINO
-
+    return std::make_unique<OVInfer>("", modelConfiguration, false); 
     #endif
     return nullptr;
 

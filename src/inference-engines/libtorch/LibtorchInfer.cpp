@@ -1,7 +1,7 @@
 #include "LibtorchInfer.hpp"
 
 
-LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu) : InferenceEngine{model_path, "", use_gpu}
+LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu) : InferenceInterface{model_path, "", use_gpu}
 {
     if (use_gpu && torch::cuda::is_available())
     {

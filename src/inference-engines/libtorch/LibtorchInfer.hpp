@@ -1,9 +1,9 @@
 #pragma once
-#include "InferenceEngine.hpp"
+#include "InferenceInterface.hpp"
 #include <torch/torch.h>
 #include <torch/script.h>
 
-class LibtorchInfer : public InferenceEngine
+class LibtorchInfer : public InferenceInterface
 {
 protected:
     torch::DeviceType device_;

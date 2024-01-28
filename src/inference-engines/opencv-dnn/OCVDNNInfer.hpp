@@ -1,7 +1,7 @@
 #pragma once
-#include "InferenceEngine.hpp"
+#include "InferenceInterface.hpp"
 
-class OCVDNNInfer : public InferenceEngine
+class OCVDNNInfer : public InferenceInterface
 {
 private:
 	cv::dnn::Net net_;

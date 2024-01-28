@@ -1,6 +1,6 @@
 #include "OCVDNNInfer.hpp"
 
-OCVDNNInfer::OCVDNNInfer(const std::string& weights, const std::string& modelConfiguration) : InferenceEngine{weights, modelConfiguration} 
+OCVDNNInfer::OCVDNNInfer(const std::string& weights, const std::string& modelConfiguration) : InferenceInterface{weights, modelConfiguration} 
 {
 
         logger_->info("Running {} using OpenCV DNN runtime", weights);

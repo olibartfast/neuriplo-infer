@@ -1,9 +1,9 @@
-#include "InferenceEngine.hpp"
+#include "InferenceInterface.hpp"
 
-std::shared_ptr<spdlog::logger> InferenceEngine::logger_;
+std::shared_ptr<spdlog::logger> InferenceInterface::logger_;
 
 
-std::vector<float> InferenceEngine::blob2vec(const cv::Mat& input_blob)
+std::vector<float> InferenceInterface::blob2vec(const cv::Mat& input_blob)
 {
 
     const auto channels = input_blob.size[1];

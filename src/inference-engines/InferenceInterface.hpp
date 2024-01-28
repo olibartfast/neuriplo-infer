@@ -1,10 +1,10 @@
 #pragma once
 #include "common.hpp"
 
-class InferenceEngine{
+class InferenceInterface{
     	
     public:
-        InferenceEngine(const std::string& weights, const std::string& modelConfiguration,
+        InferenceInterface(const std::string& weights, const std::string& modelConfiguration,
          bool use_gpu = false)
         {
 
