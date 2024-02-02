@@ -82,7 +82,7 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 * [YoloV5](docs/ExportInstructions.md#yolov5)
 * [YoloV6](docs/ExportInstructions.md#yolov6)
 * [YoloV7](docs/ExportInstructions.md#yolov7)
-* [RT-DETR](docs/ExportInstructions.md#RT-DETR)
+* [RT-DETR (Ultralytics implementation)](docs/ExportInstructions.md#RT-DETR)
 
 ## References
 * [Object detection using the opencv dnn module](https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp)
