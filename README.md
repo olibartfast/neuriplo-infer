@@ -14,7 +14,8 @@
 * TensorRT (8.6.1.6)
 * OpenVino (2023.2) 
 ### Notes
- If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN, OPENVINO) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default. 
+ - If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN, OPENVINO) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default.
+- Models with dynamic axis are currently not supported.
 
 
 ## To build and compile  
@@ -90,6 +91,7 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 * [rtdetr-onnxruntime-deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
 ## TO DO
+- Add support to model exported with dynamic axis 
 - Reimplement Libtensorflow backend
 - Add tests
 
