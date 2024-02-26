@@ -57,7 +57,7 @@ trtexec --onnx=yourmodel.onnx --minShapes=images:1x3x640x640 --optShapes=images:
 #### OnnxRuntime
 Weights to export in ONNX format or download from [yolov6 repo](https://github.com/meituan/YOLOv6/tree/main/deploy/ONNX). Posteprocessing code is identical to yolov5-v7.
 
-## RT-DETR
+## RT-DETR (Ultralytics)
 #### OnnxRuntime
 Always using [Ultralytics pip package](https://docs.ultralytics.com/quickstart/) export the model to onnx using the following command:
 ```

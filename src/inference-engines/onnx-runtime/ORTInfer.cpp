@@ -53,13 +53,34 @@ ORTInfer::ORTInfer(const std::string& model_path, bool use_gpu) : InferenceInter
     for (std::size_t i = 0; i < session_.GetInputCount(); i++)
     {
         input_names_.emplace_back(session_.GetInputNameAllocated(i, allocator).get());
-        const auto input_shapes = session_.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+        auto input_shapes = session_.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+        auto input_type = session_.GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetElementType(); 
         logger_->info("\t{} : {}", input_names_.at(i), print_shape(input_shapes));
+        input_shapes[0] = input_shapes[0] == -1 ? 1 : input_shapes[0]; 
         input_shapes_.emplace_back(input_shapes);
+
+        std::string input_type_str;
+        switch (input_type) 
+        {
+            case ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+                input_type_str = "Float";
+                break;
+            case ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:
+                input_type_str = "Int64";
+                break;
+            // Handle other data types as needed
+            default:
+                input_type_str = "Unknown";
+        }
+
+        // Log the type
+        logger_->info("\tData Type: {}", input_type_str);
     }
+
     const auto network_width = static_cast<int>(input_shapes_[0][3]);
     const auto network_height = static_cast<int>(input_shapes_[0][2]);
     const auto channels = static_cast<int>(input_shapes_[0][1]);
+
     logger_->info("channels {}", channels);
     logger_->info("width {}", network_width);
     logger_->info("height {}", network_height);
@@ -83,6 +104,23 @@ std::string ORTInfer::print_shape(const std::vector<std::int64_t>& v)
     ss << v[v.size() - 1];
     return ss.str();
 }
+
+
+size_t ORTInfer::getSizeByDim(const std::vector<int64_t>& dims)
+{
+    size_t size = 1;
+    for (size_t i = 0; i < dims.size(); ++i)
+    {
+        if(dims[i] == -1 || dims[i] == 0)
+        {
+            continue;
+        }
+        size *= dims[i];
+    }
+    return size;
+}
+
+
  std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> ORTInfer::get_infer_results(const cv::Mat& input_blob)
 {
     std::vector<std::vector<float>> outputs;
@@ -95,10 +133,25 @@ std::string ORTInfer::print_shape(const std::vector<std::int64_t>& v)
     in_ort_tensors.emplace_back(Ort::Value::CreateTensor<float>(
         memory_info,
         input_tensors[0].data(),
-        input_tensors[0].size(),
+        getSizeByDim(input_shapes_[0]),
         input_shapes_[0].data(),
         input_shapes_[0].size()
     ));
+
+    // RTDETR case, two inputs
+    if(input_tensors.size() > 1)
+    {
+        std::vector<int64_t> size_data = { static_cast<int64_t>(input_blob.size[2]), static_cast<int64_t>(input_blob.size[3]) };
+        // Assuming input_tensors[1] is of type int64
+        in_ort_tensors.emplace_back(Ort::Value::CreateTensor<int64>(
+            memory_info,
+            size_data.data(),
+            getSizeByDim(size_data),
+            input_shapes_[1].data(),
+            input_shapes_[1].size()
+        ));
+    }
+
 
     // Run inference
     std::vector<const char*> input_names_char(input_names_.size());
@@ -123,7 +176,7 @@ std::string ORTInfer::print_shape(const std::vector<std::int64_t>& v)
 
     for (const Ort::Value& output_tensor : output_ort_tensors)
     {
-        const float* output_data = output_tensor.GetTensorData<float>();
+
         const auto& shape_ref = output_tensor.GetTensorTypeAndShapeInfo().GetShape();
         std::vector<int64_t> shape(shape_ref.begin(), shape_ref.end());
 
@@ -132,7 +185,30 @@ std::string ORTInfer::print_shape(const std::vector<std::int64_t>& v)
             num_elements *= dim;
         }
         
-        outputs.emplace_back(std::vector<float>(output_data, output_data + num_elements));
+        std::vector<float> float_data;
+        
+        // Check if the tensor data type is already float
+        if (output_tensor.GetTensorTypeAndShapeInfo().GetElementType() == ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
+        {
+            const float* output_data_float = output_tensor.GetTensorData<float>();
+            float_data = std::vector<float>(output_data_float, output_data_float + num_elements);
+           
+        }
+        else
+        {
+            // Assume the data type is int64_t and convert it to float
+            const int64_t* output_data_int64 = output_tensor.GetTensorData<int64_t>();
+
+            // Convert int64_t to float
+            std::vector<int64_t> temp_data(output_data_int64, output_data_int64 + num_elements);
+    
+            for(auto& t : temp_data)
+                float_data.emplace_back(t);
+        }
+
+
+        // Store the float data in outputs
+        outputs.emplace_back(float_data);
         shapes.emplace_back(shape);
     }
 

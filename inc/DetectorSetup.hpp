@@ -5,6 +5,7 @@
 #include "YoloNas.hpp"
 #include "YoloV8.hpp"
 #include "RtDetr.hpp"
+#include "RtDetrUltralytics.hpp"
 
 
 std::unique_ptr<Detector> createDetector(
@@ -29,6 +30,10 @@ std::unique_ptr<Detector> createDetector(
     {
         return std::make_unique<YoloNas>();
     } 
+    else if(detectorType.find("rtdetrul") != std::string::npos)  
+    {
+        return std::make_unique<RtDetrUltralytics>();
+    }     
     else if(detectorType.find("rtdetr") != std::string::npos)  
     {
         return std::make_unique<RtDetr>();
