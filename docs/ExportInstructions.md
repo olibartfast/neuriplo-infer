@@ -82,6 +82,15 @@ or
 yolo export model=yourmodel.pt format=engine
 ```
 
+
+## RT-DETR [lyuwenyu](https://github.com/lyuwenyu/RT-DETR/tree/main/rtdetr_pytorch)
+#### OnnxRuntime
+```
+cd RT-DETR/rtdetr_pytorch
+python tools/export_onnx.py -c configs/rtdetr/rtdetr_r18vd_6x_coco.yml(or other version) -r path/to/checkpoint --check
+```
+
+
 ## YOLOv7
 #### OnnxRuntime and/or Libtorch
 * Run from [yolov7 repo](https://github.com/WongKinYiu/yolov7#export): ```python export.py --weights <yolov7_version>.pt --grid  --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --img-size 640 640 --max-wh 640``` (Don't use end-to-end parameter)
