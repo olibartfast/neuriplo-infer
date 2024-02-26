@@ -84,6 +84,7 @@ yolo export model=yourmodel.pt format=engine
 
 
 ## RT-DETR [lyuwenyu](https://github.com/lyuwenyu/RT-DETR/tree/main/rtdetr_pytorch)
+- From lyuwenyu rt-detr repo:
 #### OnnxRuntime
 ```
 cd RT-DETR/rtdetr_pytorch
