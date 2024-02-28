@@ -128,6 +128,7 @@ size_t ORTInfer::getSizeByDim(const std::vector<int64_t>& dims)
     std::vector<std::vector<float>> input_tensors(session_.GetInputCount());
     std::vector<Ort::Value> in_ort_tensors;
     Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    std::vector<int64_t>  orig_target_sizes; 
 
     input_tensors[0] = blob2vec(input_blob);
     in_ort_tensors.emplace_back(Ort::Value::CreateTensor<float>(
@@ -141,12 +142,12 @@ size_t ORTInfer::getSizeByDim(const std::vector<int64_t>& dims)
     // RTDETR case, two inputs
     if(input_tensors.size() > 1)
     {
-        std::vector<int64_t> size_data = { static_cast<int64_t>(input_blob.size[2]), static_cast<int64_t>(input_blob.size[3]) };
+        orig_target_sizes = { static_cast<int64_t>(input_blob.size[2]), static_cast<int64_t>(input_blob.size[3]) };
         // Assuming input_tensors[1] is of type int64
         in_ort_tensors.emplace_back(Ort::Value::CreateTensor<int64>(
             memory_info,
-            size_data.data(),
-            getSizeByDim(size_data),
+            orig_target_sizes.data(),
+            getSizeByDim( orig_target_sizes),
             input_shapes_[1].data(),
             input_shapes_[1].size()
         ));
