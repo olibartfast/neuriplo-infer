@@ -4,6 +4,7 @@
 #include "YoloVn.hpp"
 #include "YoloNas.hpp"
 #include "YoloV8.hpp"
+#include "YoloV9.hpp"
 #include "RtDetr.hpp"
 #include "RtDetrUltralytics.hpp"
 
@@ -15,6 +16,10 @@ std::unique_ptr<Detector> createDetector(
     if(detectorType.find("yolov8") != std::string::npos)  
     {
         return std::make_unique<YoloV8>();
+    } 
+    else if(detectorType.find("yolov9") != std::string::npos)  
+    {
+        return std::make_unique<YoloV9>();
     } 
     else if(detectorType.find("yolov4") != std::string::npos)
     {  

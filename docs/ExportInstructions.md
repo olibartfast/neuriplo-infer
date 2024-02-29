@@ -5,6 +5,17 @@
 Opencv-dnn module loads onnx models except for yolov4 .weights  
 
 ### Export the model for the inference
+## YOLOv9
+#### OnnxRuntime
+* Run from [yolov9 repo](https://github.com/WongKinYiu/yolov9):
+```
+ python export.py --weights yolov9-c-converted.pt --include onnx
+```
+#### Torchscript
+```
+ python export.py --weights yolov9-c-converted.pt --include torchscript
+```
+
 ## YOLOv8
 
 Install YOLOv8 [following Ultralytics official documentation](https://docs.ultralytics.com/quickstart/) and export the model in different formats, you can use the following commands:

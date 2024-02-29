@@ -6,7 +6,7 @@
 
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov8 | yolov4, yolov5, yolov6, yolov7,yolov8, rtdetr, rtdetrul}"
+      "{ type     |  yolov9 | yolov4, yolov5, yolov6, yolov7,yolov8, yolov9, rtdetr, rtdetrul}"
       "{ source s   |   | path to image or video source}"
       "{ labels lb  |  | path to class labels}"
       "{ config c   |   | optional model configuration file}"

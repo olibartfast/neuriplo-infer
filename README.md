@@ -78,6 +78,7 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 
 
  ### Exporting a model for inference
+* [YoloV9](docs/ExportInstructions.md#yolov9)
 * [YoloV8](docs/ExportInstructions.md#yolov8)
 * [YoloNas](docs/ExportInstructions.md#yolonas)
 * [YoloV5](docs/ExportInstructions.md#yolov5)
