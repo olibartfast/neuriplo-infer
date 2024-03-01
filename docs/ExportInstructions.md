@@ -9,11 +9,15 @@ Opencv-dnn module loads onnx models except for yolov4 .weights
 #### OnnxRuntime
 * Run from [yolov9 repo](https://github.com/WongKinYiu/yolov9):
 ```
- python export.py --weights yolov9-c-converted.pt --include onnx
+ python export.py --weights yolov9-c/e-converted.pt --include onnx
 ```
 #### Torchscript
 ```
- python export.py --weights yolov9-c-converted.pt --include torchscript
+ python export.py --weights yolov9-c/e-converted.pt --include torchscript
+```
+#### TensorRT
+```
+ trtexec --onnx=yolov9-c/e-converted.onnx --saveEngine=yolov9-c/e.engine --fp16
 ```
 
 ## YOLOv8
