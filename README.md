@@ -93,7 +93,6 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 * [rtdetr-onnxruntime-deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
 ## TO DO
-- Add support to model exported with dynamic axis 
 - Reimplement Libtensorflow backend
 - Add tests
 
