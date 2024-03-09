@@ -41,34 +41,12 @@ std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<float>>
 {
     const float*  output0 = outputs.front().data();
     const  std::vector<int64_t> shape0 = shapes.front();    
-    
-    const auto offset = 5;
-    const auto num_classes = shape0[2] - offset; // 1 x 25200 x 85
 
     std::vector<cv::Rect> boxes;
     std::vector<float> confs;
     std::vector<int> classIds;
 
-    
-    std::vector<std::vector<float>> picked_proposals;
-
-    // Get all the YOLO proposals
-    for (int i = 0; i < shape0[1]; ++i) {
-        if(output0[4] > confidenceThreshold_)
-        {
-            const float* scoresPtr = output0 + 5;
-            auto maxSPtr = std::max_element(scoresPtr, scoresPtr + num_classes);
-            float score = *maxSPtr * output0[4];
-            if (score > confidenceThreshold_) {
-                boxes.emplace_back(get_rect(frame_size, std::vector<float>(output0, output0 + 4)));
-                int label = maxSPtr - scoresPtr;
-                confs.emplace_back(score);
-                classIds.emplace_back(label);
-            }
-
-        }
-        output0 += shape0[2]; 
-    }
+    std::tie(boxes, confs, classIds) = (shape0[1] > shape0[2]) ? postprocess_v567(output0, shape0, frame_size) : postprocess_v89(output0, shape0, frame_size); 
 
     // Perform Non Maximum Suppression and draw predictions.
     std::vector<int> indices;
