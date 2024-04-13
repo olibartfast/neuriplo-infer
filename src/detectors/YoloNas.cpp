@@ -29,10 +29,10 @@ cv::Mat YoloNas::preprocess_image(const cv::Mat& image)
 
 std::vector<Detection> YoloNas::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) 
 {
-    const float*  output0 = outputs[0].data();
+    const std::any* output0 = outputs[0].data();
     const  std::vector<int64_t> shape0 = shapes[0];
 
-    const float*  output1 = outputs[1].data();
+    const std::any* output1 = outputs[1].data();
     const  std::vector<int64_t> shape1 = shapes[1];
 
     std::vector<int> classIds;
@@ -47,8 +47,11 @@ std::vector<Detection> YoloNas::postprocess(const std::vector<std::vector<std::a
     // Iterate through detections.
     for (int i = 0; i < rows; ++i) 
     {
-        auto maxSPtr = std::max_element(output1, output1 + dimensions_scores);
-        float score = *maxSPtr;
+        auto maxSPtr = std::max_element(output1, output1 + dimensions_scores, [](const std::any& a, const std::any& b) {
+            return std::any_cast<float>(a) < std::any_cast<float>(b);
+        });
+
+        float score = std::any_cast<float>(*maxSPtr);
         if (score >= confidenceThreshold_) 
         {
             int label = maxSPtr - output1;
@@ -56,7 +59,10 @@ std::vector<Detection> YoloNas::postprocess(const std::vector<std::vector<std::a
             classIds.push_back(label);
             float r_w = (frame_size.width * 1.0) / network_width_;
             float r_h = (frame_size.height * 1.0) / network_height_ ;
-            std::vector<float> bbox(&output0[0], &output0[4]);
+
+            std::vector<float> bbox;
+            for(int i = 0; i < 4; i++)
+                bbox.emplace_back(std::any_cast<float>(*(output0 + i)));
 
             int left = (int)(bbox[0] * r_w);
             int top = (int)(bbox[1] * r_h);

@@ -54,12 +54,14 @@ std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<std::an
     std::vector<int> indices;
     cv::dnn::NMSBoxes(boxes, confidences, confidenceThreshold_, nms_threshold_, indices);
     std::vector<Detection> detections;
-    for (int idx : indices) {
+    for (int i = 0; i < indices.size(); i++) 
+    {
         Detection det;
+        int idx = indices[i];
         det.label = classIds[idx];
         det.bbox = boxes[idx];
         det.score = confidences[idx];
-        detections.push_back(det);
+        detections.emplace_back(det);
     }
     return detections; 
 

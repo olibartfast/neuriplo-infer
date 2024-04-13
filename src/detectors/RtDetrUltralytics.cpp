@@ -64,10 +64,10 @@ std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vec
     std::vector<int> indices;
     cv::dnn::NMSBoxes(boxes, confidences, confidenceThreshold_, nms_threshold_, indices);
     std::vector<Detection> detections;
-    for (int i = 0; i < boxes.size(); i++) 
+    for (int i = 0; i < indices.size(); i++) 
     {
         Detection det;
-        int idx = i;
+        int idx = indices[i];
         det.label = classIds[idx];
         det.bbox = boxes[idx];
         det.score = confidences[idx];
