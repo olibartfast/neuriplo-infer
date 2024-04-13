@@ -38,7 +38,7 @@ set(DETECTORS_SOURCES
     ${DETECTORS_ROOT}/YoloNas.cpp 
     ${DETECTORS_ROOT}/RtDetr.cpp 
     ${DETECTORS_ROOT}/RtDetrUltralytics.cpp 
-    #${DETECTORS_ROOT}/YoloV4.cpp 
+    ${DETECTORS_ROOT}/YoloV4.cpp 
     ${DETECTORS_ROOT}/YoloVn.cpp
     )
 
