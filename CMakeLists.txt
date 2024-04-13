@@ -39,7 +39,7 @@ set(DETECTORS_SOURCES
     ${DETECTORS_ROOT}/RtDetr.cpp 
     ${DETECTORS_ROOT}/RtDetrUltralytics.cpp 
     #${DETECTORS_ROOT}/YoloV4.cpp 
-    #${DETECTORS_ROOT}/YoloVn.cpp
+    ${DETECTORS_ROOT}/YoloVn.cpp
     )
 
 set(SOURCES main.cpp src/inference-engines/InferenceInterface.cpp ${DETECTORS_SOURCES})
