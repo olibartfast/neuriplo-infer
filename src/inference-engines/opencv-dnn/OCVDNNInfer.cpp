@@ -19,7 +19,7 @@ OCVDNNInfer::OCVDNNInfer(const std::string& weights, const std::string& modelCon
 }
 
 
-std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> OCVDNNInfer::get_infer_results(const cv::Mat& input_blob)
+std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> OCVDNNInfer::get_infer_results(const cv::Mat& input_blob)
 {
 
     std::vector<std::vector<float>> outputs;

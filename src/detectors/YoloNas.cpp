@@ -27,7 +27,7 @@ cv::Mat YoloNas::preprocess_image(const cv::Mat& image)
 
 
 
-std::vector<Detection> YoloNas::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) 
+std::vector<Detection> YoloNas::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) 
 {
     const float*  output0 = outputs[0].data();
     const  std::vector<int64_t> shape0 = shapes[0];

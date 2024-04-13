@@ -121,9 +121,9 @@ size_t ORTInfer::getSizeByDim(const std::vector<int64_t>& dims)
 }
 
 
- std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> ORTInfer::get_infer_results(const cv::Mat& input_blob)
+std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> ORTInfer::get_infer_results(const cv::Mat& input_blob)
 {
-    std::vector<std::vector<float>> outputs;
+    std::vector<std::vector<std::any>> outputs;
     std::vector<std::vector<int64_t>> shapes;
     std::vector<std::vector<float>> input_tensors(session_.GetInputCount());
     std::vector<Ort::Value> in_ort_tensors;
@@ -177,7 +177,6 @@ size_t ORTInfer::getSizeByDim(const std::vector<int64_t>& dims)
 
     for (const Ort::Value& output_tensor : output_ort_tensors)
     {
-
         const auto& shape_ref = output_tensor.GetTensorTypeAndShapeInfo().GetShape();
         std::vector<int64_t> shape(shape_ref.begin(), shape_ref.end());
 
@@ -186,32 +185,37 @@ size_t ORTInfer::getSizeByDim(const std::vector<int64_t>& dims)
             num_elements *= dim;
         }
         
-        std::vector<float> float_data;
+        std::vector<std::any> tensor_data;
         
-        // Check if the tensor data type is already float
-        if (output_tensor.GetTensorTypeAndShapeInfo().GetElementType() == ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
-        {
-            const float* output_data_float = output_tensor.GetTensorData<float>();
-            float_data = std::vector<float>(output_data_float, output_data_float + num_elements);
-           
+        // Retrieve tensor data
+        const int onnx_type = output_tensor.GetTensorTypeAndShapeInfo().GetElementType();
+        switch(onnx_type) {
+            case ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT: {
+                const float* output_data_float = output_tensor.GetTensorData<float>();
+                tensor_data.reserve(num_elements);
+                for (size_t i = 0; i < num_elements; ++i) {
+                    tensor_data.emplace_back(output_data_float[i]);
+                }
+                break;
+            }
+            case ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64: {
+                const int64_t* output_data_int64 = output_tensor.GetTensorData<int64_t>();
+                tensor_data.reserve(num_elements);
+                for (size_t i = 0; i < num_elements; ++i) {
+                    tensor_data.emplace_back(output_data_int64[i]);
+                }
+                break;
+            }
+            // Add cases for other data types as needed
+            default:
+                std::exit(1);
         }
-        else
-        {
-            // Assume the data type is int64_t and convert it to float
-            const int64_t* output_data_int64 = output_tensor.GetTensorData<int64_t>();
 
-            // Convert int64_t to float
-            std::vector<int64_t> temp_data(output_data_int64, output_data_int64 + num_elements);
-    
-            for(auto& t : temp_data)
-                float_data.emplace_back(t);
-        }
-
-
-        // Store the float data in outputs
-        outputs.emplace_back(float_data);
+        // Store the tensor data in outputs
+        outputs.emplace_back(tensor_data);
         shapes.emplace_back(shape);
     }
 
     return std::make_tuple(outputs, shapes);
 }
+

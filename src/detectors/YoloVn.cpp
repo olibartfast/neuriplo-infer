@@ -111,7 +111,7 @@ std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::
     return std::make_tuple(boxes, confs, classIds);
 }
 
-std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
+std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
 {
     const float*  output0 = outputs.front().data();
     const  std::vector<int64_t> shape0 = shapes.front();    

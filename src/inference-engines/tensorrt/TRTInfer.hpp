@@ -29,7 +29,7 @@ class TRTInfer : public InferenceInterface
 
         void infer();
 
-        std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
+        std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
 
         ~TRTInfer()
         {

@@ -18,7 +18,7 @@ LibtorchInfer::LibtorchInfer(const std::string& model_path, bool use_gpu) : Infe
 
 }
 
-std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> LibtorchInfer::get_infer_results(const cv::Mat& input_blob)
+std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> LibtorchInfer::get_infer_results(const cv::Mat& input_blob)
 {
 
     // Convert the input tensor to a Torch tensor

@@ -23,7 +23,7 @@ cv::Mat YoloV4::preprocess_image(const cv::Mat& image)
 }
 
 
-std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
+std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
 {
 // outs[0].rows shapes[0][0]
 // 1083

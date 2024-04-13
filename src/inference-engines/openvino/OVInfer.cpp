@@ -10,7 +10,7 @@ OVInfer::OVInfer(const std::string& model_path, const std::string& model_config,
     ov::Shape s = compiled_model_.input().get_shape();
 }
 
-std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> OVInfer::get_infer_results(const cv::Mat& input_blob) 
+std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> OVInfer::get_infer_results(const cv::Mat& input_blob) 
 {
     
     std::vector<std::vector<float>> outputs;

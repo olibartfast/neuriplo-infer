@@ -95,7 +95,7 @@ void TRTInfer::infer()
     
 }
 
-std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> TRTInfer::get_infer_results(const cv::Mat& input_blob) 
+std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> TRTInfer::get_infer_results(const cv::Mat& input_blob) 
 {
 
     cudaMemcpy(buffers_[0], input_blob.data, sizeof(float)* get_blob_size(input_blob), cudaMemcpyHostToDevice);

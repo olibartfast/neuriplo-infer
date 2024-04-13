@@ -35,11 +35,12 @@ message(STATUS "Default backend: ${DEFAULT_BACKEND}")
 set(DETECTORS_ROOT src/detectors)
 set(DETECTORS_SOURCES 
     ${DETECTORS_ROOT}/Detector.cpp 
-    ${DETECTORS_ROOT}/YoloNas.cpp 
+    #${DETECTORS_ROOT}/YoloNas.cpp 
     ${DETECTORS_ROOT}/RtDetr.cpp 
     ${DETECTORS_ROOT}/RtDetrUltralytics.cpp 
-    ${DETECTORS_ROOT}/YoloV4.cpp 
-    ${DETECTORS_ROOT}/YoloVn.cpp)
+    #${DETECTORS_ROOT}/YoloV4.cpp 
+    #${DETECTORS_ROOT}/YoloVn.cpp
+    )
 
 set(SOURCES main.cpp src/inference-engines/InferenceInterface.cpp ${DETECTORS_SOURCES})
 
