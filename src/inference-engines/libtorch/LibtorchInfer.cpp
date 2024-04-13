@@ -30,7 +30,7 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
     inputs.push_back(input);
     auto output = module_.forward(inputs);
 
-    std::vector<std::vector<float>> output_vectors;
+    std::vector<std::vector<std::any>> output_vectors;
     std::vector<std::vector<int64_t>> shape_vectors;
 
     if (output.isTuple()) {
@@ -42,42 +42,66 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
                 continue;
             torch::Tensor tensor = output_tensor.toTensor().to(torch::kCPU).contiguous();
 
-            // Get the output data as a float pointer
-            const float* output_data = tensor.data_ptr<float>();
+            // Get the output data type
+            torch::ScalarType data_type = tensor.scalar_type();
+
+            // Store the output data based on its type
+            std::vector<std::any> tensor_data;
+            if (data_type == torch::kFloat32) {
+                const float* output_data = tensor.data_ptr<float>();
+                tensor_data.reserve(tensor.numel());
+                for (size_t i = 0; i < tensor.numel(); ++i) {
+                    tensor_data.emplace_back(output_data[i]);
+                }
+            } else if (data_type == torch::kInt64) {
+                const int64_t* output_data = tensor.data_ptr<int64_t>();
+                tensor_data.reserve(tensor.numel());
+                for (size_t i = 0; i < tensor.numel(); ++i) {
+                    tensor_data.emplace_back(output_data[i]);
+                }
+            } else {
+                // Handle other data types if needed
+                std::exit(1);
+            }
 
             // Store the output data in the outputs vector
-            std::vector<float> output_vector(output_data, output_data + tensor.numel());
-            output_vectors.push_back(output_vector);
+            output_vectors.push_back(tensor_data);
 
             // Get the shape of the output tensor
             std::vector<int64_t> shape = tensor.sizes().vec();
             shape_vectors.push_back(shape);
         }
     } else {
-        torch::Tensor tensor = output.toTensor();
-        if (tensor.size(0) == 1) {
-            // If there's only one output tensor
-            torch::Tensor output_tensor = tensor.to(torch::kCPU).contiguous();
-            
-            // Get the output data as a float pointer
-            const float* output_data = output_tensor.data_ptr<float>();
+        torch::Tensor tensor = output.toTensor().to(torch::kCPU).contiguous();
 
-            // Store the output data and shape in vectors
-            output_vectors.emplace_back(output_data, output_data + output_tensor.numel());
-            shape_vectors.push_back(output_tensor.sizes().vec());
-        } else {
-            for (int i = 0; i < tensor.size(0); ++i) {
-                torch::Tensor output_tensor = tensor[i].to(torch::kCPU).contiguous();
+        // Get the output data type
+        torch::ScalarType data_type = tensor.scalar_type();
 
-                // Get the output data as a float pointer
-                const float* output_data = output_tensor.data_ptr<float>();
-
-                // Store the output data and shape in vectors
-                output_vectors.emplace_back(output_data, output_data + output_tensor.numel());
-                shape_vectors.push_back(output_tensor.sizes().vec());
+        // Store the output data based on its type
+        std::vector<std::any> tensor_data;
+        if (data_type == torch::kFloat32) {
+            const float* output_data = tensor.data_ptr<float>();
+            tensor_data.reserve(tensor.numel());
+            for (size_t i = 0; i < tensor.numel(); ++i) {
+                tensor_data.emplace_back(output_data[i]);
             }
+        } else if (data_type == torch::kInt64) {
+            const int64_t* output_data = tensor.data_ptr<int64_t>();
+            tensor_data.reserve(tensor.numel());
+            for (size_t i = 0; i < tensor.numel(); ++i) {
+                tensor_data.emplace_back(output_data[i]);
+            }
+        } else {
+            // Handle other data types if needed
+            std::exit(1);
         }
 
+        // Store the output data in the outputs vector
+        output_vectors.push_back(tensor_data);
+
+        // Get the shape of the output tensor
+        std::vector<int64_t> shape = tensor.sizes().vec();
+        shape_vectors.push_back(shape);
     }
 
     return std::make_tuple(output_vectors, shape_vectors);
