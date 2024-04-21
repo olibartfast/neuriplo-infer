@@ -29,19 +29,21 @@ int main (int argc, char *argv[])
         parser.printMessage();
         std::exit(1);  
     }
-    std::string source = parser.get<std::string>("source");
+
     if (!parser.check())
     {
         parser.printErrors();
         std::exit(1);
     }
+
+    std::string source = parser.get<std::string>("source");
     if (source.empty()){
         logger->error("Can not open video stream" );
         std::exit(1);
     }
+    logger->info("Source {}", source);
 
     const bool use_gpu = parser.get<bool>("use_gpu");
-
     const std::string config =  parser.get<std::string>("config");
     if(!config.empty() && !isFile(config))
     {
@@ -56,6 +58,7 @@ int main (int argc, char *argv[])
          logger->error("weights file {} doesn't exist", weights);
          std::exit(1);
     }
+    logger->info("Weights {}", weights);
 
     const std::string labelsPath = parser.get<std::string>("labels");
     if(!isFile(labelsPath))
@@ -63,9 +66,12 @@ int main (int argc, char *argv[])
          logger->error("labels file {} doesn't exist", labelsPath);
          std::exit(1);
     }
+    logger->info("Labels file {}", labelsPath);
 
 
     const std::string detectorType = parser.get<std::string>("type");
+    logger->info("Detector type {}", detectorType);
+
     float confidenceThreshold = parser.get<float>("min_confidence");
     std::vector<std::string> classes = readLabelNames(labelsPath); 
     logger->info("Current path is {}", std::filesystem::current_path().c_str()); 
