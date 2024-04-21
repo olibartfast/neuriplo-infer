@@ -96,29 +96,44 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
 {
     for(size_t i = 0; i < num_inputs_; i++)
     {
+        nvinfer1::Dims dims = engine_->getBindingDimensions(i);
+        auto size = getSizeByDim(dims);
+        size_t binding_size;
+        switch (engine_->getBindingDataType(i)) 
+        {
+            case nvinfer1::DataType::kFLOAT:
+                binding_size = size * sizeof(float);
+                break;
+            case nvinfer1::DataType::kINT32:
+                binding_size = size * sizeof(int32_t);
+                break;
+            // Add more cases for other data types if needed
+            default:
+                // Handle unsupported data types
+                std::exit(1);
+        }
+
         switch(i)
         {
             case 0:
-                cudaMemcpy(buffers_[0], input_blob.data, sizeof(float)* get_blob_size(input_blob), cudaMemcpyHostToDevice);
+                cudaMemcpy(buffers_[0], input_blob.data, binding_size, cudaMemcpyHostToDevice);
                 break;
             case 1:
                 // in rtdetr lyuwenyu version we have a second input 
-                std::vector<int> orig_target_sizes = { static_cast<int>(input_blob.size[2]), static_cast<int>(input_blob.size[3]) };
-                cudaMemcpy(buffers_[1], orig_target_sizes.data(), sizeof(int)* orig_target_sizes.size(), cudaMemcpyHostToDevice);
+                std::vector<int32_t> orig_target_sizes = { static_cast<int32_t>(input_blob.size[2]), static_cast<int32_t>(input_blob.size[3]) };
+                cudaMemcpy(buffers_[1], orig_target_sizes.data(), binding_size, cudaMemcpyHostToDevice);
                 break;
         }
     }
-
-    
-    std::vector<std::vector<int64_t>> output_shapes;
-    std::vector<std::vector<std::any>> outputs;
 
     if(!context_->enqueueV2(buffers_.data(), 0, nullptr))
     {
         logger_->error("Forward Error !");
         std::exit(1);
     }
-
+    
+    std::vector<std::vector<int64_t>> output_shapes;
+    std::vector<std::vector<std::any>> outputs;
     for (size_t i = 0; i < num_outputs_; i++)
     {
         nvinfer1::Dims dims = engine_->getBindingDimensions(i + num_inputs_); // i + 1 to account for the input buffer

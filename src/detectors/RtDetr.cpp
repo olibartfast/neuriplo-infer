@@ -18,7 +18,7 @@ std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<std::an
     size_t boxes_idx = 1;
     size_t scores_idx = 2;
 
-    // order changes ith tensorrt backend
+    // Output order of this model somewhat changes when it is export to TensorRT.
     if(shapes[2][2] == 4)
     {
         labels_idx = 1;
@@ -46,7 +46,7 @@ std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<std::an
     for (int i = 0; i < rows; ++i) {
         float score = std::any_cast<float>(scores_ptr[i]);
         if (score >= confidenceThreshold_) {
-            int64_t label = std::any_cast<int64_t>(labels_ptr[i]);
+            auto label = std::any_cast<int>(labels_ptr[i]);
             confidences.push_back(score);
             classIds.push_back(label);
             float r_w = (float)frame_size.width / network_width_;
