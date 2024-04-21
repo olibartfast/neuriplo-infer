@@ -58,7 +58,7 @@ size_t TRTInfer::getSizeByDim(const nvinfer1::Dims& dims)
 
 void TRTInfer::createContextAndAllocateBuffers()
 {
-    nvinfer1::Dims profile_dims = engine_->getProfileDimensions(0, 0 /* max batch size index */, nvinfer1::OptProfileSelector::kMIN);
+    nvinfer1::Dims profile_dims = engine_->getProfileDimensions(0, 0, nvinfer1::OptProfileSelector::kMIN);
     int max_batch_size = profile_dims.d[0];
     context_ = engine_->createExecutionContext();
     context_->setBindingDimensions(0, profile_dims);
@@ -66,39 +66,96 @@ void TRTInfer::createContextAndAllocateBuffers()
     for (int i = 0; i < engine_->getNbBindings(); ++i)
     {
         nvinfer1::Dims dims = engine_->getBindingDimensions(i);
-        auto binding_size = getSizeByDim(dims) * sizeof(float);
+        auto size = getSizeByDim(dims);
+        size_t binding_size;
+        switch (engine_->getBindingDataType(i)) 
+        {
+            case nvinfer1::DataType::kFLOAT:
+                binding_size = size * sizeof(float);
+                break;
+            case nvinfer1::DataType::kINT32:
+                binding_size = size * sizeof(int);
+                break;
+            // Add more cases for other data types if needed
+            default:
+                // Handle unsupported data types
+                std::exit(1);
+        }
         cudaMalloc(&buffers_[i], binding_size);
         if (engine_->bindingIsInput(i))
+        {
+            num_inputs_++;
             continue;
-        auto size = getSizeByDim(dims);
-        h_outputs_.emplace_back(std::vector<float>(size));
-        const int64_t curr_batch = dims.d[0] == -1 ? 1 : dims.d[0];
-        const auto out_shape = std::vector<int64_t>{curr_batch, dims.d[1], dims.d[2], dims.d[3] };
-        output_shapes_.emplace_back(out_shape);
+        }
+        num_outputs_++;
     }
 }
 
 
-void TRTInfer::infer()
+std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> TRTInfer::get_infer_results(const cv::Mat& input_blob) 
 {
+    for(size_t i = 0; i < num_inputs_; i++)
+    {
+        switch(i)
+        {
+            case 0:
+                cudaMemcpy(buffers_[0], input_blob.data, sizeof(float)* get_blob_size(input_blob), cudaMemcpyHostToDevice);
+                break;
+            case 1:
+                // in rtdetr lyuwenyu version we have a second input 
+                std::vector<int> orig_target_sizes = { static_cast<int>(input_blob.size[2]), static_cast<int>(input_blob.size[3]) };
+                cudaMemcpy(buffers_[1], orig_target_sizes.data(), sizeof(int)* orig_target_sizes.size(), cudaMemcpyHostToDevice);
+                break;
+        }
+    }
+
+    
+    std::vector<std::vector<int64_t>> output_shapes;
+    std::vector<std::vector<std::any>> outputs;
+
     if(!context_->enqueueV2(buffers_.data(), 0, nullptr))
     {
         logger_->error("Forward Error !");
         std::exit(1);
     }
-            
 
-    for (size_t i = 0; i < h_outputs_.size(); i++)
+    for (size_t i = 0; i < num_outputs_; i++)
     {
-        cudaMemcpy(h_outputs_[i].data(), buffers_[i + 1], h_outputs_[i].size() * sizeof(float), cudaMemcpyDeviceToHost);
-    }
-    
-}
+        nvinfer1::Dims dims = engine_->getBindingDimensions(i + num_inputs_); // i + 1 to account for the input buffer
+        auto num_elements = getSizeByDim(dims);
+        std::vector<std::any> tensor_data;
+        switch (engine_->getBindingDataType(i + num_inputs_))
+        {
+            case nvinfer1::DataType::kFLOAT:
+            {
+                std::vector<float> output_data_float(num_elements);
+                cudaMemcpy(output_data_float.data(), buffers_[i + num_inputs_],  num_elements * sizeof(float), cudaMemcpyDeviceToHost);
+                for (size_t k = 0; k < num_elements; ++k) {
+                    tensor_data.emplace_back(output_data_float[k]);
+                }
+                break;
+            }
+            case nvinfer1::DataType::kINT32:
+            {
+                std::vector<int> output_data_int(num_elements);
+                cudaMemcpy(output_data_int.data(), buffers_[i + num_inputs_],  num_elements * sizeof(int), cudaMemcpyDeviceToHost);
+                for (size_t k = 0; k < num_elements; ++k) {
+                    tensor_data.emplace_back(output_data_int[k]);
+                }
+                break;
+            }
 
-std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> TRTInfer::get_infer_results(const cv::Mat& input_blob) 
-{
+            // Add more cases for other data types if needed
+            default:
+                // Handle unsupported data types
+                std::exit(1);
+                break;
+        }
+        outputs.emplace_back(tensor_data);
+        const int64_t curr_batch = dims.d[0] == -1 ? 1 : dims.d[0];
+        const auto out_shape = std::vector<int64_t>{curr_batch, dims.d[1], dims.d[2], dims.d[3] };
+        output_shapes.emplace_back(out_shape);
+    } 
 
-    cudaMemcpy(buffers_[0], input_blob.data, sizeof(float)* get_blob_size(input_blob), cudaMemcpyHostToDevice);
-    infer();
-    return std::make_tuple(h_outputs_, output_shapes_);
+    return std::make_tuple(outputs, output_shapes);
 }  

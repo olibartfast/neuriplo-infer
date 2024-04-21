@@ -14,14 +14,27 @@ RtDetr::RtDetr(
 
 std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) {
 
-    const std::any* labels_ptr = outputs[0].data();
-    const std::vector<int64_t>& shape_labels = shapes[0];
+    size_t labels_idx = 0;
+    size_t boxes_idx = 1;
+    size_t scores_idx = 2;
 
-    const std::any* boxes_ptr = outputs[1].data();
-    const std::vector<int64_t>& shape_boxes = shapes[1];
+    // order changes ith tensorrt backend
+    if(shapes[2][2] == 4)
+    {
+        labels_idx = 1;
+        boxes_idx = 2;
+        scores_idx = 0;
+    }
 
-    const std::any* scores_ptr = outputs[2].data();
-    const std::vector<int64_t>& shape_scores = shapes[2];
+    const std::any* scores_ptr = outputs[scores_idx].data();
+    const std::vector<int64_t>& shape_scores = shapes[scores_idx];
+
+    const std::any* boxes_ptr = outputs[boxes_idx].data();
+    const std::vector<int64_t>& shape_boxes = shapes[boxes_idx];
+
+    const std::any* labels_ptr = outputs[labels_idx].data();
+    const std::vector<int64_t>& shape_labels = shapes[labels_idx];
+
 
     std::vector<int> classIds;
     std::vector<float> confidences;
