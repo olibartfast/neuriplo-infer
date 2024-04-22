@@ -90,16 +90,14 @@ void TRTInfer::createContextAndAllocateBuffers()
         num_outputs_++;
     }
 }
-
-
-std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> TRTInfer::get_infer_results(const cv::Mat& input_blob) 
+std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> TRTInfer::get_infer_results(const cv::Mat& input_blob)
 {
-    for(size_t i = 0; i < num_inputs_; i++)
+    for (size_t i = 0; i < num_inputs_; ++i)
     {
         nvinfer1::Dims dims = engine_->getBindingDimensions(i);
-        auto size = getSizeByDim(dims);
-        size_t binding_size;
-        switch (engine_->getBindingDataType(i)) 
+        size_t size = getSizeByDim(dims);
+        size_t binding_size = 0;
+        switch (engine_->getBindingDataType(i))
         {
             case nvinfer1::DataType::kFLOAT:
                 binding_size = size * sizeof(float);
@@ -111,6 +109,7 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
             default:
                 // Handle unsupported data types
                 std::exit(1);
+                break;
         }
 
         switch(i)
@@ -119,7 +118,7 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
                 cudaMemcpy(buffers_[0], input_blob.data, binding_size, cudaMemcpyHostToDevice);
                 break;
             case 1:
-                // in rtdetr lyuwenyu version we have a second input 
+                // in rtdetr lyuwenyu version we have a second input
                 std::vector<int32_t> orig_target_sizes = { static_cast<int32_t>(input_blob.size[2]), static_cast<int32_t>(input_blob.size[3]) };
                 cudaMemcpy(buffers_[1], orig_target_sizes.data(), binding_size, cudaMemcpyHostToDevice);
                 break;
@@ -134,7 +133,7 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
     
     std::vector<std::vector<int64_t>> output_shapes;
     std::vector<std::vector<std::any>> outputs;
-    for (size_t i = 0; i < num_outputs_; i++)
+    for (size_t i = 0; i < num_outputs_; ++i)
     {
         nvinfer1::Dims dims = engine_->getBindingDimensions(i + num_inputs_); // i + 1 to account for the input buffer
         auto num_elements = getSizeByDim(dims);
@@ -145,18 +144,14 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
             {
                 std::vector<float> output_data_float(num_elements);
                 cudaMemcpy(output_data_float.data(), buffers_[i + num_inputs_],  num_elements * sizeof(float), cudaMemcpyDeviceToHost);
-                for (size_t k = 0; k < num_elements; ++k) {
-                    tensor_data.emplace_back(output_data_float[k]);
-                }
+                tensor_data = std::vector<std::any>(output_data_float.begin(), output_data_float.end());
                 break;
             }
             case nvinfer1::DataType::kINT32:
             {
                 std::vector<int32_t> output_data_int(num_elements);
                 cudaMemcpy(output_data_int.data(), buffers_[i + num_inputs_],  num_elements * sizeof(int32_t), cudaMemcpyDeviceToHost);
-                for (size_t k = 0; k < num_elements; ++k) {
-                    tensor_data.emplace_back(output_data_int[k]);
-                }
+                tensor_data = std::vector<std::any>(output_data_int.begin(), output_data_int.end());
                 break;
             }
 
@@ -166,12 +161,12 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
                 std::exit(1);
                 break;
         }
-        outputs.emplace_back(tensor_data);
+        outputs.emplace_back(std::move(tensor_data));
         
         const int64_t curr_batch = dims.d[0] == -1 ? 1 : dims.d[0];
         const auto out_shape = std::vector<int64_t>{curr_batch, dims.d[1], dims.d[2], dims.d[3] };
         output_shapes.emplace_back(out_shape);
-    } 
+    }
 
-    return std::make_tuple(outputs, output_shapes);
-}  
+    return std::make_tuple(std::move(outputs), std::move(output_shapes));
+}
