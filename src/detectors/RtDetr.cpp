@@ -19,6 +19,7 @@ std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<std::an
     size_t scores_idx = 2;
 
     // Output order of this model somewhat changes when it is export to TensorRT.
+    // In TensorRT model i'm expecting bounding box output at index 2
     if(shapes[2][2] == 4)
     {
         labels_idx = 1;
@@ -42,13 +43,47 @@ std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<std::an
 
     int rows = shape_labels[1]; // 300
 
+    // Type checking
+    const std::type_info& label_type = labels_ptr[0].type();
+
+    if(scores_ptr[0].type() != typeid(float))
+    {
+        std::cerr << "Expecting scores tensor as float type" << std::endl;
+        std::exit(1);
+    }
+
+    if(scores_ptr[0].type() != typeid(float))
+    {
+        std::cerr << "Expecting boxes tensor as float type" << std::endl;
+        std::exit(1);
+    }
+
+
     // Iterate through detections.
     for (int i = 0; i < rows; ++i) {
         float score = std::any_cast<float>(scores_ptr[i]);
         if (score >= confidenceThreshold_) {
-            auto label = std::any_cast<int>(labels_ptr[i]);
+
+            // in tensorrt type label tensor is int32
+            if(label_type == typeid(int32_t))
+            {
+                auto label = std::any_cast<int32_t>(labels_ptr[i]);
+                classIds.push_back(label);
+            }
+            //with  onnx is int64
+            else if(label_type == typeid(int64_t))
+            {
+                auto label = std::any_cast<int64_t>(labels_ptr[i]);
+                classIds.push_back(label);
+
+            }
+            else
+            {
+                std::cerr << "Unexpected label type" << std::endl;
+                std::exit(1);
+            }
+                  
             confidences.push_back(score);
-            classIds.push_back(label);
             float r_w = (float)frame_size.width / network_width_;
             float r_h = (float)frame_size.height / network_height_;
             float x1 =  std::any_cast<float>(boxes_ptr[i*4]);
