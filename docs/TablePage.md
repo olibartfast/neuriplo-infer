@@ -16,5 +16,5 @@ The table represents a specific model and includes the following details:
 | yolov8 models                                      | yolov8     | o          | o        | o        | o            | x         |
 | yolov9 models                                      | yolov9     | o          | o        | o        | o            | x         |
 | yolo-nas models                                    | yolonas    | o          | x        | x        | o            | x         |
-| rt-detr models                                     | rtdetr     | x          | x        | x        | o            | x         |
+| rt-detr models                                     | rtdetr     | x          | o        | x        | o            | x         |
 | rt-detr ultralytics models                         | rtdetrul   | x          | o        | o        | o            | x         |
