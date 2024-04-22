@@ -152,8 +152,8 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
             }
             case nvinfer1::DataType::kINT32:
             {
-                std::vector<int> output_data_int(num_elements);
-                cudaMemcpy(output_data_int.data(), buffers_[i + num_inputs_],  num_elements * sizeof(int), cudaMemcpyDeviceToHost);
+                std::vector<int32_t> output_data_int(num_elements);
+                cudaMemcpy(output_data_int.data(), buffers_[i + num_inputs_],  num_elements * sizeof(int32_t), cudaMemcpyDeviceToHost);
                 for (size_t k = 0; k < num_elements; ++k) {
                     tensor_data.emplace_back(output_data_int[k]);
                 }
@@ -167,6 +167,7 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
                 break;
         }
         outputs.emplace_back(tensor_data);
+        
         const int64_t curr_batch = dims.d[0] == -1 ? 1 : dims.d[0];
         const auto out_shape = std::vector<int64_t>{curr_batch, dims.d[1], dims.d[2], dims.d[3] };
         output_shapes.emplace_back(out_shape);
