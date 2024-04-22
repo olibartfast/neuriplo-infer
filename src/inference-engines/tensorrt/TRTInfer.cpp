@@ -82,11 +82,14 @@ void TRTInfer::createContextAndAllocateBuffers()
                 std::exit(1);
         }
         cudaMalloc(&buffers_[i], binding_size);
+   
         if (engine_->bindingIsInput(i))
         {
+            logger_->info("Input layer {} {}",num_inputs_, engine_->getBindingName(i));
             num_inputs_++;
             continue;
         }
+        logger_->info("Output layer {} {}",num_outputs_, engine_->getBindingName(i));
         num_outputs_++;
     }
 }
