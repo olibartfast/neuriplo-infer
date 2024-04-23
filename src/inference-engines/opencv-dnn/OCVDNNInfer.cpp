@@ -22,26 +22,36 @@ OCVDNNInfer::OCVDNNInfer(const std::string& weights, const std::string& modelCon
 std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> OCVDNNInfer::get_infer_results(const cv::Mat& input_blob)
 {
 
-    std::vector<std::vector<float>> outputs;
-    std::vector<std::vector<int64_t>> shapes;
+        std::vector<std::vector<std::any>> outputs;
+        std::vector<std::vector<int64_t>> shapes;
+        std::vector<std::string> layerTypes;
 
+        std::vector<cv::Mat> outs;
+        net_.setInput(input_blob);
+        net_.forward(outs, outNames_);
 
-    std::vector<cv::Mat> outs;
-    net_.setInput(input_blob);
-    net_.forward(outs, outNames_);
-    
-    for (const auto& output : outs) 
-    {
-        // Extracting dimensions of the output tensor
-        std::vector<int64_t> shape;
-        for (int i = 0; i < output.dims; ++i) {
-            shape.push_back(output.size[i]);
+        for (size_t i = 0; i < outs.size(); ++i) {
+            const auto& output = outs[i];
+            // Extracting dimensions of the output tensor
+            std::vector<int64_t> shape;
+            for (int j = 0; j < output.dims; ++j) {
+                shape.push_back(output.size[j]);
+            }
+            shapes.push_back(shape);
+
+            // Extracting data
+            if (output.type() == CV_32F) {
+                const float* data = output.ptr<float>();
+                outputs.emplace_back(data, data + output.total());
+            } 
+            else if (output.type() == CV_64F) {
+                const int64_t* data = output.ptr<int64_t>();
+                outputs.emplace_back(data, data + output.total());
+            } 
+            else {
+                std::cerr << "Unsupported data type\n";
+            }
         }
-        shapes.push_back(shape);
 
-        // Extracting data and converting to float
-        const float* data = output.ptr<float>();
-        outputs.emplace_back(data, data + output.total());
-    }
-    return std::make_tuple(outputs, shapes);
+        return std::make_tuple(outputs, shapes);
 }
