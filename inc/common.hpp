@@ -10,6 +10,10 @@
 #include <iomanip>
 #include <ctime>
 #include <filesystem>
+#include <any>
+#include <algorithm>
+#include <iterator>
+#include <type_traits> // for std::remove_pointer
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/rotating_file_sink.h>

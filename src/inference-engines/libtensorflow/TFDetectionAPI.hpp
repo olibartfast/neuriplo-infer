@@ -40,5 +40,5 @@ private:
     tensorflow::SavedModelBundle bundle_;   
     std::unique_ptr<tensorflow::Session> session_; 
     
-    std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;    
+    std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;    
 };

@@ -12,9 +12,9 @@ class TRTInfer : public InferenceInterface
         std::shared_ptr<nvinfer1::ICudaEngine> engine_{nullptr};
         nvinfer1::IExecutionContext* context_{nullptr};
         std::vector<void*> buffers_;
-        std::vector<std::vector<int64_t>> output_shapes_;
-        std::vector<std::vector<float>> h_outputs_;
         nvinfer1::IRuntime* runtime_{nullptr};
+        size_t num_inputs_{0};
+        size_t num_outputs_{0};
 
     public:
         TRTInfer(const std::string& model_path);
@@ -29,7 +29,7 @@ class TRTInfer : public InferenceInterface
 
         void infer();
 
-        std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
+        std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override;
 
         ~TRTInfer()
         {

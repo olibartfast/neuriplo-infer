@@ -23,17 +23,8 @@ cv::Mat YoloV4::preprocess_image(const cv::Mat& image)
 }
 
 
-std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
+std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
 {
-// outs[0].rows shapes[0][0]
-// 1083
-// outs[1].rows shapes[0][1]
-// 4332
-// outs[1].cols shapes[1][1]
-// 85
-// outs[0].cols shapes[0][1]
-// 85
-
     std::vector<int> classIds;
     std::vector<float> confidences;
     std::vector<cv::Rect> boxes;
@@ -46,21 +37,22 @@ std::vector<Detection> YoloV4::postprocess(const std::vector<std::vector<float>>
         // Network produces output blob with a shape NxC where N is a number of
         // detected objects and C is a number of classes + 4 where the first 4
         // numbers are [center_x, center_y, width, height]
-        const float* data = (float*)outputs[i].data();
-        for (int j = 0; j < shapes[i][0]; ++j, data += shapes[i][1])
+        const std::any* output = outputs[i].data();
+        for (int j = 0; j < shapes[i][0]; ++j, output += shapes[i][1])
         {
-            const float* scoresPtr = data + 5;
-            auto maxSPtr = std::max_element(scoresPtr, scoresPtr + shapes[i][1] - 5);
-            float score = *maxSPtr;
+            auto maxSPtr = std::max_element(output + 5, output + shapes[i][1], [](const std::any& a, const std::any& b) {
+                return std::any_cast<float>(a) < std::any_cast<float>(b);
+            });
+            float score = std::any_cast<float>(*maxSPtr);
             if (score > confidenceThreshold_)
             {
-                int centerX = (int)(data[0] * cols);
-                int centerY = (int)(data[1] * rows);
-                int width = (int)(data[2] * cols);
-                int height = (int)(data[3] * rows);
+                int centerX = std::any_cast<float>(output[0]) * cols;
+                int centerY = std::any_cast<float>(output[1]) * rows;
+                int width = std::any_cast<float>(output[2]) * cols;
+                int height = std::any_cast<float>(output[3]) * rows;
                 int left = centerX - width / 2;
                 int top = centerY - height / 2;
-                int label = maxSPtr - scoresPtr;
+                int label = maxSPtr - (output + 5);
                 classIds.push_back(label);
                 confidences.push_back(score);
                 boxes.push_back(cv::Rect(left, top, width, height));

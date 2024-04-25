@@ -14,7 +14,7 @@ std::unique_ptr<Detector> createDetector(
     if(detectorType.find("yolov4") != std::string::npos)
     {  
         return std::make_unique<YoloV4>();
-    }   
+    }  
     else if(detectorType.find("yolov5") != std::string::npos || 
         detectorType.find("yolov6") != std::string::npos  ||
         detectorType.find("yolov7") != std::string::npos ||

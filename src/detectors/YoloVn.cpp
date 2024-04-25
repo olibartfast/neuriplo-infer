@@ -37,7 +37,7 @@ cv::Mat YoloVn::preprocess_image(const cv::Mat& img) {
 }
 
 
-std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::postprocess_v567(const float* output, const std::vector<int64_t>& shape, const cv::Size& frame_size)
+std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::postprocess_v567(const std::any* output, const std::vector<int64_t>& shape, const cv::Size& frame_size)
 {
     std::vector<cv::Rect> boxes;
     std::vector<float> confs;
@@ -46,19 +46,23 @@ std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::
     const auto offset = 5;
     const auto num_classes = shape[2] - offset; // 1 x 25200 x 85
 
-    // Get all the YOLO proposals
     for (int i = 0; i < shape[1]; ++i) {
-        if(output[4] > confidenceThreshold_)
+        const auto obj_conf = std::any_cast<float>(output[4]);
+        auto maxSPtr = std::max_element(output + 5, output + 5 + num_classes,  [](const std::any& a, const std::any& b) {
+            return std::any_cast<float>(a) < std::any_cast<float>(b);
+        });
+
+        float score =  std::any_cast<float>(*maxSPtr) * obj_conf;
+        if( score > confidenceThreshold_)
         {
-            const float* scoresPtr = output + 5;
-            auto maxSPtr = std::max_element(scoresPtr, scoresPtr + num_classes);
-            float score = *maxSPtr * output[4];
-            if (score > confidenceThreshold_) {
-                boxes.emplace_back(get_rect(frame_size, std::vector<float>(output, output + 4)));
-                int label = maxSPtr - scoresPtr;
-                confs.emplace_back(score);
-                classIds.emplace_back(label);
-            }
+            std::vector<float> bbox;
+            std::for_each(output, output + 4, [&bbox](const std::any& value) {
+                bbox.emplace_back(std::any_cast<float>(value));
+            });
+            boxes.emplace_back(get_rect(frame_size, bbox));
+            int label = maxSPtr - (output + 5);
+            confs.emplace_back(score);
+            classIds.emplace_back(label);
 
         }
         output += shape[2]; 
@@ -67,7 +71,7 @@ std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::
 }
 
 
-std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::postprocess_v89(const float* output, const std::vector<int64_t>& shape, const cv::Size& frame_size)
+std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::postprocess_v89(const std::any* output, const std::vector<int64_t>& shape, const cv::Size& frame_size)
 {
     std::vector<cv::Rect> boxes;
     std::vector<float> confs;
@@ -81,7 +85,7 @@ std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::
     // Construct output matrix
     for (size_t i = 0; i < shape[1]; ++i) {
         for (size_t j = 0; j < shape[2]; ++j) {
-            output_matrix[i][j] = output[i * shape[2] + j];
+            output_matrix[i][j] = std::any_cast<float>(output[i * shape[2] + j]);
         }
     }
 
@@ -90,7 +94,7 @@ std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::
     // Transpose output matrix
     for (int i = 0; i < shape[1]; ++i) {
         for (int j = 0; j < shape[2]; ++j) {
-            transposed_output[j][i] = output_matrix[i][j];
+            transposed_output[j][i] = std::any_cast<float>(output_matrix[i][j]);
         }
     }
 
@@ -111,9 +115,9 @@ std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::
     return std::make_tuple(boxes, confs, classIds);
 }
 
-std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
+std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size)
 {
-    const float*  output0 = outputs.front().data();
+    const std::any*  output0 = outputs.front().data();
     const  std::vector<int64_t> shape0 = shapes.front();    
 
     const auto [boxes, confs, classIds] = (shape0[1] > shape0[2]) ? postprocess_v567(output0, shape0, frame_size) : postprocess_v89(output0, shape0, frame_size); 

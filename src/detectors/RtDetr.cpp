@@ -12,18 +12,30 @@ RtDetr::RtDetr(
 }
 
 
+std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) {
 
-std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<float>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) 
-{
-    const float*  labels_ptr = outputs[0].data();
+    size_t labels_idx = 0;
+    size_t boxes_idx = 1;
+    size_t scores_idx = 2;
 
-    const  std::vector<int64_t> shape_labels= shapes[0];
+    // Output order of this model somewhat changes when it is export to TensorRT.
+    // In TensorRT model i'm expecting bounding box output at index 2
+    if(shapes[2][2] == 4)
+    {
+        labels_idx = 1;
+        boxes_idx = 2;
+        scores_idx = 0;
+    }
 
-    const float*  boxes_ptr = outputs[1].data();
-    const  std::vector<int64_t> shape_boxes= shapes[1];
+    const std::any* scores_ptr = outputs[scores_idx].data();
+    const std::vector<int64_t>& shape_scores = shapes[scores_idx];
 
-    const float*  scores_ptr = outputs[2].data();
-    const  std::vector<int64_t> shape_scores= shapes[2];
+    const std::any* boxes_ptr = outputs[boxes_idx].data();
+    const std::vector<int64_t>& shape_boxes = shapes[boxes_idx];
+
+    const std::any* labels_ptr = outputs[labels_idx].data();
+    const std::vector<int64_t>& shape_labels = shapes[labels_idx];
+
 
     std::vector<int> classIds;
     std::vector<float> confidences;
@@ -31,41 +43,69 @@ std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<float>>
 
     int rows = shape_labels[1]; // 300
 
-    // Iterate through detections.
-    for (int i = 0; i < rows; ++i) 
-    {
-         
-        float score = scores_ptr[i];
-        if (score >= confidenceThreshold_) 
-        {
-            int label = labels_ptr[i];
-            confidences.push_back(score);
-            classIds.push_back(label);
-            float r_w = (float)frame_size.width/network_width_;
-            float r_h = (float)frame_size.height/network_height_;
-            std::vector<float> bbox(&boxes_ptr[0], &boxes_ptr[4]);
+    // Type checking
+    const std::type_info& label_type = labels_ptr[0].type();
 
-            float x1 = bbox[0];
-            float y1 = bbox[1];
-            float x2 = bbox[2];
-            float y2 =bbox[3];
+    if(scores_ptr[0].type() != typeid(float))
+    {
+        std::cerr << "Expecting scores tensor as float type" << std::endl;
+        std::exit(1);
+    }
+
+    if(scores_ptr[0].type() != typeid(float))
+    {
+        std::cerr << "Expecting boxes tensor as float type" << std::endl;
+        std::exit(1);
+    }
+
+
+    // Iterate through detections.
+    for (int i = 0; i < rows; ++i) {
+        float score = std::any_cast<float>(scores_ptr[i]);
+        if (score >= confidenceThreshold_) {
+
+            // in tensorrt type label tensor is int32
+            if(label_type == typeid(int32_t))
+            {
+                auto label = std::any_cast<int32_t>(labels_ptr[i]);
+                classIds.push_back(label);
+            }
+            //with  onnx is int64
+            else if(label_type == typeid(int64_t))
+            {
+                auto label = std::any_cast<int64_t>(labels_ptr[i]);
+                classIds.push_back(label);
+
+            }
+            else
+            {
+                std::cerr << "Unexpected label type" << std::endl;
+                std::exit(1);
+            }
+                  
+            confidences.push_back(score);
+            float r_w = (float)frame_size.width / network_width_;
+            float r_h = (float)frame_size.height / network_height_;
+            float x1 =  std::any_cast<float>(boxes_ptr[i*4]);
+            float y1 =  std::any_cast<float>(boxes_ptr[i*4 + 1]);
+            float x2 =  std::any_cast<float>(boxes_ptr[i*4 + 2]);
+            float y2 =  std::any_cast<float>(boxes_ptr[i*4 + 3]);
             x2 *= r_w;
             y2 *= r_h;
             x1 *= r_w;
             y1 *= r_h;
             boxes.push_back(cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)));
         }
-        boxes_ptr += 4;
     }
 
     // Perform Non Maximum Suppression and draw predictions.
     std::vector<int> indices;
     cv::dnn::NMSBoxes(boxes, confidences, confidenceThreshold_, nms_threshold_, indices);
     std::vector<Detection> detections;
-    for (int i = 0; i < boxes.size(); i++) 
+    for (int i = 0; i < indices.size(); i++) 
     {
         Detection det;
-        int idx = i;
+        int idx = indices[i];
         det.label = classIds[idx];
         det.bbox = boxes[idx];
         det.score = confidences[idx];
@@ -74,7 +114,6 @@ std::vector<Detection> RtDetr::postprocess(const std::vector<std::vector<float>>
     return detections; 
 
 }
-
 
 cv::Mat RtDetr::preprocess_image(const cv::Mat& image)
 {

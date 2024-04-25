@@ -18,7 +18,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 message(STATUS ${CMAKE_MODULE_PATH})
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "LIBTORCH")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT", "OPENVINO")
@@ -39,7 +39,8 @@ set(DETECTORS_SOURCES
     ${DETECTORS_ROOT}/RtDetr.cpp 
     ${DETECTORS_ROOT}/RtDetrUltralytics.cpp 
     ${DETECTORS_ROOT}/YoloV4.cpp 
-    ${DETECTORS_ROOT}/YoloVn.cpp)
+    ${DETECTORS_ROOT}/YoloVn.cpp
+    )
 
 set(SOURCES main.cpp src/inference-engines/InferenceInterface.cpp ${DETECTORS_SOURCES})
 
