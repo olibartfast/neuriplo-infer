@@ -19,11 +19,33 @@ std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>
         std::exit(1);
     }
         
-    std::vector<std::vector<float>> convertedOutputs;
+    std::vector<std::vector<std::any>> convertedOutputs;
     std::vector<std::vector<int64_t>> shapes;
 
     for (const auto& tensor : outputs) {
-        convertedOutputs.push_back({ tensor.flat<float>().data(), tensor.flat<float>().data() + tensor.NumElements() });
-    }    
+        std::vector<std::any> outputData;
+        if (tensor.dtype() == tensorflow::DataType::DT_FLOAT) {
+            for (int i = 0; i < tensor.NumElements(); ++i) {
+                // Convert tensor elements to std::any
+                outputData.push_back(tensor.flat<float>()(i));
+            }
+        } else if (tensor.dtype() == tensorflow::DataType::DT_INT32) {
+            for (int i = 0; i < tensor.NumElements(); ++i) {
+                // Convert tensor elements to std::any
+                outputData.push_back(tensor.flat<int32_t>()(i));
+            }
+        } else if (tensor.dtype() == tensorflow::DataType::DT_INT64) {
+            for (int i = 0; i < tensor.NumElements(); ++i) {
+                // Convert tensor elements to std::any
+                outputData.push_back(tensor.flat<int64_t>()(i));
+            }
+        } else {
+            std::cerr << "Unsupported output data type" << std::endl;
+        }
+        convertedOutputs.push_back(outputData);
+        // Assuming all output shapes are the same
+        std::vector<int64_t> outputShape = { tensor.dim_size(0), tensor.dim_size(1), tensor.dim_size(2), tensor.dim_size(3) };
+        shapes.push_back(outputShape);
+    }
     return std::make_tuple(convertedOutputs, shapes);
 }   
