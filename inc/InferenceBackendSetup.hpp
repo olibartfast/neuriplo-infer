@@ -22,7 +22,7 @@ std::unique_ptr<InferenceInterface> setup_inference_engine(const std::string& we
     #elif USE_LIBTORCH 
     return std::make_unique<LibtorchInfer>(weights, false); 
     #elif USE_LIBTENSORFLOW 
-
+    return std::make_unique<TFDetectionAPI>(weights, false); 
     #elif USE_OPENCV_DNN 
     return std::make_unique<OCVDNNInfer>(weights, modelConfiguration); 
     #elif USE_TENSORRT

@@ -12,5 +12,5 @@ list(APPEND SOURCES ${TensorFlow_SOURCES})
 
 
 # Add compile definition to indicate TensorFlow usage
-add_compile_definitions(USE_TENSORFLOW)
+add_compile_definitions(USE_LIBTENSORFLOW)
 

@@ -9,8 +9,7 @@
 class TFDetectionAPI : public InferenceInterface{
 
 public:
-    TFDetectionAPI(const std::string& model_path) :
-    InferenceInterface{model_path, "", false}
+    TFDetectionAPI(const std::string& model_path, bool use_gpu) : InferenceInterface{model_path, "", use_gpu}
     {
         tensorflow::SessionOptions session_options;
         tensorflow::RunOptions run_options; 
