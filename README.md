@@ -94,6 +94,7 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 
 ## TO DO
 - Reimplement Libtensorflow backend
+- Run inside a docker container
 - Add tests
 
 ## Feedback
