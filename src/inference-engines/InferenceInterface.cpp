@@ -23,10 +23,3 @@ std::vector<float> InferenceInterface::blob2vec(const cv::Mat& input_blob)
     return input_data;    
 }	
 
-size_t InferenceInterface::get_blob_size(const cv::Mat& input_blob)
-{
-    size_t total_size = 1;
-    for(size_t i = 0; i <  input_blob.size.dims(); i++)
-        total_size*=input_blob.size[i];
-    return total_size;    
-}
