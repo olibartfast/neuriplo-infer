@@ -1,0 +1,45 @@
+# Stage 1: Common dependencies
+ARG UBUNTU_VERSION=22.04
+FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
+
+# Set environment variable to avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install common dependencies
+RUN apt-get update && apt-get install -y \
+    cmake \
+    libopencv-dev \
+    libspdlog-dev \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Stage 2: Install backend-specific C++ dependencies
+FROM common_dependencies AS backend_dependencies
+
+ARG BACKEND=ONNX_RUNTIME
+ARG ORT_VERSION=1.15.1
+ENV HOME=/root
+RUN wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz && \
+    tar -xzvf onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz -C $HOME && \
+    rm onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
+
+# Stage 3: Copy application code and build
+FROM backend_dependencies AS builder
+
+WORKDIR /app
+
+COPY . .
+
+# Build the project using CMake
+RUN cmake -Bbuild -H. -DBACKEND=$BACKEND -DORT_VERSION=$ORT_VERSION && \
+    cmake --build build --config Release
+
+# Stage 4: Final image
+FROM backend_dependencies AS final
+
+COPY --from=builder /app/build/object-detection-inference /app/object-detection-inference
+
+WORKDIR /app
+
+# Set the entry point to the compiled executable
+CMD ["./object-detection-inference"]

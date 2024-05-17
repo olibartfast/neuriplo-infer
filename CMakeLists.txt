@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(OpenCV REQUIRED)
 find_package(spdlog REQUIRED)
 
+message(STATUS "Home path: $ENV{HOME}")
 
 # Define an option to enable or disable GStreamer support
 unset(USE_GSTREAMER CACHE)
