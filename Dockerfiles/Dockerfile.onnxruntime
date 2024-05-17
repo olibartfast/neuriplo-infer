@@ -1,3 +1,5 @@
+# docker build --rm -t object-detection-inference:ort -f Dockerfiles/Dockerfile.onnxruntime .
+
 # Stage 1: Common dependencies
 ARG UBUNTU_VERSION=22.04
 FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
@@ -43,4 +45,5 @@ COPY --from=builder /app/build/object-detection-inference /app/object-detection-
 WORKDIR /app
 
 # Set the entry point to the compiled executable
-CMD ["./object-detection-inference"]
+# --entrypoint param to override it from docker run
+ENTRYPOINT  ["./object-detection-inference"]
