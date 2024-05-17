@@ -20,6 +20,7 @@ set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT
 
 if(DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
     set(ORT_VERSION "1.15.1") # modify accordingly
+    set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-${ORT_VERSION})    
 endif()
 
 # Define the supported backends
@@ -35,7 +36,7 @@ endif()
 message(STATUS "Default backend: ${DEFAULT_BACKEND}")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
-message(STATUS ${CMAKE_MODULE_PATH})
+message(STATUS "Cmake module path: ${CMAKE_MODULE_PATH}")
 
 set(DETECTORS_ROOT src/detectors)
 set(DETECTORS_SOURCES 

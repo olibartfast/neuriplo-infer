@@ -2,7 +2,8 @@
 message(STATUS "Onnx runtime version: ${ORT_VERSION}")
 
 # Set ONNX Runtime directory (modify accordingly)
-set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-${ORT_VERSION})
+message(STATUS "Onnx runtime directory: ${ONNX_RUNTIME_DIR}")
+
 
 # Find CUDA (if available)
 find_package(CUDA)
