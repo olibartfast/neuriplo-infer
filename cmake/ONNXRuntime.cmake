@@ -1,13 +1,14 @@
 # ONNX Runtime Configuration
+message(STATUS "Onnx runtime version: ${ORT_VERSION}")
 
 # Set ONNX Runtime directory (modify accordingly)
-set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-1.15.1)
+set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-${ORT_VERSION})
 
 # Find CUDA (if available)
 find_package(CUDA)
 if (CUDA_FOUND)
     message(STATUS "Found CUDA")
-    set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda-11.8)
+    set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda)
 else ()
     message(WARNING "CUDA not found. GPU support will be disabled.")
 endif()
