@@ -16,7 +16,7 @@ option(USE_GSTREAMER "Use GStreamer for video capture (optional)" OFF)
 # option(BUILD_BENCHMARKS "Build benchmark target" OFF) # TODO
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
+set(DEFAULT_BACKEND "ONNX_RUNTIME" CACHE STRING "Default backend for inference")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT", "OPENVINO")
