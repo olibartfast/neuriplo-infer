@@ -71,21 +71,32 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
     --labels=/path/to/labels.names [--use-gpu]
 ```
 
-## Available models
+
+## Run with Docker
+### Building the Docker Image
+* Inside the project, in the ``Dockerfile'' folder, there is a dockerfile for each inference backend
+
+```bash
+docker build --rm -t object-detection-inference:<backend_tag> -f Dockerfiles/Dockerfile.backend .
+```
+
+This command will create a docker image based on the provided docker file.
+
+### Running the Docker Container
+
+Replace the wildcards with your desired options and paths:
+```bash
+docker run --rm -v<path_host_data_folder>:/app/data -v<path_host_weights_folder>:/weights -v<path_host_labels_folder>:/labels object-detection-inference:<backend_tag> --type=<model_type> --weights=<weight_according_your_backend> --source=/app/data/<image_or_video> --labels=/labels/<labels_file>.
+```
+
+ ## Available models
 
 * The following table provides information about available object recognition models and supported framework backends: 
 [Link to Table Page](docs/TablePage.md#table-of-models)
 
-
- ### Exporting a model for inference
-* [YoloV9](docs/ExportInstructions.md#yolov9)
-* [YoloV8](docs/ExportInstructions.md#yolov8)
-* [YoloNas](docs/ExportInstructions.md#yolonas)
-* [YoloV5](docs/ExportInstructions.md#yolov5)
-* [YoloV6](docs/ExportInstructions.md#yolov6)
-* [YoloV7](docs/ExportInstructions.md#yolov7)
-* [RT-DETR](docs/ExportInstructions.md#rt-detr-lyuwenyu)
-* [RT-DETR (Ultralytics implementation)](docs/ExportInstructions.md#rt-detr-ultralytics)
+ ## Exporting a Model for Inference
+ * The following page provides information on how to export supported object recognition models: 
+[Link to Export Page](docs/ExportInstructions.md)
 
 ## References
 * [Object detection using the opencv dnn module](https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp)
