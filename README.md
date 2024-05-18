@@ -15,7 +15,9 @@
 * OpenVino (2023.2) 
 ### Notes
  - If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN, OPENVINO) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default.
-- Models with dynamic axis are currently not supported.
+- Models with dynamic axis are currently not supported(at least not all)
+- Windows build not supported.
+
 
 
 ## To build and compile  
@@ -106,6 +108,7 @@ docker run --rm -v<path_host_data_folder>:/app/data -v<path_host_weights_folder>
 ## TO DO
 - Reimplement Libtensorflow backend
 - Run inside a docker container
+- Add Windows building support
 - Add tests
 
 ## Feedback
