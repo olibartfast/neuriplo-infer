@@ -1,4 +1,7 @@
 # ONNX Runtime Configuration
+# Set ONNX Runtime
+set(ORT_VERSION "1.15.1") # modify accordingly
+set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-${ORT_VERSION})     
 message(STATUS "Onnx runtime version: ${ORT_VERSION}")
 
 # Set ONNX Runtime directory (modify accordingly)

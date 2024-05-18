@@ -18,11 +18,6 @@ option(USE_GSTREAMER "Use GStreamer for video capture (optional)" OFF)
 # Set the path to the selected framework (modify accordingly)
 set(DEFAULT_BACKEND "ONNX_RUNTIME")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
 
-if(DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
-    set(ORT_VERSION "1.15.1") # modify accordingly
-    set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-${ORT_VERSION})    
-endif()
-
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT", "OPENVINO")
 
