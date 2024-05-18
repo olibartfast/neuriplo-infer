@@ -74,7 +74,7 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 
 ## Run with Docker
 ### Building the Docker Image
-* Inside the project, in the [Dockerfiles folder](Dockerfiles], there is a dockerfile for each inference backend (currently only onnxruntime)
+* Inside the project, in the [Dockerfiles folder](Dockerfiles), there is a dockerfile for each inference backend (currently only onnxruntime)
 
 ```bash
 docker build --rm -t object-detection-inference:<backend_tag> -f Dockerfiles/Dockerfile.backend .
