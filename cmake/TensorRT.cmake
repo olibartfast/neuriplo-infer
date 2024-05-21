@@ -1,7 +1,10 @@
 # TensorRT Configuration
 
+set(TRT_VERSION "8.6.1.6" CACHE STRING "Tensorrt version") # modify accordingly
 # Set TensorRT directory (modify accordingly)
-set(TENSORRT_DIR $ENV{HOME}/TensorRT-8.6.1.6/)
+set(TENSORRT_DIR $ENV{HOME}/TensorRT-${TRT_VERSION}/)
+
+message(STATUS "TENSORRT_DIR: ${TENSORRT_DIR}")
 
 # Find CUDA
 find_package(CUDA REQUIRED)
