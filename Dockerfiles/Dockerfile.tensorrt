@@ -1,6 +1,8 @@
 
 # Stage 1: Cuda dependencies
-FROM nvcr.io/nvidia/cuda:12.3.2-devel-ubuntu22.04 as cuda_dependencies
+ARG UBUNTU_VERSION=22.04
+ARG NGC_CUDA_VERSION=12.3.2
+FROM nvcr.io/nvidia/cuda:$NGC_CUDA_VERSION-devel-ubuntu$UBUNTU_VERSION as cuda_dependencies
 
 # note: another alternative would be to use directly a tensorrt image from nvidia ngc
 
@@ -28,12 +30,12 @@ ARG TRT_PATCH=.1
 ARG TRT_BUILD=.6
 ARG TRT_VERSION=$TRT_MAJOR$TRT_MINOR$TRT_PATCH$TRT_BUILD
 ARG TENSORRT_DIR=$HOME/TensorRT-$TRT_VERSION 
-ARG CUDA_VERSION=12.0
+ARG TRT_CUDA_VERSION=12.0
 
-RUN wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/$TRT_MAJOR$TRT_MINOR$TRT_PATCH/tars/TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$CUDA_VERSION.tar.gz 
+RUN wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/$TRT_MAJOR$TRT_MINOR$TRT_PATCH/tars/TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$TRT_CUDA_VERSION.tar.gz 
 
-RUN tar -xzvf TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$CUDA_VERSION.tar.gz -C $HOME && \
-    rm TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$CUDA_VERSION.tar.gz
+RUN tar -xzvf TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$TRT_CUDA_VERSION.tar.gz -C $HOME && \
+    rm TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$TRT_CUDA_VERSION.tar.gz
 
 
 # Stage 3: Copy application code and build
