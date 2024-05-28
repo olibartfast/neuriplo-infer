@@ -23,14 +23,14 @@ ENV HOME=/root
 ARG BACKEND=TENSORRT
 
 ARG TRT_MAJOR=8
-ARG TRT_MINOR=6
-ARG TRT_PATCH=1
-ARG TRT_BUILD=6
-ARG TRT_VERSION=$TRT_MAJOR.$TRT_MINOR.$TRT_PATCH.$TRT_BUILD
+ARG TRT_MINOR=.6
+ARG TRT_PATCH=.1
+ARG TRT_BUILD=.6
+ARG TRT_VERSION=$TRT_MAJOR$TRT_MINOR$TRT_PATCH$TRT_BUILD
 ARG TENSORRT_DIR=$HOME/TensorRT-$TRT_VERSION 
 ARG CUDA_VERSION=12.0
 
-RUN wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/$TRT_MAJOR.$TRT_MINOR.$TRT_PATCH/tars/TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$CUDA_VERSION.tar.gz 
+RUN wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/$TRT_MAJOR$TRT_MINOR$TRT_PATCH/tars/TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$CUDA_VERSION.tar.gz 
 
 RUN tar -xzvf TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$CUDA_VERSION.tar.gz -C $HOME && \
     rm TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$CUDA_VERSION.tar.gz
