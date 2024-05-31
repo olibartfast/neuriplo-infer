@@ -4,7 +4,7 @@ The table represents a specific model and includes the following details:
 - **Model**: The name or identifier of the model.
 - **Model Type**: The type of model, indicating the underlying architecture or framework used (also the string corresponding to the param to be used with ``--type`` during the inference step of this project).
 - **o**: Supported backend.
-- **x**: Not supported backend (or at least still not tested/not tried to export).
+- **x**: Not supported backend (or at least not tested yet/not tried to export).
 
 
 | Model                                              | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime  | OpenVino |
