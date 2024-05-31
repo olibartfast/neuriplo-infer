@@ -2,6 +2,7 @@
 #include "common.hpp"
 #include "YoloV4.hpp"
 #include "YoloVn.hpp"
+#include "YOLOv10.hpp"
 #include "YoloNas.hpp"
 #include "RtDetr.hpp"
 #include "RtDetrUltralytics.hpp"
@@ -27,6 +28,10 @@ std::unique_ptr<Detector> createDetector(
     {
         return std::make_unique<YoloNas>();
     } 
+    else if(detectorType.find("yolov10") != std::string::npos)  
+    {
+        return std::make_unique<YOLOv10>();
+    }     
     else if(detectorType.find("rtdetrul") != std::string::npos)  
     {
         return std::make_unique<RtDetrUltralytics>();

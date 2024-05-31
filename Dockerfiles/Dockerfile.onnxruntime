@@ -36,7 +36,7 @@ WORKDIR /app
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DBACKEND=$BACKEND -DORT_VERSION=$ORT_VERSION  -DONNX_RUNTIME_DIR=$ONNX_RUNTIME_DIR && \
+RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DORT_VERSION=$ORT_VERSION  -DONNX_RUNTIME_DIR=$ONNX_RUNTIME_DIR && \
     cmake --build build --config Release
 
 # Stage 4: Final image
@@ -49,3 +49,7 @@ WORKDIR /app
 # Set the entry point to the compiled executable
 # --entrypoint param to override it from docker run
 ENTRYPOINT  ["./object-detection-inference"]
+
+# docker run --rm -v$(pwd)/data:/data -v/home/oli/model_repository/yolov8s_onnx/1/:/weights \
+# -v$(pwd)/labels:/labels object-detection-inference:ort --type=yolov8 \
+# --weights=/weights/model.onnx --source=/data/dog.jpg --labels=/labels/coco.names

@@ -5,6 +5,22 @@
 Opencv-dnn module loads onnx models except for yolov4 .weights  
 
 ### Export the model for the inference
+
+## YOLOv10
+### OnnxRuntime 
+* From [yolov10 repo](https://github.com/THU-MIG/yolov10):
+```
+yolo export format=onnx model=yolov10model.pt
+
+```
+#### Torchscript
+* Same way as above:
+```
+yolo export format=torchscript model=yolov10model.pt
+
+```
+
+
 ## YOLOv9
 #### OnnxRuntime
 * Run from [yolov9 repo](https://github.com/WongKinYiu/yolov9):

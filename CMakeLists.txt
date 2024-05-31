@@ -16,7 +16,8 @@ option(USE_GSTREAMER "Use GStreamer for video capture (optional)" OFF)
 # option(BUILD_BENCHMARKS "Build benchmark target" OFF) # TODO
 
 # Set the path to the selected framework (modify accordingly)
-set(DEFAULT_BACKEND "ONNX_RUNTIME" CACHE STRING "Default backend for inference")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
+unset(DEFAULT_BACKEND CACHE)
+set(DEFAULT_BACKEND "LIBTORCH" CACHE STRING "Default backend for inference")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
 
 # Define the supported backends
 set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT", "OPENVINO")
@@ -41,6 +42,7 @@ set(DETECTORS_SOURCES
     ${DETECTORS_ROOT}/RtDetrUltralytics.cpp 
     ${DETECTORS_ROOT}/YoloV4.cpp 
     ${DETECTORS_ROOT}/YoloVn.cpp
+    ${DETECTORS_ROOT}/YOLOv10.cpp
     )
 
 set(SOURCES main.cpp src/inference-engines/InferenceInterface.cpp ${DETECTORS_SOURCES})
