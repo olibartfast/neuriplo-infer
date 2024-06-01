@@ -20,8 +20,12 @@ void draw_label(cv::Mat& input_image, const std::string& label, float confidence
     cv::Scalar YELLOW = cv::Scalar(0, 255, 255);
 
     // Display the label and confidence at the top of the bounding box.
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(2) << static_cast<int>(confidence * 100) / 100.0;
+    std::string scoreText = out.str();
+    
     int baseLine;
-    std::string display_text = label + ": " + std::to_string(confidence);
+    std::string display_text = label + ": " + scoreText;
     cv::Size label_size = cv::getTextSize(display_text, FONT_FACE, FONT_SCALE, THICKNESS, &baseLine);
     top = cv::max(top, label_size.height);
 
