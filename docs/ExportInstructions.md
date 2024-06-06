@@ -20,6 +20,11 @@ yolo export format=torchscript model=yolov10model.pt
 
 ```
 
+#### Tensorrt
+```
+trtexec --onnx=yolov10model.onnx --saveEngine=yolov10model.engine --fp16
+```
+
 
 ## YOLOv9
 #### OnnxRuntime
