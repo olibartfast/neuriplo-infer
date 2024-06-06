@@ -11,9 +11,9 @@ The table represents a specific model and includes the following details:
 |----------------------------------------------------|------------|------------|----------|----------|--------------|-----------|
 | yolov4/yolov4-tiny                                 | yolov4     | o          | x        | x        | x            | x         |
 | yolov5 models                                      | yolov5     | o          | x        | o        | o            | o         |
-| yolov6 models                                      | yolov6     | o          | x        | x        | o            | o         |
-| yolov7 models                                      | yolov7     | o          | x        | o        | o            | o         |
-| yolov8 models                                      | yolov8     | o          | o        | o        | o            | x         |
+| yolov6 models                                      | yolov6     | o          | x        | x        | o            | x         |
+| yolov7 models                                      | yolov7     | o          | x        | o        | o            | x         |
+| yolov8 models                                      | yolov8     | o          | o        | o        | o            | o         |
 | yolov9 models                                      | yolov9     | o          | o        | o        | o            | x         |
 | yolov10 models                                     | yolov10    | o          | x        | o        | o            | x         |
 | yolo-nas models                                    | yolonas    | o          | x        | x        | o            | x         |
