@@ -1,0 +1,64 @@
+ARG OPENVINO_VERSION=2024.0.0
+
+# Build stage
+FROM openvino/ubuntu20_runtime:${OPENVINO_VERSION} AS builder
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV OpenVINO_DIR=${INTEL_OPENVINO_DIR}/runtime/cmake
+USER root
+
+# Install common dependencies
+RUN apt-get update \
+    && apt-get -y install build-essential cppcheck valgrind clang lldb llvm gdb libopencv-dev  libspdlog-dev  wget \    
+    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+# Install additional OS packages.
+RUN apt-get update \
+    && apt-get -y install --no-install-recommends \
+    python3-dev \
+    python3 \
+    ca-certificates \
+    python3-numpy \
+    python3-setuptools \
+    python3-wheel \
+    python3-pip \
+    g++ \
+    gcc \
+    ninja-build \
+    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+# Install newer CMake version (Is needed for OpenVINO version > 3.20)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends aria2 aria2 && aria2c -q -d /tmp -o cmake-3.21.0-linux-x86_64.tar.gz https://github.com/Kitware/CMake/releases/download/v3.21.0/cmake-3.21.0-linux-x86_64.tar.gz && tar -zxf /tmp/cmake-3.21.0-linux-x86_64.tar.gz --strip=1 -C /usr \
+    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*    
+
+
+
+ENV HOME=/root
+
+ENV PATH=${WORKDIR_PATH}/miniconda/bin:${WORKDIR_PATH}/cmake-dir/bin:$PATH
+ENV IE_PLUGINS_PATH=${INTEL_OPENVINO_DIR}/runtime/lib/intel64
+ENV LD_LIBRARY_PATH=/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:${LD_LIBRARY_PATH}
+
+ARG BACKEND=OPENVINO
+
+WORKDIR /app
+
+COPY . .
+
+# Build the project using CMake
+RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO  && \
+    cmake --build build --config Release
+
+# Stage 4: Final image
+FROM builder AS final
+
+COPY --from=builder /app/build/object-detection-inference /app/object-detection-inference
+
+WORKDIR /app
+
+# Set the entry point to the compiled executable
+# --entrypoint param to override it from docker run
+ENTRYPOINT  ["./object-detection-inference"]
+
+

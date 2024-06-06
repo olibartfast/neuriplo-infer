@@ -15,21 +15,24 @@ option(USE_GSTREAMER "Use GStreamer for video capture (optional)" OFF)
 # option(BUILD_TESTS "Build test target" OFF) # TODO
 # option(BUILD_BENCHMARKS "Build benchmark target" OFF) # TODO
 
-# Set the path to the selected framework (modify accordingly)
-unset(DEFAULT_BACKEND CACHE)
-set(DEFAULT_BACKEND "LIBTORCH" CACHE STRING "Default backend for inference")  # Options: ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, OPENCV_DNN
+# Define the default backend if not set from the command line
+if(NOT DEFINED DEFAULT_BACKEND)
+    unset(DEFAULT_BACKEND CACHE)
+    set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default backend for inference" FORCE)
+endif()
 
 # Define the supported backends
-set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT", "OPENVINO")
+set(SUPPORTED_BACKENDS "ONNX_RUNTIME" "LIBTORCH" "LIBTENSORFLOW" "OPENCV_DNN" "TENSORRT" "OPENVINO")
 
 # Check if the specified backend is supported
 list(FIND SUPPORTED_BACKENDS ${DEFAULT_BACKEND} SUPPORTED_BACKEND_INDEX)
 if (SUPPORTED_BACKEND_INDEX EQUAL -1)
     message(STATUS "Unsupported default backend: ${DEFAULT_BACKEND}")
-    set(DEFAULT_BACKEND "OPENCV_DNN")
+    set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default backend for inference" FORCE)
 endif()
 
 message(STATUS "Default backend: ${DEFAULT_BACKEND}")
+
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 message(STATUS "Cmake module path: ${CMAKE_MODULE_PATH}")

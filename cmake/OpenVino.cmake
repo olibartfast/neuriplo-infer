@@ -3,7 +3,7 @@ src/inference-engines/openvino/OVInfer.cpp
 # Add more OPENVINO source files here if needed
 )
 
-find_package(InferenceEngine REQUIRED)
+find_package(OpenVINO REQUIRED)
 
 
 list(APPEND SOURCES ${OPENVINO_SOURCES})
