@@ -17,9 +17,7 @@ protected:
 	std::string backend_;
 	static std::shared_ptr<spdlog::logger> logger_; // Logger instance
     int channels_{ -1 };
-
 	cv::Rect get_rect(const cv::Size& imgSz, const std::vector<float>& bbox);
-
 
 public:
 	Detector(
@@ -31,6 +29,10 @@ public:
   		network_height_ {network_height}		 
 	{
 	}
+
+    inline float getConfidenceThreshold(){ return confidenceThreshold_; }
+    inline float getNetworkWidth() { return network_width_; }
+    inline float getNetworkHeight() { return network_height_; } 
 
 	static void SetLogger(const std::shared_ptr<spdlog::logger>& logger) 
     {
