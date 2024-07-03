@@ -1,5 +1,5 @@
 set(OPENVINO_SOURCES
-src/inference-engines/openvino/OVInfer.cpp
+${INFER_ROOT}/src/openvino/OVInfer.cpp
 # Add more OPENVINO source files here if needed
 )
 

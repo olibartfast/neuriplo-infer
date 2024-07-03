@@ -1,6 +1,6 @@
 
 # Add source files for video capture
-set(VIDEOCAPTURE_SOURCES VideoCaptureInterface.cpp )
+set(VIDEOCAPTURE_SOURCES src/VideoCaptureInterface.cpp )
 
 # Create the video capture library
 add_library(VideoCaptureLib SHARED ${VIDEOCAPTURE_SOURCES})
@@ -9,7 +9,7 @@ target_include_directories(VideoCaptureLib PRIVATE
     ${CMAKE_SOURCE_DIR}/inc
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}      
-    src/videocapture
+    videocapture
 )
 
 # Link against GStreamer libraries if USE_GSTREAMER is ON

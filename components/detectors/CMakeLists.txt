@@ -1,12 +1,12 @@
 # Add source files for detectors
 set(DETECTORS_SOURCES 
-    Detector.cpp 
-    YoloNas.cpp 
-    RtDetr.cpp 
-    RtDetrUltralytics.cpp 
-    YoloV4.cpp 
-    YoloVn.cpp
-    YOLOv10.cpp
+    src/Detector.cpp 
+    src/YoloNas.cpp 
+    src/RtDetr.cpp 
+    src/RtDetrUltralytics.cpp 
+    src/YoloV4.cpp 
+    src/YoloVn.cpp
+    src/YOLOv10.cpp
 )
 
 # Create the detectors library
@@ -16,7 +16,7 @@ target_include_directories(DetectorsLib PRIVATE
     ${CMAKE_SOURCE_DIR}/inc
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
-    src/detectors
+    detectors
 )
 
 target_link_libraries(DetectorsLib PRIVATE

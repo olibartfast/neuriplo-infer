@@ -30,16 +30,20 @@ endif()
 
 message(STATUS "Default backend: ${DEFAULT_BACKEND}")
 
+set(DETECTORS_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/detectors)
+set(INFER_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/inference-engines)
+set(VIDEO_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/videocapture)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 message(STATUS "Cmake module path: ${CMAKE_MODULE_PATH}")
 
 # Add subdirectories
-add_subdirectory(src/detectors)
-add_subdirectory(src/inference-engines)
-add_subdirectory(src/videocapture)
+add_subdirectory(${DETECTORS_ROOT})
+add_subdirectory(${INFER_ROOT})
+add_subdirectory(${VIDEO_ROOT})
 
 # Main executable
-set(SOURCES main.cpp src/inference-engines/InferenceInterface.cpp)
+set(SOURCES main.cpp)
 
 # Include GStreamer-related settings and source files if USE_GSTREAMER is ON
 if (USE_GSTREAMER)
@@ -55,9 +59,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     inc
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
-    src/inference-engines
-    src/videocapture
-    src/detectors
+    components/inference-engines/src
+    components/videocapture/src
+    components/videocapture/include
+    components/detectors/src
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -71,11 +76,3 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 include(LinkBackend)
 include(SetCompilerFlags)
-
-# Enable testing if needed
-# if(BUILD_TESTS) # TODO
-#     message(STATUS "Test enabled")
-#     find_package(GTest REQUIRED)
-#     enable_testing()
-#     add_subdirectory(tests)
-# endif()

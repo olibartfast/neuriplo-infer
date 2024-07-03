@@ -1,6 +1,6 @@
 
 # Add source files for inference engines
-set(INFERENCE_SOURCES InferenceInterface.cpp)
+set(INFERENCE_SOURCES src/InferenceInterface.cpp)
 
 # Create the inference engines library
 add_library(InferenceEnginesLib SHARED ${INFERENCE_SOURCES})
@@ -9,7 +9,7 @@ target_include_directories(InferenceEnginesLib PRIVATE
     ${CMAKE_SOURCE_DIR}/inc
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}    
-    src/inference-engines
+    inference-engines
 )
 
 target_link_libraries(DetectorsLib PRIVATE

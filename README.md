@@ -76,10 +76,10 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
 
 ## Run with Docker
 ### Building the Docker Image
-* Inside the project, in the [Dockerfiles folder](Dockerfiles), there will be a dockerfile for each inference backend (currently onnxruntime, libtorch, tensorrt, openvino)
+* Inside the project, in the [Dockerfiles folder](docker), there will be a dockerfile for each inference backend (currently onnxruntime, libtorch, tensorrt, openvino)
 
 ```bash
-docker build --rm -t object-detection-inference:<backend_tag> -f Dockerfiles/Dockerfile.backend .
+docker build --rm -t object-detection-inference:<backend_tag> -f docker/Dockerfile.backend .
 ```
 
 This command will create a docker image based on the provided docker file.
