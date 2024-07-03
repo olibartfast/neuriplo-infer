@@ -8,9 +8,6 @@ find_package(spdlog REQUIRED)
 
 message(STATUS "Home path: $ENV{HOME}")
 
-# Define an option to enable or disable GStreamer support
-unset(USE_GSTREAMER CACHE)
-option(USE_GSTREAMER "Use GStreamer for video capture (optional)" OFF)
 
 # Define the default backend if not set from the command line
 if(NOT DEFINED DEFAULT_BACKEND)
@@ -30,9 +27,21 @@ endif()
 
 message(STATUS "Default backend: ${DEFAULT_BACKEND}")
 
+# Fetch the VideoCapture project from GitHub
+include(FetchContent)
+FetchContent_Declare(
+  VideoCaptureLib
+  GIT_REPOSITORY https://github.com/olibartfast/VideoCapture.git
+  GIT_TAG        master  # or the specific tag/branch you want to use
+)
+
+FetchContent_MakeAvailable(VideoCaptureLib)
+
+
+message(STATUS "VideoCaptureLib_SOURCE_DIR module path: ${VideoCaptureLib_SOURCE_DIR}")
+
 set(DETECTORS_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/detectors)
 set(INFER_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/inference-engines)
-set(VIDEO_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/videocapture)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 message(STATUS "Cmake module path: ${CMAKE_MODULE_PATH}")
@@ -40,15 +49,11 @@ message(STATUS "Cmake module path: ${CMAKE_MODULE_PATH}")
 # Add subdirectories
 add_subdirectory(${DETECTORS_ROOT})
 add_subdirectory(${INFER_ROOT})
-add_subdirectory(${VIDEO_ROOT})
 
 # Main executable
 set(SOURCES main.cpp)
 
-# Include GStreamer-related settings and source files if USE_GSTREAMER is ON
-if (USE_GSTREAMER)
-    include(GStreamer)
-endif()
+
 
 include(SelectBackend)
 
@@ -59,9 +64,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     inc
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
+    ${VideoCaptureLib_SOURCE_DIR}/include 
+    ${VideoCaptureLib_SOURCE_DIR}/src
     components/inference-engines/src
-    components/videocapture/src
-    components/videocapture/include
     components/detectors/src
 )
 
