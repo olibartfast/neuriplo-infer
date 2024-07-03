@@ -1,13 +1,3 @@
-# TensorRT Configuration
-
-set(TRT_VERSION "8.6.1.6" CACHE STRING "Tensorrt version") # modify accordingly
-# Set TensorRT directory (modify accordingly)
-set(TENSORRT_DIR $ENV{HOME}/TensorRT-${TRT_VERSION}/)
-
-message(STATUS "TENSORRT_DIR: ${TENSORRT_DIR}")
-
-# Find CUDA
-find_package(CUDA REQUIRED)
 execute_process(
     COMMAND nvidia-smi --query-gpu=compute_cap --format=csv,noheader
     OUTPUT_VARIABLE GPU_COMPUTE_CAP
@@ -44,15 +34,3 @@ if (GPU_COMPUTE_CAP_RESULT EQUAL 0)
 else()
     message("Failed to query GPU compute capability.")
 endif()    
-
-
-
-
-set(TENSORRT_SOURCES
-    ${INFER_ROOT}/src/tensorrt/TRTInfer.cpp
-    # Add more TensorRT source files here if needed
-)
-list(APPEND SOURCES ${TENSORRT_SOURCES})
-
-# Add compile definition to indicate TensorRT usage
-add_compile_definitions(USE_TENSORRT)
