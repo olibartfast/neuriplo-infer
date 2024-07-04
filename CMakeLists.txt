@@ -30,15 +30,15 @@ message(STATUS "Default backend: ${DEFAULT_BACKEND}")
 # Fetch the VideoCapture project from GitHub
 include(FetchContent)
 FetchContent_Declare(
-  VideoCaptureLib
+  VideoCapture
   GIT_REPOSITORY https://github.com/olibartfast/VideoCapture.git
   GIT_TAG        master  # or the specific tag/branch you want to use
 )
 
-FetchContent_MakeAvailable(VideoCaptureLib)
+FetchContent_MakeAvailable(VideoCapture)
 
 
-message(STATUS "VideoCaptureLib_SOURCE_DIR module path: ${VideoCaptureLib_SOURCE_DIR}")
+message(STATUS "VideoCapture_SOURCE_DIR module path: ${VideoCapture_SOURCE_DIR}")
 
 set(DETECTORS_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/detectors)
 set(INFER_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/inference-engines)
@@ -64,8 +64,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     inc
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
-    ${VideoCaptureLib_SOURCE_DIR}/include 
-    ${VideoCaptureLib_SOURCE_DIR}/src
+    ${VideoCapture_SOURCE_DIR}/include 
+    ${VideoCapture_SOURCE_DIR}/src
     components/inference-engines/src
     components/detectors/src
 )
@@ -75,7 +75,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OpenCV_LIBS}
     DetectorsLib
     InferenceEnginesLib
-    VideoCaptureLib
+    VideoCapture
 )
 
 
