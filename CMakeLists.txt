@@ -45,14 +45,15 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Include directories and link libraries
 target_include_directories(${PROJECT_NAME} PRIVATE
-    inc
+    ${CMAKE_SOURCE_DIR}/inc
+    ${CMAKE_SOURCE_DIR}/components/detectors/src
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
     ${VideoCapture_SOURCE_DIR}/include 
     ${VideoCapture_SOURCE_DIR}/src
     ${InferenceEngines_SOURCE_DIR}/include
-    ${InferenceEngines_SOURCE_DIR}/src
-    components/detectors/src
+    ${InferenceEngines_SOURCE_DIR}/backends
+    ${InferenceEngines_SOURCE_DIR}/backends/src
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
