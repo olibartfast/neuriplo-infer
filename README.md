@@ -6,13 +6,18 @@
 * OpenCV (4.7.0) (apt install libopencv-dev)
 * spdlog (1:1.9.2+ds-0.2) (apt-get install libspdlog-dev)
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
+
+* One of the following Inference Backend, wrapped in [Inference Engines Library](https://github.com/olibartfast/inference-engines):
+    * OpenCV DNN Moduke
+    * ONNX Runtime (1.15.1 gpu package)
+    * LibTorch (2.0.1-cu118)
+    * TensorRT (8.6.1.6)
+    * OpenVino (2023.2) 
+
 ### Optional 
-* GStreamer (1.20.3) 
+* GStreamer (1.20.3), wrapped in [VideoCapture Library](https://github.com/olibartfast/videocapture)
 * CUDA (if you want to use GPU, CUDA 12 is supported for LibTorch and TensorRT, I used CUDA 11.8 for onnx-rt)
-* ONNX Runtime (1.15.1 gpu package)
-* LibTorch (2.0.1-cu118)
-* TensorRT (8.6.1.6)
-* OpenVino (2023.2) 
+
 ### Notes
  - If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN, OPENVINO) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default.
 - Models with dynamic axis are currently not supported(at least not all)
