@@ -29,7 +29,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(InferenceEngines)
 message(STATUS "InferenceEngines_SOURCE_DIR module path: ${InferenceEngines_SOURCE_DIR}")
 
-set(DETECTORS_ROOT ${CMAKE_CURRENT_LIST_DIR}/components/detectors)
+set(DETECTORS_ROOT ${CMAKE_CURRENT_LIST_DIR}/detectors)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 message(STATUS "Cmake module path: ${CMAKE_MODULE_PATH}")
@@ -46,7 +46,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Include directories and link libraries
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/inc
-    ${CMAKE_SOURCE_DIR}/components/detectors/src
+    ${CMAKE_SOURCE_DIR}/detectors/src
     ${OpenCV_INCLUDE_DIRS}
     ${spdlog_INCLUDE_DIRS}
     ${VideoCapture_SOURCE_DIR}/include 
