@@ -2,7 +2,7 @@
 if (DEFAULT_BACKEND STREQUAL "OPENCV_DNN")
     target_include_directories(${PROJECT_NAME} PRIVATE ${InferenceEngines_SOURCE_DIR}/backends/opencv-dnn/src)
 elseif (DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
-    target_include_directories(${PROJECT_NAME} PRIVATE ${ONNX_RUNTIME_DIR}/include ${InferenceEngines_SOURCE_DIR}/onnx-runtime/src)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ONNX_RUNTIME_DIR}/include ${InferenceEngines_SOURCE_DIR}/backends/onnx-runtime/src)
     target_link_directories(${PROJECT_NAME} PRIVATE ${ONNX_RUNTIME_DIR}/lib)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${ONNX_RUNTIME_DIR}/lib/libonnxruntime.so)
 elseif (DEFAULT_BACKEND STREQUAL "LIBTORCH")

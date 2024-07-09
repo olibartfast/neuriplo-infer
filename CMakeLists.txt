@@ -6,6 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(OpenCV REQUIRED)
 find_package(spdlog REQUIRED)
 
+# Define the default backend if not set from the command line
+if(NOT DEFINED DEFAULT_BACKEND)
+    unset(DEFAULT_BACKEND CACHE)
+    set(DEFAULT_BACKEND "ONNX_RUNTIME" CACHE STRING "Default backend for inference" FORCE)
+endif()
+
 message(STATUS "Home path: $ENV{HOME}")
 
 # Fetch the VideoCapture project from GitHub
