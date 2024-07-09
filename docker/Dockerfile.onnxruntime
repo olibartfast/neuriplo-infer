@@ -49,7 +49,3 @@ WORKDIR /app
 # Set the entry point to the compiled executable
 # --entrypoint param to override it from docker run
 ENTRYPOINT  ["./object-detection-inference"]
-
-# docker run --rm -v$(pwd)/data:/data -v/home/oli/model_repository/yolov8s_onnx/1/:/weights \
-# -v$(pwd)/labels:/labels object-detection-inference:ort --type=yolov8 \
-# --weights=/weights/model.onnx --source=/data/dog.jpg --labels=/labels/coco.names
