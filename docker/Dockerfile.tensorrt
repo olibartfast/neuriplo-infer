@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     libopencv-dev \
     libspdlog-dev \
     wget \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Install backend-specific C++ dependencies

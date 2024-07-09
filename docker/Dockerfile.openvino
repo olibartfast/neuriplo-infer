@@ -23,6 +23,7 @@ RUN apt-get update \
     g++ \
     gcc \
     ninja-build \
+    git \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Install newer CMake version (Is needed for OpenVINO version > 3.20)
