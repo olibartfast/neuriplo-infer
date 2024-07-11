@@ -2,9 +2,9 @@
 * Inference for object detection from a video or image input source, with support for multiple switchable frameworks to manage the inference process, and optional GStreamer integration for video capture.
 ## Dependencies (In parentheses, version used in this project)
 ## Required
-* CMake (3.22.1)
-* OpenCV (4.7.0) (apt install libopencv-dev)
-* spdlog (1:1.9.2+ds-0.2) (apt-get install libspdlog-dev)
+* CMake 
+* OpenCV (apt install libopencv-dev)
+* glog (apt install libgoogle-glog-dev)
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
 
 * One of the following Inference Backend, wrapped in [Inference Engines Library](https://github.com/olibartfast/inference-engines):

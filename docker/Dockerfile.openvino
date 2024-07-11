@@ -13,7 +13,7 @@ USER root
 
 # Install common dependencies
 RUN apt-get update \
-    && apt-get -y install build-essential cppcheck valgrind clang lldb llvm gdb libopencv-dev  libspdlog-dev  wget \    
+    && apt-get -y install build-essential cppcheck valgrind clang lldb llvm gdb libopencv-dev  libgoogle-glog-dev wget \    
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Install additional OS packages.

@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     build-essential \
     libopencv-dev \
-    libspdlog-dev \
+    libgoogle-glog-dev\
     wget \
     git \
     && rm -rf /var/lib/apt/lists/*

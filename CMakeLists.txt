@@ -4,7 +4,7 @@ project(object-detection-inference)
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(OpenCV REQUIRED)
-find_package(spdlog REQUIRED)
+find_package(glog REQUIRED)
 
 # Define the default backend if not set from the command line
 if(NOT DEFINED DEFAULT_BACKEND)
@@ -30,7 +30,7 @@ include(FetchContent)
 FetchContent_Declare(
     InferenceEngines
   GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
-  GIT_TAG        master  # or the specific tag/branch you want to use
+  GIT_TAG        feature/glog  # or the specific tag/branch you want to use
 )
 FetchContent_MakeAvailable(InferenceEngines)
 message(STATUS "InferenceEngines_SOURCE_DIR module path: ${InferenceEngines_SOURCE_DIR}")
@@ -54,7 +54,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/inc
     ${CMAKE_SOURCE_DIR}/detectors/src
     ${OpenCV_INCLUDE_DIRS}
-    ${spdlog_INCLUDE_DIRS}
+    ${GLOG_INCLUDE_DIRS}
     ${VideoCapture_SOURCE_DIR}/include 
     ${VideoCapture_SOURCE_DIR}/src
     ${InferenceEngines_SOURCE_DIR}/include
@@ -63,7 +63,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    spdlog::spdlog_header_only
+    glog::glog
     ${OpenCV_LIBS}
     DetectorsLib
     InferenceEngines
