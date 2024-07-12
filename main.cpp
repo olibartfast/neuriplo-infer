@@ -9,7 +9,7 @@ static const std::string params = "{ help h   |   | print help message }"
       "{ labels lb  |  | path to class labels}"
       "{ config c   |   | optional model configuration file}"
       "{ weights w  |   | path to models weights}"
-      "{ use_gpu   | false  | activate gpu support}"
+      "{ use-gpu   | false  | activate gpu support}"
       "{ min_confidence | 0.25   | optional min confidence}"
       "{ warmup     | false  | enable GPU warmup}"
       "{ benchmark  | false  | enable benchmarking}"
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
     }
     LOG(INFO) << "Source " << source;
 
-    const bool use_gpu = parser.get<bool>("use_gpu");
+    const bool use_gpu = parser.get<bool>("use-gpu");
     const bool enable_warmup = parser.get<bool>("warmup");
     const bool enable_benchmark = parser.get<bool>("benchmark");
     const int benchmark_iterations = parser.get<int>("iterations");
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
         std::exit(1);
     }
 
-    std::unique_ptr<InferenceInterface> engine = setup_inference_engine(weights, config);
+    std::unique_ptr<InferenceInterface> engine = setup_inference_engine(weights, config, use_gpu);
     if (!engine) {
         LOG(ERROR) << "Can't setup an inference engine for " << weights << " " << config;
         std::exit(1);
