@@ -4,13 +4,40 @@
 #include "utils.hpp"
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov9 | yolov4, yolov5, yolov6, yolov7,yolov8, yolov9, rtdetr, rtdetrul}"
+      "{ type     |  yolov9 | yolov4, yolov5, yolov6, yolov7, yolov8, yolov9, rtdetr, rtdetrul}"
       "{ source s   |   | path to image or video source}"
       "{ labels lb  |  | path to class labels}"
       "{ config c   |   | optional model configuration file}"
       "{ weights w  |   | path to models weights}"
       "{ use_gpu   | false  | activate gpu support}"
-      "{ min_confidence | 0.25   | optional min confidence}";
+      "{ min_confidence | 0.25   | optional min confidence}"
+      "{ warmup     | false  | enable GPU warmup}"
+      "{ benchmark  | false  | enable benchmarking}"
+      "{ iterations | 10     | number of iterations for benchmarking}";
+
+void warmup_gpu(std::unique_ptr<InferenceInterface>& engine, std::unique_ptr<Detector>& detector, const cv::Mat& image) {
+    for (int i = 0; i < 5; ++i) { // Warmup for 5 iterations
+        const auto input_blob = detector->preprocess_image(image);
+        const auto[outputs, shapes] = engine->get_infer_results(input_blob);
+        std::vector<Detection> detections = detector->postprocess(outputs, shapes, image.size());
+    }
+}
+
+void benchmark(std::unique_ptr<InferenceInterface>& engine, std::unique_ptr<Detector>& detector, const cv::Mat& image, int iterations) {
+    double total_time = 0.0;
+    for (int i = 0; i < iterations; ++i) {
+        auto start = std::chrono::steady_clock::now();
+        const auto input_blob = detector->preprocess_image(image);
+        const auto[outputs, shapes] = engine->get_infer_results(input_blob);
+        std::vector<Detection> detections = detector->postprocess(outputs, shapes, image.size());
+        auto end = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        LOG(INFO) << "Iteration " << i << ": " << duration << "ms";
+        total_time += duration;
+    }
+    double average_time = total_time / iterations;
+    LOG(INFO) << "Average inference time over " << iterations << " iterations:  "<< average_time << "ms";
+}
 
 
 // Function to setup glog logging
@@ -67,6 +94,10 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << "Source " << source;
 
     const bool use_gpu = parser.get<bool>("use_gpu");
+    const bool enable_warmup = parser.get<bool>("warmup");
+    const bool enable_benchmark = parser.get<bool>("benchmark");
+    const int benchmark_iterations = parser.get<int>("iterations");
+
     const std::string config = parser.get<std::string>("config");
     if (!config.empty() && !isFile(config)) {
         LOG(ERROR) << "Conf file " << config << " doesn't exist";
@@ -109,6 +140,10 @@ int main(int argc, char *argv[]) {
 
     if (source.find(".jpg") != std::string::npos || source.find(".png") != std::string::npos) {
         cv::Mat image = cv::imread(source);
+        if (enable_warmup) {
+            LOG(INFO) << "Warmup GPU";
+            warmup_gpu(engine, detector, image); // Warmup GPU
+        }
         auto start = std::chrono::steady_clock::now();
         const auto input_blob = detector->preprocess_image(image);
         const auto [outputs, shapes] = engine->get_infer_results(input_blob);
@@ -121,6 +156,10 @@ int main(int argc, char *argv[]) {
             draw_label(image, classes[d.label], d.score, d.bbox.x, d.bbox.y);
         }
         cv::imwrite("data/processed.png", image);
+        if (enable_benchmark) {
+            benchmark(engine, detector, image, benchmark_iterations); // Benchmark
+        }
+
         return 0;
     }
 
