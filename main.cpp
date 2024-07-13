@@ -141,8 +141,8 @@ int main(int argc, char *argv[]) {
     if (source.find(".jpg") != std::string::npos || source.find(".png") != std::string::npos) {
         cv::Mat image = cv::imread(source);
         if (enable_warmup) {
-            LOG(INFO) << "Warmup GPU";
-            warmup_gpu(engine, detector, image); // Warmup GPU
+            LOG(INFO) << "Warmup...";
+            warmup_gpu(engine, detector, image); // Warmup before inference 
         }
         auto start = std::chrono::steady_clock::now();
         const auto input_blob = detector->preprocess_image(image);
