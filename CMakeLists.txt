@@ -46,12 +46,13 @@ add_subdirectory(${DETECTORS_ROOT})
 include(AddCompileDefinitions)
 
 # Main executable
-set(SOURCES main.cpp)
+set(SOURCES main.cpp src/ObjectDetectionApp.cpp src/utils.cpp src/DetectorSetup.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Include directories and link libraries
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/inc
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/detectors/src
     ${OpenCV_INCLUDE_DIRS}
     ${GLOG_INCLUDE_DIRS}
