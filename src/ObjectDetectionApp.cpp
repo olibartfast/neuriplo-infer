@@ -1,7 +1,7 @@
 #include "ObjectDetectionApp.hpp"
 
 static const std::string params = "{ help h   |   | print help message }"
-      "{ type     |  yolov9 | yolov4, yolov5, yolov6, yolov7, yolov8, yolov9, rtdetr, rtdetrul}"
+      "{ type     |  yolov10 | yolov4, yolov5, yolov6, yolov7, yolov8, yolov9, yolov10 rtdetr, rtdetrul}"
       "{ source s   |   | path to image or video source}"
       "{ labels lb  |  | path to class labels}"
       "{ config c   |   | optional model configuration file}"
