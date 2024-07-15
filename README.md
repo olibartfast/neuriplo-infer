@@ -1,6 +1,6 @@
 ### Object Detection Inference
 * Inference for object detection from a video or image input source, with support for multiple switchable frameworks to manage the inference process, and optional GStreamer integration for video capture.
-## Dependencies (In parentheses, version used in this project)
+## Dependencies (In parentheses, version tested in this project)
 ## Required
 * CMake 
 * OpenCV (apt install libopencv-dev)
@@ -51,7 +51,7 @@ Remember to replace chosen_backend with your actual backend selection.
     --type=<model type> \
     --source="rtsp://cameraip:port/somelivefeed" (or --source="path/to/video.format") (or --source="path/to/image.format") \
     --labels=</path/to/labels/file> \
-    --weights=<path/to/model/weights> [--config=</path/to/model/config>] [--min_confidence=<confidence value>].
+    --weights=<path/to/model/weights> [--config=</path/to/model/config>] [--min_confidence=<confidence value>] [--use-gpu] [--warmup] [--benchmark].
 ``` 
 ### To check all available options:
 ```
