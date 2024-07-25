@@ -1,6 +1,6 @@
 ### Object Detection Inference
 * Inference for object detection from a video or image input source, with support for multiple switchable frameworks to manage the inference process, and optional GStreamer integration for video capture.
-## Dependencies (In parentheses, version used in this project)
+## Dependencies (In parentheses, version tested in this project)
 ## Required
 * CMake 
 * OpenCV (apt install libopencv-dev)
@@ -43,16 +43,38 @@ cmake --build .
 
 This will set the USE_GSTREAMER option to "ON" during the CMake configuration process, enabling GStreamer support in your project.  
 Remember to replace chosen_backend with your actual backend selection.
-
-
 ## Usage
 ```
 ./object-detection-inference \
     --type=<model type> \
     --source="rtsp://cameraip:port/somelivefeed" (or --source="path/to/video.format") (or --source="path/to/image.format") \
     --labels=</path/to/labels/file> \
-    --weights=<path/to/model/weights> [--config=</path/to/model/config>] [--min_confidence=<confidence value>].
-``` 
+    --weights=<path/to/model/weights> [--config=</path/to/model/config>] [--min_confidence=<confidence value>] [--use-gpu] [--warmup] [--benchmark]
+```
+
+### Parameters
+
+- `--type=<model type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`,  `yolov10`, `rtdetr`, and `rtdetrul`. Choose the appropriate model based on your requirements.
+
+- `--source=<source>`: Defines the input source for the object detection. It can be:
+  - A live feed URL, e.g., `rtsp://cameraip:port/somelivefeed`
+  - A path to a video file, e.g., `path/to/video.format`
+  - A path to an image file, e.g., `path/to/image.format`
+
+- `--labels=<path/to/labels/file>`: Specifies the path to the file containing the class labels. This file should list the labels used by the model, each label on a new line.
+
+- `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights. This file is essential for the model to perform inference.
+
+- `[--config=<path/to/model/config>]`: (Optional) Specifies the path to the model configuration file. This file contains the model architecture and other configurations necessary for setting up the inference. This parameter is primarily needed if the model is from the OpenVINO backend.
+
+- `[--min_confidence=<confidence value>]`: (Optional) Sets the minimum confidence threshold for detections. Detections with a confidence score below this value will be discarded. The default value is `0.25`.
+
+- `[--use-gpu]`: (Optional) Activates GPU support for inference. This can significantly speed up the inference process if a compatible GPU is available.
+
+- `[--warmup]`: (Optional) Enables GPU warmup. Warming up the GPU before performing actual inference can help achieve more consistent and optimized performance. This parameter is relevant only if the inference is being performed on an image source.
+
+- `[--benchmark]`: (Optional) Enables benchmarking mode. In this mode, the application will run multiple iterations of inference to measure and report the average inference time. This is useful for evaluating the performance of the model and the inference setup. This parameter is relevant only if the inference is being performed on an image source.
+
 ### To check all available options:
 ```
 ./object-detection-inference --help
