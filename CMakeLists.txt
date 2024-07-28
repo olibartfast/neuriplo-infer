@@ -75,3 +75,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 include(LinkBackend)
 include(SetCompilerFlags)
+
+# Option to enable unit tests
+option(ENABLE_TESTS "Enable unit testing" OFF)
+
+if(ENABLE_TESTS)
+    add_subdirectory(test)
+endif()
