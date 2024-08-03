@@ -143,9 +143,7 @@ docker run --rm -v<path_host_data_folder>:/app/data -v<path_host_weights_folder>
 
 ## TO DO
 - Reimplement Libtensorflow backend
-- Run inside a docker container
 - Add Windows building support
-- Add tests
 - Some benchmarks
 - Object detection models from the Torchvision API (if can be exported to C++ deploy i.e. libtorch/torchscript etc...)
 
