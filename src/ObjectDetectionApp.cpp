@@ -2,10 +2,10 @@
 
 static const std::string params = "{ help h   |   | print help message }"
       "{ type     |  yolov10 | yolov4, yolov5, yolov6, yolov7, yolov8, yolov9, yolov10, rtdetr, rtdetrul}"
-      "{ source s   |   | path to image or video source}"
-      "{ labels lb  |  | path to class labels}"
-      "{ config c   |   | optional model configuration file}"
-      "{ weights w  |   | path to models weights}"
+      "{ source s   | <none>  | path to image or video source}"
+      "{ labels lb  |<none>  | path to class labels}"
+      "{ config c   | <none>  | optional model configuration file}"
+      "{ weights w  | <none>  | path to models weights}"
       "{ use-gpu   | false  | activate gpu support}"
       "{ min_confidence | 0.25   | optional min confidence}"
       "{ warmup     | false  | enable GPU warmup}"
@@ -38,6 +38,7 @@ AppConfig parseCommandLineArguments(int argc, char *argv[]) {
     config.enable_benchmark = parser.get<bool>("benchmark");
     config.benchmark_iterations = parser.get<int>("iterations");
     config.confidenceThreshold = parser.get<float>("min_confidence");
+    config.detectorType = parser.get<std::string>("type");
     config.config = parser.get<std::string>("config");
     if (!config.config.empty() && !isFile(config.config)) {
         LOG(ERROR) << "Conf file " << config.config << " doesn't exist";
@@ -54,7 +55,7 @@ AppConfig parseCommandLineArguments(int argc, char *argv[]) {
         LOG(ERROR) << "Labels file " << config.labelsPath << " doesn't exist";
         std::exit(1);
     }
-    config.detectorType = parser.get<std::string>("type");
+
 
     return config;
 }

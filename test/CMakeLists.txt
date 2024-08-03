@@ -53,5 +53,4 @@ endif()
 target_link_libraries(${PROJECT_NAME_TEST} PUBLIC gtest gtest_main glog::glog ${OpenCV_LIBS} DetectorsLib VideoCapture InferenceEngines)
 
 # Discover and run tests
-add_test(NAME ${PROJECT_NAME_TEST} COMMAND ${PROJECT_NAME_TEST})
 gtest_discover_tests(${PROJECT_NAME_TEST})
