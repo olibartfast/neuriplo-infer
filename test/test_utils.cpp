@@ -19,9 +19,9 @@ TEST(UtilsTest, GetFileExtension) {
 }
 
 TEST(UtilsTest, ReadLabelNames) {
-    auto labels = readLabelNames("path/to/labels.txt");
-    EXPECT_EQ(labels.size(), expected_size); // Replace with expected size
-    EXPECT_EQ(labels[0], "expected_label"); // Replace with expected label
+    auto labels = readLabelNames("labels/coco.names");
+    EXPECT_EQ(labels.size(), 80); // Replace with expected size
+    EXPECT_EQ(labels[0], "person"); // Replace with expected label
 }
 
 TEST(UtilsTest, DrawLabel) {

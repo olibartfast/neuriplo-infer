@@ -24,6 +24,14 @@ public:
     ObjectDetectionApp(const AppConfig& config);
     void run();
 
+    void setDetector(std::unique_ptr<Detector> newDetector) {
+        detector = std::move(newDetector);
+    }
+
+    void setEngine(std::unique_ptr<InferenceInterface> newEngine) {
+        engine = std::move(newEngine);
+    }
+
 private:
     void warmup_gpu(const cv::Mat& image);
     void benchmark(const cv::Mat& image);
