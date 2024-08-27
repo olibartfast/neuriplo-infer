@@ -142,7 +142,6 @@ docker run --rm -v<path_host_data_folder>:/app/data -v<path_host_weights_folder>
 * [rtdetr-onnxruntime-deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
 ## TO DO
-- Fix YOLOv10 inference issues with non-square input images (Resizing during preprocessing without maintaining the input frame's aspect ratio can lead to inaccuracies)
 - Reimplement Libtensorflow backend
 - Add Windows building support
 - Some benchmarks
