@@ -17,12 +17,11 @@ YoloNas::YoloNas(
 
 cv::Mat YoloNas::preprocess_image(const cv::Mat& image)
 {
-    cv::Mat blob;
-    cv::cvtColor(image, blob, cv::COLOR_BGR2RGB);
-    cv::Mat resized_image(network_height_, network_width_, CV_8UC3);
-    cv::resize(blob, resized_image, resized_image.size(), 0, 0, cv::INTER_LINEAR);
-    cv::dnn::blobFromImage(resized_image, resized_image, 1 / 255.F, cv::Size(), cv::Scalar(), true, false);      
-    return resized_image;    
+    cv::Mat output_image;
+    cv::cvtColor(image, output_image, cv::COLOR_BGR2RGB);;
+    cv::resize(output_image, output_image, cv::Size(network_width_, network_height_), 0, 0, cv::INTER_LINEAR);
+    output_image.convertTo(output_image, CV_32F, 1.0/255.0);    
+    return output_image;    
 }
 
 

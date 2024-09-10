@@ -32,7 +32,10 @@ cv::Mat YoloVn::preprocess_image(const cv::Mat& img) {
     cv::resize(img, re, re.size(), 0, 0, cv::INTER_LINEAR);
     cv::Mat out(network_width_, network_height_, CV_8UC3, cv::Scalar(128, 128, 128));
     re.copyTo(out(cv::Rect(x, y, re.cols, re.rows)));
-    cv::dnn::blobFromImage(out, out, 1 / 255.F, cv::Size(), cv::Scalar(), true, false);
+    cv::cvtColor(out, out,  cv::COLOR_BGR2RGB);
+    out.convertTo(out, CV_32F, 1.0/255.0);
+
+    // leave the eventual decision of the channel swapping order nhwc -> nchw to each backend (i.e. tensorflow doesn't need it, pytorch does ...)
     return out;
 }
 

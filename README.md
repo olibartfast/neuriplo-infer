@@ -13,6 +13,7 @@
     * LibTorch (2.0.1-cu118)
     * TensorRT (8.6.1.6)
     * OpenVino (2023.2) 
+    * Libtensorflow (2.13)
 
 ### Optional 
 * GStreamer (1.20.3), wrapped in [VideoCapture Library](https://github.com/olibartfast/videocapture)
@@ -142,7 +143,6 @@ docker run --rm -v<path_host_data_folder>:/app/data -v<path_host_weights_folder>
 * [rtdetr-onnxruntime-deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
 ## TO DO
-- Reimplement Libtensorflow backend
 - Add Windows building support
 - Some benchmarks
 - Object detection models from the Torchvision API (if can be exported to C++ deploy i.e. libtorch/torchscript etc...)

@@ -17,9 +17,11 @@
 
 cv::Mat YoloV4::preprocess_image(const cv::Mat& image)
 {
-    cv::Mat blob;
-    cv::dnn::blobFromImage(image, blob, 1 / 255.F, cv::Size(network_width_, network_height_), cv::Scalar(), true, false, CV_32F);   
-    return blob;    
+    cv::Mat output_image;
+    cv::cvtColor(image, output_image, cv::COLOR_BGR2RGB);
+    cv::resize(output_image, output_image, cv::Size(network_width_, network_height_));
+    output_image.convertTo(output_image, CV_32F, 1.0/255.0);
+    return output_image;    
 }
 
 

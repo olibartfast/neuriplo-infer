@@ -79,6 +79,8 @@ std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vec
 cv::Mat RtDetrUltralytics::preprocess_image(const cv::Mat& image)
 {
     cv::Mat output_image;   
-    cv::dnn::blobFromImage(image, output_image, 1.f / 255.f, cv::Size(network_height_, network_width_), cv::Scalar(), true, false);
+    cv::cvtColor(image, output_image,  cv::COLOR_BGR2RGB);
+    cv::resize(output_image, output_image, cv::Size(network_width_, network_height_));
+    output_image.convertTo(output_image, CV_32F, 1.0/255.0);
     return output_image;
 }
