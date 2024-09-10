@@ -1,0 +1,226 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "YOLOv8 saved model",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov8",
+                    "--weights=/home/oli/saved_model",
+                    "--source=data/person.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"            
+        },        
+        {
+            "name": "rtdetr onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=rtdetr",
+                    "--weights=/home/oli/repos/RT-DETR/rtdetr_pytorch/model.onnx",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },               
+        {
+            "name": "rtdetr ultralytics onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=rtdetrul",
+                    "--weights=/home/oli/repos/ultralytics/rtdetr-l.onnx",
+                    "--source=data/person.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },    
+        {
+            "name": "rtdetr ultralytics libtorch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=rtdetrul",
+                    "--weights=/home/oli/repos/ultralytics/rtdetr-l.torchscript",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },       
+        {
+            "name": "YOLOv4 OpenCV DNN",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov4",
+                    "--weights=/home/oli/Downloads/weights/yolov4-tiny.weights",
+                    "--config=/home/oli/Downloads/weights/yolov4-tiny.cfg",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                    
+        {
+            "name": "YOLO NAS onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolonas",
+                    "--weights=/home/oli/Downloads/weights/yolo_nas_s.onnx",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },         
+        {
+            "name": "YOLOv5 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov5",
+                    "--weights=/home/oli/repos/yolov5/yolov5s.onnx",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },   
+        {
+            "name": "YOLOv5 libtorch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov5",
+                    "--weights=/home/oli/repos/yolov5/yolov5s.torchscript",
+                    "--source=data/person.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },     
+        {
+            "name": "YOLOv5 openvino",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov5",
+                    "--config=/home/oli/model_repository/yolov5s_openvino/1/model.xml",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },         
+        {
+            "name": "YOLOv5 libtorch video processing",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov5",
+                    "--weights=/home/oli/repos/yolov5/yolov5s.torchscript",
+                    "--source=/home/oli/Videos/driving.mp4", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },              
+        {
+            "name": "YOLOv6 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov6",
+                    "--weights=/home/oli/model_repository/yolov6s_onnx/1/model.onnx",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },           
+        {
+            "name": "YOLOv7 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov7",
+                    "--weights=/home/oli/model_repository/yolov7-tiny_onnx/1/model.onnx",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },               
+        {
+            "name": "YOLOv8 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov8",
+                    "--weights=/home/oli/repos/ultralytics/yolov8s.onnx",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },    
+        {
+            "name": "YOLOv8 libtorch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov8",
+                    "--weights=/home/oli/repos/ultralytics/yolov8s.torchscript",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },           
+        {
+            "name": "YOLOv9 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov9",
+                    "--weights=/home/oli/repos/yolov9/yolov9-c-converted.onnx",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },               
+        {
+            "name": "YOLOv10 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov10",
+                    "--weights=/home/oli/model_repository/yolov10_onnx/1/model.onnx",
+                    "--source=data/person.jpg", 
+                    "--labels=labels/coco.names"//,
+                    //"--warmup",
+                    //"--benchmark"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },        
+        {
+                "name": "Debug tests",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder}/build/test/runUnitTests",
+                "args": [],
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder}"
+        }
+    ]
+}
+               
