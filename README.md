@@ -13,7 +13,7 @@
     * LibTorch (2.0.1-cu118)
     * TensorRT (8.6.1.6)
     * OpenVino (2023.2) 
-    * Libtensorflow (2.13)
+    * Libtensorflow (2.13) (currently saved model only, not graph)
 
 ### Optional 
 * GStreamer (1.20.3), wrapped in [VideoCapture Library](https://github.com/olibartfast/videocapture)

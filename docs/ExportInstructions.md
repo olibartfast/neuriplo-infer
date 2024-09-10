@@ -64,6 +64,12 @@ yolo export model=best.pt format=openvino
 
 ```
 
+#### Tensorflow
+```
+yolo export model=best.pt format=saved_model
+
+```
+
 #### TensorRT
 
 ```
