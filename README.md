@@ -8,7 +8,7 @@
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
 
 * One of the following Inference Backend, wrapped in [Inference Engines Library](https://github.com/olibartfast/inference-engines):
-    * OpenCV DNN Moduke
+    * OpenCV DNN Module
     * ONNX Runtime (1.15.1 gpu package)
     * LibTorch (2.0.1-cu118)
     * TensorRT (8.6.1.6)
