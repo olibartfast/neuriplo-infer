@@ -1,5 +1,8 @@
 models
 build
-.vscode
+# Ignore everything in .vscode folder
+.vscode/*
+# But don't ignore launch.json
+!.vscode/launch.json
 data/processed.png
 logs

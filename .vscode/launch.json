@@ -13,7 +13,20 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"            
-        },        
+        },   
+        {
+            "name": "YOLOv10 saved model",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolov10",
+                    "--weights=/home/oli/yolov10x_saved_model",
+                    "--source=data/person.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"            
+        },              
         {
             "name": "rtdetr onnx",
             "type": "cppdbg",

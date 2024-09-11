@@ -23,3 +23,11 @@ target_link_libraries(DetectorsLib PRIVATE
     ${OpenCV_LIBS}
     glog::glog
 )
+
+# Option to enable unit tests
+option(ENABLE_DETECTORS_TESTS "Enable unit testing for detectors lib" OFF)
+
+if(ENABLE_DETECTORS_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+endif()
