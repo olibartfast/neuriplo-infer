@@ -25,11 +25,11 @@ yolo export format=torchscript model=yolov10model.pt
 trtexec --onnx=yolov10model.onnx --saveEngine=yolov10model.engine --fp16
 ```
 
-### Tensorflow
+#### Tensorflow
 ```
-onnx2tf -i yolov10x.onnx -o yolov10x_saved_model --disable_group_convolution -osd
+onnx2tf -i yolov10x.onnx -o <your_yolov10x_saved_model> --disable_group_convolution -osd
 ```
-After running ```saved_model_cli show --dir yolov10x_saved_model --all``` check that SignatureDefs ``serving_default`` is not empty 
+After running ```saved_model_cli show --dir yolov10_saved_model --all``` check that SignatureDefs ``serving_default`` is not empty 
 
 
 
@@ -76,7 +76,7 @@ yolo export model=best.pt format=openvino
 yolo export model=best.pt format=saved_model
 
 ```
-After running ```saved_model_cli show --dir yolov10x_saved_model --all``` check that SignatureDefs ``serving_default`` is not empty 
+After running ```saved_model_cli show --dir <your_yolov8_saved_model> --all``` check that SignatureDefs ``serving_default`` is not empty 
 
 
 #### TensorRT
