@@ -7,7 +7,7 @@ Opencv-dnn module loads onnx models except for yolov4 .weights
 ### Export the model for the inference
 
 ## YOLOv10
-### OnnxRuntime 
+#### OnnxRuntime 
 * From [yolov10 repo](https://github.com/THU-MIG/yolov10):
 ```
 yolo export format=onnx model=yolov10model.pt
@@ -96,6 +96,14 @@ Export with dynamic axis example:
 trtexec --onnx=yourmodel.onnx --minShapes=images:1x3x640x640 --optShapes=images:1x3x640x640 --maxShapes=images:32x3x640x640   --saveEngine=yourmodel.engine --fp16
 ```
 
+## YOLOv7
+#### OnnxRuntime and/or Libtorch
+* Run from [yolov7 repo](https://github.com/WongKinYiu/yolov7#export): ```python export.py --weights <yolov7_version>.pt --grid  --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --img-size 640 640 --max-wh 640``` (Don't use end-to-end parameter)
+
+## YOLOv6
+#### OnnxRuntime
+Weights to export in ONNX format or download from [yolov6 repo](https://github.com/meituan/YOLOv6/tree/main/deploy/ONNX). Posteprocessing code is identical to yolov5-v7.
+
 
 ## YOLOv5 
 #### OnnxRuntime
@@ -104,9 +112,6 @@ trtexec --onnx=yourmodel.onnx --minShapes=images:1x3x640x640 --optShapes=images:
 #### Libtorch
 * from yolov5 repo: ```python export.py  --weights <yolov5_version>.pt  --include torchscript```
 
-## YOLOv6
-#### OnnxRuntime
-Weights to export in ONNX format or download from [yolov6 repo](https://github.com/meituan/YOLOv6/tree/main/deploy/ONNX). Posteprocessing code is identical to yolov5-v7.
 
 ## RT-DETR (Ultralytics)
 #### OnnxRuntime
@@ -147,9 +152,6 @@ python tools/export_onnx.py -c configs/rtdetr/rtdetr_r18vd_6x_coco.yml(or other 
 trtexec  --onnx=<model>.onnx --saveEngine=rtdetr_r18vd_dec3_6x_coco_from_paddle.engine(supposing you exported onnx above) --minShapes=images:1x3x640x640,orig_target_sizes:1x2 --optShapes=images:1x3x640x640,orig_target_sizes:1x2 --maxShapes=images:1x3x640x640,orig_target_sizes:1x2
 ```
 
-## YOLOv7
-#### OnnxRuntime and/or Libtorch
-* Run from [yolov7 repo](https://github.com/WongKinYiu/yolov7#export): ```python export.py --weights <yolov7_version>.pt --grid  --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --img-size 640 640 --max-wh 640``` (Don't use end-to-end parameter)
 
 
 ## YOLO-NAS export 
