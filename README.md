@@ -119,23 +119,25 @@ Replace the wildcards with your desired options and paths:
 docker run --rm -v<path_host_data_folder>:/app/data -v<path_host_weights_folder>:/weights -v<path_host_labels_folder>:/labels object-detection-inference:<backend_tag> --type=<model_type> --weights=<weight_according_your_backend> --source=/app/data/<image_or_video> --labels=/labels/<labels_file>.
 ```
 
- ## Available models
+## Available models
 
 * The following table provides information about available object recognition models and supported framework backends: 
 [Link to Table Page](docs/TablePage.md#table-of-models)
 
- ## Exporting a Model for Inference
- * The following page provides information on how to export supported object recognition models: 
+## Exporting a Model for Inference
+
+The following page provides information on how to export supported object recognition models:
+
 [Link to Export Page](docs/ExportInstructions.md)
-* [YOLOv5](docs/ExportInstructions.md#yolov5)
-* [YOLOv6](docs/ExportInstructions.md#yolov6)
-* [YOLOv7](docs/ExportInstructions.md#yolov7)
-* [YOLOv8](docs/ExportInstructions.md#yolov8)
-* [YOLOv9](docs/ExportInstructions.md#yolov9)
-* [YOLOv10](docs/ExportInstructions.md#yolov10)
-* [YOLO-NAS](docs/ExportInstructions.md#yolonas)
-* [RT-DETR](docs/ExportInstructions.md#rt-detr-lyuwenyu)
-* [RT-DETR (Ultralytics implementation)](docs/ExportInstructions.md#rt-detr-ultralytics)
+* [YOLOv5](docs/yolov5-export.md)
+* [YOLOv6](docs/yolov6-export.md)
+* [YOLOv7](docs/yolov7-export.md)
+* [YOLOv8](docs/yolov8-export.md)
+* [YOLOv9](docs/yolov9-export.md)
+* [YOLOv10](docs/yolov10-export.md)
+* [YOLO-NAS](docs/yolo-nas-export.md)
+* [RT-DETR (lyuwenyu implementation)](docs/rtdetr-lyuwenyu-export.md)
+* [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)
 
 ## References
 * [Object detection using the opencv dnn module](https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp)
