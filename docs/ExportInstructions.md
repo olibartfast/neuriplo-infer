@@ -1,8 +1,4 @@
-# YOLO Model Export Instructions
-
-This document provides links to export instructions for various YOLO model versions and variants.
-
-## Table of Contents
+### Export the model for the inference
 
 1. [YOLOv10 Export Instructions](yolov10-export.md)
 2. [YOLOv9 Export Instructions](yolov9-export.md)
