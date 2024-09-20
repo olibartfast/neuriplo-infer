@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ObjectDetectionApp.hpp"
+#include "CommandLineParser.hpp"
 
 TEST(ParseCommandLineArguments, Basic) {
     // Simulate command-line arguments
@@ -18,7 +18,7 @@ TEST(ParseCommandLineArguments, Basic) {
     myFile.close();
     std::ofstream myFile2("fake_model.weights");
     myFile2.close();
-    AppConfig config = parseCommandLineArguments(argc, const_cast<char**>(argv));
+    AppConfig config = CommandLineParser::parseCommandLineArguments(argc, const_cast<char**>(argv));
 
 
     EXPECT_EQ(config.detectorType, "yolov5");

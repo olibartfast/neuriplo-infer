@@ -12,6 +12,7 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_ObjectDetectionApp.cpp    
     ${CMAKE_SOURCE_DIR}/src/utils.cpp 
+    ${CMAKE_SOURCE_DIR}/src/CommandLineParser.cpp
     ${CMAKE_SOURCE_DIR}/src/ObjectDetectionApp.cpp
     ${CMAKE_SOURCE_DIR}/src/DetectorSetup.cpp
 )
