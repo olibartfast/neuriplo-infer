@@ -74,7 +74,7 @@ std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::
 }
 
 
-std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::postprocess_v89(const std::any* output, const std::vector<int64_t>& shape, const cv::Size& frame_size)
+std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> YoloVn::postprocess_ultralytics(const std::any* output, const std::vector<int64_t>& shape, const cv::Size& frame_size)
 {
     std::vector<cv::Rect> boxes;
     std::vector<float> confs;
@@ -123,7 +123,7 @@ std::vector<Detection> YoloVn::postprocess(const std::vector<std::vector<std::an
     const std::any*  output0 = outputs.front().data();
     const  std::vector<int64_t> shape0 = shapes.front();    
 
-    const auto [boxes, confs, classIds] = (shape0[1] > shape0[2]) ? postprocess_v567(output0, shape0, frame_size) : postprocess_v89(output0, shape0, frame_size); 
+    const auto [boxes, confs, classIds] = (shape0[1] > shape0[2]) ? postprocess_v567(output0, shape0, frame_size) : postprocess_ultralytics(output0, shape0, frame_size); 
 
     // Perform Non Maximum Suppression and draw predictions.
     std::vector<int> indices;

@@ -7,20 +7,14 @@
 * glog (apt install libgoogle-glog-dev)
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
 
-* One of the following Inference Backend, wrapped in [Inference Engines Library](https://github.com/olibartfast/inference-engines):
-    * OpenCV DNN Module
-    * ONNX Runtime (1.15.1 gpu package)
-    * LibTorch (2.0.1-cu118)
-    * TensorRT (8.6.1.6)
-    * OpenVino (2023.2) 
-    * Libtensorflow (2.13) (currently saved model only, not graph)
+* One of the following Inference Backend(OpenCV DNN Module, ONNX Runtime, LibTorch, TensorRT, OpenVino, Libtensorflow) wrapped in [Inference Engines Library](https://github.com/olibartfast/inference-engines):
 
 ### Optional 
 * GStreamer (1.20.3), wrapped in [VideoCapture Library](https://github.com/olibartfast/videocapture)
-* CUDA (if you want to use GPU, CUDA 12 is supported for LibTorch and TensorRT, I used CUDA 11.8 for onnx-rt)
+* CUDA (if you want to use GPU)
 
 ### Notes
- - If you need a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN, OPENVINO) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default.
+ - To set a specific inference backend, set DEFAULT_BACKEND in CMakeLists with the appropriate option (i.e. ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN, OPENVINO) or set it using cmake from the command line. If no inference backend is specified, the OpenCV-DNN module will be used by default.
 - Models with dynamic axis are currently not supported(at least not all)
 - Windows build not supported.
 
@@ -55,7 +49,7 @@ Remember to replace chosen_backend with your actual backend selection.
 
 ### Parameters
 
-- `--type=<model type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`,  `yolov10`, `rtdetr`, and `rtdetrul`. Choose the appropriate model based on your requirements.
+- `--type=<model type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`,  `yolov10`, `yolo11`,`rtdetr`, and `rtdetrul`. Choose the appropriate model based on your requirements.
 
 - `--source=<source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/somelivefeed`
@@ -135,6 +129,7 @@ The following page provides information on how to export supported object recogn
 * [YOLOv8](docs/yolov8-export.md)
 * [YOLOv9](docs/yolov9-export.md)
 * [YOLOv10](docs/yolov10-export.md)
+* [YOLO11](docs/yolo11-export.md)
 * [YOLO-NAS](docs/yolo-nas-export.md)
 * [RT-DETR (lyuwenyu implementation)](docs/rtdetr-lyuwenyu-export.md)
 * [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)

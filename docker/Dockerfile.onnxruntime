@@ -22,7 +22,7 @@ FROM common_dependencies AS backend_dependencies
 
 ENV HOME=/root
 ARG BACKEND=ONNX_RUNTIME
-ARG ORT_VERSION=1.15.1
+ARG ORT_VERSION=1.19.2
 ARG ONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-$ORT_VERSION 
 
 RUN wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz && \

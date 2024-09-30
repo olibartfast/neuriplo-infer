@@ -196,7 +196,20 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
-        },           
+        },  
+        {
+            "name": "YOLO11 libtorch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolo11",
+                    "--weights=/home/oli/yolo11x.torchscript",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                  
         {
             "name": "YOLOv9 onnx",
             "type": "cppdbg",
@@ -225,6 +238,19 @@
                     ],
             "cwd": "${workspaceFolder}"
         },   
+        {
+            "name": "YOLO11 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/object-detection-inference",
+            "args": [
+                    "--type=yolo11",
+                    "--weights=/home/oli/yolo11x.onnx",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        }        
         {
             "name": "YOLOv10 openvino",
             "type": "cppdbg",

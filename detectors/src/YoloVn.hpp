@@ -49,5 +49,5 @@ public:
 
 
     std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> postprocess_v567(const std::any* output, const std::vector<int64_t>& shape, const cv::Size& frame_size);
-    std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> postprocess_v89(const std::any* output, const std::vector<int64_t>& shape, const cv::Size& frame_size);
+    std::tuple<std::vector<cv::Rect>, std::vector<float>, std::vector<int>> postprocess_ultralytics(const std::any* output, const std::vector<int64_t>& shape, const cv::Size& frame_size);
 };
