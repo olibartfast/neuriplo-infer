@@ -7,7 +7,7 @@
 * glog (apt install libgoogle-glog-dev)
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
 
-* One of the following Inference Backend(OpenCV DNN Module, ONNX Runtime, LibTorch, TensorRT, OpenVino, Libtensorflow) wrapped in [Inference Engines Library](https://github.com/olibartfast/inference-engines):
+* One of the following Inference Backend(OpenCV DNN Module, ONNX Runtime, LibTorch, TensorRT, OpenVino, Libtensorflow) wrapped in [Inference Engines Library](https://github.com/olibartfast/inference-engines)
 
 ### Optional 
 * GStreamer (1.20.3), wrapped in [VideoCapture Library](https://github.com/olibartfast/videocapture)
