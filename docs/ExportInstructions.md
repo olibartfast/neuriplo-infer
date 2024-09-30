@@ -1,5 +1,6 @@
 ### Export the model for the inference
 
+* [YOLO11 Export Instructions](yolo11-export.md)
 * [YOLOv10 Export Instructions](yolov10-export.md)
 * [YOLOv9 Export Instructions](yolov9-export.md)
 * [YOLOv8 Export Instructions](yolov8-export.md)
