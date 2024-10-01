@@ -26,7 +26,7 @@ yolo export model=best.pt format=saved_model
 ```
 After running, check that SignatureDefs `serving_default` is not empty:
 ```bash
-saved_model_cli show --dir <your_yolov8_saved_model> --all
+saved_model_cli show --dir <your_yolo11_saved_model> --all
 ```
 
 ## TensorRT
