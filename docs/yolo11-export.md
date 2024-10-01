@@ -8,7 +8,7 @@ Install YOLO11 [following Ultralytics official documentation](https://docs.ultra
 ```bash
 yolo export model=best.pt format=torchscript
 ```
-Note: `best.pt` corresponds to your trained YOLOv8n/s/m/x model.
+Note: `best.pt` corresponds to your trained YOLO11n/s/m/x model.
 
 ## OnnxRuntime
 ```bash
