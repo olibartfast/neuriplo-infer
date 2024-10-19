@@ -29,7 +29,7 @@ include(FetchContent)
 FetchContent_Declare(
     InferenceEngines
   GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
-  GIT_TAG        feature/variant  # or the specific tag/branch you want to use
+  GIT_TAG        master  # or the specific tag/branch you want to use
 )
 FetchContent_MakeAvailable(InferenceEngines)
 message(STATUS "InferenceEngines_SOURCE_DIR module path: ${InferenceEngines_SOURCE_DIR}")
