@@ -1,39 +1,30 @@
 #include "DetectorSetup.hpp"
+#include "YoloV4.hpp"
+#include "YoloVn.hpp"
+#include "YOLOv10.hpp"
+#include "YoloNas.hpp"
+#include "RtDetr.hpp"
+#include "RtDetrUltralytics.hpp"
 
+std::unique_ptr<Detector> DetectorSetup::createDetector(const std::string& detectorType) {
+    // Use a map to store the detector creators
+    static const std::unordered_map<std::string, std::function<std::unique_ptr<Detector>()>> detectorCreators = {
+        {"yolov4", [] { return std::make_unique<YoloV4>(); }},
+        {"yolov5", [] { return std::make_unique<YoloVn>(); }},
+        {"yolov6", [] { return std::make_unique<YoloVn>(); }},
+        {"yolov7", [] { return std::make_unique<YoloVn>(); }},
+        {"yolov8", [] { return std::make_unique<YoloVn>(); }},
+        {"yolov9", [] { return std::make_unique<YoloVn>(); }},
+        {"yolo11", [] { return std::make_unique<YoloVn>(); }},
+        {"yolonas", [] { return std::make_unique<YoloNas>(); }},
+        {"yolov10", [] { return std::make_unique<YOLOv10>(); }},
+        {"rtdetrul", [] { return std::make_unique<RtDetrUltralytics>(); }},
+        {"rtdetr", [] { return std::make_unique<RtDetr>(); }}
+    };
 
-std::unique_ptr<Detector> createDetector(
-    const std::string& detectorType)
- {
-    std::unique_ptr<Detector> detector{nullptr};
-    if(detectorType.find("yolov4") != std::string::npos)
-    {  
-        return std::make_unique<YoloV4>();
-    }  
-    else if(detectorType.find("yolov5") != std::string::npos || 
-        detectorType.find("yolov6") != std::string::npos  ||
-        detectorType.find("yolov7") != std::string::npos ||
-        detectorType.find("yolov8") != std::string::npos ||
-        detectorType.find("yolov9") != std::string::npos ||
-        detectorType.find("yolo11") != std::string::npos)
-
-    {
-        return std::make_unique<YoloVn>();
+    auto it = detectorCreators.find(detectorType);
+    if (it != detectorCreators.end()) {
+        return it->second();
     }
-    else if(detectorType.find("yolonas") != std::string::npos)  
-    {
-        return std::make_unique<YoloNas>();
-    } 
-    else if(detectorType.find("yolov10") != std::string::npos)  
-    {
-        return std::make_unique<YOLOv10>();
-    }     
-    else if(detectorType.find("rtdetrul") != std::string::npos)  
-    {
-        return std::make_unique<RtDetrUltralytics>();
-    }     
-    else if(detectorType.find("rtdetr") != std::string::npos)  
-    {
-        return std::make_unique<RtDetr>();
-    }     
-    return detector;
+    return nullptr;
 }

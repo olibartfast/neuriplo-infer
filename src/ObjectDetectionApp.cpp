@@ -11,7 +11,7 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig& config)
 
     classes = readLabelNames(config.labelsPath);
     
-    detector = createDetector(config.detectorType);
+    detector =  DetectorSetup::createDetector(config.detectorType);
     if (!detector) {
         LOG(ERROR) << "Can't setup a detector " << config.detectorType;
         std::exit(1);

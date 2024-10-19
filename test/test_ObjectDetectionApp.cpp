@@ -1,67 +1,50 @@
-#include <gtest/gtest.h>
-#include "ObjectDetectionApp.hpp"
-#include <filesystem>
+#include "gtest/gtest.h"
+#include "DetectorSetup.hpp"
 
-class MockDetector : public Detector {
-public:
-    std::vector<Detection> postprocess(const std::vector<std::vector<std::any>>& outputs, 
-                                       const std::vector<std::vector<int64_t>>& shapes, 
-                                       const cv::Size& frame_size) override {
-        return {}; // Return mock detection data
-    }
-
-    cv::Mat preprocess_image(const cv::Mat& image) override {
-        return image; // Return the input image as a mock preprocessing step
-    }
-};
-
-class MockInference : public InferenceInterface {
-public:
-    MockInference(const std::string& weights, const std::string& modelConfiguration, bool use_gpu = false)
-        : InferenceInterface(weights, modelConfiguration, use_gpu) {}
-
-    std::tuple<std::vector<std::vector<std::any>>, std::vector<std::vector<int64_t>>> get_infer_results(const cv::Mat& input_blob) override {
-        return {{{}}, {{}}}; // Return mock inference data
-    }
-};
-
-
-TEST(ObjectDetectionApp, Initialization) {
-    AppConfig config;
-    config.source = "input.mp4";
-    config.use_gpu = false;
-    config.confidenceThreshold = 0.5;
-    config.weights = "model.weights";
-    config.labelsPath = "fake_labels.txt";
-    std::ofstream labelsFile("fake_labels.txt");
-    labelsFile.close();
-
-    config.detectorType = "yolov5";
-
-   // ObjectDetectionApp app(config);
-
-    // Replace actual detector and engine with mocks
-    //app.setDetector(std::make_unique<MockDetector>());
-    //app.setEngine(std::make_unique<MockInference>(config.weights, config.config, config.use_gpu));
-
-    // You can add more tests to check if the initialization works as expected.
+// Helper function to test detector creation
+void testDetectorCreation(const std::string& detectorType, const std::type_info& expectedType) {
+    auto detector = DetectorSetup::createDetector(detectorType);
+    EXPECT_NE(detector, nullptr);
+    EXPECT_TRUE(dynamic_cast<const void*>(detector.get()) != nullptr);
+    EXPECT_EQ(typeid(*detector).name(), expectedType.name());
 }
 
-TEST(ObjectDetectionApp, RunImageDetection) {
-    AppConfig config;
-    config.source = "test_image.jpg";
-    config.use_gpu = false;
-    config.confidenceThreshold = 0.25;
-    config.weights = "test_weights.weights";
-    config.labelsPath = "test_labels.txt";
-    config.detectorType = "yolov5";
+// Test case for YoloV4
+TEST(DetectorSetupTest, CreateYoloV4Detector) {
+    testDetectorCreation("yolov4", typeid(YoloV4));
+}
 
-    ObjectDetectionApp app(config);
+// Test case for YoloVn (catching multiple versions)
+TEST(DetectorSetupTest, CreateYoloVnDetector) {
+    testDetectorCreation("yolov5", typeid(YoloVn));
+    testDetectorCreation("yolov6", typeid(YoloVn));
+    testDetectorCreation("yolov7", typeid(YoloVn));
+    testDetectorCreation("yolov8", typeid(YoloVn));
+    testDetectorCreation("yolov9", typeid(YoloVn));
+}
 
-    // Mock objects
-    app.setDetector(std::make_unique<MockDetector>());
-    app.setEngine(std::make_unique<MockInference>(config.weights, config.config, config.use_gpu));
+// Test case for YoloNas
+TEST(DetectorSetupTest, CreateYoloNasDetector) {
+    testDetectorCreation("yolonas", typeid(YoloNas));
+}
 
-    // Call the run method and check its behavior
-    EXPECT_NO_THROW(app.run());
+// Test case for YOLOv10
+TEST(DetectorSetupTest, CreateYOLOv10Detector) {
+    testDetectorCreation("yolov10", typeid(YOLOv10));
+}
+
+// Test case for RtDetrUltralytics
+TEST(DetectorSetupTest, CreateRtDetrUltralyticsDetector) {
+    testDetectorCreation("rtdetrul", typeid(RtDetrUltralytics));
+}
+
+// Test case for RtDetr
+TEST(DetectorSetupTest, CreateRtDetrDetector) {
+    testDetectorCreation("rtdetr", typeid(RtDetr));
+}
+
+// Test case for unknown type
+TEST(DetectorSetupTest, CreateUnknownDetector) {
+    auto detector = DetectorSetup::createDetector("unknown");
+    EXPECT_EQ(detector, nullptr);
 }
