@@ -5,4 +5,7 @@
 class DetectorSetup {
 public:
     static std::unique_ptr<Detector> createDetector(const std::string& detectorType);
+
+private:
+    static std::unordered_map<std::string, std::function<std::unique_ptr<Detector>()>> getDetectorCreators();
 };

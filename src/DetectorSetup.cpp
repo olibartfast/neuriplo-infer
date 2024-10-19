@@ -7,8 +7,22 @@
 #include "RtDetrUltralytics.hpp"
 
 std::unique_ptr<Detector> DetectorSetup::createDetector(const std::string& detectorType) {
-    // Use a map to store the detector creators
-    static const std::unordered_map<std::string, std::function<std::unique_ptr<Detector>()>> detectorCreators = {
+    static const auto detectorCreators = getDetectorCreators();
+
+    auto it = detectorCreators.find(detectorType);
+    if (it != detectorCreators.end()) {
+        return it->second();
+    } else {
+        LOG(ERROR) << "Unknown detector type '" << detectorType << "' requested. Available types are: ";
+        for (const auto& pair : detectorCreators) {
+            LOG(ERROR) << pair.first;
+        }
+        throw std::invalid_argument("Unknown detector type");
+    }
+}
+
+std::unordered_map<std::string, std::function<std::unique_ptr<Detector>()>> DetectorSetup::getDetectorCreators() {
+    return {
         {"yolov4", [] { return std::make_unique<YoloV4>(); }},
         {"yolov5", [] { return std::make_unique<YoloVn>(); }},
         {"yolov6", [] { return std::make_unique<YoloVn>(); }},
@@ -21,10 +35,4 @@ std::unique_ptr<Detector> DetectorSetup::createDetector(const std::string& detec
         {"rtdetrul", [] { return std::make_unique<RtDetrUltralytics>(); }},
         {"rtdetr", [] { return std::make_unique<RtDetr>(); }}
     };
-
-    auto it = detectorCreators.find(detectorType);
-    if (it != detectorCreators.end()) {
-        return it->second();
-    }
-    return nullptr;
 }
