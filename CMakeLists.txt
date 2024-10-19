@@ -7,10 +7,10 @@ find_package(OpenCV REQUIRED)
 find_package(glog REQUIRED)
 
 # Define the default backend if not set from the command line
-if(NOT DEFINED DEFAULT_BACKEND)
+if(DEFINED DEFAULT_BACKEND)
     unset(DEFAULT_BACKEND CACHE)
-    set(DEFAULT_BACKEND "ONNX_RUNTIME" CACHE STRING "Default backend for inference" FORCE)
 endif()
+set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default backend for inference" FORCE) # ONNX_RUNTIME, LIBTORCH, TENSORRT, LIBTENSORFLOW, OPENCV_DNN, OPENVINO
 
 message(STATUS "Home path: $ENV{HOME}")
 
@@ -24,13 +24,12 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(VideoCapture)
 message(STATUS "VideoCapture_SOURCE_DIR module path: ${VideoCapture_SOURCE_DIR}")
 
-
 # Fetch the InferenceEngines project from GitHub
 include(FetchContent)
 FetchContent_Declare(
     InferenceEngines
   GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
-  GIT_TAG        master  # or the specific tag/branch you want to use
+  GIT_TAG        feature/variant  # or the specific tag/branch you want to use
 )
 FetchContent_MakeAvailable(InferenceEngines)
 message(STATUS "InferenceEngines_SOURCE_DIR module path: ${InferenceEngines_SOURCE_DIR}")
@@ -46,7 +45,7 @@ add_subdirectory(${DETECTORS_ROOT})
 include(AddCompileDefinitions)
 
 # Main executable
-set(SOURCES main.cpp src/ObjectDetectionApp.cpp src/utils.cpp src/DetectorSetup.cpp)
+set(SOURCES main.cpp src/ObjectDetectionApp.cpp src/utils.cpp src/DetectorSetup.cpp src/CommandLineParser.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC

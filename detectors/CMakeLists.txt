@@ -1,6 +1,5 @@
 # Add source files for detectors
 set(DETECTORS_SOURCES 
-    src/Detector.cpp 
     src/YoloNas.cpp 
     src/RtDetr.cpp 
     src/RtDetrUltralytics.cpp 
