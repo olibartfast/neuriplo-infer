@@ -1,5 +1,12 @@
 #pragma once
 #include "common.hpp"
+#include <variant>
+
+
+// First, define the variant type (could be in the header file)
+using TensorElement = std::variant<float, int32_t, int64_t>;
+
+
 
 struct Detection
 {
@@ -31,7 +38,7 @@ public:
     inline float getNetworkWidth() { return network_width_; }
     inline float getNetworkHeight() { return network_height_; } 
 
-	virtual std::vector<Detection> postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) = 0;
+	virtual std::vector<Detection> postprocess(const std::vector<std::vector<TensorElement>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) = 0;
     virtual cv::Mat preprocess_image(const cv::Mat& image) = 0; 
 
 

@@ -1,11 +1,6 @@
 #include "gtest/gtest.h"
 #include "DetectorSetup.hpp"
-#include "YoloV4.hpp"
-#include "YoloVn.hpp"
-#include "YOLOv10.hpp"
-#include "YoloNas.hpp"
-#include "RtDetr.hpp"
-#include "RtDetrUltralytics.hpp"
+
 
 // Test case for YoloV4
 TEST(DetectorSetupTest, CreateYoloV4Detector) {

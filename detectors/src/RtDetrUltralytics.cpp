@@ -13,9 +13,9 @@ RtDetrUltralytics::RtDetrUltralytics(
 }
 
 
-std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) 
+std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vector<TensorElement>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) 
 {
-    const std::any* output0 = outputs.front().data();
+    const TensorElement* output0 = outputs.front().data();
     const  std::vector<int64_t> shape0 = shapes.front();
 
     std::vector<int> classIds;
@@ -29,11 +29,11 @@ std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vec
     // Iterate through detections.
     for (int i = 0; i < rows; ++i) 
     {
-        auto maxSPtr = std::max_element(output0 + 4 , output0 + 4 + dimensions_scores, [](const std::any& a, const std::any& b) {
-            return std::any_cast<float>(a) < std::any_cast<float>(b);
+        auto maxSPtr = std::max_element(output0 + 4 , output0 + 4 + dimensions_scores, [](const TensorElement& a, const TensorElement& b) {
+            return std::get<float>(a) < std::get<float>(b);
         });
 
-        float score = std::any_cast<float>(*maxSPtr);
+        float score = std::get<float>(*maxSPtr);
         if (score >= confidenceThreshold_) 
         {
             int label = maxSPtr - output0 - 4;
@@ -42,10 +42,10 @@ std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vec
             float r_w = frame_size.width;
             float r_h = frame_size.height;
 
-            float b0 = std::any_cast<float>(*output0);
-            float b1 = std::any_cast<float>(*(output0 + 1));
-            float b2 = std::any_cast<float>(*(output0 + 2));
-            float b3 = std::any_cast<float>(*(output0 + 3));
+            float b0 = std::get<float>(*output0);
+            float b1 = std::get<float>(*(output0 + 1));
+            float b2 = std::get<float>(*(output0 + 2));
+            float b3 = std::get<float>(*(output0 + 3));
 
             float x1 = b0 - b2 / 2.0f;
             float y1 = b1 - b3 / 2.0f;

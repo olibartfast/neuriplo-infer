@@ -13,9 +13,9 @@ YOLOv10::YOLOv10(
 }
 
 
-std::vector<Detection> YOLOv10::postprocess(const std::vector<std::vector<std::any>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) 
+std::vector<Detection> YOLOv10::postprocess(const std::vector<std::vector<TensorElement>>& outputs, const std::vector<std::vector<int64_t>>& shapes, const cv::Size& frame_size) 
 {
-    const std::any* output0 = outputs.front().data();
+    const TensorElement* output0 = outputs.front().data();
     const  std::vector<int64_t> shape0 = shapes.front();
 
     std::vector<int> classIds;
@@ -28,11 +28,11 @@ std::vector<Detection> YOLOv10::postprocess(const std::vector<std::vector<std::a
     for (int i = 0; i < rows; ++i) 
     {
 
-        float score = std::any_cast<float>(*(output0 + 4 ));
+        float score = std::get<float>(*(output0 + 4 ));
         if (score >= confidenceThreshold_) 
         {
             Detection det;
-            float label = std::any_cast<float>(*(output0 + 5 ));
+            float label = std::get<float>(*(output0 + 5 ));
             det.label = static_cast<int>(label);
             det.score = score;
             float r_w = (frame_size.width * 1.0f) / network_width_;
@@ -41,10 +41,10 @@ std::vector<Detection> YOLOv10::postprocess(const std::vector<std::vector<std::a
 
             float pad_x = (network_width_ - frame_size.width / scale_factor) * 0.5f;
             float pad_y = (network_height_ - frame_size.height / scale_factor) * 0.5f;
-            float x0 = std::any_cast<float>(*output0);
-            float x1 = std::any_cast<float>(*(output0 + 1));
-            float x2 = std::any_cast<float>(*(output0 + 2));
-            float x3 = std::any_cast<float>(*(output0 + 3));
+            float x0 = std::get<float>(*output0);
+            float x1 = std::get<float>(*(output0 + 1));
+            float x2 = std::get<float>(*(output0 + 2));
+            float x3 = std::get<float>(*(output0 + 3));
 
             float l = (x0 - pad_x) * scale_factor;
             float t = (x1 - pad_y) * scale_factor;
