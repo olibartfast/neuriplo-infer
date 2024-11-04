@@ -8,7 +8,7 @@ TEST(UtilsTest, IsDirectory) {
 }
 
 TEST(UtilsTest, IsFile) {
-    EXPECT_TRUE(isFile("labels/coco.names"));
+    EXPECT_TRUE(isFile("./labels/coco.names"));
     EXPECT_FALSE(isFile("not_a_file"));
 }
 

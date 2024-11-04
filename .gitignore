@@ -1,4 +1,3 @@
-models
 build
 # Ignore everything in .vscode folder
 .vscode/*

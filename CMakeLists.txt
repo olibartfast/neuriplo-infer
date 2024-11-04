@@ -45,18 +45,21 @@ add_subdirectory(${DETECTORS_ROOT})
 include(AddCompileDefinitions)
 
 # Main executable
-set(SOURCES main.cpp src/ObjectDetectionApp.cpp src/utils.cpp src/DetectorSetup.cpp src/CommandLineParser.cpp)
+set(SOURCES main.cpp app/src/ObjectDetectionApp.cpp app/src/utils.cpp app/src/CommandLineParser.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-    ${CMAKE_SOURCE_DIR}/inc
+    ${CMAKE_SOURCE_DIR}/common
     ${VideoCapture_SOURCE_DIR}/include 
     ${InferenceEngines_SOURCE_DIR}/include
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/app/inc
+    ${CMAKE_SOURCE_DIR}/app/src
+    ${CMAKE_SOURCE_DIR}/detectors/inc
     ${CMAKE_SOURCE_DIR}/detectors/src
+    ${CMAKE_SOURCE_DIR}/detectors/src/models
     ${OpenCV_INCLUDE_DIRS}
     ${GLOG_INCLUDE_DIRS}
     ${VideoCapture_SOURCE_DIR}/src
@@ -67,7 +70,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glog::glog
     ${OpenCV_LIBS}
-    DetectorsLib
+    detectors
     InferenceEngines
     VideoCapture
 )
