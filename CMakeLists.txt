@@ -85,3 +85,11 @@ if(ENABLE_TESTS)
     enable_testing()
     add_subdirectory(app/test)
 endif()
+
+# Option to enable unit tests
+option(ENABLE_DETECTORS_TESTS "Enable unit testing for detectors lib" OFF)
+
+if(ENABLE_DETECTORS_TESTS)
+    enable_testing()
+    add_subdirectory(detectors/test)
+endif()
