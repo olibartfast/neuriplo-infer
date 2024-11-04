@@ -83,5 +83,5 @@ option(ENABLE_TESTS "Enable unit testing" OFF)
 
 if(ENABLE_TESTS)
     enable_testing()
-    add_subdirectory(test)
+    add_subdirectory(app/test)
 endif()

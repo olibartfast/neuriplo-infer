@@ -6,22 +6,24 @@ set(PROJECT_NAME_TEST runUnitTests)
 
 # Add test executable
 add_executable(${PROJECT_NAME_TEST}
-    ${CMAKE_CURRENT_LIST_DIR}/test_DetectorSetup.cpp 
     ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_ObjectDetectionApp.cpp    
-    ${CMAKE_SOURCE_DIR}/src/utils.cpp 
-    ${CMAKE_SOURCE_DIR}/src/CommandLineParser.cpp
-    ${CMAKE_SOURCE_DIR}/src/ObjectDetectionApp.cpp
-    ${CMAKE_SOURCE_DIR}/src/DetectorSetup.cpp
+    ${CMAKE_SOURCE_DIR}/app/src/utils.cpp 
+    ${CMAKE_SOURCE_DIR}/app/src/CommandLineParser.cpp
+    ${CMAKE_SOURCE_DIR}/app/src/ObjectDetectionApp.cpp
 )
 
+
 target_include_directories(${PROJECT_NAME_TEST} 
-    PUBLIC ${CMAKE_SOURCE_DIR}/inc 
+    PRIVATE ${CMAKE_SOURCE_DIR}/common 
     ${OpenCV_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/src 
+    ${CMAKE_SOURCE_DIR}/app/inc 
+    ${CMAKE_SOURCE_DIR}/app/src 
+    ${CMAKE_SOURCE_DIR}/detectors/inc
     ${CMAKE_SOURCE_DIR}/detectors/src
+    ${CMAKE_SOURCE_DIR}/detectors/src/models
     ${VideoCapture_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/src
     ${InferenceEngines_SOURCE_DIR}/backends/src
@@ -51,7 +53,7 @@ elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")
     target_link_libraries(${PROJECT_NAME_TEST} PRIVATE openvino::runtime )
 endif()
 
-target_link_libraries(${PROJECT_NAME_TEST} PUBLIC gtest gtest_main glog::glog ${OpenCV_LIBS} DetectorsLib VideoCapture InferenceEngines)
+target_link_libraries(${PROJECT_NAME_TEST} PUBLIC gtest gtest_main glog::glog ${OpenCV_LIBS} detectors VideoCapture InferenceEngines)
 
 # Discover and run tests
 gtest_discover_tests(${PROJECT_NAME_TEST})
