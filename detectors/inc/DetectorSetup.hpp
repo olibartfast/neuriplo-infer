@@ -1,6 +1,12 @@
 #pragma once
 #include "common.hpp"
 #include "Detector.hpp"
+#include "YoloV4.hpp"
+#include "YoloVn.hpp"
+#include "YOLOv10.hpp"
+#include "YoloNas.hpp"
+#include "RtDetr.hpp"
+#include "RtDetrUltralytics.hpp"
 
 class DetectorSetup {
 public:
