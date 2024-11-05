@@ -1,12 +1,30 @@
 ### Object Detection Inference
 * Inference for object detection from a video or image input source, with support for multiple switchable frameworks to manage the inference process, and optional GStreamer integration for video capture.
-## Dependencies (In parentheses, version tested in this project)
-## Required
+
+## Project Structure
+
+The main project components include:
+
+- **`app/`**: Contains the main application code and supporting utilities.
+- **`detectors/`**: Contains the shared library for object detection logic.
+- **`common/`**: Shared include headers used by multiple parts of the project.
+- **`cmake/`**: CMake modules to assist in the build configuration.
+- **`app/test/`**: Unit tests for the `app` module.
+- **`detectors/test/`**: Unit tests for the `detectors` library.
+
+## Dependencies 
+
+### Fetching Dependencies
+The project uses CMake's `FetchContent` to retrieve external libraries:
+
+- **`VideoCapture`**: Used for video handling in the main application.
+- **`InferenceEngines`**: Used for supporting multiple inference backends.
+
+### Required
 * CMake 
 * OpenCV (apt install libopencv-dev)
 * glog (apt install libgoogle-glog-dev)
 * C++ compiler with C++17 support (i.e. GCC 8.0 and later)
-
 * One of the following Inference Backend(OpenCV DNN Module, ONNX Runtime, LibTorch, TensorRT, OpenVino, Libtensorflow) wrapped in [Inference Engines Library](https://github.com/olibartfast/inference-engines)
 
 ### Optional 
@@ -19,12 +37,12 @@
 - Windows build not supported.
 
 
-
 ## To build and compile  
+### Building the Complete Project
 ```
 mkdir build
 cd build
-cmake -DDEFAULT_BACKEND=chosen_backend -DCMAKE_BUILD_TYPE=Release ..
+cmake -DDEFAULT_BACKEND=<chosen_backend> -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
@@ -32,13 +50,43 @@ To enable GStreamer support, you can add -DUSE_GSTREAMER=ON when running cmake, 
 ```
 mkdir build
 cd build
-cmake -DDEFAULT_BACKEND=chosen_backend -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake -DDEFAULT_BACKEND=<chosen_backend> -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
 This will set the USE_GSTREAMER option to "ON" during the CMake configuration process, enabling GStreamer support in your project.  
 Remember to replace chosen_backend with your actual backend selection.
-## Usage
+
+### Building Only the `detectors` Library
+To build only the `detectors` library (useful if you only need the shared library):
+
+```bash
+mkdir build
+cd build
+cmake -DBUILD_ONLY_LIB=ON -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+### Building with Unit Tests
+To enable unit tests for either the `app` or `detectors` library:
+
+- **App Tests**:
+
+```bash
+cmake -DENABLE_APP_TESTS=ON -DDEFAULT_BACKEND=<chosen_backend> -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+- **Detectors Library Tests**:
+
+```bash
+cmake -DENABLE_DETECTORS_TESTS=ON -DDEFAULT_BACKEND=<chosen_backend> -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+Note: The `app` unit tests will not be built if `BUILD_ONLY_LIB=ON`.
+
+## Main application usage 
 ```
 ./object-detection-inference \
     --type=<model type> \
@@ -48,7 +96,6 @@ Remember to replace chosen_backend with your actual backend selection.
 ```
 
 ### Parameters
-
 - `--type=<model type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`,  `yolov10`, `yolo11`,`rtdetr`, and `rtdetrul`. Choose the appropriate model based on your requirements.
 
 - `--source=<source>`: Defines the input source for the object detection. It can be:
@@ -95,7 +142,6 @@ build setting for cmake DEFAULT_BACKEND=ONNX_RUNTIME, then run
     --labels=/path/to/labels.names [--use-gpu]
 ```
 
-
 ## Run with Docker
 ### Building the Docker Image
 * Inside the project, in the [Dockerfiles folder](docker), there will be a dockerfile for each inference backend (currently onnxruntime, libtorch, tensorrt, openvino)
@@ -107,7 +153,6 @@ docker build --rm -t object-detection-inference:<backend_tag> -f docker/Dockerfi
 This command will create a docker image based on the provided docker file.
 
 ### Running the Docker Container
-
 Replace the wildcards with your desired options and paths:
 ```bash
 docker run --rm -v<path_host_data_folder>:/app/data -v<path_host_weights_folder>:/weights -v<path_host_labels_folder>:/labels object-detection-inference:<backend_tag> --type=<model_type> --weights=<weight_according_your_backend> --source=/app/data/<image_or_video> --labels=/labels/<labels_file>.
@@ -141,8 +186,7 @@ The following page provides information on how to export supported object recogn
 
 ## TO DO
 - Add Windows building support
-- Some benchmarks
-- Object detection models from the Torchvision API (if can be exported to C++ deploy i.e. libtorch/torchscript etc...)
+- Other Object detection models, i.e. those from the Torchvision/Tensorflow API (if they can be exported to C++ deploy i.e. libtorch/torchscript/saved_models etc...)
 
 ## Feedback
 - Any feedback is greatly appreciated, if you have any suggestions, bug reports or questions don't hesitate to open an [issue](https://github.com/olibartfast/object-detection-inference/issues).
