@@ -17,6 +17,13 @@ elseif (DEFAULT_BACKEND STREQUAL "LIBTORCH")
     set(Torch_DIR $ENV{HOME}/libtorch/share/cmake/Torch/ CACHE PATH "Path to libtorch")
     find_package(Torch REQUIRED)
     add_compile_definitions(USE_LIBTORCH)
+
+    # Enable GLOG
+    # https://discuss.pytorch.org/t/libtorch-glog-doesnt-print/63822/3
+    # The -DC10_USE_GLOG definition is required because LibTorch (C++ PyTorch)
+    # uses its own logging system by default called c10. To use glog instead, you need to:
+    # Tell the compiler to use glog instead of the default c10 logging system by defining C10_USE_GLOG    
+    add_definitions(-DC10_USE_GLOG)
 elseif (DEFAULT_BACKEND STREQUAL "TENSORRT")
     set(TRT_VERSION "8.6.1.6" CACHE STRING "Tensorrt version") # modify accordingly
     set(TENSORRT_DIR $ENV{HOME}/TensorRT-${TRT_VERSION}/)
