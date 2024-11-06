@@ -33,7 +33,7 @@ A high-performance C++ framework for real-time object detection, supporting mult
 ### Fetched Dependencies
 The project automatically fetches and builds the following dependencies using CMake's FetchContent:
 
-#### VideoCapture Library
+#### [VideoCapture Library](https://github.com/olibartfast/videocapture)
 ```cmake
 FetchContent_Declare(
     VideoCapture
@@ -49,7 +49,7 @@ FetchContent_Declare(
   option(USE_GSTREAMER "Enable GStreamer support" OFF)
   ```
 
-#### Inference Engines Library
+#### [Inference Engines Library](https://github.com/olibartfast/inference-engines)
 ```cmake
 FetchContent_Declare(
     InferenceEngines
@@ -71,10 +71,6 @@ FetchContent_Declare(
   set_property(CACHE DEFAULT_BACKEND PROPERTY STRINGS 
       OPENCV_DNN ONNX_RUNTIME LIBTORCH TENSORRT OPENVINO LIBTENSORFLOW)
   ```
-
-### Optional Components
-- GStreamer (≥ 1.20.3) for advanced video capture
-- CUDA for GPU acceleration
 
 ## 🏗 Building
 
