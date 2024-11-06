@@ -136,7 +136,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 - `--labels=<path/to/labels/file>`: Specifies the path to the file containing the class labels. This file should list the labels used by the model, each label on a new line.
 
-- `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights. This file is essential for the model to perform inference.
+- `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights. T
 
 
 #### Optional Parameters
