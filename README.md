@@ -87,21 +87,19 @@ cmake --build .
 # With GStreamer support
 cmake -DDEFAULT_BACKEND=<backend> -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
 ```
-
-Available backends:
-- `OPENCV_DNN` (default)
-- `ONNX_RUNTIME`
-- `LIBTORCH`
-- `TENSORRT`
-- `OPENVINO`
-- `LIBTENSORFLOW`
-
 ### Library-Only Build
 ```bash
 mkdir build && cd build
 cmake -DBUILD_ONLY_LIB=ON -DDEFAULT_BACKEND=<backend>  -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
+**Replace <backend> with one of the following:
+- `OPENCV_DNN` (default)
+- `ONNX_RUNTIME`
+- `LIBTORCH`
+- `TENSORRT`
+- `OPENVINO`
+- `LIBTENSORFLOW`**
 
 ### Test Builds
 ```bash
