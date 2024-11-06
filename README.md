@@ -93,7 +93,7 @@ mkdir build && cd build
 cmake -DBUILD_ONLY_LIB=ON -DDEFAULT_BACKEND=<backend>  -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
-- Replace <backend> with one of the following:
+- Replace ``<backend>`` with one of the following:
     - `OPENCV_DNN` (default)
     - `ONNX_RUNTIME`
     - `LIBTORCH`
