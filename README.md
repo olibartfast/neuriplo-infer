@@ -1,7 +1,7 @@
 # Object Detection Inference
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![C++17](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/std/the-standard)
+[![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
 A high-performance C++ framework for real-time object detection, supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models (YOLOv4-11, RT-DETR) on video streams, video files, or images with configurable hardware acceleration.
 
@@ -20,7 +20,7 @@ A high-performance C++ framework for real-time object detection, supporting mult
 ### Core Dependencies
 - CMake (≥ 3.15)
 - C++17 compiler (GCC ≥ 8.0)
-- OpenCV (≥ 4.0)
+- OpenCV (≥ 4.6)
   ```bash
   apt install libopencv-dev
   ```
