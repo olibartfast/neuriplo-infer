@@ -44,7 +44,7 @@ RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO  && \
 # Stage 4: Final image
 FROM builder AS final
 
-COPY --from=builder /app/build/object-detection-inference /app/object-detection-inference
+COPY --from=builder /app/build/app/object-detection-inference /app/object-detection-inference
 
 WORKDIR /app
 
