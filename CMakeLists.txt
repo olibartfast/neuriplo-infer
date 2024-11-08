@@ -35,7 +35,7 @@ add_subdirectory(${DETECTORS_ROOT})
 include(AddCompileDefinitions)
 
 # Option to build only the detectors library
-option(BUILD_ONLY_LIB "Build only the detectors library" OFF)
+option(BUILD_ONLY_LIB "Build only the detectors library" ON)
 
 if(NOT BUILD_ONLY_LIB)
     # Fetch the VideoCapture project from GitHub

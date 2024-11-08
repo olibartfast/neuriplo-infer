@@ -77,11 +77,11 @@ FetchContent_Declare(
 ### Complete Build
 ```bash
 mkdir build && cd build
-cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
+cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 
 # With GStreamer support
-cmake -DDEFAULT_BACKEND=<backend> -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
 ```
 ### Library-Only Build
 ```bash
