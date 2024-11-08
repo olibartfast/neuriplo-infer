@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-A high-performance C++ framework for real-time object detection, supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models (YOLOv4-11, RT-DETR) on video streams, video files, or images with configurable hardware acceleration.
+C++ framework for real-time object detection, supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models (YOLOv4-11, RT-DETR) on video streams, video files, or images with configurable hardware acceleration.
 
 
 ## 🚀 Key Features
@@ -33,7 +33,7 @@ A high-performance C++ framework for real-time object detection, supporting mult
 ### Fetched Dependencies
 The project automatically fetches and builds the following dependencies using CMake's FetchContent:
 
-#### [VideoCapture Library](https://github.com/olibartfast/videocapture)
+#### [VideoCapture Library](https://github.com/olibartfast/videocapture) (Only for the App module, not the library)
 ```cmake
 FetchContent_Declare(
     VideoCapture
@@ -74,7 +74,7 @@ FetchContent_Declare(
 
 ## 🏗 Building
 
-### Complete Build
+### Complete Build (Shared Lib + App)
 ```bash
 mkdir build && cd build
 cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DCMAKE_BUILD_TYPE=Release ..
@@ -106,7 +106,7 @@ cmake -DENABLE_APP_TESTS=ON ..
 cmake -DENABLE_DETECTORS_TESTS=ON ..
 ```
 
-## 💻 Usage
+## 💻 App Usage
 
 ### Command Line Options
 ```bash
