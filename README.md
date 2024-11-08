@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++17](https://img.shields.io/badge/C++-17-blue.svg)](https://isocpp.org/std/the-standard)
 
-A high-performance C++ framework for real-time object detection, supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models (YOLOv4-11, RT-DETR) on video streams, video files, or images with configurable hardware acceleration.
+C++ framework for real-time object detection, supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models (YOLOv4-11, RT-DETR) on video streams, video files, or images with configurable hardware acceleration.
 
 
 ## 🚀 Key Features
