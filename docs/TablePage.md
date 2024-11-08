@@ -7,7 +7,7 @@ The table represents a specific model and includes the following details:
 - **x**: Not supported backend (or at least not tested yet/not tried to export).
 
 
-| Model                                              | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime  | OpenVino | Libtensorflow |
+| Model                                              | Model Type | OpenCV-DNN (onnx weights) | TensorRT | LibTorch | Onnx-runtime  | OpenVino | Libtensorflow |
 |----------------------------------------------------|------------|------------|----------|----------|--------------|-----------|-----------|
 | yolov4/yolov4-tiny                                 | yolov4     | o          | x        | x        | x            | x         | x         | 
 | yolov5 models                                      | yolov5     | o          | x        | o        | o            | o         | x         |
