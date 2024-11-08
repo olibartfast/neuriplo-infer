@@ -54,7 +54,6 @@ if(NOT BUILD_ONLY_LIB)
     add_executable(${PROJECT_NAME} ${SOURCES})
 
     target_include_directories(${PROJECT_NAME} PUBLIC
-        ${CMAKE_SOURCE_DIR}/common
     ${VideoCapture_SOURCE_DIR}/include 
         ${InferenceEngines_SOURCE_DIR}/include
     )

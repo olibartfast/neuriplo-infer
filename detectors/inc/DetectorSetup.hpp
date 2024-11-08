@@ -1,5 +1,4 @@
 #pragma once
-#include "common.hpp"
 #include "Detector.hpp"
 #include "YoloV4.hpp"
 #include "YoloVn.hpp"

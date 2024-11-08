@@ -1,6 +1,8 @@
 #pragma once
-#include "common.hpp"
 #include <variant>
+#include <cstdint>
+#include <opencv2/opencv.hpp>
+#include <glog/logging.h>
 
 
 // First, define the variant type (could be in the header file)
