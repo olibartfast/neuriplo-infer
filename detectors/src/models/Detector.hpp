@@ -1,8 +1,8 @@
 #pragma once
 #include <variant>
 #include <cstdint>
-#include <opencv2/opencv.hpp>
 #include <glog/logging.h>
+#include "Detection.hpp"
 
 
 // First, define the variant type (could be in the header file)
@@ -10,12 +10,6 @@ using TensorElement = std::variant<float, int32_t, int64_t>;
 
 
 
-struct Detection
-{
-	cv::Rect bbox;
-	float score;
-	int label;
-};
 
 class Detector{
 protected:	
