@@ -214,7 +214,7 @@ For GPU support, add `--gpus all` to the docker run command.
 ├── app/            # Main application
 ├── detectors/      # Detection library
 ├── cmake/          # CMake modules
-└── tests/          # Unit tests
+└── docker/         # Dockerfiles
 ```
 
 ## 📚 Additional Resources
