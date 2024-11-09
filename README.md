@@ -96,7 +96,7 @@ cmake --build .
     - `TENSORRT`
     - `OPENVINO`
     - `LIBTENSORFLOW`
-
+- **Note**:  If the backend package is not installed on your system, set the path manually in the backend's CMake module (i.e. for Libtorch modify [Libtorch.cmake](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake)  or pass the argument ``Torch_DIR``, for onnx-runtume modify [ONNXRuntime.cmake](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the argument ``ORT_VERSION``, same apply to other backend local packages) 
 ### Test Builds
 ```bash
 # App tests
