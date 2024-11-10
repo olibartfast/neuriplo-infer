@@ -13,7 +13,7 @@ find_package(glog REQUIRED)
 if(DEFINED DEFAULT_BACKEND)
     unset(DEFAULT_BACKEND CACHE)
 endif()
-set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default backend for inference" FORCE)
+set(DEFAULT_BACKEND ${DEFAULT_BACKEND} CACHE STRING "Default backend for inference" FORCE)
 
 message(STATUS "Home path: $ENV{HOME}")
 
