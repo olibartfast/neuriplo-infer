@@ -23,8 +23,8 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
     GIT_TAG        master  # or specify the exact tag/branch as needed
 )
-FetchContent_MakeAvailable(InferenceEngines)
 set(DEFAULT_BACKEND ${DEFAULT_BACKEND})
+FetchContent_MakeAvailable(InferenceEngines)
 message(STATUS "InferenceEngines_SOURCE_DIR: ${InferenceEngines_SOURCE_DIR}")
 
 # Define paths
