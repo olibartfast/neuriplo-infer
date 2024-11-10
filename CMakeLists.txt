@@ -13,7 +13,6 @@ find_package(glog REQUIRED)
 if(DEFINED DEFAULT_BACKEND)
     unset(DEFAULT_BACKEND CACHE)
 endif()
-set(DEFAULT_BACKEND ${DEFAULT_BACKEND} CACHE STRING "Default backend for inference" FORCE)
 
 message(STATUS "Home path: $ENV{HOME}")
 
@@ -25,6 +24,7 @@ FetchContent_Declare(
     GIT_TAG        master  # or specify the exact tag/branch as needed
 )
 FetchContent_MakeAvailable(InferenceEngines)
+set(DEFAULT_BACKEND ${DEFAULT_BACKEND})
 message(STATUS "InferenceEngines_SOURCE_DIR: ${InferenceEngines_SOURCE_DIR}")
 
 # Define paths

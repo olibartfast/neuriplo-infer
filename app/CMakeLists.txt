@@ -5,6 +5,7 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/olibartfast/VideoCapture.git
     GIT_TAG        master
 )
+set(USE_GSTREAMER ${USE_GSTREAMER})
 FetchContent_MakeAvailable(VideoCapture)
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR:  ${CMAKE_CURRENT_SOURCE_DIR}")
