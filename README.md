@@ -65,12 +65,7 @@ FetchContent_Declare(
   - TensorRT
   - OpenVINO
   - LibTensorflow
-- Configuration via CMake:
-  ```cmake
-  set(DEFAULT_BACKEND OPENCV_DNN CACHE STRING "Default inference backend")
-  set_property(CACHE DEFAULT_BACKEND PROPERTY STRINGS 
-      OPENCV_DNN ONNX_RUNTIME LIBTORCH TENSORRT OPENVINO LIBTENSORFLOW)
-  ```
+ 
 
 ## 🏗 Building
 
