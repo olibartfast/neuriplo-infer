@@ -1,4 +1,15 @@
+#include <fstream>
+#include <sstream>
+#include <cstring>
+#include <cpuid.h>
+#include <iostream>
+#include <vector>
+#include <filesystem>
+#include <algorithm>
+#include <stdexcept>
 #include "utils.hpp"
+namespace fs = std::filesystem;
+
 
 bool isDirectory(const std::string& path) {
     std::filesystem::path fsPath(path);
@@ -60,4 +71,89 @@ std::string getFileExtension(const std::string& filename) {
         return filename.substr(dotPos + 1);
     }
     return ""; // Return empty string if no extension found
+}
+std::vector<std::string> getGPUModels() {
+    constexpr auto GPU_DIRECTORY = "/proc/driver/nvidia/gpus";
+    std::vector<std::string> gpuModels;
+
+    if (!fs::exists(GPU_DIRECTORY)) {
+        throw std::runtime_error("NVIDIA GPU directory not found");
+    }
+
+    for (const auto& directory : fs::directory_iterator(GPU_DIRECTORY)) {
+        std::ifstream gpuInfoStream(directory.path() / "information");
+        if (!gpuInfoStream) {
+            continue;  // Skip if unable to open the file
+        }
+
+        std::string gpuInfoLine;
+        while (std::getline(gpuInfoStream, gpuInfoLine)) {
+            if (gpuInfoLine.find("Model:") != std::string::npos) {
+                size_t colonPos = gpuInfoLine.find(':');
+                if (colonPos != std::string::npos) {
+                    std::string gpuModel = gpuInfoLine.substr(colonPos + 1);
+                    gpuModel.erase(0, gpuModel.find_first_not_of(" \t"));
+                    gpuModel.erase(gpuModel.find_last_not_of(" \t") + 1);
+                    gpuModels.push_back(std::move(gpuModel));
+                    break;
+                }
+            }
+        }
+        gpuInfoStream.close();
+    }
+
+    if (gpuModels.empty()) {
+        throw std::runtime_error("No GPU models found");
+    }
+
+    return gpuModels;
+}
+
+// Usage example
+std::string getGPUModel() {
+    try {
+        auto models = getGPUModels();
+        return models.front();  // Return the first GPU model
+    } catch (const std::exception& e) {
+        // Log the error or handle it as appropriate for your application
+        return "Unknown GPU";
+    }
+}
+
+std::string getCPUInfo() {
+    std::string cpuInfo;
+
+    unsigned int cpuInfoRegs[4];
+    __cpuid(0x80000000, cpuInfoRegs[0], cpuInfoRegs[1], cpuInfoRegs[2], cpuInfoRegs[3]);
+    unsigned int extMaxId = cpuInfoRegs[0];
+
+    char brand[48];
+    if (extMaxId >= 0x80000004) {
+        __cpuid(0x80000002, cpuInfoRegs[0], cpuInfoRegs[1], cpuInfoRegs[2], cpuInfoRegs[3]);
+        memcpy(brand, cpuInfoRegs, sizeof(cpuInfoRegs));
+        __cpuid(0x80000003, cpuInfoRegs[0], cpuInfoRegs[1], cpuInfoRegs[2], cpuInfoRegs[3]);
+        memcpy(brand + 16, cpuInfoRegs, sizeof(cpuInfoRegs));
+        __cpuid(0x80000004, cpuInfoRegs[0], cpuInfoRegs[1], cpuInfoRegs[2], cpuInfoRegs[3]);
+        memcpy(brand + 32, cpuInfoRegs, sizeof(cpuInfoRegs));
+        cpuInfo = brand;
+    }
+
+    return cpuInfo;
+}
+
+
+bool hasNvidiaGPU() {
+    const std::vector<std::string> nvidiaIndicators = {
+        "/proc/driver/nvidia",
+        "/dev/nvidia0",
+        "/sys/class/nvidia-gpu"
+    };
+
+    for (const auto& path : nvidiaIndicators) {
+        if (fs::exists(path)) {
+            return true;
+        }
+    }
+
+    return false;
 }

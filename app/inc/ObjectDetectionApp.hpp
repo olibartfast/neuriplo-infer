@@ -3,7 +3,6 @@
 #include "DetectorSetup.hpp"
 #include "InferenceBackendSetup.hpp"
 #include "utils.hpp"
-#include "common.hpp"
 #include "CommandLineParser.hpp"
 #include "Detector.hpp"
 

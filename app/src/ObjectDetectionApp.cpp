@@ -17,7 +17,11 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig& config)
             throw std::runtime_error("Can't setup a detector " + config.detectorType);
         }
 
-        engine = setup_inference_engine(config.weights, config.config, config.use_gpu);
+        LOG(INFO) << "CPU info " << getCPUInfo();
+        const auto gpuInfo = getGPUModel();
+        LOG(INFO) << "GPU info: " << gpuInfo;
+        const auto use_gpu = config.use_gpu && hasNvidiaGPU();
+        engine = setup_inference_engine(config.weights, config.config, use_gpu);
         if (!engine) {
             throw std::runtime_error("Can't setup an inference engine for " + config.weights + " " + config.config);
         }
