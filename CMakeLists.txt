@@ -9,10 +9,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenCV REQUIRED)
 find_package(glog REQUIRED)
 
-# Define the default backend if not set from the command line
-if(DEFINED DEFAULT_BACKEND)
-    unset(DEFAULT_BACKEND CACHE)
+# Set DEFAULT_BACKEND as a CACHE variable with its type and a help string.
+if(NOT DEFINED DEFAULT_BACKEND)
+   set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
 endif()
+
+# or set manually in cache to test other backend:
+# set(DEFAULT_BACKEND "LIBTORCH" CACHE STRING "Default inference backend" FORCE)
+# set(USE_GSTREAMER ON)
 
 message(STATUS "Home path: $ENV{HOME}")
 
@@ -23,13 +27,13 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
     GIT_TAG        master  # or specify the exact tag/branch as needed
 )
-set(DEFAULT_BACKEND ${DEFAULT_BACKEND})
+
 FetchContent_MakeAvailable(InferenceEngines)
 message(STATUS "InferenceEngines_SOURCE_DIR: ${InferenceEngines_SOURCE_DIR}")
 
 # Define paths
-set(DETECTORS_ROOT ${CMAKE_CURRENT_LIST_DIR}/detectors)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+set(DETECTORS_ROOT ${CMAKE_SOURCE_DIR}/detectors)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 message(STATUS "CMake module path: ${CMAKE_MODULE_PATH}")
 
 # Add subdirectories for the detectors module
@@ -37,7 +41,6 @@ add_subdirectory(${DETECTORS_ROOT})
 
 # Option to build only the detectors library
 option(BUILD_ONLY_LIB "Build only the detectors library" OFF)
-unset(BUILD_ONLY_LIB CACHE) # Ensure any previous cache is cleared
 
 if(NOT BUILD_ONLY_LIB)
     # Add the app module subdirectory
@@ -46,9 +49,8 @@ endif()
 
 # Option to enable unit tests for the detectors library
 option(ENABLE_DETECTORS_TESTS "Enable unit testing for detectors lib" OFF)
-unset(ENABLE_DETECTORS_TESTS CACHE) # Clear any previous cache
 
 if(ENABLE_DETECTORS_TESTS)
     enable_testing()
-    add_subdirectory(detectors/test)
+    add_subdirectory(${DETECTORS_ROOT}/test)
 endif()
