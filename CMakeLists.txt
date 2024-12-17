@@ -13,7 +13,6 @@ find_package(glog REQUIRED)
 if(DEFINED DEFAULT_BACKEND)
     unset(DEFAULT_BACKEND CACHE)
 endif()
-set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default backend for inference" FORCE)
 
 message(STATUS "Home path: $ENV{HOME}")
 
@@ -24,6 +23,7 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
     GIT_TAG        master  # or specify the exact tag/branch as needed
 )
+set(DEFAULT_BACKEND ${DEFAULT_BACKEND})
 FetchContent_MakeAvailable(InferenceEngines)
 message(STATUS "InferenceEngines_SOURCE_DIR: ${InferenceEngines_SOURCE_DIR}")
 

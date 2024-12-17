@@ -43,11 +43,8 @@ FetchContent_Declare(
 ```
 - Handles video input processing
 - Provides unified interface for various video sources
-- Optional GStreamer integration for advanced streaming capabilities
-- Configuration options:
-  ```cmake
-  option(USE_GSTREAMER "Enable GStreamer support" OFF)
-  ```
+- Optional GStreamer integration
+
 
 #### [Inference Engines Library](https://github.com/olibartfast/inference-engines)
 ```cmake
@@ -65,12 +62,7 @@ FetchContent_Declare(
   - TensorRT
   - OpenVINO
   - LibTensorflow
-- Configuration via CMake:
-  ```cmake
-  set(DEFAULT_BACKEND OPENCV_DNN CACHE STRING "Default inference backend")
-  set_property(CACHE DEFAULT_BACKEND PROPERTY STRINGS 
-      OPENCV_DNN ONNX_RUNTIME LIBTORCH TENSORRT OPENVINO LIBTENSORFLOW)
-  ```
+ 
 
 ## 🏗 Building
 
