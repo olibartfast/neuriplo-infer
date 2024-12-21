@@ -5,9 +5,10 @@ The table represents a specific model and includes the following details:
 - **Model Type**: The type of model, indicating the underlying architecture or framework used (also the string corresponding to the param to be used with ``--type`` during the inference step of this project).
 - **o**: Supported backend.
 - **x**: Not supported backend (or at least not tested yet/not tried to export).
+- **Note**:  OpenCV-DNN --> tested only onnx weights on cpu
 
 
-| Model                                              | Model Type | OpenCV-DNN (onnx weights) | TensorRT | LibTorch | Onnx-runtime  | OpenVino | Libtensorflow |
+| Model                                              | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime  | OpenVino | Libtensorflow |
 |----------------------------------------------------|------------|------------|----------|----------|--------------|-----------|-----------|
 | yolov4/yolov4-tiny                                 | yolov4     | o          | x        | x        | x            | x         | x         | 
 | yolov5 models                                      | yolov5     | o          | x        | o        | o            | o         | x         |
@@ -20,4 +21,4 @@ The table represents a specific model and includes the following details:
 | yolo-nas models                                    | yolonas    | o          | x        | x        | o            | x         | x         |
 | rt-detr models                                     | rtdetr     | x          | o        | x        | o            | x         | x         |
 | rt-detr ultralytics models                         | rtdetrul   | x          | o        | o        | o            | x         | x         |
-| d-finemodels                                       | dfine      | x          | x        | x        | x            | o         | x         |
+| d-finemodels                                       | dfine      | x          | x        | x        | o            | x         | x         |
