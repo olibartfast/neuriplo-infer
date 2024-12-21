@@ -26,7 +26,20 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"            
-        },              
+        },  
+        {
+            "name": "dfine onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=dfine",
+                    "--weights=/home/oli/D-FINE/dfine_s_coco.onnx",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                     
         {
             "name": "rtdetr onnx",
             "type": "cppdbg",
