@@ -63,7 +63,7 @@ FetchContent_Declare(
   - OpenVINO
   - LibTensorflow
  
-**Note**: **After the CMake configuration step, fetched dependencies are cloned into the ``build/_deps`` folder.**
+⚠️ **Note**: **After the CMake configuration step, fetched dependencies are cloned into the ``build/_deps`` folder.**
 
 ## 🏗 Building
 
@@ -107,8 +107,8 @@ Replace `<backend>` with one of the following options:
    If the required backend package is not installed system-wide, you can manually specify its path:  
    - For **Libtorch**, modify [`LibTorch.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake) or pass the `Torch_DIR` argument.  
    - For **ONNX Runtime**, modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ONNX_RUNTIME_DIR` argument.
-   - For **TensorRT**, modify [TensorRT.cmake](https://github.com/olibartfast/inference-engines/blob/master/cmake/TensorRT.cmake) or pass `TENSORRT_DIR` argument
-   - The same approach applies to other backends—adjust their respective CMake modules or pass the relevant arguments during configuration.
+   - For **TensorRT**, modify [`TensorRT.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/TensorRT.cmake) or pass `TENSORRT_DIR` argument
+   - ⚠️ Note: These CMake files belong to the InferenceEngines project and are cloned into the build/_deps folder after the configuration step.
 
 2. **Cleaning the Build Folder**  
    When switching between backends or modifying configuration options, always clean the `build` directory before reconfiguring and compiling:  
