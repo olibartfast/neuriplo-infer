@@ -108,7 +108,7 @@ Replace `<backend>` with one of the following options:
    - For **Libtorch**, modify [`LibTorch.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake) or pass the `Torch_DIR` argument.  
    - For **ONNX Runtime**, modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ONNX_RUNTIME_DIR` argument.
    - For **TensorRT**, modify [`TensorRT.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/TensorRT.cmake) or pass `TENSORRT_DIR` argument
-   - ⚠️ Note: These CMake files belong to the InferenceEngines project and are cloned into the build/_deps folder after the configuration step.
+   - ⚠️ Note: These CMake files belong to the [`InferenceEngines`](https://github.com/olibartfast/inference-engines) project and are cloned into the `build/_deps` folder after the configuration step.
 
 2. **Cleaning the Build Folder**  
    When switching between backends or modifying configuration options, always clean the `build` directory before reconfiguring and compiling:  
@@ -151,7 +151,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 - `--labels=<path/to/labels/file>`: Specifies the path to the file containing the class labels. This file should list the labels used by the model, each label on a new line.
 
-- `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights. T
+- `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights. 
 
 
 #### Optional Parameters
