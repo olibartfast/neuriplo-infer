@@ -6,6 +6,7 @@
 #include "YoloNas.hpp"
 #include "RtDetr.hpp"
 #include "RtDetrUltralytics.hpp"
+#include "DFine.hpp"
 
 class DetectorSetup {
 public:

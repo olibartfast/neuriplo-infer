@@ -3,12 +3,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for [real-time object detection](https://paperswithcode.com/sota/real-time-object-detection-on-coco), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models (YOLOv4-11, RT-DETR) on video streams, video files, or images with configurable hardware acceleration.
+C++ framework for [real-time object detection](https://paperswithcode.com/sota/real-time-object-detection-on-coco), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models (YOLOv4-11, RT-DETR, D-FINE) on video streams, video files, or images with configurable hardware acceleration.
 
 
 ## 🚀 Key Features
 
-- Multiple model support (YOLO series from YOLOv4 to YOLO11, RT-DETR)
+- Multiple model support (YOLO series from YOLOv4 to YOLO11, RT-DETR, D-FINE)
 - Switchable inference backends (OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow)
 - Real-time video processing with GStreamer integration
 - GPU acceleration support
@@ -115,7 +115,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 ```
 
 #### Required Parameters
-- `--type=<model type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`,  `yolov10`, `yolo11`,`rtdetr`, and `rtdetrul`. Choose the appropriate model based on your requirements.
+- `--type=<model type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`,  `yolov10`, `yolo11`,`rtdetr`, `rtdetrul`, `dfine`. Choose the appropriate model based on your requirements.
 
 - `--source=<source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/somelivefeed`
@@ -225,6 +225,7 @@ For GPU support, add `--gpus all` to the docker run command.
   - [YOLO-NAS](docs/yolo-nas-export.md)
   - [RT-DETR (lyuwenyu implementation)](docs/rtdetr-lyuwenyu-export.md)
   - [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)
+  - [D-FINE](docs/d-fine-export.md)
 
 ## ⚠️ Known Limitations
 

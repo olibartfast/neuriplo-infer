@@ -5,7 +5,7 @@
 
 const std::string CommandLineParser::params = 
     "{ help h   |   | print help message }"
-    "{ type     |  yolov10 | yolov4, yolov5, yolov6, yolov7, yolov8, yolov9, yolov10, yolo11, rtdetr, rtdetrul}"
+    "{ type     |  yolov10 | yolov4, yolov5, yolov6, yolov7, yolov8, yolov9, yolov10, yolo11, rtdetr, rtdetrul, dfine}"
     "{ source s   | <none>  | path to image or video source}"
     "{ labels lb  |<none>  | path to class labels}"
     "{ config c   | <none>  | optional model configuration file}"

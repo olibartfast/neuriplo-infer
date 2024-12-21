@@ -28,6 +28,7 @@ std::unordered_map<std::string, std::function<std::unique_ptr<Detector>()>> Dete
         {"yolonas", [] { return std::make_unique<YoloNas>(); }},
         {"yolov10", [] { return std::make_unique<YOLOv10>(); }},
         {"rtdetrul", [] { return std::make_unique<RtDetrUltralytics>(); }},
-        {"rtdetr", [] { return std::make_unique<RtDetr>(); }}
+        {"rtdetr", [] { return std::make_unique<RtDetr>(); }},
+        {"dfine", [] { return std::make_unique<DFine>(); }}
     };
 }
