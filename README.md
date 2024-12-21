@@ -56,8 +56,8 @@ FetchContent_Declare(
 ```
 - Provides abstraction layer for multiple inference backends
 - Supported backends:
-  - OpenCV DNN Module (default)
-  - ONNX Runtime
+  - OpenCV DNN Module 
+  - ONNX Runtime (default)
   - LibTorch
   - TensorRT
   - OpenVINO
@@ -93,7 +93,7 @@ cmake --build .
 ### Backend Options
 Replace `<backend>` with one of the following options:  
 - **`OPENCV_DNN`**   
-- **`ONNX_RUNTIME`**  (default)
+- **`ONNX_RUNTIME`**  
 - **`LIBTORCH`**  
 - **`TENSORRT`**  
 - **`OPENVINO`**  
