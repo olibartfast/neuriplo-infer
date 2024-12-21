@@ -21,4 +21,4 @@ The table represents a specific model and includes the following details:
 | yolo-nas models                                    | yolonas    | o          | x        | x        | o            | x         | x         |
 | rt-detr models                                     | rtdetr     | x          | o        | x        | o            | x         | x         |
 | rt-detr ultralytics models                         | rtdetrul   | x          | o        | o        | o            | x         | x         |
-| d-finemodels                                       | dfine      | x          | x        | x        | o            | x         | x         |
+| d-fine models                                       | dfine      | x          | x        | x        | o            | x         | x         |
