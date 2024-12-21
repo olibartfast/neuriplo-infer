@@ -19,16 +19,7 @@ std::vector<Detection> DFine::postprocess(
     size_t labels_idx = 0;
     size_t boxes_idx = 1;
     size_t scores_idx = 2;
-
-    // Output order of this model somewhat changes when it is export to TensorRT.
-    // In TensorRT model i'm expecting bounding box output at index 2
-    if(shapes[2][2] == 4)
-    {
-        labels_idx = 1;
-        boxes_idx = 2;
-        scores_idx = 0;
-    }
-
+    
     const auto& scores = outputs[scores_idx];
     const std::vector<int64_t>& shape_scores = shapes[scores_idx];
 
