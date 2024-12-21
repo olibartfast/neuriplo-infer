@@ -63,6 +63,7 @@ FetchContent_Declare(
   - OpenVINO
   - LibTensorflow
  
+**Note**: After the CMake configuration step, fetched dependencies are cloned into the ``build/_deps`` folder.
 
 ## 🏗 Building
 
@@ -105,7 +106,8 @@ Replace `<backend>` with one of the following options:
 1. **Custom Backend Paths**  
    If the required backend package is not installed system-wide, you can manually specify its path:  
    - For **Libtorch**, modify [`LibTorch.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake) or pass the `Torch_DIR` argument.  
-   - For **ONNX Runtime**, modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ORT_VERSION` argument.  
+   - For **ONNX Runtime**, modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ONNX_RUNTIME_DIR` argument.
+   - For **TensorRT**, modify [TensorRT.cmake](https://github.com/olibartfast/inference-engines/blob/master/cmake/TensorRT.cmake) or pass `TENSORRT_DIR` argument
    - The same approach applies to other backends—adjust their respective CMake modules or pass the relevant arguments during configuration.
 
 2. **Cleaning the Build Folder**  
