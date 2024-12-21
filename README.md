@@ -66,29 +66,54 @@ FetchContent_Declare(
 
 ## 🏗 Building
 
-### Complete Build (Shared Lib + App)
+### Complete Build (Shared Library + Application)
 ```bash
 mkdir build && cd build
 cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
-
-# With GStreamer support
-cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
 ```
+
+#### Enabling GStreamer Support
+```bash
+cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+---
+
 ### Library-Only Build
 ```bash
 mkdir build && cd build
-cmake -DBUILD_ONLY_LIB=ON -DDEFAULT_BACKEND=<backend>  -DCMAKE_BUILD_TYPE=Release ..
+cmake -DBUILD_ONLY_LIB=ON -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
-- Replace ``<backend>`` with one of the following:
-    - `OPENCV_DNN` (default)
-    - `ONNX_RUNTIME`
-    - `LIBTORCH`
-    - `TENSORRT`
-    - `OPENVINO`
-    - `LIBTENSORFLOW`
-- **Note**:  If the backend package is not installed on your system, set the path manually in the backend's CMake module (i.e. for Libtorch modify [Libtorch.cmake](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake)  or pass the argument ``Torch_DIR``, for onnx-runtume modify [ONNXRuntime.cmake](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the argument ``ORT_VERSION``, same apply to other backend local packages) 
+
+---
+
+### Backend Options
+Replace `<backend>` with one of the following options:  
+- **`OPENCV_DNN`**   
+- **`ONNX_RUNTIME`**  (default)
+- **`LIBTORCH`**  
+- **`TENSORRT`**  
+- **`OPENVINO`**  
+- **`LIBTENSORFLOW`**  
+
+---
+
+### Notes
+1. **Custom Backend Paths**  
+   If the required backend package is not installed system-wide, you can manually specify its path:  
+   - For **Libtorch**, modify [`LibTorch.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake) or pass the `Torch_DIR` argument.  
+   - For **ONNX Runtime**, modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ORT_VERSION` argument.  
+   - The same approach applies to other backends—adjust their respective CMake modules or pass the relevant arguments during configuration.
+
+2. **Cleaning the Build Folder**  
+   When switching between backends or modifying configuration options, always clean the `build` directory before reconfiguring and compiling:  
+   ```bash
+   rm -rf build && mkdir build
+   ```
+
 ### Test Builds
 ```bash
 # App tests

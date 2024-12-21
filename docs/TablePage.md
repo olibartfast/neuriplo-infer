@@ -5,7 +5,7 @@ The table represents a specific model and includes the following details:
 - **Model Type**: The type of model, indicating the underlying architecture or framework used (also the string corresponding to the param to be used with ``--type`` during the inference step of this project).
 - **o**: Supported backend.
 - **x**: Not supported backend (or at least not tested yet/not tried to export).
-- **Note**:  OpenCV-DNN --> tested only onnx weights on cpu
+- **Note**:  OpenCV-DNN --> tested only onnx weights on cpu, opencv-dnn currently supports only static shapes, dynamic input (or layer) shape does not work with opencv 
 
 
 | Model                                              | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime  | OpenVino | Libtensorflow |
