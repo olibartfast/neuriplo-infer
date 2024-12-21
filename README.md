@@ -63,7 +63,7 @@ FetchContent_Declare(
   - OpenVINO
   - LibTensorflow
  
-**Note**: After the CMake configuration step, fetched dependencies are cloned into the ``build/_deps`` folder.
+**Note**: **After the CMake configuration step, fetched dependencies are cloned into the ``build/_deps`` folder.**
 
 ## 🏗 Building
 
