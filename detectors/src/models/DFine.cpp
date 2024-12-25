@@ -1,9 +1,6 @@
 #include "DFine.hpp"
 
-DFine::DFine(
-    const ModelInfo& model_info,
-    float confidenceThreshold) : 
-    Detector{model_info, confidenceThreshold}
+DFine::DFine(const ModelInfo& model_info, float confidenceThreshold) : Detector{model_info, confidenceThreshold}
 {
 
 }

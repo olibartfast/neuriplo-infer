@@ -1,12 +1,6 @@
 #include "RtDetr.hpp"
 
-RtDetr::RtDetr(
-    float confidenceThreshold,
-    size_t network_width,
-    size_t network_height) : 
-    Detector{confidenceThreshold,
-            network_width,
-            network_height}
+RtDetr::RtDetr(const ModelInfo& model_info, float confidenceThreshold) : Detector{model_info, confidenceThreshold}
 {
 
 }

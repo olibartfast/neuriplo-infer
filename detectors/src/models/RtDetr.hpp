@@ -4,10 +4,7 @@ class RtDetr : public Detector
 {
 
 public:
-    RtDetr(
-        float confidenceThreshold = 0.25,
-        size_t network_width = 640,
-        size_t network_height = 640);
+    RtDetr(const ModelInfo& model_info, float confidenceThreshold = 0.25);
 
 
     cv::Mat preprocess_image(const cv::Mat& image) override;

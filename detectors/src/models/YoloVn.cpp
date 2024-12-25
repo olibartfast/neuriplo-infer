@@ -1,15 +1,10 @@
 #include "YoloVn.hpp"
 
-YoloVn::YoloVn(
-    float confidenceThreshold,
-    size_t network_width,
-    size_t network_height    
-) : 
-    Detector{confidenceThreshold,
-    network_width,
-    network_height}
+YoloVn::YoloVn(const ModelInfo& model_info, float confidenceThreshold) : Detector{model_info, confidenceThreshold}
 {
+
 }
+
 
 cv::Mat YoloVn::preprocess_image(const cv::Mat& img) {
     int w, h, x, y;

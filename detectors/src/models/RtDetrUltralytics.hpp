@@ -4,10 +4,7 @@ class RtDetrUltralytics : public Detector
 {
 
 public:
-    RtDetrUltralytics(
-        float confidenceThreshold = 0.25,
-        size_t network_width = 640,
-        size_t network_height = 640);
+    RtDetrUltralytics(const ModelInfo& model_info, float confidenceThreshold = 0.25);
 
 
 

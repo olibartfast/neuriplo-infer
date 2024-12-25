@@ -1,13 +1,7 @@
 
 #include "RtDetrUltralytics.hpp"
 
-RtDetrUltralytics::RtDetrUltralytics(
-    float confidenceThreshold,
-    size_t network_width,
-    size_t network_height) : 
-    Detector{confidenceThreshold,
-            network_width,
-            network_height}
+RtDetrUltralytics::RtDetrUltralytics(const ModelInfo& model_info, float confidenceThreshold) : Detector{model_info, confidenceThreshold}
 {
 
 }

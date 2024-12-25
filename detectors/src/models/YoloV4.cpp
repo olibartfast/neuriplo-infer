@@ -1,14 +1,7 @@
 #include "YoloV4.hpp"
-YoloV4::YoloV4(
-    float confidenceThreshold,
-    size_t network_width,
-    size_t network_height    
-) : 
-    Detector{
-    confidenceThreshold,
-    network_width,
-    network_height}
+YoloV4::YoloV4(const ModelInfo& model_info, float confidenceThreshold) : Detector{model_info, confidenceThreshold}
 {
+
 }
 
 cv::Mat YoloV4::preprocess_image(const cv::Mat& image)
