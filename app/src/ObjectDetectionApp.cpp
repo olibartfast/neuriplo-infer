@@ -12,10 +12,7 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig& config)
 
         classes = readLabelNames(config.labelsPath);
         
-        detector =  DetectorSetup::createDetector(config.detectorType);
-        if (!detector) {
-            throw std::runtime_error("Can't setup a detector " + config.detectorType);
-        }
+
 
         LOG(INFO) << "CPU info " << getCPUInfo();
         const auto gpuInfo = getGPUModel();
@@ -25,6 +22,14 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig& config)
         if (!engine) {
             throw std::runtime_error("Can't setup an inference engine for " + config.weights + " " + config.config);
         }
+
+        const auto model_info = engine->get_model_info();
+
+        detector =  DetectorSetup::createDetector(config.detectorType, model_info);
+        if (!detector) {
+            throw std::runtime_error("Can't setup a detector " + config.detectorType);
+        }
+
     } catch (const std::exception& e) {
         LOG(ERROR) << "Error: " << e.what();
         throw;

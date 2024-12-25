@@ -25,7 +25,7 @@ include(FetchContent)
 FetchContent_Declare(
     InferenceEngines
     GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
-    GIT_TAG        master  # or specify the exact tag/branch as needed
+    GIT_TAG        feature/model_info  # or specify the exact tag/branch as needed
 )
 
 FetchContent_MakeAvailable(InferenceEngines)
