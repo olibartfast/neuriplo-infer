@@ -2,7 +2,20 @@
 
 RtDetr::RtDetr(const ModelInfo& model_info, float confidenceThreshold) : Detector{model_info, confidenceThreshold}
 {
+    std::unordered_map<std::string, size_t> output_name_to_index;
+    const auto& outputs = model_info.getOutputs();
+    for (size_t i = 0; i < outputs.size(); ++i) {
+        output_name_to_index[outputs[i].name] = i;
+    }
 
+    if (output_name_to_index.count("scores")) scores_idx_ = output_name_to_index["scores"];
+    if (output_name_to_index.count("boxes")) boxes_idx_ = output_name_to_index["boxes"];
+    if (output_name_to_index.count("labels")) labels_idx_ = output_name_to_index["labels"];
+
+    // Check if all indices are set
+    if (!scores_idx_.has_value() || !boxes_idx_.has_value() || !labels_idx_.has_value()) {
+        throw std::runtime_error("Not all required output indices were set in the model info");
+    }
 }
 
 std::vector<Detection> RtDetr::postprocess(
@@ -10,27 +23,14 @@ std::vector<Detection> RtDetr::postprocess(
     const std::vector<std::vector<int64_t>>& shapes, 
     const cv::Size& frame_size) {
 
-    size_t labels_idx = 0;
-    size_t boxes_idx = 1;
-    size_t scores_idx = 2;
+    const auto& scores = outputs[scores_idx_.value()];
+    const std::vector<int64_t>& shape_scores = shapes[scores_idx_.value()];
 
-    // Output order of this model somewhat changes when it is export to TensorRT.
-    // In TensorRT model i'm expecting bounding box output at index 2
-    if(shapes[2][2] == 4)
-    {
-        labels_idx = 1;
-        boxes_idx = 2;
-        scores_idx = 0;
-    }
+    const auto& boxes = outputs[boxes_idx_.value()];
+    const std::vector<int64_t>& shape_boxes = shapes[boxes_idx_.value()];
 
-    const auto& scores = outputs[scores_idx];
-    const std::vector<int64_t>& shape_scores = shapes[scores_idx];
-
-    const auto& boxes = outputs[boxes_idx];
-    const std::vector<int64_t>& shape_boxes = shapes[boxes_idx];
-
-    const auto& labels = outputs[labels_idx];
-    const std::vector<int64_t>& shape_labels = shapes[labels_idx];
+    const auto& labels = outputs[labels_idx_.value()];
+    const std::vector<int64_t>& shape_labels = shapes[labels_idx_.value()];
 
     std::vector<int> classIds;
     std::vector<float> confidences;
