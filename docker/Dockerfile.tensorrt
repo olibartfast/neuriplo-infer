@@ -1,43 +1,52 @@
 
 # Stage 1: Cuda dependencies
-ARG UBUNTU_VERSION=22.04
-ARG NGC_CUDA_VERSION=12.3.2
-FROM nvcr.io/nvidia/cuda:$NGC_CUDA_VERSION-devel-ubuntu$UBUNTU_VERSION as cuda_dependencies
+ARG UBUNTU_VERSION=24.04
+ARG NGC_CUDA_VERSION=12.6.3
+FROM nvcr.io/nvidia/cuda:${NGC_CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} as cuda_dependencies
 
-# note: another alternative would be to use directly a tensorrt image from nvidia ngc
-
-# Set environment variable to avoid interactive prompts
+# Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install common dependencies
-RUN apt-get update && apt-get install -y \
-    cmake \
-    build-essential \
+# Install system dependencies with version pinning
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y \
+    cmake=3.* \
+    build-essential=12.* \
     libopencv-dev \
-    libgoogle-glog-dev\
+    libgoogle-glog-dev \
     wget \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Stage 2: Install backend-specific C++ dependencies
+# Stage 2: Install TensorRT dependencies
 FROM cuda_dependencies AS backend_dependencies
 
-ENV HOME=/root
 ARG BACKEND=TENSORRT
 
-ARG TRT_MAJOR=8
-ARG TRT_MINOR=.6
-ARG TRT_PATCH=.1
-ARG TRT_BUILD=.6
-ARG TRT_VERSION=$TRT_MAJOR$TRT_MINOR$TRT_PATCH$TRT_BUILD
-ARG TENSORRT_DIR=$HOME/TensorRT-$TRT_VERSION 
-ARG TRT_CUDA_VERSION=12.0
+# TensorRT version configuration
+ARG TRT_MAJOR=10
+ARG TRT_MINOR=.7
+ARG TRT_PATCH=.0
+ARG TRT_BUILD=.23
+ARG TRT_VERSION=${TRT_MAJOR}${TRT_MINOR}${TRT_PATCH}${TRT_BUILD}
+ARG TRT_CUDA_VERSION=12.6
+ARG TENSORRT_DIR=/opt/tensorrt
 
-RUN wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/$TRT_MAJOR$TRT_MINOR$TRT_PATCH/tars/TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$TRT_CUDA_VERSION.tar.gz 
+# Download and install TensorRT
+RUN wget --tries=3 --retry-connrefused \
+    https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/${TRT_MAJOR}${TRT_MINOR}${TRT_PATCH}/tars/TensorRT-${TRT_VERSION}.Linux.x86_64-gnu.cuda-${TRT_CUDA_VERSION}.tar.gz \
+    && tar -xzvf TensorRT-${TRT_VERSION}.Linux.x86_64-gnu.cuda-${TRT_CUDA_VERSION}.tar.gz -C /opt \
+    && rm TensorRT-${TRT_VERSION}.Linux.x86_64-gnu.cuda-${TRT_CUDA_VERSION}.tar.gz
 
-RUN tar -xzvf TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$TRT_CUDA_VERSION.tar.gz -C $HOME && \
-    rm TensorRT-$TRT_VERSION.Linux.x86_64-gnu.cuda-$TRT_CUDA_VERSION.tar.gz
+# Set TensorRT environment variables
+ENV LD_LIBRARY_PATH=/opt/TensorRT-${TRT_VERSION}/lib:${LD_LIBRARY_PATH}
+ENV LIBRARY_PATH=/opt/TensorRT-${TRT_VERSION}/lib:${LIBRARY_PATH}
+ENV CPATH=/opt/TensorRT-${TRT_VERSION}/include:${CPATH}
 
+# Set TensorRT environment variables
+ENV LD_LIBRARY_PATH=${TENSORRT_DIR}/lib:${LD_LIBRARY_PATH}
+ENV LIBRARY_PATH=${TENSORRT_DIR}/lib:${LIBRARY_PATH}
+ENV PATH=${TENSORRT_DIR}/include:${PATH}
 
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder
