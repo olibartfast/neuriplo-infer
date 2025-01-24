@@ -59,9 +59,9 @@ FetchContent_Declare(
   - OpenCV DNN Module 
   - ONNX Runtime (default)
   - LibTorch
-  - TensorRT
+  - TensorRT(10.0.6)
   - OpenVINO
-  - LibTensorflow
+  - LibTensorflow(2.13)
  
 ⚠️ **Note**: **After the CMake configuration step, fetched dependencies are cloned into the ``build/_deps`` folder.**
 
