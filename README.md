@@ -59,7 +59,7 @@ FetchContent_Declare(
   - OpenCV DNN Module 
   - ONNX Runtime (default)
   - LibTorch
-  - TensorRT(10.0.6)
+  - TensorRT(10.0.7.23)
   - OpenVINO
   - LibTensorflow(2.13)
  
