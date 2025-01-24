@@ -38,5 +38,5 @@ python tools/deployment/export_onnx.py --check -c configs/dfine/dfine_hgnetv2_l_
 ## **Convert ONNX Model to TensorRT**
 ```bash
 mkdir exports
-docker run --rm -it --gpus=all -v $(pwd)/exports:/exports -u $(id -u):$(id -g) --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -v $(pwd)/model.onnx:/workspace/model.onnx -w /workspace nvcr.io/nvidia/tensorrt:24.12-py3 /bin/bash -cx "trtexec --onnx="model.onnx" --saveEngine="model.engine" --fp16"
+docker run --rm -it --gpus=all -v $(pwd)/exports:/exports --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -v $(pwd)/model.onnx:/workspace/model.onnx -w /workspace nvcr.io/nvidia/tensorrt:24.12-py3 /bin/bash -cx "trtexec --onnx="model.onnx" --saveEngine="model.engine" --fp16"
 ```
