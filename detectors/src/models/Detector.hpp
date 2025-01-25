@@ -24,12 +24,12 @@ public:
         const auto& inputs = model_info_.getInputs();
         if (!inputs.empty()) {
             const auto& first_input = inputs[0].shape;
-            if (first_input.size() >= 4) {
-                channels_ = static_cast<int>(first_input[1]);
-                network_height_ = static_cast<size_t>(first_input[2]);
-                network_width_ = static_cast<size_t>(first_input[3]);
+            if (first_input.size() == 3) {
+                channels_ = static_cast<int>(first_input[0]);
+                network_height_ = static_cast<size_t>(first_input[1]);
+                network_width_ = static_cast<size_t>(first_input[2]);
             } else {
-                LOG(ERROR) << "Input shape does not match expected format (NCHW)";
+                LOG(ERROR) << "Input shape does not match expected format (CHW)";
             }
         } else {
             LOG(ERROR) << "No input layers found in model";
