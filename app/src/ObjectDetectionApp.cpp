@@ -12,15 +12,13 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig& config)
 
         classes = readLabelNames(config.labelsPath);
         
-
-
         LOG(INFO) << "CPU info " << getCPUInfo();
         const auto gpuInfo = getGPUModel();
         LOG(INFO) << "GPU info: " << gpuInfo;
         const auto use_gpu = config.use_gpu && hasNvidiaGPU();
-        engine = setup_inference_engine(config.weights, config.config, use_gpu);
+        engine = setup_inference_engine(config.weights, use_gpu, config.batch_size, config.input_sizes);
         if (!engine) {
-            throw std::runtime_error("Can't setup an inference engine for " + config.weights + " " + config.config);
+            throw std::runtime_error("Can't setup an inference engine for " + config.weights);
         }
 
         const auto model_info = engine->get_model_info();

@@ -157,3 +157,31 @@ bool hasNvidiaGPU() {
 
     return false;
 }
+
+
+// Function to split a string by a delimiter and return a vector of strings
+std::vector<std::string> split(const std::string& s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+std::vector<std::vector<int64_t>> parseInputSizes(const std::string& input) {
+    std::vector<std::vector<int64_t>> sizes;
+    std::vector<std::string> inputs = split(input, ';'); // Split by ';'
+
+    for (const auto& input_str : inputs) {
+        std::vector<std::string> dims = split(input_str, ','); // Split by ','
+        std::vector<int64_t> dimensions;
+        for (const auto& dim : dims) {
+            dimensions.push_back(std::stoi(dim)); // Convert to int
+        }
+        sizes.push_back(dimensions);
+    }
+
+    return sizes;
+}

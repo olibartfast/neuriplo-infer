@@ -19,12 +19,13 @@ struct AppConfig {
     std::string detectorType;
     std::string source;
     std::string labelsPath;
-    std::string config;
     std::string weights;
     bool use_gpu;
     bool enable_warmup;
     bool enable_benchmark;
     int benchmark_iterations;
     float confidenceThreshold;
+    int batch_size;
+    std::vector<std::vector<int64_t>> input_sizes;
 };
 
