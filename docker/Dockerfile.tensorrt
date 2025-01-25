@@ -47,7 +47,6 @@ ENV CPATH=/opt/TensorRT-${TRT_VERSION}/include:${CPATH}
 ENV LD_LIBRARY_PATH=${TENSORRT_DIR}/lib:${LD_LIBRARY_PATH}
 ENV LIBRARY_PATH=${TENSORRT_DIR}/lib:${LIBRARY_PATH}
 ENV PATH=${TENSORRT_DIR}/include:${PATH}
-
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder
 
@@ -56,16 +55,24 @@ WORKDIR /app
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DTRT_VERSION=$TRT_VERSION  -DTENSORRT_DIR=$TENSORRT_DIR && \
+RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DTRT_VERSION=$TRT_VERSION -DTENSORRT_DIR=$TENSORRT_DIR && \
     cmake --build build --config Release
 
 # Stage 4: Final image
 FROM backend_dependencies AS final
 
-COPY --from=builder /app/build/app/object-detection-inference /app/object-detection-inference
-
 WORKDIR /app
 
+# Copy the executable
+COPY --from=builder /app/build/app/object-detection-inference /app/object-detection-inference
+
+# Copy the shared libraries
+COPY --from=builder /app/build/detectors/libdetectors.so /app/
+COPY --from=builder /app/build/_deps/inferenceengines-build/libInferenceEngines.so /app/
+COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
+
+# Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located
+ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
+
 # Set the entry point to the compiled executable
-# --entrypoint param to override it from docker run
-ENTRYPOINT  ["./object-detection-inference"]
+ENTRYPOINT ["./object-detection-inference"]

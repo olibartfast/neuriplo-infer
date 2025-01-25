@@ -263,6 +263,7 @@ For GPU support, add `--gpus all` to the docker run command.
 ## 🙏 Acknowledgments
 
 - [OpenCV DNN Module](https://github.com/opencv/opencv)
+- https://github.com/opencv/opencv/blob/4.x/samples/dnn/yolo_detector.cpp
 - [TensorRTx](https://github.com/wang-xinyu/tensorrtx)
 - [RT-DETR Deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 

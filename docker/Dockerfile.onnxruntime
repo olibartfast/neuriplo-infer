@@ -43,10 +43,18 @@ RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DORT_VERSION=$ORT_VERSION  -DO
 # Stage 4: Final image
 FROM backend_dependencies AS final
 
-COPY --from=builder /app/build/app/object-detection-inference /app/object-detection-inference
-
 WORKDIR /app
 
+# Copy the executable
+COPY --from=builder /app/build/app/object-detection-inference /app/object-detection-inference
+
+# Copy the shared libraries
+COPY --from=builder /app/build/detectors/libdetectors.so /app/
+COPY --from=builder /app/build/_deps/inferenceengines-build/libInferenceEngines.so /app/
+COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
+
+# Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located
+ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
+
 # Set the entry point to the compiled executable
-# --entrypoint param to override it from docker run
-ENTRYPOINT  ["./object-detection-inference"]
+ENTRYPOINT ["./object-detection-inference"]
