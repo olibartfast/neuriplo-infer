@@ -279,7 +279,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov10",
-                    "--config=/home/oli/yolov10x_openvino_model/yolov10x.xml",
+                    "--weights=/home/oli/yolov10x_openvino_model/yolov10x.bin",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],
