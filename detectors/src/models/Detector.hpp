@@ -28,8 +28,14 @@ public:
                 channels_ = static_cast<int>(first_input[0]);
                 network_height_ = static_cast<size_t>(first_input[1]);
                 network_width_ = static_cast<size_t>(first_input[2]);
-            } else {
-                LOG(ERROR) << "Input shape does not match expected format (CHW)";
+                LOG(INFO) << "Sizes: " << channels_ << " " << network_width_ << " " << network_height_; 
+            }             
+            else {
+                LOG(ERROR) << "Input shape does not match expected format (CHW), Found " << first_input.size() << " inputs: ";
+                for(auto& s : first_input)
+                    LOG(ERROR) << s;
+                throw std::runtime_error("Input shape does not match expected format ");    
+        
             }
         } else {
             LOG(ERROR) << "No input layers found in model";

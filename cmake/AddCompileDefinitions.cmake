@@ -25,7 +25,7 @@ elseif (DEFAULT_BACKEND STREQUAL "LIBTORCH")
     # Tell the compiler to use glog instead of the default c10 logging system by defining C10_USE_GLOG    
     add_definitions(-DC10_USE_GLOG)
 elseif (DEFAULT_BACKEND STREQUAL "TENSORRT")
-    set(TRT_VERSION "8.6.1.6" CACHE STRING "Tensorrt version") # modify accordingly
+    set(TRT_VERSION "10.7.0.23" CACHE STRING "Tensorrt version") # modify accordingly
     set(TENSORRT_DIR $ENV{HOME}/TensorRT-${TRT_VERSION}/)
     message(STATUS "TENSORRT_DIR: ${TENSORRT_DIR}")
     find_package(CUDA REQUIRED)

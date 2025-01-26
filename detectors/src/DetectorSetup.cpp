@@ -12,6 +12,7 @@ std::unique_ptr<Detector> DetectorSetup::createDetector(const std::string& detec
 
     auto it = detectorCreators.find(detectorType);
     if (it != detectorCreators.end()) {
+        LOG(INFO) << "Creating detector '" << detectorType << "'";
         return it->second();
     } else {
         LOG(ERROR) << "Unknown detector type '" << detectorType << "' requested. Available types are: ";

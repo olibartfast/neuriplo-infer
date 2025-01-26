@@ -1,0 +1,31 @@
+{
+    "name": "object-detection-inference",
+    // Use the image property instead of dockerFile
+    "image": "object-detection-inference:tensorrt", // Replace with your image name and tag
+
+    "features": {
+        "ghcr.io/devcontainers/features/nvidia-cuda:1": {}
+    },
+
+    "overrideCommand": true,
+    "runArgs": [
+        "--gpus", "all"
+    ],
+    "postCreateCommand": "bash",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "kaysonwu.cpptask",
+                "ms-vscode.cpptools-extension-pack",
+                "franneck94.c-cpp-runner",
+                "DamianKoper.gdb-debug"
+            ]
+        }
+    } // Or your desired entrypoint command
+
+    // OR: Run a specific command. Example: run your app with arguments
+    // "overrideCommand": true,
+    // "command": ["./object-detection-inference", "-m", "your_model.engine", "-i", "your_input.mp4"]  
+}
+
