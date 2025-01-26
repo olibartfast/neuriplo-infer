@@ -297,7 +297,8 @@
                     "--type=dfine",
                     "--weights=model.engine",
                     "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
+                    "--labels=labels/coco.names",
+                    "--input_sizes='3,640,640;2'" 
                     ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
