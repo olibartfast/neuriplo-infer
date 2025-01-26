@@ -271,6 +271,7 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
+<<<<<<< HEAD
         },    
         {
             "name": "YOLO11 onnx dynamic",
@@ -286,6 +287,9 @@
                     ],
             "cwd": "${workspaceFolder}"
         },              
+=======
+        },   
+>>>>>>> dbcaed69c31cec5c989c0c0da49be0cc65ff113f
         {
             "name": "YOLOv10 openvino",
             "type": "cppdbg",
@@ -298,7 +302,33 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "DFINE tensorrt",
+           "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=dfine",
+                    "--weights=model.engine",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerPath": "/usr/bin/gdb"          
         }
+
     ]
 }
                
