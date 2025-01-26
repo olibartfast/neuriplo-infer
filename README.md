@@ -138,8 +138,8 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
   --labels=<labels_file> \
   --weights=<model_weights> \
   [--min_confidence=<threshold>] \
-  [--batch | -b <batch_size>] \
-  [--input_sizes | -is <input_sizes>] \
+  [--batch|-b=<batch_size>] \
+  [--input_sizes|-is='<input_sizes>'] \
   [--use-gpu] \
   [--warmup] \
   [--benchmark] \
@@ -163,9 +163,9 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 - `[--min_confidence=<confidence_value>]`: Sets the minimum confidence threshold for detections. Detections with a confidence score below this value will be discarded. The default value is `0.25`.
 
-- `[--batch | -b <batch_size>]`: Specifies the batch size for inference. Default value is `1`, inference with batch size bigger than 1 is not currently supported.
+- `[--batch | -b=<batch_size>]`: Specifies the batch size for inference. Default value is `1`, inference with batch size bigger than 1 is not currently supported.
 
-- `[--input_sizes | -is <input_sizes>]`: Input sizes for each model input when models have dynamic axes or the backend can't retrieve input layer information (like the OpenCV DNN module). Format: `CHW;CHW;...`. For example:
+- `[--input_sizes | -is=<input_sizes>]`: Input sizes for each model input when models have dynamic axes or the backend can't retrieve input layer information (like the OpenCV DNN module). Format: `CHW;CHW;...`. For example:
   - `'3,224,224'` for a single input
   - `'3,224,224;3,224,224'` for two inputs
   - `'3,640,640;2'` for RT-DETR/D-FINE models
