@@ -109,7 +109,7 @@ Replace `<backend>` with one of the following options:
    - For **ONNX Runtime**, modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ONNX_RUNTIME_DIR` and `ORT_VERSION` arguments.
    - For **TensorRT**, modify [`TensorRT.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/TensorRT.cmake) or pass `TENSORRT_DIR`and `TRT_VERSION` arguments
    - ⚠️ Note: These CMake files above belong to the [`InferenceEngines`](https://github.com/olibartfast/inference-engines) project and are cloned into the `build/_deps` folder after the configuration step.
-   - Check your backend version is set correct in file `[cmake/AddCompileDefinitions.cmake]`(cmake/AddCompileDefinitions.cmake)  
+   - Check your backend version is set correct in file [cmake/AddCompileDefinitions.cmake](cmake/AddCompileDefinitions.cmake)  
 
 2. **Cleaning the Build Folder**  
    When switching between backends or modifying configuration options, always clean the `build` directory before reconfiguring and compiling:  
