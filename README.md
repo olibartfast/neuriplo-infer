@@ -270,8 +270,6 @@ For GPU support, add `--gpus all` to the docker run command.
   - [D-FINE](docs/d-fine-export.md)
 
 ## ⚠️ Known Limitations
-
-- Models with dynamic axes not fully supported
 - Windows builds not currently supported
 - Some model/backend combinations may require specific export configurations
 
