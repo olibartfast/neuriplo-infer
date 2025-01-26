@@ -1,7 +1,7 @@
 #!/bin/bash
 docker run --gpus=all --rm \
     -v $(pwd)/data:/app/data \
-    -v $(HOME)/repos/D-FINE/exports:/weights \
+    -v $HOME/repos/D-FINE/exports:/weights \
     -v $(pwd)/labels:/labels \
     object-detection-inference:tensorrt \
     --type=dfine \
