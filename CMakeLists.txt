@@ -11,7 +11,7 @@ find_package(glog REQUIRED)
 
 # Set DEFAULT_BACKEND as a CACHE variable with its type and a help string.
 if(NOT DEFINED DEFAULT_BACKEND)
-   set(DEFAULT_BACKEND "ONNX_RUNTIME" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
+   set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
 endif()
 
 # or set manually in cache to test other backend:
@@ -25,7 +25,7 @@ include(FetchContent)
 FetchContent_Declare(
     InferenceEngines
     GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
-    GIT_TAG        feature/model_info  # or specify the exact tag/branch as needed
+    GIT_TAG        master  # or specify the exact tag/branch as needed
 )
 
 FetchContent_MakeAvailable(InferenceEngines)

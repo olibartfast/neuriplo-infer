@@ -130,7 +130,8 @@
                     "--type=yolov5",
                     "--weights=/home/oli/repos/yolov5/yolov5s.torchscript",
                     "--source=data/person.jpg", 
-                    "--labels=labels/coco.names"
+                    "--labels=labels/coco.names",
+                     "--input_sizes='3,640,640'"
                     ],
             "cwd": "${workspaceFolder}"
         },     
@@ -211,7 +212,8 @@
                     "--type=yolov8",
                     "--weights=/home/oli/repos/ultralytics/yolov8s.torchscript",
                     "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
+                    "--labels=labels/coco.names",
+                    "--input_sizes='3,640,640'"
                     ],
             "cwd": "${workspaceFolder}"
         },  
