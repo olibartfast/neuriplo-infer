@@ -87,7 +87,6 @@
             "args": [
                     "--type=yolov4",
                     "--weights=/home/oli/Downloads/weights/yolov4-tiny.weights",
-                    "--config=/home/oli/Downloads/weights/yolov4-tiny.cfg",
                     "--source=data/horses.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
