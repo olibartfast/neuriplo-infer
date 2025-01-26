@@ -89,6 +89,7 @@
                     "--weights=/home/oli/Downloads/weights/yolov4-tiny.weights",
                     "--config=/home/oli/Downloads/weights/yolov4-tiny.cfg",
                     "--source=data/horses.jpg", 
+                    "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
@@ -115,7 +116,8 @@
                     "--type=yolov5",
                     "--weights=/home/oli/repos/yolov5/yolov5s.onnx",
                     "--source=data/horses.jpg", 
-                    "--labels=labels/coco.names"
+                    "--labels=labels/coco.names",
+                     "--input_sizes='3,640,640'"
                     ],
             "cwd": "${workspaceFolder}"
         },   
@@ -167,6 +169,7 @@
                     "--type=yolov6",
                     "--weights=/home/oli/model_repository/yolov6s_onnx/1/model.onnx",
                     "--source=data/horses.jpg", 
+                    "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
@@ -180,6 +183,7 @@
                     "--type=yolov7",
                     "--weights=/home/oli/model_repository/yolov7-tiny_onnx/1/model.onnx",
                     "--source=data/horses.jpg", 
+                    "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
@@ -193,6 +197,7 @@
                     "--type=yolov8",
                     "--weights=/home/oli/repos/ultralytics/yolov8s.onnx",
                     "--source=data/horses.jpg", 
+                    "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
@@ -232,6 +237,7 @@
                     "--type=yolov9",
                     "--weights=/home/oli/repos/yolov9/yolov9-c-converted.onnx",
                     "--source=data/dog.jpg", 
+                    "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
@@ -245,6 +251,7 @@
                     "--type=yolov10",
                     "--weights=/home/oli/model_repository/yolov10_onnx/1/model.onnx",
                     "--source=data/person.jpg", 
+                    "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"//,
                     //"--warmup",
                     //"--benchmark"
@@ -260,10 +267,25 @@
                     "--type=yolo11",
                     "--weights=/home/oli/yolo11x.onnx",
                     "--source=data/horses.jpg", 
+                    "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
-        }        
+        },    
+        {
+            "name": "YOLO11 onnx dynamic",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=yolo11",
+                    "--weights=/home/oli/repos/YoloV8-ONNX/yolo11l.onnx",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names",
+                    "--input_sizes='3,640,640'",
+                    ],
+            "cwd": "${workspaceFolder}"
+        },              
         {
             "name": "YOLOv10 openvino",
             "type": "cppdbg",

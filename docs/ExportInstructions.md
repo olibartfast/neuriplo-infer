@@ -12,6 +12,6 @@
 * [YOLO-NAS Export Instructions](yolo-nas-export.md)
 
 ## Note
-The opencv-dnn module is configured to load ONNX models and .weights for YOLOv4.
+The opencv-dnn module is configured to load ONNX models(not dynamic axis) and .weights for YOLOv4.
 
 For detailed instructions on exporting each model, please refer to the linked documents above.
