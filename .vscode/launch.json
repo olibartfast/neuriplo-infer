@@ -271,25 +271,7 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
-<<<<<<< HEAD
-        },    
-        {
-            "name": "YOLO11 onnx dynamic",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/object-detection-inference",
-            "args": [
-                    "--type=yolo11",
-                    "--weights=/home/oli/repos/YoloV8-ONNX/yolo11l.onnx",
-                    "--source=data/horses.jpg", 
-                    "--labels=labels/coco.names",
-                    "--input_sizes='3,640,640'",
-                    ],
-            "cwd": "${workspaceFolder}"
-        },              
-=======
-        },   
->>>>>>> dbcaed69c31cec5c989c0c0da49be0cc65ff113f
+        },                
         {
             "name": "YOLOv10 openvino",
             "type": "cppdbg",
