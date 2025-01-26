@@ -263,7 +263,7 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
-        }        
+        },   
         {
             "name": "YOLOv10 openvino",
             "type": "cppdbg",
@@ -276,7 +276,33 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "DFINE tensorrt",
+           "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=dfine",
+                    "--weights=model.engine",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerPath": "/usr/bin/gdb"          
         }
+
     ]
 }
                
