@@ -281,6 +281,7 @@
                     "--type=yolov10",
                     "--weights=/home/oli/yolov10x_openvino_model/yolov10x.bin",
                     "--source=data/dog.jpg", 
+                    "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"

@@ -8,7 +8,7 @@ The table represents a specific model and includes the following details:
 - **Note**:  OpenCV-DNN --> tested only onnx weights on cpu, opencv-dnn currently supports only static shapes, dynamic input (or layer) shape does not work with opencv 
 
 
-| Model                                              | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime  | OpenVino | Libtensorflow |
+| Model                                              | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino  | Libtensorflow |
 |----------------------------------------------------|------------|------------|----------|----------|--------------|-----------|-----------|
 | yolov4/yolov4-tiny                                 | yolov4     | o          | x        | x        | x            | x         | x         | 
 | yolov5 models                                      | yolov5     | o          | x        | o        | o            | o         | x         |
@@ -21,4 +21,4 @@ The table represents a specific model and includes the following details:
 | yolo-nas models                                    | yolonas    | o          | x        | x        | o            | x         | x         |
 | rt-detr models                                     | rtdetr     | x          | o        | x        | o            | x         | x         |
 | rt-detr ultralytics models                         | rtdetrul   | x          | o        | o        | o            | x         | x         |
-| d-fine models                                       | dfine      | x          | x        | x        | o            | x         | x         |
+| d-fine models                                      | dfine      | x          | o        | x        | o            | x         | x         |
