@@ -141,7 +141,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov5",
-                    "--config=/home/oli/model_repository/yolov5s_openvino/1/model.xml",
+                    "--weights=/home/oli/model_repository/yolov5s_openvino/1/model.bin",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],

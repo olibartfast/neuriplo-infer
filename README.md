@@ -135,7 +135,6 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
     --source=<input_source> \
     --labels=<labels_file> \
     --weights=<model_weights> \
-    [--config=<model_config>] \
     [--min_confidence=<threshold>] \
     [--use-gpu] \
     [--warmup] \
@@ -156,9 +155,6 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 
 #### Optional Parameters
-
-- `[--config=<path/to/model/config>]`: (Optional) Specifies the path to the model configuration file. This file contains the model architecture and other configurations necessary for setting up the inference. This parameter is primarily needed if the model is from the OpenVINO backend.
-
 - `[--min_confidence=<confidence value>]`: (Optional) Sets the minimum confidence threshold for detections. Detections with a confidence score below this value will be discarded. The default value is `0.25`.
 
 - `[--use-gpu]`: (Optional) Activates GPU support for inference. This can significantly speed up the inference process if a compatible GPU is available.
