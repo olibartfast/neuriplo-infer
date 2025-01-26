@@ -13,7 +13,7 @@ docker run --gpus=all --rm \
 
 # docker run --rm \
 #     -v data:/app/data \
-#     -v /home/oli/repos/D-FINE:/weights \
+#     -v $HOME/repos/D-FINE:/weights \
 #     -v labels:/labels \
 #     -w /app/data \
 #     --entrypoint ls \
