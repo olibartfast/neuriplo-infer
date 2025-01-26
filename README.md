@@ -248,6 +248,7 @@ For GPU support, add `--gpus all` to the docker run command.
 ├── detectors/      # Detection library
 ├── cmake/          # CMake modules
 └── docker/         # Dockerfiles
+└── build/_deps/    # Fetched dependencies after CMake configuration
 ```
 
 ## 📚 Additional Resources
