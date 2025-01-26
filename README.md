@@ -129,71 +129,88 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 ## 💻 App Usage
 
 ### Command Line Options
+
 ```bash
 ./object-detection-inference \
-    --type=<model_type> \
-    --source=<input_source> \
-    --labels=<labels_file> \
-    --weights=<model_weights> \
-    [--min_confidence=<threshold>] \
-    [--use-gpu] \
-    [--warmup] \
-    [--benchmark]
+  [--help | -h] \
+  --type=<model_type> \
+  --source=<input_source> \
+  --labels=<labels_file> \
+  --weights=<model_weights> \
+  [--min_confidence=<threshold>] \
+  [--batch | -b <batch_size>] \
+  [--input_sizes | -is <input_sizes>] \
+  [--use-gpu] \
+  [--warmup] \
+  [--benchmark] \
+  [--iterations=<number>]
 ```
 
 #### Required Parameters
-- `--type=<model type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`,  `yolov10`, `yolo11`,`rtdetr`, `rtdetrul`, `dfine`. Choose the appropriate model based on your requirements.
 
-- `--source=<source>`: Defines the input source for the object detection. It can be:
-  - A live feed URL, e.g., `rtsp://cameraip:port/somelivefeed`
+- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`, `yolov10`, `yolo11`, `rtdetr`, `rtdetrul`, `dfine`.
+
+- `--source=<input_source>`: Defines the input source for the object detection. It can be:
+  - A live feed URL, e.g., `rtsp://cameraip:port/stream`
   - A path to a video file, e.g., `path/to/video.format`
   - A path to an image file, e.g., `path/to/image.format`
 
-- `--labels=<path/to/labels/file>`: Specifies the path to the file containing the class labels. This file should list the labels used by the model, each label on a new line.
+- `--labels=<path/to/labels/file>`: Specifies the path to the file containing the class labels. This file should list the labels used by the model, with each label on a new line.
 
-- `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights. 
-
+- `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights.
 
 #### Optional Parameters
-- `[--min_confidence=<confidence value>]`: (Optional) Sets the minimum confidence threshold for detections. Detections with a confidence score below this value will be discarded. The default value is `0.25`.
 
-- `[--use-gpu]`: (Optional) Activates GPU support for inference. This can significantly speed up the inference process if a compatible GPU is available.
+- `[--min_confidence=<confidence_value>]`: Sets the minimum confidence threshold for detections. Detections with a confidence score below this value will be discarded. The default value is `0.25`.
 
-- `[--warmup]`: (Optional) Enables GPU warmup. Warming up the GPU before performing actual inference can help achieve more consistent and optimized performance. This parameter is relevant only if the inference is being performed on an image source.
+- `[--batch | -b <batch_size>]`: Specifies the batch size for inference. Default value is `1`, inference with batch size bigger than 1 is not currently supported.
 
-- `[--benchmark]`: (Optional) Enables benchmarking mode. In this mode, the application will run multiple iterations of inference to measure and report the average inference time. This is useful for evaluating the performance of the model and the inference setup. This parameter is relevant only if the inference is being performed on an image source.
+- `[--input_sizes | -is <input_sizes>]`: Input sizes for each model input when models have dynamic axes or the backend can't retrieve input layer information (like the OpenCV DNN module). Format: `CHW;CHW;...`. For example:
+  - `'3,224,224'` for a single input
+  - `'3,224,224;3,224,224'` for two inputs
+  - `'3,640,640;2'` for RT-DETR/D-FINE models
+
+- `[--use-gpu]`: Activates GPU support for inference. This can significantly speed up the inference process if a compatible GPU is available. Default is `false`.
+
+- `[--warmup]`: Enables GPU warmup. Warming up the GPU before performing actual inference can help achieve more consistent and optimized performance. This parameter is relevant only if the inference is being performed on an image source. Default is `false`.
+
+- `[--benchmark]`: Enables benchmarking mode. In this mode, the application will run multiple iterations of inference to measure and report the average inference time. This is useful for evaluating the performance of the model and the inference setup. This parameter is relevant only if the inference is being performed on an image source. Default is `false`.
+
+- `[--iterations=<number>]`: Specifies the number of iterations for benchmarking. The default value is `10`.
 
 ### To check all available options:
-```
+
+```bash
 ./object-detection-inference --help
 ```
-### Common Use Case Examples 
+
+### Common Use Case Examples
 
 ```bash
 # YOLOv8 Onnx Runtime image processing
 ./object-detection-inference \
-    --type=yolov8 \
-    --source=image.png \
-    --weights=models/yolov8s.onnx \
-    --labels=data/coco.names
+  --type=yolov8 \
+  --source=image.png \
+  --weights=models/yolov8s.onnx \
+  --labels=data/coco.names
 
-# YOLOv8s TensorRT video processing
+# YOLOv8 TensorRT video processing
 ./object-detection-inference \
-    --type=yolov8 \
-    --source=video.mp4 \
-    --weights=models/yolov8s.engine \
-    --labels=data/coco.names \
-    --min_confidence=0.4
+  --type=yolov8 \
+  --source=video.mp4 \
+  --weights=models/yolov8s.engine \
+  --labels=data/coco.names \
+  --min_confidence=0.4
 
-# RTSP stream processing using rtdetr ultralytics implementation
-./object-detection-inference \
+# RTSP stream processing using RT-DETR Ultralytics implementation
     --type=rtdetrul \
     --source="rtsp://camera:554/stream" \
     --weights=models/rtdetr-l.onnx \
     --labels=data/coco.names \
     --use-gpu
 ```
-* check [.vscode folder](.vscode/launch.json) for other examples
+
+*Check the [`.vscode` folder](.vscode/launch.json) for other examples.*
 
 ## 🐳 Docker Deployment
 
