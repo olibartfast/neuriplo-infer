@@ -4,7 +4,7 @@ The process is similar to RTDETR export, From the [lyuwenyu RT-DETR repository, 
 
 ## OnnxRuntime
 ```bash
-cd RT-DETR/rtdetr_pytorch
+cd RT-DETR/rtdetrv2_pytorch
 python tools/export_onnx.py -c configs/rtdetrv2/rtdetrv2_r18vd_120e_coco.yml -r path/to/checkpoint --check
 ```
 Note: You can use other versions instead of `rtdetrv2_r18vd_120e_coco.yml`.
