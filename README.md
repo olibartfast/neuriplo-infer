@@ -279,6 +279,10 @@ For GPU support, add `--gpus all` to the docker run command.
 - [TensorRTx](https://github.com/wang-xinyu/tensorrtx)
 - [RT-DETR Deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
+ ## References
+ - https://paperswithcode.com/sota/real-time-object-detection-on-coco
+ - https://leaderboard.roboflow.com/
+
 ## 📫 Support
 
 - Open an [issue](https://github.com/olibartfast/object-detection-inference/issues) for bug reports or feature requests
