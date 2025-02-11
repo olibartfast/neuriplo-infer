@@ -80,6 +80,19 @@
             "cwd": "${workspaceFolder}"
         },       
         {
+            "name": "rtdetr v2 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=rtdetrv2",
+                    "--weights=/home/oli/repos/RT-DETR/rtdetrv2_pytorch/model.onnx",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names",
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                    
+        {
             "name": "YOLOv4 OpenCV DNN",
             "type": "cppdbg",
             "request": "launch",

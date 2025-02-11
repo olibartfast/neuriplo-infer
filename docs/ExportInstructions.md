@@ -9,6 +9,7 @@
 * [YOLOv5 Export Instructions](yolov5-export.md)
 * [RT-DETR (Ultralytics) Export Instructions](rtdetr-ultralytics-export.md)
 * [RT-DETR (lyuwenyu) Export Instructions](rtdetr-lyuwenyu-export.md)
+* [RT-DETRV2 (lyuwenyu) Export Instructions](rtdetrv2-lyuwenyu-export.md)
 * [YOLO-NAS Export Instructions](yolo-nas-export.md)
 
 ## Note

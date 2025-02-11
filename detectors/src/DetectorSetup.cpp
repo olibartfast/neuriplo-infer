@@ -36,6 +36,7 @@ std::unordered_map<std::string, std::function<std::unique_ptr<Detector>()>> Dete
         {"yolov10", [model_info] { return std::make_unique<YOLOv10>(model_info); }},
         {"rtdetrul", [model_info] { return std::make_unique<RtDetrUltralytics>(model_info); }},
         {"rtdetr", [model_info] { return std::make_unique<RtDetr>(model_info); }},
+        {"rtdetrv2", [model_info] { return std::make_unique<RtDetr>(model_info); }},
         {"dfine", [model_info] { return std::make_unique<DFine>(model_info); }}
     };
 }
