@@ -29,7 +29,13 @@ public:
                 network_height_ = static_cast<size_t>(first_input[1]);
                 network_width_ = static_cast<size_t>(first_input[2]);
                 LOG(INFO) << "Sizes: " << channels_ << " " << network_width_ << " " << network_height_; 
-            }             
+            }       
+            else if (first_input.size() == 4) {
+                channels_ = static_cast<int>(first_input[1]);
+                network_height_ = static_cast<size_t>(first_input[2]);
+                network_width_ = static_cast<size_t>(first_input[3]);
+                LOG(INFO) << "Sizes: " << channels_ << " " << network_width_ << " " << network_height_; 
+            }        
             else {
                 LOG(ERROR) << "Input shape does not match expected format (CHW), Found " << first_input.size() << " inputs: ";
                 for(auto& s : first_input)
