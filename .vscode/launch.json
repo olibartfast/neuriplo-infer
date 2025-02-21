@@ -241,7 +241,34 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
-        },                  
+        },  
+        {
+            "name": "YOLO12 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=yolov12",
+                    "--weights=/home/oli/repos/yolov12/yolov12x.onnx",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        }, 
+        {
+            "name": "YOLO12 torchscript/libtorch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=yolov12",
+                    "--weights=/home/oli/repos/yolov12/yolov12x.torchscript",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names",
+                    "--input_sizes='3,640,640'"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                                 
         {
             "name": "YOLOv9 onnx",
             "type": "cppdbg",

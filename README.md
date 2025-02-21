@@ -8,7 +8,7 @@ C++ framework for [real-time object detection](https://paperswithcode.com/sota/r
 
 ## 🚀 Key Features
 
-- Multiple model support (YOLO series from YOLOv4 to YOLO11, RT-DETR, D-FINE)
+- Multiple model support (YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE)
 - Switchable inference backends (OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow)
 - Real-time video processing with GStreamer integration
 - GPU acceleration support
@@ -264,6 +264,7 @@ For GPU support, add `--gpus all` to the docker run command.
   - [YOLOv9](docs/yolov9-export.md)
   - [YOLOv10](docs/yolov10-export.md)
   - [YOLO11](docs/yolo11-export.md)
+  - [YOLOv12](docs/yolo12-export.md)
   - [YOLO-NAS](docs/yolo-nas-export.md)
   - [RT-DETR (lyuwenyu implementation)](docs/rtdetr-lyuwenyu-export.md)
   - [RT-DETRV2](docs/rtdetrv2-lyuwenyu-export.md)
