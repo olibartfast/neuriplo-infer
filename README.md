@@ -264,7 +264,7 @@ For GPU support, add `--gpus all` to the docker run command.
   - [YOLOv9](docs/yolov9-export.md)
   - [YOLOv10](docs/yolov10-export.md)
   - [YOLO11](docs/yolo11-export.md)
-  - [YOLOv12](docs/yolo12-export.md)
+  - [YOLOv12](docs/yolov12-export.md)
   - [YOLO-NAS](docs/yolo-nas-export.md)
   - [RT-DETR (lyuwenyu implementation)](docs/rtdetr-lyuwenyu-export.md)
   - [RT-DETRV2](docs/rtdetrv2-lyuwenyu-export.md)
