@@ -228,7 +228,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
     --use-gpu
 ```
 
-*Check the [`.vscode` folder](.vscode/launch.json) for other examples.*
+*Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
 
 ## 🐳 Docker Deployment
 
