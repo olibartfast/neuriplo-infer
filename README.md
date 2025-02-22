@@ -102,21 +102,50 @@ Replace `<backend>` with one of the following options:
 
 ---
 
-### Notes
+### Notes  
+
 1. **Custom Backend Paths**  
    If the required backend package is not installed system-wide, you can manually specify its path:  
-   - For **Libtorch**, modify [`LibTorch.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake) or pass the `Torch_DIR` argument.  
-   - For **ONNX Runtime**, modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ONNX_RUNTIME_DIR` and `ORT_VERSION` arguments.
-   - For **TensorRT**, modify [`TensorRT.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/TensorRT.cmake) or pass `TENSORRT_DIR`and `TRT_VERSION` arguments
-   - ⚠️ Note: These CMake files above belong to the [`InferenceEngines`](https://github.com/olibartfast/inference-engines) project and are cloned into the `build/_deps` folder after the configuration step.
-   - Check your backend version is set correct in file [cmake/AddCompileDefinitions.cmake](cmake/AddCompileDefinitions.cmake)  
+
+   - **Libtorch**  
+     Modify [`LibTorch.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake) or pass the `Torch_DIR` argument.  
+
+   - **ONNX Runtime**  
+     Modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ONNX_RUNTIME_DIR` and `ORT_VERSION` arguments.  
+
+   - **TensorRT**  
+     Modify [`TensorRT.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/TensorRT.cmake) or pass the `TENSORRT_DIR` and `TRT_VERSION` arguments.  
+
+   - ⚠️ **Important:**  
+     - These CMake files belong to the [`InferenceEngines`](https://github.com/olibartfast/inference-engines) project and are cloned into the `build/_deps` folder after the configuration step.  
+     - Ensure your backend version is set correctly in [cmake/AddCompileDefinitions.cmake](cmake/AddCompileDefinitions.cmake).  
 
 2. **Cleaning the Build Folder**  
-   When switching between backends or modifying configuration options, always clean the `build` directory before reconfiguring and compiling:  
-   ```bash
-   rm -rf build && mkdir build
-   ```
+   When switching backends or changing configuration options, clean the `build` directory before reconfiguring and compiling.  
 
+   **Full Clean (Major Changes)**  
+   - **Command:**  
+     ```sh
+     rm -rf build && mkdir build
+     ```  
+   - **Use Case:**  
+     - Backend switches or major config updates.  
+     - Ensures a fresh, conflict-free build.  
+   - **Trade-off:**  
+     - Slower full rebuild.  
+
+   **Partial Clean (Minor Changes)**  
+   - **Command:**  
+     ```sh
+     rm build/CMakeCache.txt
+     ```  
+   - **Use Case:**  
+     - Small tweaks without fully rebuilding.  
+     - Faster than a full clean.  
+   - **Trade-off:**  
+     - May not catch all conflicts.  
+
+---
 ### Test Builds
 ```bash
 # App tests
