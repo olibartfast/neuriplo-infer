@@ -10,10 +10,10 @@ To export DEIM models to ONNX format, follow the steps below:
 ### **Steps:**  
 1. Navigate to the DEIM repository directory:  
    ```bash
-   cd DEIM, the select one model from the model zoo (in example below  `deim_dfine_hgnetv2_s_coco_120e.pth`)  
+   cd DEIM  
    ```  
-
-2. Run the export script:  
+2. then select and download a model from the model zoo (in example below `deim_dfine_hgnetv2_s_coco_120e.pth`)
+3. Run the export script:  
    ```bash
    python tools/deployment/export_onnx.py --check -c configs/deim_dfine/deim_hgnetv2_s_coco.yml -r deim_dfine_hgnetv2_s_coco_120e.pth
    ```  
