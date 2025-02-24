@@ -6,7 +6,6 @@ set(DETECTORS_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/models/YoloV4.cpp 
     ${CMAKE_CURRENT_LIST_DIR}/src/models/YoloVn.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/models/YOLOv10.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/src/models/DFine.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/DetectorSetup.cpp 
 )
 

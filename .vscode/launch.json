@@ -352,7 +352,33 @@
                 }
             ],
             "miDebuggerPath": "/usr/bin/gdb"          
-        }
+        },
+        {
+            "name": "DEIM onnx",
+           "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=deim",
+                    "--weights=/home/oli/repos/DEIM/deim_dfine_hgnetv2_s_coco_120e.onnx",
+                    "--source=data/horses.jpg", 
+                    "--labels=labels/coco.names",
+                    "--input_sizes='3,640,640;2'" 
+                    ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerPath": "/usr/bin/gdb"          
+        }        
 
     ]
 }

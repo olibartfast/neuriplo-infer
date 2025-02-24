@@ -5,7 +5,6 @@
 #include "YoloNas.hpp"
 #include "RtDetr.hpp"
 #include "RtDetrUltralytics.hpp"
-#include "DFine.hpp"
 
 std::unique_ptr<Detector> DetectorSetup::createDetector(const std::string& detectorType, const ModelInfo& model_info) {
     static const auto detectorCreators = getDetectorCreators(model_info);
@@ -38,6 +37,7 @@ std::unordered_map<std::string, std::function<std::unique_ptr<Detector>()>> Dete
         {"rtdetrul", [model_info] { return std::make_unique<RtDetrUltralytics>(model_info); }},
         {"rtdetr", [model_info] { return std::make_unique<RtDetr>(model_info); }},
         {"rtdetrv2", [model_info] { return std::make_unique<RtDetr>(model_info); }},
-        {"dfine", [model_info] { return std::make_unique<DFine>(model_info); }}
+        {"dfine", [model_info] { return std::make_unique<RtDetr>(model_info); }},
+        {"deim", [model_info] { return std::make_unique<RtDetr>(model_info); }}
     };
 }

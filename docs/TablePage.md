@@ -24,3 +24,4 @@ The table represents a specific model and includes the following details:
 | rt-detr v2 models                                  | rtdetrv2   | x          | o        | x        | o            | x         | x         |
 | rt-detr ultralytics models                         | rtdetrul   | x          | o        | o        | o            | x         | x         |
 | d-fine models                                      | dfine      | x          | o        | x        | o            | x         | x         |
+| deim models                                        | deim       | x          | o        | x        | o            | x         | x         |

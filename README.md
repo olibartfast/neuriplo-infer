@@ -3,12 +3,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for [real-time object detection](https://paperswithcode.com/sota/real-time-object-detection-on-coco), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models (YOLOv4-12, RT-DETR, D-FINE) on video streams, video files, or images with configurable hardware acceleration.
+C++ framework for [real-time object detection](https://paperswithcode.com/sota/real-time-object-detection-on-coco), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models on video streams, video files, or images with configurable hardware acceleration.
 
 
 ## 🚀 Key Features
 
-- Multiple model support (YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE)
+- Multiple model support (YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM)
 - Switchable inference backends (OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow)
 - Real-time video processing with GStreamer integration
 - GPU acceleration support
@@ -177,7 +177,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 #### Required Parameters
 
-- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`, `yolov10`, `yolo11`, `yolov12`, `rtdetr`,`rtdetrv2`, `rtdetrul`, `dfine`.
+- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`, `yolov10`, `yolo11`, `yolov12`, `rtdetr`,`rtdetrv2`, `rtdetrul`, `dfine`, `deim`.
 
 - `--source=<input_source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
@@ -197,7 +197,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 - `[--input_sizes | -is=<input_sizes>]`: Input sizes for each model input when models have dynamic axes or the backend can't retrieve input layer information (like the OpenCV DNN module). Format: `CHW;CHW;...`. For example:
   - `'3,224,224'` for a single input
   - `'3,224,224;3,224,224'` for two inputs
-  - `'3,640,640;2'` for RT-DETR/D-FINE models
+  - `'3,640,640;2'` for RT-DETR/D-FINE/DEIM models
 
 - `[--use-gpu]`: Activates GPU support for inference. This can significantly speed up the inference process if a compatible GPU is available. Default is `false`.
 
@@ -299,6 +299,7 @@ For GPU support, add `--gpus all` to the docker run command.
   - [RT-DETRV2](docs/rtdetrv2-lyuwenyu-export.md)
   - [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)
   - [D-FINE](docs/d-fine-export.md)
+  - [DEIM](docs/deim-export.md)
 
 ## ⚠️ Known Limitations
 - Windows builds not currently supported
