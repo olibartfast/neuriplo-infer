@@ -128,23 +128,12 @@ Replace `<backend>` with one of the following options:
      ```sh
      rm -rf build && mkdir build
      ```  
-   - **Use Case:**  
-     - Backend switches or major config updates.  
-     - Ensures a fresh, conflict-free build.  
-   - **Trade-off:**  
-     - Slower full rebuild.  
 
    **Partial Clean (Minor Changes)**  
    - **Command:**  
      ```sh
      rm build/CMakeCache.txt
      ```  
-   - **Use Case:**  
-     - Small tweaks without fully rebuilding.  
-     - Faster than a full clean.  
-   - **Trade-off:**  
-     - May not catch all conflicts.  
-
 ---
 ### Test Builds
 ```bash
@@ -239,7 +228,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
     --use-gpu
 ```
 
-*Check the [`.vscode` folder](.vscode/launch.json) for other examples.*
+*Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
 
 ## 🐳 Docker Deployment
 
