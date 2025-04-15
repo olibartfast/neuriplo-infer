@@ -8,7 +8,7 @@ RfDetr::RfDetr(const ModelInfo& model_info, float confidenceThreshold) : Detecto
         output_name_to_index[outputs[i].name] = i;
     }
 
-    if (output_name_to_index.count("dets")) dets_idx_ = output_name_to_index["boxes"];
+    if (output_name_to_index.count("dets")) dets_idx_ = output_name_to_index["dets"];
     if (output_name_to_index.count("labels")) labels_idx_ = output_name_to_index["labels"];
 
     // Check if all indices are set
