@@ -8,7 +8,7 @@ C++ framework for [real-time object detection](https://paperswithcode.com/sota/r
 
 ## 🚀 Key Features
 
-- Multiple model support (YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM)
+- Multiple model support (YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM, RF-DETR)
 - Switchable inference backends (OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow)
 - Real-time video processing with GStreamer integration
 - GPU acceleration support
