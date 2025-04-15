@@ -25,3 +25,4 @@ The table represents a specific model and includes the following details:
 | rt-detr ultralytics models                         | rtdetrul   | x          | o        | o        | o            | x         | x         |
 | d-fine models                                      | dfine      | x          | o        | x        | o            | x         | x         |
 | deim models                                        | deim       | x          | o        | x        | o            | x         | x         |
+| rf-detr models                                     | rfdetr     | x          | x        | x        | o            | x         | x         |

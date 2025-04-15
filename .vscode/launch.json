@@ -378,7 +378,21 @@
                 }
             ],
             "miDebuggerPath": "/usr/bin/gdb"          
-        }        
+        },
+        {
+            "name": "rfdetr onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=rfdetr",
+                    "--weights=/home/oli/inference_model.onnx",
+                    "--source=data/bus.jpg", 
+                    "--input_sizes='3,560,560'",
+                    "--labels=labels/coco-labels-91.txt"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                 
 
     ]
 }

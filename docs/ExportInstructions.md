@@ -11,6 +11,7 @@
 * [RT-DETR (lyuwenyu) Export Instructions](rtdetr-lyuwenyu-export.md)
 * [RT-DETRV2 (lyuwenyu) Export Instructions](rtdetrv2-lyuwenyu-export.md)
 * [YOLO-NAS Export Instructions](yolo-nas-export.md)
+* [RF-DETR Export Instructions](rf-detr-export.md)
 
 ## Note
 The opencv-dnn module is configured to load ONNX models(not dynamic axis) and .weights for YOLOv4.

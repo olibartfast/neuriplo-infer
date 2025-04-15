@@ -166,7 +166,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 #### Required Parameters
 
-- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`, `yolov10`, `yolo11`, `yolov12`, `rtdetr`,`rtdetrv2`, `rtdetrul`, `dfine`, `deim`.
+- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`, `yolov10`, `yolo11`, `yolov12`, `rtdetr`,`rtdetrv2`, `rtdetrul`, `dfine`, `deim`, `rfdetr`.
 
 - `--source=<input_source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
@@ -289,6 +289,7 @@ For GPU support, add `--gpus all` to the docker run command.
   - [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)
   - [D-FINE](docs/d-fine-export.md)
   - [DEIM](docs/deim-export.md)
+  - [RF-DETR](docs/rf-detr-export.md)
 
 ## ⚠️ Known Limitations
 - Windows builds not currently supported
