@@ -96,7 +96,6 @@ std::vector<Detection> RfDetr::postprocess(
     return detections;
 }
 
-// The preprocess_image function remains unchanged
 cv::Mat RfDetr::preprocess_image(const cv::Mat& image) {
     cv::Mat output_image;
     cv::cvtColor(image, output_image, cv::COLOR_BGR2RGB);
