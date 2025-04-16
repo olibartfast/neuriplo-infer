@@ -8,7 +8,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov8",
-                    "--weights=/home/oli/saved_model",
+                    "--weights=${env:HOME}/saved_model",
                     "--source=data/person.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -21,7 +21,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov10",
-                    "--weights=/home/oli/yolov10x_saved_model",
+                    "--weights=${env:HOME}/yolov10x_saved_model",
                     "--source=data/person.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -34,7 +34,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=dfine",
-                    "--weights=/home/oli/D-FINE/dfine_s_coco.onnx",
+                    "--weights=${env:HOME}/D-FINE/dfine_s_coco.onnx",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -47,7 +47,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=rtdetr",
-                    "--weights=/home/oli/repos/RT-DETR/rtdetr_pytorch/model.onnx",
+                    "--weights=${env:HOME}/repos/RT-DETR/rtdetr_pytorch/model.onnx",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -60,7 +60,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=rtdetrul",
-                    "--weights=/home/oli/repos/ultralytics/rtdetr-l.onnx",
+                    "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.onnx",
                     "--source=data/person.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -73,7 +73,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=rtdetrul",
-                    "--weights=/home/oli/repos/ultralytics/rtdetr-l.torchscript",
+                    "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.torchscript",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -86,7 +86,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=rtdetrv2",
-                    "--weights=/home/oli/repos/RT-DETR/rtdetrv2_pytorch/model.onnx",
+                    "--weights=${env:HOME}/repos/RT-DETR/rtdetrv2_pytorch/model.onnx",
                     "--source=data/horses.jpg", 
                     "--labels=labels/coco.names",
                     ],
@@ -99,7 +99,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov4",
-                    "--weights=/home/oli/Downloads/weights/yolov4-tiny.weights",
+                    "--weights=${env:HOME}/Downloads/weights/yolov4-tiny.weights",
                     "--source=data/horses.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
@@ -113,7 +113,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolonas",
-                    "--weights=/home/oli/Downloads/weights/yolo_nas_s.onnx",
+                    "--weights=${env:HOME}/Downloads/weights/yolo_nas_s.onnx",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -126,7 +126,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov5",
-                    "--weights=/home/oli/repos/yolov5/yolov5s.onnx",
+                    "--weights=${env:HOME}/repos/yolov5/yolov5s.onnx",
                     "--source=data/horses.jpg", 
                     "--labels=labels/coco.names",
                      "--input_sizes='3,640,640'"
@@ -140,7 +140,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov5",
-                    "--weights=/home/oli/repos/yolov5/yolov5s.torchscript",
+                    "--weights=${env:HOME}/repos/yolov5/yolov5s.torchscript",
                     "--source=data/person.jpg", 
                     "--labels=labels/coco.names",
                      "--input_sizes='3,640,640'"
@@ -154,7 +154,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov5",
-                    "--weights=/home/oli/model_repository/yolov5s_openvino/1/model.bin",
+                    "--weights=${env:HOME}/model_repository/yolov5s_openvino/1/model.bin",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -167,8 +167,8 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov5",
-                    "--weights=/home/oli/repos/yolov5/yolov5s.torchscript",
-                    "--source=/home/oli/Videos/driving.mp4", 
+                    "--weights=${env:HOME}/repos/yolov5/yolov5s.torchscript",
+                    "--source=${env:HOME}/Videos/driving.mp4", 
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
@@ -180,7 +180,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov6",
-                    "--weights=/home/oli/model_repository/yolov6s_onnx/1/model.onnx",
+                    "--weights=${env:HOME}/model_repository/yolov6s_onnx/1/model.onnx",
                     "--source=data/horses.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
@@ -194,7 +194,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov7",
-                    "--weights=/home/oli/model_repository/yolov7-tiny_onnx/1/model.onnx",
+                    "--weights=${env:HOME}/model_repository/yolov7-tiny_onnx/1/model.onnx",
                     "--source=data/horses.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
@@ -208,7 +208,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov8",
-                    "--weights=/home/oli/repos/ultralytics/yolov8s.onnx",
+                    "--weights=${env:HOME}/repos/ultralytics/yolov8s.onnx",
                     "--source=data/horses.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
@@ -222,7 +222,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov8",
-                    "--weights=/home/oli/repos/ultralytics/yolov8s.torchscript",
+                    "--weights=${env:HOME}/repos/ultralytics/yolov8s.torchscript",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names",
                     "--input_sizes='3,640,640'"
@@ -236,7 +236,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolo11",
-                    "--weights=/home/oli/yolo11x.torchscript",
+                    "--weights=${env:HOME}/yolo11x.torchscript",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -249,7 +249,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov12",
-                    "--weights=/home/oli/repos/yolov12/yolov12x.onnx",
+                    "--weights=${env:HOME}/repos/yolov12/yolov12x.onnx",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names"
                     ],
@@ -262,7 +262,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov12",
-                    "--weights=/home/oli/repos/yolov12/yolov12x.torchscript",
+                    "--weights=${env:HOME}/repos/yolov12/yolov12x.torchscript",
                     "--source=data/dog.jpg", 
                     "--labels=labels/coco.names",
                     "--input_sizes='3,640,640'"
@@ -276,7 +276,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov9",
-                    "--weights=/home/oli/repos/yolov9/yolov9-c-converted.onnx",
+                    "--weights=${env:HOME}/repos/yolov9/yolov9-c-converted.onnx",
                     "--source=data/dog.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
@@ -290,7 +290,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov10",
-                    "--weights=/home/oli/model_repository/yolov10_onnx/1/model.onnx",
+                    "--weights=${env:HOME}/model_repository/yolov10_onnx/1/model.onnx",
                     "--source=data/person.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"//,
@@ -306,7 +306,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolo11",
-                    "--weights=/home/oli/yolo11x.onnx",
+                    "--weights=${env:HOME}/yolo11x.onnx",
                     "--source=data/horses.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
@@ -320,7 +320,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov10",
-                    "--weights=/home/oli/yolov10x_openvino_model/yolov10x.bin",
+                    "--weights=${env:HOME}/yolov10x_openvino_model/yolov10x.bin",
                     "--source=data/dog.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
@@ -360,7 +360,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=deim",
-                    "--weights=/home/oli/repos/DEIM/deim_dfine_hgnetv2_s_coco_120e.onnx",
+                    "--weights=${env:HOME}/repos/DEIM/deim_dfine_hgnetv2_s_coco_120e.onnx",
                     "--source=data/horses.jpg", 
                     "--labels=labels/coco.names",
                     "--input_sizes='3,640,640;2'" 
@@ -386,13 +386,27 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=rfdetr",
-                    "--weights=/home/oli/inference_model.onnx",
+                    "--weights=${env:HOME}/inference_model.onnx",
                     "--source=data/bus.jpg", 
                     "--input_sizes='3,560,560'",
                     "--labels=labels/coco-labels-91.txt"
                     ],
             "cwd": "${workspaceFolder}"
-        },                 
+        },    
+        {
+            "name": "rfdetr tensorrt",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=rfdetr",
+                    "--weights=${env:HOME}/output/exports/model.engine",
+                    "--source=data/person.jpg", 
+                    "--input_sizes='3,560,560'",
+                    "--labels=labels/coco-labels-91.txt"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                      
 
     ]
 }
