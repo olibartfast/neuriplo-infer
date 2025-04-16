@@ -1,7 +1,7 @@
 # **RF-DETR Export Instructions**  
 * Follow the procedure listed https://github.com/roboflow/rf-detr?tab=readme-ov-file#onnx-export
 
-### ONNX Export
+### ONNX Export for onnxruntime
 
 > [!IMPORTANT]
 > Starting with RF-DETR 1.2.0, you'll have to run `pip install rfdetr[onnxexport]` before exporting model weights to ONNX format.  
@@ -17,3 +17,8 @@ model.export()
 ```
 
 This command saves the ONNX model to the `output` directory.
+
+### TensorRT Export
+```bash
+trtexec --onnx=/path/to/model.onnx --saveEngine=/path/to/model.endgine --memPoolSize=workspace:4096 --fp16 --useCudaGraph --useSpinWait --warmUp=500 --avgRuns=1000 --duration=10
+```
