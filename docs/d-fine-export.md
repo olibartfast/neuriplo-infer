@@ -23,7 +23,7 @@ To export D-FINE models to ONNX format, follow the steps below:
    ```  
 
 ### **Notes:**  
-- Ensure the batch size hardcoded in the `export_onnx.py` script is appropriate for your system's available RAM. If not, modify the batch size in the script to avoid out-of-memory errors.  
+- [Ensure the batch size hardcoded in the `export_onnx.py` script is appropriate for your system's available RAM](https://github.com/Peterande/D-FINE/issues/83). If not, modify the batch size in the script to avoid out-of-memory errors.  
 - Verify that `model.pth` corresponds to the correct pre-trained model checkpoint for the configuration file you're using.  
 - The `--check` flag ensures that the exported ONNX model is validated after the export process.  
 
