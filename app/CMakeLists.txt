@@ -36,7 +36,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${GLOG_LIBRARIES}
+    glog::glog
     ${OpenCV_LIBS}
     detectors
     InferenceEngines

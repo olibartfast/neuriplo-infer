@@ -16,16 +16,20 @@ endfunction()
 
 # Function to validate system dependencies
 function(validate_system_dependencies)
-    # Validate OpenCV
-    find_package(OpenCV REQUIRED)
+    # OpenCV and glog should already be found before this function is called
+    # Just validate versions if they're already found
+    if(NOT OpenCV_FOUND)
+        find_package(OpenCV REQUIRED)
+    endif()
     if(OpenCV_VERSION VERSION_LESS OPENCV_MIN_VERSION)
         message(FATAL_ERROR "OpenCV version ${OpenCV_VERSION} is too old. Minimum required: ${OPENCV_MIN_VERSION}")
     endif()
-    message(STATUS "✓ OpenCV ${OpenCV_VERSION} found")
+    message(STATUS "✓ OpenCV ${OpenCV_VERSION} validated")
     
-    # Validate glog
-    find_package(glog REQUIRED)
-    message(STATUS "✓ glog found")
+    if(NOT glog_FOUND)
+        find_package(glog REQUIRED)
+    endif()
+    message(STATUS "✓ glog validated")
     
     # Validate CMake version
     if(CMAKE_VERSION VERSION_LESS CMAKE_MIN_VERSION)

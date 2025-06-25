@@ -19,7 +19,6 @@ message(STATUS "Detectors Module, InferenceEngines_SOURCE_DIR: ${InferenceEngine
 
 target_include_directories(detectors PRIVATE
     ${OpenCV_INCLUDE_DIRS}
-    ${GLOG_INCLUDE_DIRS}
     ${InferenceEngines_SOURCE_DIR}/backends/src
     ${CMAKE_CURRENT_LIST_DIR}/inc
     ${CMAKE_CURRENT_LIST_DIR}/src
@@ -28,6 +27,6 @@ target_include_directories(detectors PRIVATE
 
 target_link_libraries(detectors PRIVATE
     ${OpenCV_LIBS}
-    ${GLOG_LIBRARIES}
+    glog::glog
 )
 

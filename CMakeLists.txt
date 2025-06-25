@@ -22,6 +22,12 @@ message(STATUS "Home path: $ENV{HOME}")
 # Include dependency validation
 include(cmake/DependencyValidation.cmake)
 
+# Find system dependencies first (before fetching external dependencies)
+find_package(OpenCV REQUIRED)
+find_package(glog REQUIRED)
+message(STATUS "✓ OpenCV ${OpenCV_VERSION} found")
+message(STATUS "✓ glog found")
+
 # Fetch the InferenceEngines project from GitHub with specific version
 include(FetchContent)
 FetchContent_Declare(
@@ -39,6 +45,12 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(InferenceEngines VideoCapture)
 message(STATUS "InferenceEngines_SOURCE_DIR: ${InferenceEngines_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
+
+# Configure VideoCapture target with OpenCV after it's been fetched
+if(TARGET VideoCapture)
+    target_include_directories(VideoCapture PRIVATE ${OpenCV_INCLUDE_DIRS})
+    target_link_libraries(VideoCapture PRIVATE ${OpenCV_LIBS})
+endif()
 
 # Validate all dependencies after they have been fetched
 validate_all_dependencies()
