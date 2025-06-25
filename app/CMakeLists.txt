@@ -1,9 +1,9 @@
-# Fetch the VideoCapture project from GitHub
+# Fetch the VideoCapture project from GitHub with specific version
 include(FetchContent)
 FetchContent_Declare(
     VideoCapture
     GIT_REPOSITORY https://github.com/olibartfast/VideoCapture.git
-    GIT_TAG        master
+    GIT_TAG        ${VIDEOCAPTURE_VERSION}  
 )
 set(USE_GSTREAMER ${USE_GSTREAMER})
 FetchContent_MakeAvailable(VideoCapture)
@@ -36,7 +36,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    glog::glog
+    ${GLOG_LIBRARIES}
     ${OpenCV_LIBS}
     detectors
     InferenceEngines

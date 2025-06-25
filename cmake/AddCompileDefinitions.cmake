@@ -1,40 +1,41 @@
 if(DEFAULT_BACKEND STREQUAL "OPENCV_DNN")
     add_compile_definitions(USE_OPENCV_DNN)
+    message(STATUS "Using OpenCV DNN backend")
+    
 elseif (DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
-    set(ORT_VERSION "1.19.2" CACHE STRING "Onnx runtime version") # modify accordingly
-    set(ONNX_RUNTIME_DIR $ENV{HOME}/onnxruntime-linux-x64-gpu-${ORT_VERSION} CACHE PATH "Path to onnxruntime")     
-    message(STATUS "Onnx runtime version: ${ORT_VERSION}")
-    message(STATUS "Onnx runtime directory: ${ONNX_RUNTIME_DIR}")
-    find_package(CUDA)
-    if (CUDA_FOUND)
-        message(STATUS "Found CUDA")
-        set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda)
-    else ()
-        message(WARNING "CUDA not found. GPU support will be disabled.")
-    endif()
+    # ONNX Runtime configuration - managed by InferenceEngines library
+    message(STATUS "Using ONNX Runtime backend (managed by InferenceEngines)")
     add_compile_definitions(USE_ONNX_RUNTIME)
+    
 elseif (DEFAULT_BACKEND STREQUAL "LIBTORCH")
-    set(Torch_DIR $ENV{HOME}/libtorch/share/cmake/Torch/ CACHE PATH "Path to libtorch")
-    find_package(Torch REQUIRED)
+    # LibTorch configuration - managed by InferenceEngines library
+    message(STATUS "Using LibTorch backend (managed by InferenceEngines)")
     add_compile_definitions(USE_LIBTORCH)
 
-    # Enable GLOG
+    # Enable GLOG for LibTorch
     # https://discuss.pytorch.org/t/libtorch-glog-doesnt-print/63822/3
     # The -DC10_USE_GLOG definition is required because LibTorch (C++ PyTorch)
     # uses its own logging system by default called c10. To use glog instead, you need to:
     # Tell the compiler to use glog instead of the default c10 logging system by defining C10_USE_GLOG    
     add_definitions(-DC10_USE_GLOG)
+    
 elseif (DEFAULT_BACKEND STREQUAL "TENSORRT")
-    set(TRT_VERSION "10.7.0.23" CACHE STRING "Tensorrt version") # modify accordingly
-    set(TENSORRT_DIR $ENV{HOME}/TensorRT-${TRT_VERSION}/)
-    message(STATUS "TENSORRT_DIR: ${TENSORRT_DIR}")
-    find_package(CUDA REQUIRED)
-    include(QueryGpu)
+    # TensorRT configuration - managed by InferenceEngines library
+    message(STATUS "Using TensorRT backend (managed by InferenceEngines)")
     add_compile_definitions(USE_TENSORRT)
+    
 elseif (DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW")
-    find_package(TensorFlow REQUIRED)
+    message(STATUS "Using TensorFlow backend (managed by InferenceEngines)")
     add_compile_definitions(USE_LIBTENSORFLOW)
+    
 elseif (DEFAULT_BACKEND STREQUAL "OPENVINO")
-    find_package(OpenVINO REQUIRED)
-    add_compile_definitions(USE_OPENVINO)   
+    message(STATUS "Using OpenVINO backend (managed by InferenceEngines)")
+    add_compile_definitions(USE_OPENVINO)
+    
+else()
+    message(FATAL_ERROR "Unknown backend: ${DEFAULT_BACKEND}. Supported backends: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
 endif()
+
+# Note: Inference backend version management and path configuration
+# should be handled by the InferenceEngines library, not this project.
+# This project only sets compile definitions for the selected backend.

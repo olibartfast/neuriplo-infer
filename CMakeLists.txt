@@ -5,13 +5,12 @@ project(object-detection-inference)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find required packages
-find_package(OpenCV REQUIRED)
-find_package(glog REQUIRED)
+# Include centralized version management
+include(cmake/versions.cmake)
 
 # Set DEFAULT_BACKEND as a CACHE variable with its type and a help string.
 if(NOT DEFINED DEFAULT_BACKEND)
-   set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
+   set(DEFAULT_BACKEND "ONNX_RUNTIME" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
 endif()
 
 # or set manually in cache to test other backend:
@@ -20,16 +19,29 @@ endif()
 
 message(STATUS "Home path: $ENV{HOME}")
 
-# Fetch the InferenceEngines project from GitHub
+# Include dependency validation
+include(cmake/DependencyValidation.cmake)
+
+# Fetch the InferenceEngines project from GitHub with specific version
 include(FetchContent)
 FetchContent_Declare(
     InferenceEngines
     GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
-    GIT_TAG        master  # or specify the exact tag/branch as needed
+    GIT_TAG        ${INFERENCE_ENGINES_VERSION}  # Use specific version instead of master
 )
 
-FetchContent_MakeAvailable(InferenceEngines)
+FetchContent_Declare(
+    VideoCapture
+    GIT_REPOSITORY https://github.com/olibartfast/videocapture.git
+    GIT_TAG        ${VIDEOCAPTURE_VERSION}  # Use specific version instead of master
+)
+
+FetchContent_MakeAvailable(InferenceEngines VideoCapture)
 message(STATUS "InferenceEngines_SOURCE_DIR: ${InferenceEngines_SOURCE_DIR}")
+message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
+
+# Validate all dependencies after they have been fetched
+validate_all_dependencies()
 
 # Define paths
 set(DETECTORS_ROOT ${CMAKE_SOURCE_DIR}/detectors)
@@ -54,3 +66,11 @@ if(ENABLE_DETECTORS_TESTS)
     enable_testing()
     add_subdirectory(${DETECTORS_ROOT}/test)
 endif()
+
+# Print final configuration summary
+message(STATUS "=== Build Configuration Summary ===")
+message(STATUS "Backend: ${DEFAULT_BACKEND}")
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Build Only Library: ${BUILD_ONLY_LIB}")
+message(STATUS "Enable Detector Tests: ${ENABLE_DETECTORS_TESTS}")
+message(STATUS "=====================================")

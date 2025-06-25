@@ -8,12 +8,12 @@ C++ framework for [real-time object detection](https://paperswithcode.com/sota/r
 
 ## 🚀 Key Features
 
-- Multiple model support (YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM, RF-DETR)
-- Switchable inference backends (OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow)
-- Real-time video processing with GStreamer integration
-- GPU acceleration support
-- Docker deployment ready
-- Benchmarking tools included
+- **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM, RF-DETR
+- **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via InferenceEngines library)
+- **Real-time Video Processing**: GStreamer integration (via VideoCapture library)
+- **GPU Acceleration Support**: CUDA integration for accelerated inference
+- **Docker Deployment Ready**: Multi-backend container support
+- **Benchmarking Tools**: Built-in performance measurement capabilities
 
 ## 🔧 Requirements
 
@@ -29,6 +29,29 @@ C++ framework for [real-time object detection](https://paperswithcode.com/sota/r
   apt install libgoogle-glog-dev
   ```
 
+### Dependency Management
+
+The project features a **dependency management system** with multiple setup options:
+
+#### 🚀 Quick Setup (Recommended)
+```bash
+# Setup inference backend dependencies for your chosen backend
+./scripts/setup_dependencies.sh --backend onnx_runtime
+
+# Setup with GPU support for LibTorch
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118
+
+# Setup all inference backends
+./scripts/setup_dependencies.sh --backend all
+```
+
+#### 🔧 Advanced Setup
+```bash
+# CMake ExternalProject (automatic download)
+cmake -DDEFAULT_BACKEND=ONNX_RUNTIME -DUSE_EXTERNAL_PROJECT=ON ..
+```
+
+**📖 For detailed dependency management information, see [Dependency Management Guide](docs/DependencyManagement.md)**
 
 ### Fetched Dependencies
 The project automatically fetches and builds the following dependencies using CMake's FetchContent:
@@ -38,7 +61,7 @@ The project automatically fetches and builds the following dependencies using CM
 FetchContent_Declare(
     VideoCapture
     GIT_REPOSITORY https://github.com/olibartfast/videocapture
-    GIT_TAG main
+    GIT_TAG v1.0.0  # Now uses specific version instead of master
 )
 ```
 - Handles video input processing
@@ -51,7 +74,7 @@ FetchContent_Declare(
 FetchContent_Declare(
     InferenceEngines
     GIT_REPOSITORY https://github.com/olibartfast/inference-engines
-    GIT_TAG main
+    GIT_TAG v1.0.0  # Now uses specific version instead of master
 )
 ```
 - Provides abstraction layer for multiple inference backends
@@ -91,7 +114,7 @@ cmake --build .
 
 ---
 
-### Backend Options
+### Inference Backend Options
 Replace `<backend>` with one of the following options:  
 - **`OPENCV_DNN`**   
 - **`ONNX_RUNTIME`**  
@@ -104,8 +127,11 @@ Replace `<backend>` with one of the following options:
 
 ### Notes  
 
-1. **Custom Backend Paths**  
-   If the required backend package is not installed system-wide, you can manually specify its path:  
+1. **Dependency Validation**  
+   The build system now automatically validates all dependencies before building. If validation fails, helpful error messages and setup instructions will be displayed.
+
+2. **Custom Inference Backend Paths**  
+   If the required inference backend package is not installed system-wide, you can manually specify its path:  
 
    - **Libtorch**  
      Modify [`LibTorch.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake) or pass the `Torch_DIR` argument.  
@@ -118,10 +144,10 @@ Replace `<backend>` with one of the following options:
 
    - ⚠️ **Important:**  
      - These CMake files belong to the [`InferenceEngines`](https://github.com/olibartfast/inference-engines) project and are cloned into the `build/_deps` folder after the configuration step.  
-     - Ensure your backend version is set correctly in [cmake/AddCompileDefinitions.cmake](cmake/AddCompileDefinitions.cmake).  
+     - All versions are now centrally managed in [cmake/versions.cmake](cmake/versions.cmake).  
 
-2. **Cleaning the Build Folder**  
-   When switching backends or changing configuration options, clean the `build` directory before reconfiguring and compiling.  
+3. **Cleaning the Build Folder**  
+   When switching inference backends or changing configuration options, clean the `build` directory before reconfiguring and compiling.  
 
    **Full Clean (Major Changes)**  
    - **Command:**  

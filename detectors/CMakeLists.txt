@@ -28,6 +28,6 @@ target_include_directories(detectors PRIVATE
 
 target_link_libraries(detectors PRIVATE
     ${OpenCV_LIBS}
-    glog::glog
+    ${GLOG_LIBRARIES}
 )
 
