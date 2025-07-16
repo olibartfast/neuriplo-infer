@@ -253,35 +253,6 @@ docker run --gpus all object-detection-inference:onnxruntime \
     --type=yolov8 --weights=model.onnx --source=image.jpg
 ```
 
-## Migration from Old System
-
-### For Existing Users
-
-1. **Backward Compatibility**: Old scripts still work
-2. **Gradual Migration**: Update one inference backend at a time
-3. **Version Locking**: Use specific versions instead of `master`
-
-### Breaking Changes
-
-- Git tags now use specific versions instead of `master`
-- Dependency paths moved to centralized location
-- Validation is now mandatory
-
-### Migration Steps
-
-```bash
-# 1. Clean old build
-rm -rf build
-
-# 2. Setup inference backend dependencies with new system
-./scripts/setup_dependencies.sh --backend your_backend
-
-# 3. Build with new system
-mkdir build && cd build
-cmake -DDEFAULT_BACKEND=YOUR_BACKEND ..
-cmake --build .
-```
-
 ## Best Practices
 
 ### For Developers
