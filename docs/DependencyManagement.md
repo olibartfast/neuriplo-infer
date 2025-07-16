@@ -41,7 +41,7 @@ The fetched `VideoCapture` library handles **video input processing**:
 
 ## Quick Start
 
-### Option 1: Unified Setup Script (Recommended)
+### Option 1: Unified Setup Script
 
 ```bash
 # Setup inference backend dependencies for a specific backend
