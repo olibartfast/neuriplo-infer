@@ -2,8 +2,8 @@
 # This file should be the single source of truth for versions managed by this project
 
 # External C++ Libraries (fetched via CMake FetchContent)
-set(INFERENCE_ENGINES_VERSION "feature/code_refactoring" CACHE STRING "Fetched InferenceEngines library version")
-set(VIDEOCAPTURE_VERSION "feature/code_refactoring" CACHE STRING "Fetched VideoCapture library version")
+set(INFERENCE_ENGINES_VERSION "feature/code_refactoring" CACHE STRING "InferenceEngines library version")
+set(VIDEOCAPTURE_VERSION "feature/code_refactoring" CACHE STRING "VideoCapture library version")
 
 # System Dependencies (minimum versions)
 set(OPENCV_MIN_VERSION "4.6.0" CACHE STRING "Minimum OpenCV version")
