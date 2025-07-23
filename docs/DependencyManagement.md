@@ -54,7 +54,7 @@ The fetched `VideoCapture` library handles **video input processing**:
 ./scripts/setup_dependencies.sh --backend all
 ```
 
-### Option 2: Individual Setup Scripts (Backward Compatible)
+### Option 2: Individual Setup Scripts
 
 ```bash
 # Individual scripts still work
