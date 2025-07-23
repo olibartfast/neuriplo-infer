@@ -61,7 +61,7 @@ The project automatically fetches and builds the following dependencies using CM
 FetchContent_Declare(
     VideoCapture
     GIT_REPOSITORY https://github.com/olibartfast/videocapture
-    GIT_TAG v1.0.0  # Now uses specific version instead of master
+    GIT_TAG <Tag or Branch>
 )
 ```
 - Handles video input processing
@@ -74,17 +74,17 @@ FetchContent_Declare(
 FetchContent_Declare(
     InferenceEngines
     GIT_REPOSITORY https://github.com/olibartfast/inference-engines
-    GIT_TAG v1.0.0  # Now uses specific version instead of master
+    GIT_TAG <Tag or Branch>   
 )
 ```
 - Provides abstraction layer for multiple inference backends
 - Supported backends:
   - OpenCV DNN Module 
-  - ONNX Runtime (default)
+  - ONNX Runtime 
   - LibTorch
-  - TensorRT(10.0.7.23)
+  - TensorRT
   - OpenVINO
-  - LibTensorflow(2.13)
+  - LibTensorflow
  
 ⚠️ **Note**: **After the CMake configuration step, fetched dependencies are cloned into the ``build/_deps`` folder.**
 
