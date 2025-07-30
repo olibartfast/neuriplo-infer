@@ -6,11 +6,12 @@ This document describes the improved dependency management system for the object
 
 The project now uses a **hybrid dependency management approach** that combines:
 
-1. **Centralized Version Management** - All versions in one place
-2. **Dependency Validation** - Automatic checks for required files
-3. **Unified Setup Scripts** - Single script for all dependencies
-4. **CMake ExternalProject** - Alternative automated approach
-5. **Docker Integration** - Containerized dependency management
+1. **Local Version Override System** - Local files override fetched repository versions
+2. **Automatic Version Fetching** - Versions sourced from repositories or GitHub
+3. **Selective Backend Setup** - Only setup the backend you need
+4. **Auto CUDA Detection** - Automatic CUDA version detection for LibTorch
+5. **CMake ExternalProject** - Alternative automated approach
+6. **Docker Integration** - Containerized dependency management
 
 ## Project Architecture
 
@@ -23,13 +24,13 @@ The object-detection-inference project implements **object detection algorithms*
 - **Other Detectors**: D-FINE, DEIM, RF-DETR
 
 ### 🔧 **InferenceEngines Library: Inference Backends**
-The fetched `InferenceEngines` library provides **inference engine abstractions**:
+The `InferenceEngines` library is **automatically fetched** and provides **inference engine abstractions**:
 
+- **OpenCV DNN**: OpenCV's deep learning module (default - no setup required)
 - **ONNX Runtime**: Microsoft's cross-platform inference engine
 - **TensorRT**: NVIDIA's GPU-optimized inference engine
 - **LibTorch**: PyTorch's C++ inference engine
 - **OpenVINO**: Intel's OpenVINO inference engine
-- **OpenCV DNN**: OpenCV's deep learning module
 - **TensorFlow**: Google's TensorFlow inference engine
 
 ### 📚 **VideoCapture Library: Video Processing**
@@ -41,55 +42,131 @@ The fetched `VideoCapture` library handles **video input processing**:
 
 ## Quick Start
 
-### Option 1: Unified Setup Script
+### 🚀 **Default Setup (OpenCV DNN - No Additional Dependencies)**
 
 ```bash
-# Setup inference backend dependencies for a specific backend
+# Setup default backend (automatically ensures version files exist)
+./scripts/setup_dependencies.sh
+
+# Build project
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+### 🔧 **Alternative Backends**
+
+```bash
+# Setup ONNX Runtime dependencies (automatically ensures version files exist)
 ./scripts/setup_dependencies.sh --backend onnx_runtime
 
-# Setup with specific compute platform for LibTorch
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118
+# Setup LibTorch with GPU support (auto-detects CUDA version)
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
 
 # Setup all inference backends
 ./scripts/setup_dependencies.sh --backend all
 ```
 
-### Option 2: Individual Setup Scripts
+### 📚 **Advanced Setup**
 
 ```bash
-# Individual scripts still work
-./scripts/setup_onnx_runtime.sh
-./scripts/setup_tensorrt.sh
-./scripts/setup_libtorch.sh
-./scripts/setup_openvino.sh
-```
+# Update backend versions from repositories
+./scripts/update_backend_versions.sh --show-versions
 
-### Option 3: CMake ExternalProject (Advanced)
-
-```bash
-# Build with automatic dependency download
+# CMake ExternalProject (automatic download)
 cmake -DDEFAULT_BACKEND=ONNX_RUNTIME -DUSE_EXTERNAL_PROJECT=ON ..
-cmake --build .
 ```
 
-## Centralized Version Management
+## Version Management System
 
-All dependency versions are now managed in `cmake/versions.cmake`:
+The project uses a sophisticated version management system with local override capabilities:
 
-```cmake
-# External C++ Libraries (fetched via CMake)
-set(INFERENCE_ENGINES_VERSION "v1.0.0")  # Inference backend abstractions
-set(VIDEOCAPTURE_VERSION "v1.0.0")       # Video processing library
+### 📁 **Version File Structure**
 
-# ML Framework Versions (inference backends)
-set(ONNX_RUNTIME_VERSION "1.19.2")       # Microsoft ONNX Runtime
-set(TENSORRT_VERSION "10.7.0.23")        # NVIDIA TensorRT
-set(LIBTORCH_VERSION "2.0.0")            # PyTorch LibTorch
-set(OPENVINO_VERSION "2023.1.0")         # Intel OpenVINO
-set(TENSORFLOW_VERSION "2.13.0")         # Google TensorFlow
+```
+object-detection-inference/
+├── versions.inference-engines.env    # Overrides InferenceEngines versions (if present)
+├── versions.videocapture.env         # Overrides VideoCapture versions (if present)
+├── scripts/
+│   ├── setup_dependencies.sh         # Main setup script
+│   ├── update_backend_versions.sh    # Version management script
+│   └── setup_*.sh                   # Individual backend scripts
+└── build/_deps/
+    ├── inferenceengines-src/versions.env  # Source InferenceEngines versions
+    └── videocapture-src/versions.env     # Source VideoCapture versions
+```
 
-# Platform-specific paths
-set(DEFAULT_DEPENDENCY_ROOT "$ENV{HOME}/dependencies")
+**Behavior**: Local version files **override** fetched repository versions **if present**, otherwise they are **created by copying** from the original repositories.
+
+### 🔄 **Version Priority System**
+
+1. **Local Override Files** (highest priority)
+   - `versions.inference-engines.env` - **Overrides** InferenceEngines versions **if present**
+   - `versions.videocapture.env` - **Overrides** VideoCapture versions **if present**
+
+2. **Auto-Created Local Files** (medium priority)
+   - If local files don't exist, they are **automatically created** by copying from:
+     - `build/_deps/inferenceengines-src/versions.env` (if available)
+     - `build/_deps/videocapture-src/versions.env` (if available)
+
+3. **GitHub Fallback** (lowest priority)
+   - If fetched repositories are not available, direct download from repository GitHub URLs
+
+### 📋 **Version Management Commands**
+
+```bash
+# Auto-update versions (copied from repositories on first run)
+./scripts/update_backend_versions.sh
+
+# Force update from repositories
+./scripts/update_backend_versions.sh --force
+
+# View current versions
+./scripts/update_backend_versions.sh --show-versions
+
+# Update only InferenceEngines versions
+./scripts/update_backend_versions.sh --inference-engines --show-versions
+
+# Update only VideoCapture versions
+./scripts/update_backend_versions.sh --videocapture --show-versions
+```
+
+**Note**: The `setup_dependencies.sh` script automatically calls `update_backend_versions.sh` to ensure version files exist before proceeding with dependency setup. Local version files **override** fetched repository versions **if present**, otherwise they are **created by copying** from the original repositories.
+
+## Backend Setup Process
+
+### 🎯 **Selective Setup**
+
+The setup script now only installs and validates the **selected backend**:
+
+```bash
+# Only setup ONNX Runtime (not all backends)
+./scripts/setup_dependencies.sh --backend onnx_runtime
+
+# Only setup LibTorch with GPU
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+
+# Default: OpenCV DNN (no setup required)
+./scripts/setup_dependencies.sh
+```
+
+### 🔍 **Auto CUDA Detection for LibTorch**
+
+When using `--compute-platform gpu` or `--compute-platform cuda`, the script automatically:
+
+1. **Reads CUDA version** from `versions.inference-engines.env`
+2. **Maps CUDA version** to PyTorch compute platform:
+   - CUDA 12.6-12.8 → `cu121`
+   - CUDA 12.0-12.5 → `cu118`
+   - CUDA 11.8 → `cu118`
+   - Unknown → `cu118` (fallback)
+
+```bash
+# Automatically detects CUDA 12.6 and uses cu121
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+
+# Manual override still works
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118
 ```
 
 ## Dependency Validation
@@ -99,8 +176,8 @@ The system automatically validates dependencies before building:
 ### What Gets Validated
 
 - **System Dependencies**: OpenCV, glog, CMake version
-- **Inference Backends**: Required files and directories for ML frameworks
-- **CUDA Support**: GPU acceleration availability
+- **Selected Backend**: Only the backend you're using
+- **CUDA Support**: GPU acceleration availability (if applicable)
 - **Version Compatibility**: Minimum version requirements
 
 ### Validation Output
@@ -110,7 +187,7 @@ The system automatically validates dependencies before building:
 ✓ OpenCV 4.8.0 found
 ✓ glog found
 ✓ CMake 3.20 found
-✓ ONNX Runtime validation passed (inference backend)
+✓ ONNX Runtime validation passed (selected backend)
 ✓ CUDA found: 12.6
 === All Dependencies Validated Successfully ===
 ```
@@ -120,11 +197,11 @@ The system automatically validates dependencies before building:
 | Component | Type | Setup Method | Validation | Notes |
 |-----------|------|-------------|------------|-------|
 | **Object Detectors** | This Project | Built-in | ✓ | YOLO, RT-DETR variants |
+| **OpenCV DNN** | Inference Backend | System Package | ✓ | Default - no setup needed |
 | **ONNX Runtime** | Inference Backend | Script/ExternalProject | ✓ | GPU support available |
 | **TensorRT** | Inference Backend | Script/ExternalProject | ✓ | Requires NVIDIA account |
-| **LibTorch** | Inference Backend | Script/ExternalProject | ✓ | Multiple compute platforms |
+| **LibTorch** | Inference Backend | Script/ExternalProject | ✓ | Auto CUDA detection |
 | **OpenVINO** | Inference Backend | Manual | ✓ | Complex installation |
-| **OpenCV DNN** | Inference Backend | System Package | ✓ | No additional setup needed |
 | **TensorFlow** | Inference Backend | System Package | ✓ | Limited support |
 | **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup |
 
@@ -160,9 +237,13 @@ cmake -DONNX_RUNTIME_DIR="/custom/path" ..
 
 ### Version Overrides
 
-Override inference backend versions at build time:
+Override inference backend versions using local files:
 
 ```bash
+# Edit local version file
+nano versions.inference-engines.env
+
+# Or override at build time
 cmake -DONNX_RUNTIME_VERSION="1.18.0" ..
 cmake -DLIBTORCH_VERSION="1.13.0" ..
 ```
@@ -175,11 +256,11 @@ For LibTorch inference backend, specify the compute platform:
 # CPU only
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cpu
 
-# CUDA 11.8
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118
+# GPU with auto CUDA detection
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
 
-# CUDA 12.1
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu121
+# Manual CUDA version
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118
 
 # ROCm 6.0
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform rocm6.0
@@ -197,29 +278,32 @@ For LibTorch inference backend, specify the compute platform:
 sudo apt update && sudo apt install -y cmake wget tar unzip libopencv-dev libgoogle-glog-dev
 ```
 
-#### 2. Permission Denied
+#### 2. Version File Issues
+
+```bash
+# Error: CUDA version not found in versions.inference-engines.env
+# Solution: Update version files
+./scripts/update_backend_versions.sh --force
+
+# Or manually set CUDA version
+echo "CUDA_VERSION=12.6" >> versions.inference-engines.env
+```
+
+#### 3. Backend Not Found
+
+```bash
+# Error: LibTensorFlow not found
+# Solution: Use a different backend or setup dependencies
+./scripts/setup_dependencies.sh --backend opencv_dnn  # Use default backend
+```
+
+#### 4. Permission Denied
 
 ```bash
 # Error: Permission denied when creating directories
 # Solution: Check write permissions
 ls -la ~/dependencies
 chmod 755 ~/dependencies
-```
-
-#### 3. Download Failures
-
-```bash
-# Error: Failed to download after 3 attempts
-# Solution: Check network connection and retry
-./scripts/setup_dependencies.sh --backend onnx_runtime
-```
-
-#### 4. CUDA Not Found
-
-```bash
-# Warning: CUDA not found. GPU support will be disabled.
-# Solution: Install CUDA toolkit
-sudo apt install nvidia-cuda-toolkit
 ```
 
 ### Validation Failures
@@ -233,10 +317,7 @@ Please ensure the inference backend is properly installed or run the setup scrip
 === Setup Instructions ===
 If dependencies are missing, run the following commands:
 
-  ./scripts/setup_onnx_runtime.sh
-
-Or run the unified setup script:
-  ./scripts/setup_dependencies.sh --backend ONNX_RUNTIME
+  ./scripts/setup_dependencies.sh --backend onnx_runtime
 ```
 
 ## Docker Integration
@@ -258,20 +339,23 @@ docker run --gpus all object-detection-inference:onnxruntime \
 ### For Developers
 
 1. **Version Pinning**: Always use specific version tags
-2. **Validation**: Run validation before committing
-3. **Documentation**: Update versions.cmake when adding new dependencies
+2. **Local Overrides**: Use local version files for custom requirements
+3. **Validation**: Run validation before committing
+4. **Documentation**: Update version files when adding new dependencies
 
 ### For Users
 
-1. **Unified Script**: Use `setup_dependencies.sh` for new installations
-2. **Validation**: Check validation output for issues
-3. **Clean Builds**: Clean build directory when switching inference backends
+1. **Default Backend**: Start with OpenCV DNN (no setup required)
+2. **Selective Setup**: Only setup the backend you need
+3. **Version Management**: Use `update_backend_versions.sh` to manage versions
+4. **Clean Builds**: Clean build directory when switching inference backends
 
 ### For CI/CD
 
 1. **Docker**: Use Docker containers for consistent environments
 2. **Caching**: Cache dependencies between builds
 3. **Validation**: Include dependency validation in CI pipeline
+4. **Version Files**: Include local version files in CI
 
 ## Future Improvements
 
@@ -280,13 +364,13 @@ docker run --gpus all object-detection-inference:onnxruntime \
 1. **Conan Integration**: Package manager support for inference backends
 2. **vcpkg Integration**: System package manager
 3. **Cross-Platform**: Windows and macOS support
-4. **Version Management**: Automated version updates
+4. **Automated Updates**: Automated version updates from repositories
 
 ### Contributing
 
 To improve dependency management:
 
-1. Update `cmake/versions.cmake` for new inference backend versions
+1. Update version files for new inference backend versions
 2. Add validation in `cmake/DependencyValidation.cmake`
 3. Update setup scripts in `scripts/`
 4. Test on multiple platforms

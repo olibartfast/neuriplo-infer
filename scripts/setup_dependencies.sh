@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Unified dependency setup script for inference backend dependencies
-# This script handles installation of inference backend dependencies that will be used
-# by the InferenceEngines library, which is fetched by this project.
+# This script fetches backend versions from InferenceEngines repo and sets up dependencies
 
 set -e  # Exit on any error
 
@@ -86,9 +85,34 @@ download_with_retry() {
     return 1
 }
 
+# Function to fetch versions from InferenceEngines repo
+fetch_backend_versions() {
+    local local_versions_file="versions.inference-engines.env"
+    
+    # Check if local versions file exists (should be created by update_backend_versions.sh)
+    if [[ -f "$local_versions_file" ]]; then
+        print_status "Using local InferenceEngines versions from $local_versions_file"
+        source "$local_versions_file"
+    else
+        print_error "Local InferenceEngines versions file not found: $local_versions_file"
+        print_status "This should have been created by update_backend_versions.sh"
+        print_status "Please check if the script ran successfully or try manually:"
+        print_status "./scripts/update_backend_versions.sh"
+        return 1
+    fi
+    
+    print_status "Fetched InferenceEngines backend versions:"
+    print_status "ONNX Runtime: $ONNX_RUNTIME_VERSION"
+    print_status "TensorRT: $TENSORRT_VERSION"
+    print_status "LibTorch: $PYTORCH_VERSION"
+    print_status "OpenVINO: $OPENVINO_VERSION"
+    print_status "TensorFlow: $TENSORFLOW_VERSION"
+    print_status "CUDA: $CUDA_VERSION"
+}
+
 # Function to setup ONNX Runtime
 setup_onnx_runtime() {
-    local version="1.19.2"
+    local version="$ONNX_RUNTIME_VERSION"
     local dependency_root=$(get_dependency_root)
     local install_dir="$dependency_root/onnxruntime-linux-x64-gpu-$version"
     
@@ -124,8 +148,8 @@ setup_onnx_runtime() {
 
 # Function to setup TensorRT
 setup_tensorrt() {
-    local version="10.7.0.23"
-    local cuda_version="12.6"
+    local version="$TENSORRT_VERSION"
+    local cuda_version="$CUDA_VERSION"
     local dependency_root=$(get_dependency_root)
     local install_dir="$dependency_root/TensorRT-$version"
     
@@ -161,7 +185,7 @@ setup_tensorrt() {
 
 # Function to setup LibTorch
 setup_libtorch() {
-    local version="2.0.0"
+    local version="$PYTORCH_VERSION"
     local dependency_root=$(get_dependency_root)
     local install_dir="$dependency_root/libtorch"
     
@@ -177,8 +201,42 @@ setup_libtorch() {
     local temp_dir=$(mktemp -d)
     cd "$temp_dir"
     
-    # Default to CPU version, can be overridden
+    # Determine compute platform based on CUDA version and user preference
     local compute_platform=${COMPUTE_PLATFORM:-cpu}
+    
+    # If user wants GPU, automatically determine CUDA version from versions file
+    if [[ "$compute_platform" == "gpu" || "$compute_platform" == "cuda" ]]; then
+        if [[ -n "$CUDA_VERSION" ]]; then
+            # Map CUDA version to PyTorch compute platform
+            case "$CUDA_VERSION" in
+                "12.6"|"12.7"|"12.8")
+                    compute_platform="cu121"
+                    print_status "Using CUDA $CUDA_VERSION -> compute platform: $compute_platform"
+                    ;;
+                "12.4"|"12.5")
+                    compute_platform="cu118"
+                    print_status "Using CUDA $CUDA_VERSION -> compute platform: $compute_platform"
+                    ;;
+                "12.0"|"12.1"|"12.2"|"12.3")
+                    compute_platform="cu118"
+                    print_status "Using CUDA $CUDA_VERSION -> compute platform: $compute_platform"
+                    ;;
+                "11.8")
+                    compute_platform="cu118"
+                    print_status "Using CUDA $CUDA_VERSION -> compute platform: $compute_platform"
+                    ;;
+                *)
+                    print_warning "Unknown CUDA version $CUDA_VERSION, using cu118 as fallback"
+                    compute_platform="cu118"
+                    ;;
+            esac
+        else
+            print_error "CUDA version not found in versions.inference-engines.env"
+            print_status "Please set CUDA_VERSION in versions.inference-engines.env or use --compute-platform explicitly"
+            return 1
+        fi
+    fi
+    
     local filename="libtorch-cxx11-abi-shared-with-deps-$version+$compute_platform.zip"
     local url="https://download.pytorch.org/libtorch/$compute_platform/$filename"
     
@@ -199,7 +257,7 @@ setup_libtorch() {
 
 # Function to setup OpenVINO
 setup_openvino() {
-    local version="2023.1.0"
+    local version="$OPENVINO_VERSION"
     local dependency_root=$(get_dependency_root)
     local install_dir="$dependency_root/openvino-$version"
     
@@ -256,24 +314,30 @@ show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "This script sets up inference backend dependencies for the InferenceEngines library."
-    echo "The InferenceEngines library is fetched by this project and provides inference backend abstractions."
+    echo "It automatically ensures version files exist and installs the selected backend dependencies."
     echo ""
     echo "Options:"
-    echo "  --backend BACKEND    Specify inference backend to setup (onnx_runtime, tensorrt, libtorch, openvino, all)"
-    echo "  --compute-platform   Specify compute platform for LibTorch (cpu, cu118, cu121, rocm6.0)"
-    echo "  --help              Show this help message"
+    echo "  --backend <backend>        Specify the inference backend to setup"
+    echo "                             Supported: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, all"
+    echo "                             Default: opencv_dnn (no setup required)"
+    echo "  --compute-platform <platform>  For LibTorch: cpu, gpu, cu118, cu121, rocm6.0"
+    echo "                             Default: cpu"
+    echo "                             Note: 'gpu' auto-detects CUDA version from versions.inference-engines.env"
+    echo "  --help                     Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 --backend onnx_runtime"
-    echo "  $0 --backend libtorch --compute-platform cu118"
-    echo "  $0 --backend all"
+    echo "  $0                                    # Setup default backend (OPENCV_DNN)"
+    echo "  $0 --backend onnx_runtime            # Setup ONNX Runtime"
+    echo "  $0 --backend libtorch --compute-platform gpu  # Setup LibTorch with auto CUDA detection"
+    echo "  $0 --backend all                     # Setup all inference backends"
     echo ""
+    echo "Note: This script automatically calls update_backend_versions.sh to ensure version files exist."
     echo "Note: These dependencies are used by the InferenceEngines library, not this project directly."
 }
 
 # Main script
 main() {
-    local backend=""
+    local backend="opencv_dnn"  # Default to OPENCV_DNN
     local compute_platform="cpu"
     
     # Parse command line arguments
@@ -305,15 +369,35 @@ main() {
     print_status "Starting inference backend dependency setup..."
     print_status "OS detected: $(detect_os)"
     print_status "Dependency root: $(get_dependency_root)"
+    print_status "Selected backend: $backend"
     print_status "Note: These dependencies are for the InferenceEngines library"
+    
+    # Automatically ensure version files exist
+    print_status "Ensuring version files are available..."
+    if [[ -f "scripts/update_backend_versions.sh" ]]; then
+        if ! ./scripts/update_backend_versions.sh; then
+            print_warning "Failed to update version files, continuing with available versions..."
+        fi
+    else
+        print_warning "update_backend_versions.sh not found, continuing with available versions..."
+    fi
     
     # Check system dependencies first
     if ! check_system_dependencies; then
         exit 1
     fi
     
+    # Fetch backend versions from InferenceEngines repo
+    if ! fetch_backend_versions; then
+        exit 1
+    fi
+    
     # Setup based on backend
     case "$backend" in
+        opencv_dnn)
+            print_status "OPENCV_DNN is the default backend - no additional setup required"
+            print_success "System dependencies (OpenCV) are already validated"
+            ;;
         onnx_runtime)
             setup_onnx_runtime
             ;;
@@ -326,20 +410,19 @@ main() {
         openvino)
             setup_openvino
             ;;
+        tensorflow)
+            setup_tensorflow
+            ;;
         all)
             setup_onnx_runtime
             setup_tensorrt
             setup_libtorch
             setup_openvino
-            ;;
-        "")
-            print_error "No backend specified. Use --backend option."
-            show_usage
-            exit 1
+            setup_tensorflow
             ;;
         *)
             print_error "Unknown backend: $backend"
-            print_status "Supported backends: onnx_runtime, tensorrt, libtorch, openvino, all"
+            print_status "Supported backends: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, all"
             exit 1
             ;;
     esac
@@ -348,7 +431,11 @@ main() {
     print_status "These dependencies will be used by the InferenceEngines library."
     print_status "You can now build the project with:"
     print_status "mkdir build && cd build"
-    print_status "cmake -DDEFAULT_BACKEND=${backend^^} .."
+    if [[ "$backend" == "opencv_dnn" ]]; then
+        print_status "cmake ..  # Uses OPENCV_DNN by default"
+    else
+        print_status "cmake -DDEFAULT_BACKEND=${backend^^} .."
+    fi
     print_status "cmake --build ."
 }
 

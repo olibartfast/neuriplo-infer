@@ -5,7 +5,6 @@
 
 C++ framework for [real-time object detection](https://paperswithcode.com/sota/real-time-object-detection-on-coco), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models on video streams, video files, or images with configurable hardware acceleration.
 
-
 ## 🚀 Key Features
 
 - **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM, RF-DETR
@@ -31,62 +30,63 @@ C++ framework for [real-time object detection](https://paperswithcode.com/sota/r
 
 ### Dependency Management
 
-The project features a **dependency management system** with multiple setup options:
+This project automatically fetches the [InferenceEngines library](https://github.com/olibartfast/inference-engines) which provides inference backend abstractions. The InferenceEngines library handles all backend-specific dependencies.
 
 #### 🚀 Quick Setup (Recommended)
 ```bash
-# Setup inference backend dependencies for your chosen backend
+# 1. Setup default backend (OPENCV_DNN - no additional dependencies required)
+./scripts/setup_dependencies.sh
+
+# 2. Build project
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+#### 🔧 Alternative Backends
+For other inference backends, setup dependencies first:
+
+```bash
+# Setup inference backend dependencies
 ./scripts/setup_dependencies.sh --backend onnx_runtime
 
-# Setup with GPU support for LibTorch
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118
+# Setup with GPU support for LibTorch (auto-detects CUDA version)
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+
+# Setup with CPU support for LibTorch
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform cpu
+
+# Setup TensorRT backend
+./scripts/setup_dependencies.sh --backend tensorrt
+
+# Setup OpenVINO backend
+./scripts/setup_dependencies.sh --backend openvino
+
+# Setup TensorFlow backend
+./scripts/setup_dependencies.sh --backend tensorflow
 
 # Setup all inference backends
 ./scripts/setup_dependencies.sh --backend all
+
+# Note: For GPU support, the script automatically detects CUDA version from `versions.inference-engines.env`
 ```
 
 #### 🔧 Advanced Setup
 ```bash
+# Update backend versions from repositories
+./scripts/update_backend_versions.sh --show-versions
+
 # CMake ExternalProject (automatic download)
 cmake -DDEFAULT_BACKEND=ONNX_RUNTIME -DUSE_EXTERNAL_PROJECT=ON ..
 ```
 
 **📖 For detailed dependency management information, see [Dependency Management Guide](docs/DependencyManagement.md)**
 
+### Version Management
+Backend versions are managed in separate local files. See [Dependency Management Guide](docs/DependencyManagement.md) for detailed information.
+
 ### Fetched Dependencies
-The project automatically fetches and builds the following dependencies using CMake's FetchContent:
-
-#### [VideoCapture Library](https://github.com/olibartfast/videocapture) (Only for the App module, not the library)
-```cmake
-FetchContent_Declare(
-    VideoCapture
-    GIT_REPOSITORY https://github.com/olibartfast/videocapture
-    GIT_TAG <Tag or Branch>
-)
-```
-- Handles video input processing
-- Provides unified interface for various video sources
-- Optional GStreamer integration
-
-
-#### [Inference Engines Library](https://github.com/olibartfast/inference-engines)
-```cmake
-FetchContent_Declare(
-    InferenceEngines
-    GIT_REPOSITORY https://github.com/olibartfast/inference-engines
-    GIT_TAG <Tag or Branch>   
-)
-```
-- Provides abstraction layer for multiple inference backends
-- Supported backends:
-  - OpenCV DNN Module 
-  - ONNX Runtime 
-  - LibTorch
-  - TensorRT
-  - OpenVINO
-  - LibTensorflow
- 
-⚠️ **Note**: **After the CMake configuration step, fetched dependencies are cloned into the ``build/_deps`` folder.**
+The project automatically fetches and builds dependencies using CMake's FetchContent. See [Dependency Management Guide](docs/DependencyManagement.md) for detailed information.
 
 ## 🏗 Building
 
@@ -116,51 +116,16 @@ cmake --build .
 
 ### Inference Backend Options
 Replace `<backend>` with one of the following options:  
-- **`OPENCV_DNN`**   
+- **`OPENCV_DNN`** (default - no setup required)  
 - **`ONNX_RUNTIME`**  
 - **`LIBTORCH`**  
 - **`TENSORRT`**  
 - **`OPENVINO`**  
 - **`LIBTENSORFLOW`**  
 
----
-
 ### Notes  
 
-1. **Dependency Validation**  
-   The build system now automatically validates all dependencies before building. If validation fails, helpful error messages and setup instructions will be displayed.
-
-2. **Custom Inference Backend Paths**  
-   If the required inference backend package is not installed system-wide, you can manually specify its path:  
-
-   - **Libtorch**  
-     Modify [`LibTorch.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/LibTorch.cmake) or pass the `Torch_DIR` argument.  
-
-   - **ONNX Runtime**  
-     Modify [`ONNXRuntime.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/ONNXRuntime.cmake) or pass the `ONNX_RUNTIME_DIR` and `ORT_VERSION` arguments.  
-
-   - **TensorRT**  
-     Modify [`TensorRT.cmake`](https://github.com/olibartfast/inference-engines/blob/master/cmake/TensorRT.cmake) or pass the `TENSORRT_DIR` and `TRT_VERSION` arguments.  
-
-   - ⚠️ **Important:**  
-     - These CMake files belong to the [`InferenceEngines`](https://github.com/olibartfast/inference-engines) project and are cloned into the `build/_deps` folder after the configuration step.  
-     - All versions are now centrally managed in [cmake/versions.cmake](cmake/versions.cmake).  
-
-3. **Cleaning the Build Folder**  
-   When switching inference backends or changing configuration options, clean the `build` directory before reconfiguring and compiling.  
-
-   **Full Clean (Major Changes)**  
-   - **Command:**  
-     ```sh
-     rm -rf build && mkdir build
-     ```  
-
-   **Partial Clean (Minor Changes)**  
-   - **Command:**  
-     ```sh
-     rm build/CMakeCache.txt
-     ```  
----
+See [Dependency Management Guide](docs/DependencyManagement.md) for detailed troubleshooting and advanced configuration information.
 ### Test Builds
 ```bash
 # App tests
