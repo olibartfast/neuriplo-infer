@@ -62,6 +62,8 @@ cmake --build .
 
 # Setup LibTorch with GPU support (auto-detects CUDA version)
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+# or equivalently:
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
 
 # Setup all inference backends
 ./scripts/setup_dependencies.sh --backend all
@@ -152,7 +154,7 @@ The setup script now only installs and validates the **selected backend**:
 
 ### 🔍 **Auto CUDA Detection for LibTorch**
 
-When using `--compute-platform gpu` or `--compute-platform cuda`, the script automatically:
+When using `--compute-platform gpu` or `--compute-platform cuda` (equivalent), the script automatically:
 
 1. **Reads CUDA version** from `versions.inference-engines.env`
 2. **Maps CUDA version** to PyTorch compute platform:
@@ -256,8 +258,9 @@ For LibTorch inference backend, specify the compute platform:
 # CPU only
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cpu
 
-# GPU with auto CUDA detection
+# GPU with auto CUDA detection (equivalent commands)
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
 
 # Manual CUDA version
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118

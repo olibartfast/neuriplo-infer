@@ -44,49 +44,26 @@ cmake --build .
 ```
 
 #### 🔧 Alternative Backends
-For other inference backends, setup dependencies first:
+For other inference backends, setup dependencies first.
 
-```bash
-# Setup inference backend dependencies
-./scripts/setup_dependencies.sh --backend onnx_runtime
+- **LibTorch (CPU only)**:
+  ```bash
+  ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cpu
+  ```
 
-# Setup with GPU support for LibTorch (auto-detects CUDA version)
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
-
-# Setup with CPU support for LibTorch
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cpu
-
-# Setup TensorRT backend
-./scripts/setup_dependencies.sh --backend tensorrt
-
-# Setup OpenVINO backend
-./scripts/setup_dependencies.sh --backend openvino
-
-# Setup TensorFlow backend
-./scripts/setup_dependencies.sh --backend tensorflow
-
-# Setup all inference backends
-./scripts/setup_dependencies.sh --backend all
-
-# Note: For GPU support, the script automatically detects CUDA version from `versions.inference-engines.env`
-```
+- **LibTorch with GPU support**:
+  ```bash
+  ./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+  # or equivalently:
+  ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
+  # Note: Automatically detects CUDA version from `versions.inference-engines.env`
+  ```
 
 #### 🔧 Advanced Setup
-```bash
-# Update backend versions from repositories
-./scripts/update_backend_versions.sh --show-versions
+See [Dependency Management Guide](docs/DependencyManagement.md) for detailed examples and advanced setup options.
 
-# CMake ExternalProject (automatic download)
-cmake -DDEFAULT_BACKEND=ONNX_RUNTIME -DUSE_EXTERNAL_PROJECT=ON ..
-```
-
-**📖 For detailed dependency management information, see [Dependency Management Guide](docs/DependencyManagement.md)**
-
-### Version Management
-Backend versions are managed in separate local files. See [Dependency Management Guide](docs/DependencyManagement.md) for detailed information.
-
-### Fetched Dependencies
-The project automatically fetches and builds dependencies using CMake's FetchContent. See [Dependency Management Guide](docs/DependencyManagement.md) for detailed information.
+### Version Management & Dependencies
+Backend versions and dependencies are managed automatically. See [Dependency Management Guide](docs/DependencyManagement.md) for detailed information.
 
 ## 🏗 Building
 
@@ -115,13 +92,7 @@ cmake --build .
 ---
 
 ### Inference Backend Options
-Replace `<backend>` with one of the following options:  
-- **`OPENCV_DNN`** (default - no setup required)  
-- **`ONNX_RUNTIME`**  
-- **`LIBTORCH`**  
-- **`TENSORRT`**  
-- **`OPENVINO`**  
-- **`LIBTENSORFLOW`**  
+Replace `<backend>` with one of the supported options. See [Dependency Management Guide](docs/DependencyManagement.md) for complete list and details.
 
 ### Notes  
 
@@ -251,14 +222,7 @@ For GPU support, add `--gpus all` to the docker run command.
 
 ## 🗺 Project Structure
 
-```
-.
-├── app/            # Main application
-├── detectors/      # Detection library
-├── cmake/          # CMake modules
-└── docker/         # Dockerfiles
-└── build/_deps/    # Fetched dependencies after CMake configuration
-```
+See [Dependency Management Guide](docs/DependencyManagement.md) for detailed project structure and architecture information.
 
 ## 📚 Additional Resources
 
