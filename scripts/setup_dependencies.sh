@@ -209,8 +209,12 @@ setup_libtorch() {
         if [[ -n "$CUDA_VERSION" ]]; then
             # Map CUDA version to PyTorch compute platform
             case "$CUDA_VERSION" in
-                "12.6"|"12.7"|"12.8")
-                    compute_platform="cu121"
+                "12.8")
+                    compute_platform="cu128"
+                    print_status "Using CUDA $CUDA_VERSION -> compute platform: $compute_platform"
+                    ;;
+                "12.6"|"12.7")
+                    compute_platform="cu126"
                     print_status "Using CUDA $CUDA_VERSION -> compute platform: $compute_platform"
                     ;;
                 "12.4"|"12.5")

@@ -44,7 +44,17 @@ cmake --build .
 ```
 
 #### 🔧 Alternative Backends
-For other inference backends, setup dependencies first.
+For other inference backends, setup dependencies first:
+
+- **ONNX Runtime**:
+  ```bash
+  ./scripts/setup_dependencies.sh --backend onnx_runtime
+  ```
+
+- **TensorRT**:
+  ```bash
+  ./scripts/setup_dependencies.sh --backend tensorrt
+  ```
 
 - **LibTorch (CPU only)**:
   ```bash
@@ -57,6 +67,21 @@ For other inference backends, setup dependencies first.
   # or equivalently:
   ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
   # Note: Automatically detects CUDA version from `versions.inference-engines.env`
+  ```
+
+- **OpenVINO**:
+  ```bash
+  ./scripts/setup_dependencies.sh --backend openvino
+  ```
+
+- **TensorFlow**:
+  ```bash
+  ./scripts/setup_dependencies.sh --backend tensorflow
+  ```
+
+- **All backends**:
+  ```bash
+  ./scripts/setup_dependencies.sh --backend all
   ```
 
 #### 🔧 Advanced Setup

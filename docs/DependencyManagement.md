@@ -56,25 +56,11 @@ cmake --build .
 
 ### 🔧 **Alternative Backends**
 
-```bash
-# Setup ONNX Runtime dependencies (automatically ensures version files exist)
-./scripts/setup_dependencies.sh --backend onnx_runtime
-
-# Setup LibTorch with GPU support (auto-detects CUDA version)
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
-# or equivalently:
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
-
-# Setup all inference backends
-./scripts/setup_dependencies.sh --backend all
-```
+See [README.md](../README.md) for quick setup examples for all backends.
 
 ### 📚 **Advanced Setup**
 
 ```bash
-# Update backend versions from repositories
-./scripts/update_backend_versions.sh --show-versions
-
 # CMake ExternalProject (automatic download)
 cmake -DDEFAULT_BACKEND=ONNX_RUNTIME -DUSE_EXTERNAL_PROJECT=ON ..
 ```
@@ -114,24 +100,7 @@ object-detection-inference/
 3. **GitHub Fallback** (lowest priority)
    - If fetched repositories are not available, direct download from repository GitHub URLs
 
-### 📋 **Version Management Commands**
-
-```bash
-# Auto-update versions (copied from repositories on first run)
-./scripts/update_backend_versions.sh
-
-# Force update from repositories
-./scripts/update_backend_versions.sh --force
-
-# View current versions
-./scripts/update_backend_versions.sh --show-versions
-
-# Update only InferenceEngines versions
-./scripts/update_backend_versions.sh --inference-engines --show-versions
-
-# Update only VideoCapture versions
-./scripts/update_backend_versions.sh --videocapture --show-versions
-```
+### 📋 **Version Management**
 
 **Note**: The `setup_dependencies.sh` script automatically calls `update_backend_versions.sh` to ensure version files exist before proceeding with dependency setup. Local version files **override** fetched repository versions **if present**, otherwise they are **created by copying** from the original repositories.
 
@@ -139,37 +108,44 @@ object-detection-inference/
 
 ### 🎯 **Selective Setup**
 
-The setup script now only installs and validates the **selected backend**:
-
-```bash
-# Only setup ONNX Runtime (not all backends)
-./scripts/setup_dependencies.sh --backend onnx_runtime
-
-# Only setup LibTorch with GPU
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
-
-# Default: OpenCV DNN (no setup required)
-./scripts/setup_dependencies.sh
-```
+The setup script now only installs and validates the **selected backend**. See [README.md](../README.md) for quick setup examples.
 
 ### 🔍 **Auto CUDA Detection for LibTorch**
 
-When using `--compute-platform gpu` or `--compute-platform cuda` (equivalent), the script automatically:
+When using `--compute-platform gpu` or `--compute-platform cuda`, the script automatically detects your CUDA version and downloads the appropriate LibTorch build:
 
-1. **Reads CUDA version** from `versions.inference-engines.env`
-2. **Maps CUDA version** to PyTorch compute platform:
-   - CUDA 12.6-12.8 → `cu121`
-   - CUDA 12.0-12.5 → `cu118`
-   - CUDA 11.8 → `cu118`
-   - Unknown → `cu118` (fallback)
+#### **How it works:**
+1. **Reads CUDA version** from `versions.inference-engines.env` (e.g., `CUDA_VERSION=12.6`)
+2. **Downloads the correct LibTorch version** based on your CUDA version:
+   - CUDA 12.8 → Downloads LibTorch with CUDA 12.8 support (`cu128`)
+   - CUDA 12.6 → Downloads LibTorch with CUDA 12.6 support (`cu126`)
+   - CUDA 12.0-12.5 → Downloads LibTorch with CUDA 11.8 support (`cu118`)
+   - CUDA 11.8 → Downloads LibTorch with CUDA 11.8 support (`cu118`)
+   - Unknown CUDA → Downloads LibTorch with CUDA 11.8 support (`cu118`) as fallback
 
+#### **Examples:**
 ```bash
-# Automatically detects CUDA 12.6 and uses cu121
+# If CUDA_VERSION=12.6 in versions.inference-engines.env:
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+# Downloads: libtorch-cxx11-abi-shared-with-deps-2.3.0+cu126.zip
 
-# Manual override still works
+# If CUDA_VERSION=12.8 in versions.inference-engines.env:
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+# Downloads: libtorch-cxx11-abi-shared-with-deps-2.3.0+cu128.zip
+
+# If CUDA_VERSION=11.8 in versions.inference-engines.env:
+./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
+# Downloads: libtorch-cxx11-abi-shared-with-deps-2.3.0+cu118.zip
+
+# Manual override (ignores auto-detection):
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118
+# Downloads: libtorch-cxx11-abi-shared-with-deps-2.3.0+cu118.zip
 ```
+
+#### **Note:**
+- The script downloads pre-built LibTorch binaries from PyTorch's official repository
+- The `cu121` and `cu118` refer to the PyTorch build version, not your system's CUDA version
+- Your system CUDA version must be compatible with the downloaded LibTorch build
 
 ## Dependency Validation
 
@@ -252,22 +228,7 @@ cmake -DLIBTORCH_VERSION="1.13.0" ..
 
 ### Compute Platform Selection
 
-For LibTorch inference backend, specify the compute platform:
-
-```bash
-# CPU only
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cpu
-
-# GPU with auto CUDA detection (equivalent commands)
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
-
-# Manual CUDA version
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform cu118
-
-# ROCm 6.0
-./scripts/setup_dependencies.sh --backend libtorch --compute-platform rocm6.0
-```
+For LibTorch inference backend, specify the compute platform. See the [Auto CUDA Detection](#-auto-cuda-detection-for-libtorch) section above for detailed examples.
 
 ## Troubleshooting
 
@@ -285,10 +246,7 @@ sudo apt update && sudo apt install -y cmake wget tar unzip libopencv-dev libgoo
 
 ```bash
 # Error: CUDA version not found in versions.inference-engines.env
-# Solution: Update version files
-./scripts/update_backend_versions.sh --force
-
-# Or manually set CUDA version
+# Solution: The setup script should handle this automatically, but you can manually set CUDA version
 echo "CUDA_VERSION=12.6" >> versions.inference-engines.env
 ```
 
@@ -350,7 +308,7 @@ docker run --gpus all object-detection-inference:onnxruntime \
 
 1. **Default Backend**: Start with OpenCV DNN (no setup required)
 2. **Selective Setup**: Only setup the backend you need
-3. **Version Management**: Use `update_backend_versions.sh` to manage versions
+3. **Automatic Version Management**: Version files are managed automatically by setup scripts
 4. **Clean Builds**: Clean build directory when switching inference backends
 
 ### For CI/CD
@@ -358,7 +316,7 @@ docker run --gpus all object-detection-inference:onnxruntime \
 1. **Docker**: Use Docker containers for consistent environments
 2. **Caching**: Cache dependencies between builds
 3. **Validation**: Include dependency validation in CI pipeline
-4. **Version Files**: Include local version files in CI
+4. **Automatic Setup**: Version files are managed automatically by setup scripts
 
 ## Future Improvements
 
