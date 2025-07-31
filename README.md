@@ -10,9 +10,7 @@ C++ framework for [real-time object detection](https://paperswithcode.com/sota/r
 - **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM, RF-DETR
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [InferenceEngines library](https://github.com/olibartfast/inference-engines/))
 - **Real-time Video Processing**: GStreamer integration (via [VideoCapture library](https://github.com/olibartfast/videocapture/))
-- **GPU Acceleration Support**: CUDA integration for accelerated inference
 - **Docker Deployment Ready**: Multi-backend container support
-- **Benchmarking Tools**: Built-in performance measurement capabilities
 
 ## 🔧 Requirements
 
@@ -63,10 +61,8 @@ For other inference backends, setup dependencies first:
 
 - **LibTorch with GPU support**:
   ```bash
-  ./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
-  # or equivalently:
   ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
-  # Note: Automatically detects CUDA version from `versions.inference-engines.env`
+  # Note: Automatically set CUDA version from `versions.inference-engines.env`
   ```
 
 - **OpenVINO**:
