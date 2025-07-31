@@ -30,13 +30,6 @@ cmake --build .
 
 See [README.md](../README.md) for quick setup examples for all backends.
 
-### 📚 **Advanced Setup**
-
-```bash
-# CMake ExternalProject (automatic download)
-cmake -DDEFAULT_BACKEND=ONNX_RUNTIME -DUSE_EXTERNAL_PROJECT=ON ..
-```
-
 ## Version Management System
 
 The project uses a version management system with local override capabilities:
@@ -45,8 +38,9 @@ The project uses a version management system with local override capabilities:
 
 ```
 object-detection-inference/
-├── versions.inference-engines.env    # Overrides InferenceEngines versions (if present)
-├── versions.videocapture.env         # Overrides VideoCapture versions (if present)
+├── versions.env # Dependencies needed by this project
+├── versions.inference-engines.env    # Overrides InferenceEngines versions (if present), otherwise will be automatically created and fetched from InferenceEngines repository
+├── versions.videocapture.env         # Overrides VideoCapture versions (if present), otherwise will be automatically created and fetched from VideoCapture repository
 ├── scripts/
 │   ├── setup_dependencies.sh         # Main setup script
 │   ├── update_backend_versions.sh    # Version management script
@@ -70,11 +64,8 @@ object-detection-inference/
      - `build/_deps/videocapture-src/versions.env` (if available)
 
 3. **GitHub Fallback** (lowest priority)
-   - If fetched repositories are not available, direct download from repository GitHub URLs [inference-engines](https://github.com/olibartfast/inference-engines) and [videocapture](https://github.com/olibartfast/videocapture)
+   - If versions.env above fetched repositories are not available, direct download from repository GitHub URLs [inference-engines](https://github.com/olibartfast/inference-engines) and [videocapture](https://github.com/olibartfast/videocapture)
 
-### 📋 **Version Management**
-
-**Note**: The `setup_dependencies.sh` script automatically calls `update_backend_versions.sh` to ensure version files exist before proceeding with dependency setup. Local version files **override** fetched repository versions **if present**, otherwise they are **created by copying** from the original repositories.
 
 ## Backend Setup Process
 
@@ -82,7 +73,7 @@ object-detection-inference/
 
 The setup script now only installs and validates the **selected backend**. See [README.md](../README.md) for quick setup examples.
 
-### 🔍 **Auto CUDA Detection for LibTorch**
+### 🔍 **LibTorch with CUDA support**
 
 When using `--compute-platform gpu` or `--compute-platform cuda`, the script automatically detects your CUDA version and downloads the appropriate LibTorch build:
 
@@ -130,7 +121,7 @@ The system automatically validates dependencies before building:
 - **CUDA Support**: GPU acceleration availability (if applicable)
 - **Version Compatibility**: Minimum version requirements
 
-### Validation Output
+### Validation Output Example
 
 ```
 === Validating Dependencies ===
@@ -147,13 +138,14 @@ The system automatically validates dependencies before building:
 | Component | Type | Setup Method | Validation | Notes |
 |-----------|------|-------------|------------|-------|
 | **Object Detectors** | This Project | Built-in | ✓ | YOLO, RT-DETR variants |
-| **OpenCV DNN** | Inference Backend | System Package | ✓ | Default - no setup needed |
-| **ONNX Runtime** | Inference Backend | Script/ExternalProject | ✓ | GPU support available |
-| **TensorRT** | Inference Backend | Script/ExternalProject | ✓ | Requires NVIDIA account |
-| **LibTorch** | Inference Backend | Script/ExternalProject | ✓ | Auto CUDA detection |
-| **OpenVINO** | Inference Backend | Manual | ✓ | Complex installation |
-| **TensorFlow** | Inference Backend | System Package | ✓ | Limited support |
 | **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup |
+| **InferenceEngines** | Inference Backend Manager | CMake FetchContent | ✓ | Automatic setup |
+| **OpenCV DNN** | Inference Backend | System Package | ✓ | Default - it comes with OpenCV installation, no setup needed for CPU inference, to support multiple inference backends you must customize the building process |
+| **ONNX Runtime** | Inference Backend | Script/ExternalProject | ✓ | CPU/GPU support available based on download binaries and local hardware available|
+| **TensorRT** | Inference Backend | Script | ✓ | Requires NVIDIA account to download the binaries |
+| **LibTorch** | Inference Backend | Script | ✓ | CPU/GPU support available based on download binaries and local hardware available |
+| **OpenVINO** | Inference Backend | Script | ✓ | Complex installation |
+| **TensorFlow** | Inference Backend | Script | ✓ | Complex installation |
 
 ## Platform Support
 
