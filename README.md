@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for [real-time object detection](https://paperswithcode.com/sota/real-time-object-detection-on-coco), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models on video streams, video files, or images with configurable hardware acceleration.
+C++ framework for [real-time object detection](https://leaderboard.roboflow.com/), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models on video streams, video files, or images with configurable hardware acceleration.
 
 ## 🚀 Key Features
 
@@ -277,7 +277,7 @@ See [Dependency Management Guide](docs/DependencyManagement.md) for detailed pro
 - [RT-DETR Deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
  ## References
- - https://paperswithcode.com/sota/real-time-object-detection-on-coco
+ - https://paperswithcode.com/sota/real-time-object-detection-on-coco (No more available)
  - https://leaderboard.roboflow.com/
 
 ## 📫 Support
