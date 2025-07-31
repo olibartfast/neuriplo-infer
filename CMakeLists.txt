@@ -10,7 +10,7 @@ include(cmake/versions.cmake)
 
 # Set DEFAULT_BACKEND as a CACHE variable with its type and a help string.
 if(NOT DEFINED DEFAULT_BACKEND)
-   set(DEFAULT_BACKEND "TENSORFLOW" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, TENSORFLOW")
+   set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
 endif()
 
 # set(USE_GSTREAMER ON)

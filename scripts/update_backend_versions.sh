@@ -55,7 +55,7 @@ show_usage() {
 update_inference_engines_versions() {
     local local_versions_file="versions.inference-engines.env"
     local inference_versions_file="build/_deps/inferenceengines-src/versions.env"
-    local github_url="https://raw.githubusercontent.com/olibartfast/inference-engines/feature/code_refactoring/versions.env"
+    local github_url="https://raw.githubusercontent.com/olibartfast/inference-engines/master/versions.env"
     
     print_status "Updating InferenceEngines versions..."
     
@@ -109,8 +109,8 @@ update_inference_engines_versions() {
 update_videocapture_versions() {
     local local_versions_file="versions.videocapture.env"
     local videocapture_versions_file="build/_deps/videocapture-src/versions.env"
-    local github_url="https://raw.githubusercontent.com/olibartfast/videocapture/feature/code_refactoring/versions.env"
-    
+    local github_url="https://raw.githubusercontent.com/olibartfast/videocapture/master/versions.env"
+
     print_status "Updating VideoCapture versions..."
     
     # Check if local versions file exists
