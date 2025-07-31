@@ -73,7 +73,8 @@ download_with_retry() {
     local retry_count=0
     
     while [[ $retry_count -lt $max_retries ]]; do
-        if wget --tries=3 --retry-connrefused -O "$output" "$url"; then
+        # Use curl for better URL handling (especially for URLs with + characters)
+        if curl -L -o "$output" "$url"; then
             return 0
         fi
         retry_count=$((retry_count + 1))
@@ -242,7 +243,9 @@ setup_libtorch() {
     fi
     
     local filename="libtorch-cxx11-abi-shared-with-deps-$version+$compute_platform.zip"
-    local url="https://download.pytorch.org/libtorch/$compute_platform/$filename"
+    # URL encode the filename (replace + with %2B)
+    local encoded_filename=$(echo "$filename" | sed 's/+/%2B/g')
+    local url="https://download.pytorch.org/libtorch/$compute_platform/$encoded_filename"
     
     print_status "Downloading LibTorch ($compute_platform)..."
     if download_with_retry "$url" "$filename"; then
@@ -277,6 +280,148 @@ setup_openvino() {
     print_warning "After installation, update the InferenceEngines library configuration"
 }
 
+# Function to setup TensorFlow
+setup_tensorflow() {
+    local version="$TENSORFLOW_VERSION"
+    local dependency_root=$(get_dependency_root)
+    local tensorflow_dir="$dependency_root/tensorflow"
+    local venv_dir="$dependency_root/tensorflow_env"
+    
+    print_status "Setting up TensorFlow $version (for InferenceEngines library)..."
+    
+    # Check Python
+    if ! command -v python3 &>/dev/null; then
+        print_error "Python 3 required for TensorFlow installation"
+        return 1
+    fi
+    
+    # Check if already installed
+    if [[ -d "$tensorflow_dir" ]]; then
+        print_warning "TensorFlow C++ libraries already installed at $tensorflow_dir"
+        return 0
+    fi
+    
+    print_status "Creating Python virtual environment..."
+    mkdir -p "$dependency_root"
+    if [[ ! -d "$venv_dir" ]]; then
+        python3 -m venv "$venv_dir" || {
+            print_error "Failed to create Python virtual environment"
+            return 1
+        }
+    fi
+    
+    print_status "Activating virtual environment and installing TensorFlow..."
+    source "$venv_dir/bin/activate" || {
+        print_error "Failed to activate virtual environment"
+        return 1
+    }
+    
+    # Install TensorFlow
+    pip install --upgrade pip || {
+        print_error "Failed to upgrade pip"
+        return 1
+    }
+    
+    pip install "tensorflow==$version" || {
+        print_error "TensorFlow installation failed"
+        return 1
+    }
+    
+    # Verify installation
+    print_status "Verifying TensorFlow installation..."
+    python -c "import tensorflow as tf; print(f'TensorFlow version: {tf.__version__}')" || {
+        print_error "TensorFlow verification failed"
+        return 1
+    }
+    
+    print_status "Setting up TensorFlow C++ libraries..."
+    
+    # Find TensorFlow site-packages in the virtual environment
+    local python_version=$(source "$venv_dir/bin/activate" && python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+    local tf_site_packages="$venv_dir/lib/python$python_version/site-packages/tensorflow"
+    
+    if [[ ! -d "$tf_site_packages" ]]; then
+        print_error "TensorFlow site-packages not found at $tf_site_packages"
+        print_status "Available directories in site-packages:"
+        ls -la "$venv_dir/lib/python$python_version/site-packages/" || true
+        return 1
+    fi
+    
+    # Create TensorFlow C++ directory
+    rm -rf "$tensorflow_dir"
+    mkdir -p "$tensorflow_dir/lib" "$tensorflow_dir/include"
+    
+    # Copy libraries (activate venv for each operation)
+    print_status "Copying TensorFlow libraries..."
+    if [[ -f "$tf_site_packages/libtensorflow_cc.so.2" ]]; then
+        cp "$tf_site_packages/libtensorflow_cc.so.2" "$tensorflow_dir/lib/"
+        ln -sf "libtensorflow_cc.so.2" "$tensorflow_dir/lib/libtensorflow_cc.so"
+    else
+        print_warning "libtensorflow_cc.so.2 not found, searching for alternatives..."
+        find "$tf_site_packages" -name "libtensorflow_cc.so*" -exec cp {} "$tensorflow_dir/lib/" \; || {
+            print_warning "No libtensorflow_cc.so found in $tf_site_packages"
+            print_status "Available files in TensorFlow site-packages:"
+            find "$tf_site_packages" -name "*.so*" | head -10 || true
+        }
+    fi
+    
+    if [[ -f "$tf_site_packages/libtensorflow_framework.so.2" ]]; then
+        cp "$tf_site_packages/libtensorflow_framework.so.2" "$tensorflow_dir/lib/"
+        ln -sf "libtensorflow_framework.so.2" "$tensorflow_dir/lib/libtensorflow_framework.so"
+    else
+        print_warning "libtensorflow_framework.so.2 not found, searching for alternatives..."
+        find "$tf_site_packages" -name "libtensorflow_framework.so*" -exec cp {} "$tensorflow_dir/lib/" \; || {
+            print_warning "No libtensorflow_framework.so found in $tf_site_packages"
+        }
+    fi
+    
+    # Copy headers
+    if [[ -d "$tf_site_packages/include" ]]; then
+        cp -r "$tf_site_packages/include/"* "$tensorflow_dir/include/"
+    fi
+    
+    # Copy additional headers if available
+    if [[ -d "$tf_site_packages/core" ]]; then
+        mkdir -p "$tensorflow_dir/include/tensorflow/"
+        cp -r "$tf_site_packages/core" "$tensorflow_dir/include/tensorflow/"
+    fi
+    
+    if [[ -d "$tf_site_packages/cc" ]]; then
+        mkdir -p "$tensorflow_dir/include/tensorflow/"
+        cp -r "$tf_site_packages/cc" "$tensorflow_dir/include/tensorflow/"
+    fi
+    
+    # Create pkg-config file
+    mkdir -p "$tensorflow_dir/lib/pkgconfig"
+    cat > "$tensorflow_dir/lib/pkgconfig/tensorflow.pc" << EOF
+prefix=$tensorflow_dir
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+Name: TensorFlow
+Version: $version
+Libs: -L\${libdir} -ltensorflow_cc -ltensorflow_framework
+Cflags: -I\${includedir}
+EOF
+    
+    # Setup environment
+    local env_file="$dependency_root/setup_env.sh"
+    if [[ -f "$env_file" ]]; then
+        grep -v "TensorFlow\|TENSORFLOW" "$env_file" > "${env_file}.tmp" 2>/dev/null || true
+        mv "${env_file}.tmp" "$env_file" 2>/dev/null || true
+    fi
+    
+    cat >> "$env_file" << EOF
+export TENSORFLOW_DIR="$tensorflow_dir"
+export LD_LIBRARY_PATH="\$TENSORFLOW_DIR/lib:\${LD_LIBRARY_PATH:-}"
+export PKG_CONFIG_PATH="\$TENSORFLOW_DIR/lib/pkgconfig:\${PKG_CONFIG_PATH:-}"
+EOF
+    
+    print_success "TensorFlow C++ library installed successfully at $tensorflow_dir"
+    print_status "You can now build the project with:"
+    print_status "cmake -DDEFAULT_BACKEND=LIBTENSORFLOW .."
+    print_status "Source $env_file to use TensorFlow environment variables"
+}
+
 # Function to check system dependencies
 check_system_dependencies() {
     print_status "Checking system dependencies..."
@@ -284,7 +429,7 @@ check_system_dependencies() {
     local missing_deps=()
     
     # Check for required commands
-    local required_commands=("cmake" "wget" "tar" "unzip")
+    local required_commands=("cmake" "curl" "tar" "unzip")
     for cmd in "${required_commands[@]}"; do
         if ! command_exists "$cmd"; then
             missing_deps+=("$cmd")
@@ -305,7 +450,7 @@ check_system_dependencies() {
         print_error "Missing system dependencies: ${missing_deps[*]}"
         print_status "Please install them using your package manager:"
         if [[ "$(detect_os)" == "linux" ]]; then
-            print_status "sudo apt update && sudo apt install -y ${missing_deps[*]}"
+            print_status "sudo apt update && sudo apt install -y curl ${missing_deps[*]}"
         fi
         return 1
     fi
