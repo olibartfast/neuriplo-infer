@@ -4,41 +4,13 @@ This document describes the improved dependency management system for the object
 
 ## Overview
 
-The project now uses a **hybrid dependency management approach** that combines:
+The project now uses a **dependency management approach** that combines:
 
-1. **Local Version Override System** - Local files override fetched repository versions
-2. **Automatic Version Fetching** - Versions sourced from repositories or GitHub
-3. **Selective Backend Setup** - Only setup the backend you need
-4. **Auto CUDA Detection** - Automatic CUDA version detection for LibTorch
-5. **CMake ExternalProject** - Alternative automated approach
-6. **Docker Integration** - Containerized dependency management
+**Local Version Override System** - Local files override fetched repository versions
+**Automatic Version Fetching** - Versions sourced from repositories or GitHub
+**Selective Backend Setup** - Only setup the backend you need
+**Docker Integration** - Containerized dependency management
 
-## Project Architecture
-
-### 🎯 **This Project: Object Detectors**
-The object-detection-inference project implements **object detection algorithms**:
-
-- **YOLO Series**: YOLOv4, YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLOv10, YOLO11, YOLOv12
-- **YOLO-NAS**: Neural Architecture Search variant
-- **RT-DETR Variants**: RT-DETR, RT-DETR v2, RT-DETR Ultralytics
-- **Other Detectors**: D-FINE, DEIM, RF-DETR
-
-### 🔧 **InferenceEngines Library: Inference Backends**
-The `InferenceEngines` library is **automatically fetched** and provides **inference engine abstractions**:
-
-- **OpenCV DNN**: OpenCV's deep learning module (default - no setup required)
-- **ONNX Runtime**: Microsoft's cross-platform inference engine
-- **TensorRT**: NVIDIA's GPU-optimized inference engine
-- **LibTorch**: PyTorch's C++ inference engine
-- **OpenVINO**: Intel's OpenVINO inference engine
-- **TensorFlow**: Google's TensorFlow inference engine
-
-### 📚 **VideoCapture Library: Video Processing**
-The fetched `VideoCapture` library handles **video input processing**:
-
-- Unified interface for various video sources
-- RTSP stream support
-- Optional GStreamer integration
 
 ## Quick Start
 
@@ -67,7 +39,7 @@ cmake -DDEFAULT_BACKEND=ONNX_RUNTIME -DUSE_EXTERNAL_PROJECT=ON ..
 
 ## Version Management System
 
-The project uses a sophisticated version management system with local override capabilities:
+The project uses a version management system with local override capabilities:
 
 ### 📁 **Version File Structure**
 
@@ -98,7 +70,7 @@ object-detection-inference/
      - `build/_deps/videocapture-src/versions.env` (if available)
 
 3. **GitHub Fallback** (lowest priority)
-   - If fetched repositories are not available, direct download from repository GitHub URLs
+   - If fetched repositories are not available, direct download from repository GitHub URLs [inference-engines](https://github.com/olibartfast/inference-engines) and [videocapture](https://github.com/olibartfast/videocapture)
 
 ### 📋 **Version Management**
 
