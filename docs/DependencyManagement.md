@@ -141,7 +141,7 @@ The system automatically validates dependencies before building:
 | **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup |
 | **InferenceEngines** | Inference Backend Manager | CMake FetchContent | ✓ | Automatic setup |
 | **OpenCV DNN** | Inference Backend | System Package | ✓ | Default - it comes with OpenCV installation, no setup needed for CPU inference, to support multiple inference backends you must customize the building process |
-| **ONNX Runtime** | Inference Backend | Script/ExternalProject | ✓ | CPU/GPU support available based on download binaries and local hardware available|
+| **ONNX Runtime** | Inference Backend | Script| ✓ | CPU/GPU support available based on download binaries and local hardware available|
 | **TensorRT** | Inference Backend | Script | ✓ | Requires NVIDIA account to download the binaries |
 | **LibTorch** | Inference Backend | Script | ✓ | CPU/GPU support available based on download binaries and local hardware available |
 | **OpenVINO** | Inference Backend | Script | ✓ | Complex installation |
