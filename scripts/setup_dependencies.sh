@@ -266,18 +266,55 @@ setup_libtorch() {
 setup_openvino() {
     local version="$OPENVINO_VERSION"
     local dependency_root=$(get_dependency_root)
-    local install_dir="$dependency_root/openvino-$version"
+    local dir="$dependency_root/openvino_$version"
     
     print_status "Setting up OpenVINO $version (for InferenceEngines library)..."
     
-    if [[ -d "$install_dir" ]]; then
-        print_warning "OpenVINO already exists at $install_dir"
+    if [[ -d "$dir" && "$FORCE" != "true" ]]; then
+        print_warning "OpenVINO already exists at $dir"
         return 0
     fi
     
-    print_warning "OpenVINO setup requires manual installation. Please visit:"
-    print_warning "https://docs.openvino.ai/latest/openvino_docs_install_guides_installing_openvino_linux.html"
-    print_warning "After installation, update the InferenceEngines library configuration"
+    print_status "Installing OpenVINO $version to $dir..."
+    mkdir -p "$dependency_root" && cd "$dependency_root"
+    
+    # Download OpenVINO toolkit
+    local tarball="openvino_2025.2.0.tgz"
+    if [[ ! -f "$tarball" ]]; then
+        print_status "Downloading OpenVINO toolkit..."
+        curl -L "https://storage.openvinotoolkit.org/repositories/openvino/packages/2025.2/linux/openvino_toolkit_ubuntu24_2025.2.0.19140.c01cd93e24d_x86_64.tgz" --output "$tarball"
+    fi
+    
+    # Extract and move to final location
+    print_status "Extracting OpenVINO..."
+    tar -xf "$tarball"
+    if [[ -d "$dir" ]]; then
+        rm -rf "$dir"
+    fi
+    mv openvino_toolkit_ubuntu24_2025.2.0.19140.c01cd93e24d_x86_64 "$dir"
+    rm -f "$tarball"
+    
+    # Create a local Python virtual environment for OpenVINO tools
+    print_status "Setting up OpenVINO Python tools..."
+    local venv_dir="$dir/python_env"
+    python3 -m venv "$venv_dir"
+    source "$venv_dir/bin/activate"
+    pip install openvino-dev
+    deactivate
+    
+    # Create wrapper script for ovc
+    mkdir -p "$dir/bin"
+    cat > "$dir/bin/ovc" << 'EOF'
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VENV_DIR="$SCRIPT_DIR/../python_env"
+source "$VENV_DIR/bin/activate"
+ovc "$@"
+deactivate
+EOF
+    chmod +x "$dir/bin/ovc"
+    
+    print_success "OpenVINO $version installed successfully to $dir"
 }
 
 # Function to setup TensorFlow
