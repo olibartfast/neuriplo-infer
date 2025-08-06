@@ -282,5 +282,5 @@ See [Dependency Management Guide](docs/DependencyManagement.md) for detailed pro
 
 ## 📫 Support
 
-- Open an [issue](https://github.com/olibartfast/object-detection-inference/issues) for bug reports or feature requests
+- Open an [issue](https://github.com/olibartfast/object-detection-inference/issues) for bug reports or feature requests. Contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
 - Check existing issues for solutions to common problems
