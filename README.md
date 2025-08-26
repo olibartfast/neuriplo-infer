@@ -8,7 +8,7 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 ## 🚀 Key Features
 
 - **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM, RF-DETR
-- **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [InferenceEngines library](https://github.com/olibartfast/inference-engines/))
+- **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [InferenceEngines library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: GStreamer integration (via [VideoCapture library](https://github.com/olibartfast/videocapture/))
 - **Docker Deployment Ready**: Multi-backend container support
 
@@ -28,7 +28,7 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 ### Dependency Management
 
-This project automatically fetches the [InferenceEngines library](https://github.com/olibartfast/inference-engines) which provides inference backend abstractions. The InferenceEngines library handles all backend-specific dependencies.
+This project automatically fetches [Neuriplo, the inference engines library](https://github.com/olibartfast/neuriplo) which provides inference backend abstractions. The InferenceEngines library handles all backend-specific dependencies.
 
 #### 🚀 Quick Setup (Recommended)
 ```bash
@@ -62,7 +62,7 @@ For other inference backends, setup dependencies first:
 - **LibTorch with GPU support**:
   ```bash
   ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
-  # Note: Automatically set CUDA version from `versions.inference-engines.env`
+  # Note: Automatically set CUDA version from `versions.neuriplo.env`
   ```
 
 - **OpenVINO**:
@@ -282,5 +282,5 @@ See [Dependency Management Guide](docs/DependencyManagement.md) for detailed pro
 
 ## 📫 Support
 
-- Open an [issue](https://github.com/olibartfast/object-detection-inference/issues) for bug reports or feature requests. Contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
+- Open an [issue](https://github.com/olibartfast/object-detection-inference/issues) for bug reports or feature requests: contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
 - Check existing issues for solutions to common problems
