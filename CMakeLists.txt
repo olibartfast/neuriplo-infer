@@ -31,7 +31,7 @@ include(FetchContent)
 FetchContent_Declare(
     neuriplo
     GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git
-    GIT_TAG        ${INFERENCE_ENGINES_VERSION}  # Use specific version instead of master
+    GIT_TAG        ${NEURIPLO_VERSION}  # Use specific version instead of master
 )
 
 FetchContent_Declare(

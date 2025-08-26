@@ -34,7 +34,7 @@ endfunction()
 read_versions_from_env()
 
 # External C++ Libraries (fetched via CMake FetchContent)
-set(INFERENCE_ENGINES_VERSION ${INFERENCE_ENGINES_VERSION} CACHE STRING "neuriplo")
+set(NEURIPLO_VERSION ${NEURIPLO_VERSION} CACHE STRING "neuriplo")
 set(VIDEOCAPTURE_VERSION ${VIDEOCAPTURE_VERSION} CACHE STRING "VideoCapture library version")
 
 # System Dependencies (minimum versions)
