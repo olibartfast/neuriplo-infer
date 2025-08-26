@@ -52,7 +52,7 @@ show_usage() {
 }
 
 # Function to update neuriplo versions
-update_inference_engines_versions() {
+update_neuriplo_versions() {
     local local_versions_file="versions.neuriplo.env"
     local inference_versions_file="build/_deps/neuriplo-src/versions.env"
     local github_url="https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env"
@@ -197,7 +197,7 @@ main() {
     
     # Update neuriplo versions
     if [[ "$update_inference_engines" == "true" ]]; then
-        if ! update_inference_engines_versions; then
+        if ! update_neuriplo_versions; then
             print_error "Failed to update neuriplo versions"
             exit 1
         fi

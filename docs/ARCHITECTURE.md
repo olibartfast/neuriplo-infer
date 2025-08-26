@@ -103,7 +103,7 @@ neuriplo/
 ### ✅ **This Project Should Manage:**
 ```cmake
 # cmake/versions.cmake
-set(INFERENCE_ENGINES_VERSION "v1.0.0")  # Fetched library version
+set(NEURIPLO_VERSION "v1.0.0")  # Fetched library version
 set(VIDEOCAPTURE_VERSION "v1.0.0")       # Fetched library version
 set(OPENCV_MIN_VERSION "4.6.0")          # System dependency
 set(GLOG_MIN_VERSION "0.6.0")            # System dependency
@@ -155,7 +155,7 @@ cmake --build .
 ```bash
 # 1. Update neuriplo version in this project
 # cmake/versions.cmake
-set(INFERENCE_ENGINES_VERSION "v1.1.0")
+set(NEURIPLO_VERSION "v1.1.0")
 
 # 2. Update inference backend versions in neuriplo library
 # neuriplo/cmake/versions.cmake
@@ -212,7 +212,7 @@ set(ONNX_RUNTIME_VERSION "1.19.2")
 ### ✅ **Correct: This project manages fetched library versions**
 ```cmake
 # This should be in this project
-set(INFERENCE_ENGINES_VERSION "v1.0.0")
+set(NEURIPLO_VERSION "v1.0.0")
 ```
 
 ### ❌ **Wrong: This project links inference backend libraries**
