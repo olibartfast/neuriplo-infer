@@ -39,7 +39,7 @@ The project uses a version management system with local override capabilities:
 ```
 object-detection-inference/
 ├── versions.env # Dependencies needed by this project
-├── versions.inference-engines.env    # Overrides InferenceEngines versions (if present), otherwise will be automatically created and fetched from InferenceEngines repository
+├── versions.neuriplo.env    # Overrides InferenceEngines versions (if present), otherwise will be automatically created and fetched from InferenceEngines repository
 ├── versions.videocapture.env         # Overrides VideoCapture versions (if present), otherwise will be automatically created and fetched from VideoCapture repository
 ├── scripts/
 │   ├── setup_dependencies.sh         # Main setup script
@@ -55,7 +55,7 @@ object-detection-inference/
 ### 🔄 **Version Priority System**
 
 1. **Local Override Files** (highest priority)
-   - `versions.inference-engines.env` - **Overrides** InferenceEngines versions **if present**
+   - `versions.neuriplo.env` - **Overrides** InferenceEngines versions **if present**
    - `versions.videocapture.env` - **Overrides** VideoCapture versions **if present**
 
 2. **Auto-Created Local Files** (medium priority)
@@ -64,7 +64,7 @@ object-detection-inference/
      - `build/_deps/videocapture-src/versions.env` (if available)
 
 3. **GitHub Fallback** (lowest priority)
-   - If versions.env above fetched repositories are not available, direct download from repository GitHub URLs [inference-engines](https://github.com/olibartfast/inference-engines) and [videocapture](https://github.com/olibartfast/videocapture)
+   - If versions.env above fetched repositories are not available, direct download from repository GitHub URLs [neuriplo](https://github.com/olibartfast/neuriplo) and [videocapture](https://github.com/olibartfast/videocapture)
 
 
 ## Backend Setup Process
@@ -78,7 +78,7 @@ The setup script now only installs and validates the **selected backend**. See [
 When using `--compute-platform gpu` or `--compute-platform cuda`, the script automatically detects your CUDA version and downloads the appropriate LibTorch build:
 
 #### **How it works:**
-1. **Reads CUDA version** from `versions.inference-engines.env` (e.g., `CUDA_VERSION=12.6`)
+1. **Reads CUDA version** from `versions.neuriplo.env` (e.g., `CUDA_VERSION=12.6`)
 2. **Downloads the correct LibTorch version** based on your CUDA version:
    - CUDA 12.8 → Downloads LibTorch with CUDA 12.8 support (`cu128`)
    - CUDA 12.6 → Downloads LibTorch with CUDA 12.6 support (`cu126`)
@@ -88,15 +88,15 @@ When using `--compute-platform gpu` or `--compute-platform cuda`, the script aut
 
 #### **Examples:**
 ```bash
-# If CUDA_VERSION=12.6 in versions.inference-engines.env:
+# If CUDA_VERSION=12.6 in versions.neuriplo.env:
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
 # Downloads: libtorch-cxx11-abi-shared-with-deps-2.3.0+cu126.zip
 
-# If CUDA_VERSION=12.8 in versions.inference-engines.env:
+# If CUDA_VERSION=12.8 in versions.neuriplo.env:
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
 # Downloads: libtorch-cxx11-abi-shared-with-deps-2.3.0+cu128.zip
 
-# If CUDA_VERSION=11.8 in versions.inference-engines.env:
+# If CUDA_VERSION=11.8 in versions.neuriplo.env:
 ./scripts/setup_dependencies.sh --backend libtorch --compute-platform gpu
 # Downloads: libtorch-cxx11-abi-shared-with-deps-2.3.0+cu118.zip
 
@@ -183,7 +183,7 @@ Override inference backend versions using local files:
 
 ```bash
 # Edit local version file
-nano versions.inference-engines.env
+nano versions.neuriplo.env
 
 # Or override at build time
 cmake -DONNX_RUNTIME_VERSION="1.18.0" ..
@@ -209,9 +209,9 @@ sudo apt update && sudo apt install -y cmake wget tar unzip libopencv-dev libgoo
 #### 2. Version File Issues
 
 ```bash
-# Error: CUDA version not found in versions.inference-engines.env
+# Error: CUDA version not found in versions.neuriplo.env
 # Solution: The setup script should handle this automatically, but you can manually set CUDA version
-echo "CUDA_VERSION=12.6" >> versions.inference-engines.env
+echo "CUDA_VERSION=12.6" >> versions.neuriplo.env
 ```
 
 #### 3. Backend Not Found

@@ -34,13 +34,13 @@ show_usage() {
     echo ""
     echo "This script updates backend versions from the InferenceEngines and VideoCapture repositories."
     echo "Local version files override the fetched repository versions:"
-    echo "  - versions.inference-engines.env overrides InferenceEngines versions"
+    echo "  - versions.neuriplo.env overrides InferenceEngines versions"
     echo "  - versions.videocapture.env overrides VideoCapture versions"
     echo ""
     echo "Options:"
     echo "  --force              Force update even if local files exist"
     echo "  --show-versions      Show current versions after update"
-    echo "  --inference-engines  Only update InferenceEngines versions"
+    echo "  --neuriplo  Only update InferenceEngines versions"
     echo "  --videocapture       Only update VideoCapture versions"
     echo "  --help              Show this help message"
     echo ""
@@ -48,14 +48,14 @@ show_usage() {
     echo "  $0                    # Update if local files don't exist"
     echo "  $0 --force           # Force update from repositories"
     echo "  $0 --show-versions   # Update and show versions"
-    echo "  $0 --inference-engines --show-versions  # Only InferenceEngines"
+    echo "  $0 --neuriplo --show-versions  # Only InferenceEngines"
 }
 
 # Function to update InferenceEngines versions
 update_inference_engines_versions() {
-    local local_versions_file="versions.inference-engines.env"
+    local local_versions_file="versions.neuriplo.env"
     local inference_versions_file="build/_deps/inferenceengines-src/versions.env"
-    local github_url="https://raw.githubusercontent.com/olibartfast/inference-engines/master/versions.env"
+    local github_url="https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env"
     
     print_status "Updating InferenceEngines versions..."
     
@@ -171,7 +171,7 @@ main() {
                 show_versions=true
                 shift
                 ;;
-            --inference-engines)
+            --neuriplo)
                 update_inference_engines=true
                 update_videocapture=false
                 shift

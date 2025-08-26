@@ -71,7 +71,7 @@ detectors/
 
 ### Files It Should Own
 ```
-inference-engines/
+neuriplo/
 ├── cmake/
 │   ├── versions.cmake           # Inference backend versions
 │   ├── ONNXRuntime.cmake
@@ -158,7 +158,7 @@ cmake --build .
 set(INFERENCE_ENGINES_VERSION "v1.1.0")
 
 # 2. Update inference backend versions in InferenceEngines library
-# inference-engines/cmake/versions.cmake
+# neuriplo/cmake/versions.cmake
 set(ONNX_RUNTIME_VERSION "1.20.0")
 set(TENSORRT_VERSION "10.8.0.0")
 ```

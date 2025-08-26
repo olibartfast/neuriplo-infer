@@ -30,7 +30,7 @@ message(STATUS "✓ glog found")
 include(FetchContent)
 FetchContent_Declare(
     InferenceEngines
-    GIT_REPOSITORY https://github.com/olibartfast/inference-engines.git
+    GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git
     GIT_TAG        ${INFERENCE_ENGINES_VERSION}  # Use specific version instead of master
 )
 

@@ -88,7 +88,7 @@ download_with_retry() {
 
 # Function to fetch versions from InferenceEngines repo
 fetch_backend_versions() {
-    local local_versions_file="versions.inference-engines.env"
+    local local_versions_file="versions.neuriplo.env"
     
     # Check if local versions file exists (should be created by update_backend_versions.sh)
     if [[ -f "$local_versions_file" ]]; then
@@ -236,8 +236,8 @@ setup_libtorch() {
                     ;;
             esac
         else
-            print_error "CUDA version not found in versions.inference-engines.env"
-            print_status "Please set CUDA_VERSION in versions.inference-engines.env or use --compute-platform explicitly"
+            print_error "CUDA version not found in versions.neuriplo.env"
+            print_status "Please set CUDA_VERSION in versions.neuriplo.env or use --compute-platform explicitly"
             return 1
         fi
     fi
