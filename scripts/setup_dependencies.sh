@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Unified dependency setup script for inference backend dependencies
-# This script fetches backend versions from InferenceEngines repo and sets up dependencies
+# This script fetches backend versions from neuriplo repo and sets up dependencies
 
 set -e  # Exit on any error
 
@@ -86,23 +86,23 @@ download_with_retry() {
     return 1
 }
 
-# Function to fetch versions from InferenceEngines repo
+# Function to fetch versions from neuriplo repo
 fetch_backend_versions() {
     local local_versions_file="versions.neuriplo.env"
     
     # Check if local versions file exists (should be created by update_backend_versions.sh)
     if [[ -f "$local_versions_file" ]]; then
-        print_status "Using local InferenceEngines versions from $local_versions_file"
+        print_status "Using local neuriplo versions from $local_versions_file"
         source "$local_versions_file"
     else
-        print_error "Local InferenceEngines versions file not found: $local_versions_file"
+        print_error "Local neuriplo versions file not found: $local_versions_file"
         print_status "This should have been created by update_backend_versions.sh"
         print_status "Please check if the script ran successfully or try manually:"
         print_status "./scripts/update_backend_versions.sh"
         return 1
     fi
     
-    print_status "Fetched InferenceEngines backend versions:"
+    print_status "Fetched neuriplo backend versions:"
     print_status "ONNX Runtime: $ONNX_RUNTIME_VERSION"
     print_status "TensorRT: $TENSORRT_VERSION"
     print_status "LibTorch: $PYTORCH_VERSION"
@@ -117,7 +117,7 @@ setup_onnx_runtime() {
     local dependency_root=$(get_dependency_root)
     local install_dir="$dependency_root/onnxruntime-linux-x64-gpu-$version"
     
-    print_status "Setting up ONNX Runtime $version (for InferenceEngines library)..."
+    print_status "Setting up ONNX Runtime $version (for neuriplo library)..."
     
     if [[ -d "$install_dir" ]]; then
         print_warning "ONNX Runtime already exists at $install_dir"
@@ -154,7 +154,7 @@ setup_tensorrt() {
     local dependency_root=$(get_dependency_root)
     local install_dir="$dependency_root/TensorRT-$version"
     
-    print_status "Setting up TensorRT $version (for InferenceEngines library)..."
+    print_status "Setting up TensorRT $version (for neuriplo library)..."
     
     if [[ -d "$install_dir" ]]; then
         print_warning "TensorRT already exists at $install_dir"
@@ -190,7 +190,7 @@ setup_libtorch() {
     local dependency_root=$(get_dependency_root)
     local install_dir="$dependency_root/libtorch"
     
-    print_status "Setting up LibTorch $version (for InferenceEngines library)..."
+    print_status "Setting up LibTorch $version (for neuriplo library)..."
     
     if [[ -d "$install_dir" ]]; then
         print_warning "LibTorch already exists at $install_dir"
@@ -268,7 +268,7 @@ setup_openvino() {
     local dependency_root=$(get_dependency_root)
     local dir="$dependency_root/openvino_$version"
     
-    print_status "Setting up OpenVINO $version (for InferenceEngines library)..."
+    print_status "Setting up OpenVINO $version (for neuriplo library)..."
     
     if [[ -d "$dir" && "$FORCE" != "true" ]]; then
         print_warning "OpenVINO already exists at $dir"
@@ -324,7 +324,7 @@ setup_tensorflow() {
     local tensorflow_dir="$dependency_root/tensorflow"
     local venv_dir="$dependency_root/tensorflow_env"
     
-    print_status "Setting up TensorFlow $version (for InferenceEngines library)..."
+    print_status "Setting up TensorFlow $version (for neuriplo library)..."
     
     # Check Python
     if ! command -v python3 &>/dev/null; then
@@ -499,7 +499,7 @@ check_system_dependencies() {
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "This script sets up inference backend dependencies for the InferenceEngines library."
+    echo "This script sets up inference backend dependencies for the neuriplo library."
     echo "It automatically ensures version files exist and installs the selected backend dependencies."
     echo ""
     echo "Options:"
@@ -519,7 +519,7 @@ show_usage() {
     echo "  $0 --backend all                     # Setup all inference backends"
     echo ""
     echo "Note: This script automatically calls update_backend_versions.sh to ensure version files exist."
-    echo "Note: These dependencies are used by the InferenceEngines library, not this project directly."
+    echo "Note: These dependencies are used by the neuriplo library, not this project directly."
 }
 
 # Main script
@@ -557,7 +557,7 @@ main() {
     print_status "OS detected: $(detect_os)"
     print_status "Dependency root: $(get_dependency_root)"
     print_status "Selected backend: $backend"
-    print_status "Note: These dependencies are for the InferenceEngines library"
+    print_status "Note: These dependencies are for the neuriplo library"
     
     # Automatically ensure version files exist
     print_status "Ensuring version files are available..."
@@ -574,7 +574,7 @@ main() {
         exit 1
     fi
     
-    # Fetch backend versions from InferenceEngines repo
+    # Fetch backend versions from neuriplo repo
     if ! fetch_backend_versions; then
         exit 1
     fi
@@ -615,7 +615,7 @@ main() {
     esac
     
     print_success "Inference backend dependency setup completed successfully!"
-    print_status "These dependencies will be used by the InferenceEngines library."
+    print_status "These dependencies will be used by the neuriplo library."
     print_status "You can now build the project with:"
     print_status "mkdir build && cd build"
     if [[ "$backend" == "opencv_dnn" ]]; then

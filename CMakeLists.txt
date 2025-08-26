@@ -26,10 +26,10 @@ find_package(glog REQUIRED)
 message(STATUS "✓ OpenCV ${OpenCV_VERSION} found")
 message(STATUS "✓ glog found")
 
-# Fetch the InferenceEngines project from GitHub with specific version
+# Fetch the neuriplo project from GitHub with specific version
 include(FetchContent)
 FetchContent_Declare(
-    InferenceEngines
+    neuriplo
     GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git
     GIT_TAG        ${INFERENCE_ENGINES_VERSION}  # Use specific version instead of master
 )
@@ -40,8 +40,8 @@ FetchContent_Declare(
     GIT_TAG        ${VIDEOCAPTURE_VERSION}  # Use specific version instead of master
 )
 
-FetchContent_MakeAvailable(InferenceEngines VideoCapture)
-message(STATUS "InferenceEngines_SOURCE_DIR: ${InferenceEngines_SOURCE_DIR}")
+FetchContent_MakeAvailable(neuriplo VideoCapture)
+message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
 
 # Configure VideoCapture target with OpenCV after it's been fetched

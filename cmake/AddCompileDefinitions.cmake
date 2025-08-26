@@ -3,13 +3,13 @@ if(DEFAULT_BACKEND STREQUAL "OPENCV_DNN")
     message(STATUS "Using OpenCV DNN backend")
     
 elseif (DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
-    # ONNX Runtime configuration - managed by InferenceEngines library
-    message(STATUS "Using ONNX Runtime backend (managed by InferenceEngines)")
+    # ONNX Runtime configuration - managed by neuriplo library
+    message(STATUS "Using ONNX Runtime backend (managed by neuriplo)")
     add_compile_definitions(USE_ONNX_RUNTIME)
     
 elseif (DEFAULT_BACKEND STREQUAL "LIBTORCH")
-    # LibTorch configuration - managed by InferenceEngines library
-    message(STATUS "Using LibTorch backend (managed by InferenceEngines)")
+    # LibTorch configuration - managed by neuriplo library
+    message(STATUS "Using LibTorch backend (managed by neuriplo)")
     add_compile_definitions(USE_LIBTORCH)
 
     # Enable GLOG for LibTorch
@@ -20,16 +20,16 @@ elseif (DEFAULT_BACKEND STREQUAL "LIBTORCH")
     add_definitions(-DC10_USE_GLOG)
     
 elseif (DEFAULT_BACKEND STREQUAL "TENSORRT")
-    # TensorRT configuration - managed by InferenceEngines library
-    message(STATUS "Using TensorRT backend (managed by InferenceEngines)")
+    # TensorRT configuration - managed by neuriplo library
+    message(STATUS "Using TensorRT backend (managed by neuriplo)")
     add_compile_definitions(USE_TENSORRT)
     
 elseif (DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW")
-    message(STATUS "Using TensorFlow backend (managed by InferenceEngines)")
+    message(STATUS "Using TensorFlow backend (managed by neuriplo)")
     add_compile_definitions(USE_LIBTENSORFLOW)
     
 elseif (DEFAULT_BACKEND STREQUAL "OPENVINO")
-    message(STATUS "Using OpenVINO backend (managed by InferenceEngines)")
+    message(STATUS "Using OpenVINO backend (managed by neuriplo)")
     add_compile_definitions(USE_OPENVINO)
     
 else()
@@ -37,5 +37,5 @@ else()
 endif()
 
 # Note: Inference backend version management and path configuration
-# should be handled by the InferenceEngines library, not this project.
+# should be handled by the neuriplo library, not this project.
 # This project only sets compile definitions for the selected backend.

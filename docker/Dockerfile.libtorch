@@ -52,7 +52,7 @@ COPY --from=builder /app/build/app/object-detection-inference /app/object-detect
 
 # Copy the shared libraries
 COPY --from=builder /app/build/detectors/libdetectors.so /app/
-COPY --from=builder /app/build/_deps/inferenceengines-build/libInferenceEngines.so /app/
+COPY --from=builder /app/build/_deps/neuriploneuriplo
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
 # Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located

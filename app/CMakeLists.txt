@@ -26,8 +26,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${VideoCapture_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/src
-    ${InferenceEngines_SOURCE_DIR}/backends
-    ${InferenceEngines_SOURCE_DIR}/backends/src
+    ${neuriplo_SOURCE_DIR}/backends
+    ${neuriplo_SOURCE_DIR}/backends/src
     ${CMAKE_CURRENT_SOURCE_DIR}/../detectors/inc  # Relative path to detectors/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../detectors/src/models  # Relative path to detectors models
     ${OpenCV_INCLUDE_DIRS}
@@ -39,7 +39,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glog::glog
     ${OpenCV_LIBS}
     detectors
-    InferenceEngines
+    neuriplo
     VideoCapture
 )
 

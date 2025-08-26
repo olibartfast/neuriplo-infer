@@ -11,7 +11,7 @@ The project follows a **modular architecture** with clear separation of concerns
 │                    object-detection-inference                   │
 │                         (This Project)                         │
 ├─────────────────────────────────────────────────────────────────┤
-│  🎯 Object Detectors    │  📚 VideoCapture    │  🔧 InferenceEngines │
+│  🎯 Object Detectors    │  📚 VideoCapture    │  🔧 neuriplo │
 │                         │                     │                     │
 │  • YOLO variants        │  • Video processing │  • Backend abstractions│
 │  • RT-DETR variants     │  • RTSP streams     │  • ONNX Runtime      │
@@ -32,7 +32,7 @@ The project follows a **modular architecture** with clear separation of concerns
 
 ### What We Manage
 - **System Dependencies**: OpenCV, glog, CMake version requirements
-- **Fetched Library Versions**: InferenceEngines and VideoCapture library versions
+- **Fetched Library Versions**: neuriplo and VideoCapture library versions
 - **Build Configuration**: Compile definitions for selected inference backend
 
 ### Files We Own
@@ -53,7 +53,7 @@ detectors/
     └── DetectorSetup.hpp
 ```
 
-## 🔧 **InferenceEngines Library: Inference Backends**
+## 🔧 **neuriplo Library: Inference Backends**
 
 ### What It Provides
 - **Inference Backend Abstractions**: Unified interface to different inference engines
@@ -112,7 +112,7 @@ set(CMAKE_MIN_VERSION "3.20")            # Build system
 
 ### ❌ **This Project Should NOT Manage:**
 ```cmake
-# These should be in InferenceEngines library
+# These should be in neuriplo library
 set(ONNX_RUNTIME_VERSION "1.19.2")       # Inference backend
 set(TENSORRT_VERSION "10.7.0.23")        # Inference backend
 set(LIBTORCH_VERSION "2.0.0")            # Inference backend
@@ -124,7 +124,7 @@ set(CUDA_VERSION "12.6")                 # Inference backend dependency
 
 The setup scripts in this project (`scripts/setup_dependencies.sh`) are **convenience scripts** that:
 
-1. **Install inference backend dependencies** that will be used by the InferenceEngines library
+1. **Install inference backend dependencies** that will be used by the neuriplo library
 2. **Provide a unified interface** for users to setup their environment
 3. **Maintain backward compatibility** with existing workflows
 
@@ -134,9 +134,9 @@ The setup scripts in this project (`scripts/setup_dependencies.sh`) are **conven
 - Validate installations
 
 ### What They Don't Do:
-- Manage inference backend versions (should be done by InferenceEngines)
-- Link inference backend libraries (done by InferenceEngines)
-- Handle inference backend configuration (done by InferenceEngines)
+- Manage inference backend versions (should be done by neuriplo)
+- Link inference backend libraries (done by neuriplo)
+- Handle inference backend configuration (done by neuriplo)
 
 ## 📋 **Correct Workflow**
 
@@ -145,7 +145,7 @@ The setup scripts in this project (`scripts/setup_dependencies.sh`) are **conven
 # 1. Setup inference backend dependencies (convenience)
 ./scripts/setup_dependencies.sh --backend onnx_runtime
 
-# 2. Build project (fetches InferenceEngines with proper versions)
+# 2. Build project (fetches neuriplo with proper versions)
 mkdir build && cd build
 cmake -DDEFAULT_BACKEND=ONNX_RUNTIME ..
 cmake --build .
@@ -153,11 +153,11 @@ cmake --build .
 
 ### For Developers:
 ```bash
-# 1. Update InferenceEngines version in this project
+# 1. Update neuriplo version in this project
 # cmake/versions.cmake
 set(INFERENCE_ENGINES_VERSION "v1.1.0")
 
-# 2. Update inference backend versions in InferenceEngines library
+# 2. Update inference backend versions in neuriplo library
 # neuriplo/cmake/versions.cmake
 set(ONNX_RUNTIME_VERSION "1.20.0")
 set(TENSORRT_VERSION "10.8.0.0")
@@ -170,20 +170,20 @@ User selects backend
         ↓
 This project sets compile definition (USE_ONNX_RUNTIME)
         ↓
-InferenceEngines library handles:
+neuriplo library handles:
   - Version management
   - Path configuration
   - Library linking
   - Backend-specific setup
         ↓
-Object detectors use InferenceEngines API
+Object detectors use neuriplo API
 ```
 
 ## 🎯 **Benefits of This Architecture**
 
 ### **Separation of Concerns**
 - **This project**: Focuses on object detection algorithms
-- **InferenceEngines**: Handles inference backend complexity
+- **neuriplo**: Handles inference backend complexity
 - **VideoCapture**: Manages video input processing
 
 ### **Maintainability**
@@ -192,7 +192,7 @@ Object detectors use InferenceEngines API
 - **Feature additions**: New backends don't affect object detectors
 
 ### **Reusability**
-- **InferenceEngines**: Can be used by other projects
+- **neuriplobe used by other projects
 - **VideoCapture**: Can be used by other projects
 - **Object detectors**: Can be used with different inference backends
 
@@ -221,10 +221,10 @@ set(INFERENCE_ENGINES_VERSION "v1.0.0")
 target_link_libraries(${PROJECT_NAME} PRIVATE libonnxruntime.so)
 ```
 
-### ✅ **Correct: InferenceEngines library handles linking**
+### ✅ **Correct: neuriplo handles linking**
 ```cmake
-# This should be in InferenceEngines library
-target_link_libraries(${PROJECT_NAME} PRIVATE InferenceEngines)
+# This should be in neuriplo library
+target_link_libraries(${PROJECT_NAME} PRIVATE neuriplo)
 ```
 
 ## 🔮 **Future Improvements**
@@ -235,7 +235,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE InferenceEngines)
 3. **Add new detector types**
 4. **Enhance preprocessing/postprocessing**
 
-### **For InferenceEngines Library:**
+### **For neuriplo Library:**
 1. **Centralized version management**
 2. **Better backend validation**
 3. **Automatic backend setup**

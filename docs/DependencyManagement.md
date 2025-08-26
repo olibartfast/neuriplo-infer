@@ -39,14 +39,14 @@ The project uses a version management system with local override capabilities:
 ```
 object-detection-inference/
 ├── versions.env # Dependencies needed by this project
-├── versions.neuriplo.env    # Overrides InferenceEngines versions (if present), otherwise will be automatically created and fetched from InferenceEngines repository
+├── versions.neuriplo.env    # Overrides neuriplos (if present), otherwise will be automatically created and fetched from Inferencneuriploory
 ├── versions.videocapture.env         # Overrides VideoCapture versions (if present), otherwise will be automatically created and fetched from VideoCapture repository
 ├── scripts/
 │   ├── setup_dependencies.sh         # Main setup script
 │   ├── update_backend_versions.sh    # Version management script
 │   └── setup_*.sh                   # Individual backend scripts
 └── build/_deps/
-    ├── inferenceengines-src/versions.env  # Source InferenceEngines versions
+    ├── neuriplo-src/versions.env  # Source neuriplo versions
     └── videocapture-src/versions.env     # Source VideoCapture versions
 ```
 
@@ -55,12 +55,12 @@ object-detection-inference/
 ### 🔄 **Version Priority System**
 
 1. **Local Override Files** (highest priority)
-   - `versions.neuriplo.env` - **Overrides** InferenceEngines versions **if present**
+   - `versions.neuriplo.env` - **Overrides** neuriplo versions **if present**
    - `versions.videocapture.env` - **Overrides** VideoCapture versions **if present**
 
 2. **Auto-Created Local Files** (medium priority)
    - If local files don't exist, they are **automatically created** by copying from:
-     - `build/_deps/inferenceengines-src/versions.env` (if available)
+     - `build/_deps/neuriplo-src/versions.env` (if available)
      - `build/_deps/videocapture-src/versions.env` (if available)
 
 3. **GitHub Fallback** (lowest priority)
@@ -139,7 +139,7 @@ The system automatically validates dependencies before building:
 |-----------|------|-------------|------------|-------|
 | **Object Detectors** | This Project | Built-in | ✓ | YOLO, RT-DETR variants |
 | **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup |
-| **InferenceEngines** | Inference Backend Manager | CMake FetchContent | ✓ | Automatic setup |
+| **neuriplo** | Inference Backend Manager | CMake FetchContent | ✓ | Automatic setup |
 | **OpenCV DNN** | Inference Backend | System Package | ✓ | Default - it comes with OpenCV installation, no setup needed for CPU inference, to support multiple inference backends you must customize the building process |
 | **ONNX Runtime** | Inference Backend | Script| ✓ | CPU/GPU support available based on download binaries and local hardware available|
 | **TensorRT** | Inference Backend | Script | ✓ | Requires NVIDIA account to download the binaries |

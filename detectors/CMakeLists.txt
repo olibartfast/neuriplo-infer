@@ -15,11 +15,11 @@ add_library(detectors SHARED ${DETECTORS_SOURCES})
 
 
 message(STATUS "Detectors Module, CMAKE_CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
-message(STATUS "Detectors Module, InferenceEngines_SOURCE_DIR: ${InferenceEngines_SOURCE_DIR}")
+message(STATUS "Detectors Module, neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 
 target_include_directories(detectors PRIVATE
     ${OpenCV_INCLUDE_DIRS}
-    ${InferenceEngines_SOURCE_DIR}/backends/src
+    ${neuriplo_SOURCE_DIR}/backends/src
     ${CMAKE_CURRENT_LIST_DIR}/inc
     ${CMAKE_CURRENT_LIST_DIR}/src
     ${CMAKE_CURRENT_LIST_DIR}/src/models

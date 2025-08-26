@@ -34,7 +34,7 @@ endfunction()
 read_versions_from_env()
 
 # External C++ Libraries (fetched via CMake FetchContent)
-set(INFERENCE_ENGINES_VERSION ${INFERENCE_ENGINES_VERSION} CACHE STRING "InferenceEngines library version")
+set(INFERENCE_ENGINES_VERSION ${INFERENCE_ENGINES_VERSION} CACHE STRING "neuriplo")
 set(VIDEOCAPTURE_VERSION ${VIDEOCAPTURE_VERSION} CACHE STRING "VideoCapture library version")
 
 # System Dependencies (minimum versions)
@@ -44,12 +44,12 @@ set(CMAKE_MIN_VERSION ${CMAKE_MIN_VERSION} CACHE STRING "Minimum CMake version")
 
 # Print version information for debugging
 message(STATUS "=== Project Dependency Versions ===")
-message(STATUS "InferenceEngines: ${INFERENCE_ENGINES_VERSION}")
+message(STATUS "neuriploRENCE_ENGINES_VERSION}")
 message(STATUS "VideoCapture: ${VIDEOCAPTURE_VERSION}")
 message(STATUS "OpenCV Min: ${OPENCV_MIN_VERSION}")
 message(STATUS "glog Min: ${GLOG_MIN_VERSION}")
 message(STATUS "CMake Min: ${CMAKE_MIN_VERSION}")
 
 # Note: Inference backend versions (ONNX Runtime, TensorRT, LibTorch, etc.)
-# are managed by the InferenceEngines library, not this project.
-# See the InferenceEngines library for backend-specific version management. 
+# are managed by the neuriplo, not this project.
+# See the neuriplo library for backend-specific version management. 

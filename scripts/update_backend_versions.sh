@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to update backend versions from InferenceEngines and VideoCapture repositories
+# Script to update backend versions from neuriplo and VideoCapture repositories
 # This script copies the versions.env files from the fetched repos, but local files override them
 
 set -e
@@ -32,15 +32,15 @@ print_error() {
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "This script updates backend versions from the InferenceEngines and VideoCapture repositories."
+    echo "This script updates backend versions from the neuriplo and VideoCapture repositories."
     echo "Local version files override the fetched repository versions:"
-    echo "  - versions.neuriplo.env overrides InferenceEngines versions"
+    echo "  - versions.neuriplo.env overrides neuriplo versions"
     echo "  - versions.videocapture.env overrides VideoCapture versions"
     echo ""
     echo "Options:"
     echo "  --force              Force update even if local files exist"
     echo "  --show-versions      Show current versions after update"
-    echo "  --neuriplo  Only update InferenceEngines versions"
+    echo "  --neuriplo  Only update neuriplo versions"
     echo "  --videocapture       Only update VideoCapture versions"
     echo "  --help              Show this help message"
     echo ""
@@ -48,21 +48,21 @@ show_usage() {
     echo "  $0                    # Update if local files don't exist"
     echo "  $0 --force           # Force update from repositories"
     echo "  $0 --show-versions   # Update and show versions"
-    echo "  $0 --neuriplo --show-versions  # Only InferenceEngines"
+    echo "  $0 --neuriplo --show-versions  # Only neuriplo"
 }
 
-# Function to update InferenceEngines versions
+# Function to update neuriplo versions
 update_inference_engines_versions() {
     local local_versions_file="versions.neuriplo.env"
-    local inference_versions_file="build/_deps/inferenceengines-src/versions.env"
+    local inference_versions_file="build/_deps/neuriplo-src/versions.env"
     local github_url="https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env"
     
-    print_status "Updating InferenceEngines versions..."
+    print_status "Updating neuriplo versions..."
     
     # Check if local versions file exists
     if [[ -f "$local_versions_file" && "$force" != "true" ]]; then
-        print_warning "Local InferenceEngines versions file $local_versions_file already exists."
-        print_status "Use --force to overwrite with versions from InferenceEngines repo."
+        print_warning "Local neuriplo versions file $local_versions_file already exists."
+        print_status "Use --force to overwrite with versions from neuriplo repo."
         print_status "Current local versions:"
         source "$local_versions_file"
         echo "ONNX Runtime: $ONNX_RUNTIME_VERSION"
@@ -84,15 +84,15 @@ update_inference_engines_versions() {
         
         # Download versions from GitHub
         if curl -s -o "$local_versions_file" "$github_url"; then
-            print_success "Successfully downloaded InferenceEngines versions from GitHub"
+            print_success "Successfully downloaded neuriplo versions from GitHub"
         else
-            print_error "Failed to download InferenceEngines versions from GitHub"
+            print_error "Failed to download neuriplo versions from GitHub"
             return 1
         fi
     fi
     
     if [[ "$show_versions" == "true" ]]; then
-        print_success "InferenceEngines versions updated successfully:"
+        print_success "neuriplo versions updated successfully:"
         source "$local_versions_file"
         echo "ONNX Runtime: $ONNX_RUNTIME_VERSION"
         echo "TensorRT: $TENSORRT_VERSION"
@@ -101,7 +101,7 @@ update_inference_engines_versions() {
         echo "TensorFlow: $TENSORFLOW_VERSION"
         echo "CUDA: $CUDA_VERSION"
     else
-        print_success "InferenceEngines versions updated successfully to $local_versions_file"
+        print_success "neuriplo versions updated successfully to $local_versions_file"
     fi
 }
 
@@ -195,10 +195,10 @@ main() {
     
     print_status "Starting version update process..."
     
-    # Update InferenceEngines versions
+    # Update neuriplo versions
     if [[ "$update_inference_engines" == "true" ]]; then
         if ! update_inference_engines_versions; then
-            print_error "Failed to update InferenceEngines versions"
+            print_error "Failed to update neuriplo versions"
             exit 1
         fi
     fi

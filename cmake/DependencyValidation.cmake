@@ -40,11 +40,11 @@ endfunction()
 
 # Function to validate fetched dependencies
 function(validate_fetched_dependencies)
-    # Validate InferenceEngines library
-    if(NOT DEFINED InferenceEngines_SOURCE_DIR)
-        message(FATAL_ERROR "InferenceEngines library not found. This should be fetched automatically by CMake.")
+    # Validate neuriplo library
+    if(NOT DEFINED neuriplo_SOURCE_DIR)
+        message(FATAL_ERROR "neuriplo library not found. This should be fetched automatically by CMake.")
     endif()
-    message(STATUS "✓ InferenceEngines library found at ${InferenceEngines_SOURCE_DIR}")
+    message(STATUS "✓ neuriplo library found at ${neuriplo_SOURCE_DIR}")
     
     # Validate VideoCapture library
     if(NOT DEFINED VideoCapture_SOURCE_DIR)
@@ -75,8 +75,8 @@ endfunction()
 # Function to provide helpful setup instructions
 function(print_setup_instructions)
     message(STATUS "=== Setup Instructions ===")
-    message(STATUS "This project uses the InferenceEngines library for inference backend management.")
-    message(STATUS "For inference backend setup, please refer to the InferenceEngines library documentation.")
+    message(STATUS "This project uses the neuriplo library for inference backend management.")
+    message(STATUS "For inference backend setup, please refer to the neuriplo library documentation.")
     message(STATUS "")
     message(STATUS "System dependencies can be installed with:")
     message(STATUS "  sudo apt update && sudo apt install -y libopencv-dev libgoogle-glog-dev")
@@ -84,5 +84,5 @@ function(print_setup_instructions)
 endfunction()
 
 # Note: Inference backend validation (ONNX Runtime, TensorRT, LibTorch, etc.)
-# should be handled by the InferenceEngines library, not this project.
+# should be handled by the neuriplo library, not this project.
 # This project only validates its own dependencies and the fetched libraries. 
