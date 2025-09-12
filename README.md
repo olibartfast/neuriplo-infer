@@ -247,6 +247,7 @@ See [Dependency Management Guide](docs/DependencyManagement.md) for detailed pro
 
 ## 📚 Additional Resources
 
+- [Detector Architectures Guide](docs/DetectorArchitectures.md)
 - [Supported Models](docs/TablePage.md)
 - [Model Export Guide](docs/ExportInstructions.md)
 - Backend-specific export documentation:
