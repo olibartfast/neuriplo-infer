@@ -11,6 +11,9 @@
 * [RT-DETR (lyuwenyu) Export Instructions](rtdetr-lyuwenyu-export.md)
 * [RT-DETRV2 (lyuwenyu) Export Instructions](rtdetrv2-lyuwenyu-export.md)
 * [YOLO-NAS Export Instructions](yolo-nas-export.md)
+* [D-FINE Export Instructions](d-fine-export.md)
+* [DEIM Export Instructions](deim-export.md)
+* [DEIMv2 Export Instructions](deimv2-export.md)
 * [RF-DETR Export Instructions](rf-detr-export.md)
 
 ## Note
