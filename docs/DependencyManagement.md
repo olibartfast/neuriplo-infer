@@ -28,8 +28,6 @@ cmake --build .
 
 ### 🔧 **Alternative Backends**
 
-See [README.md](../README.md) for quick setup examples for all backends.
-
 ## Version Management System
 
 The project uses a version management system with local override capabilities:

@@ -81,10 +81,8 @@ For other inference backends, setup dependencies first:
   ```
 
 #### 🔧 Advanced Setup
-See [Dependency Management Guide](docs/DependencyManagement.md) for detailed examples and advanced setup options.
-
 ### Version Management & Dependencies
-Backend versions and dependencies are managed automatically. See [Dependency Management Guide](docs/DependencyManagement.md) for detailed information.
+Backend versions and dependencies are managed automatically. See [Dependency Management Guide](docs/DependencyManagement.md) for detailed information, examples and advanced setup options..
 
 ## 🏗 Building
 
@@ -240,10 +238,6 @@ docker run --rm \
 
 For GPU support, add `--gpus all` to the docker run command.
 
-
-## 🗺 Project Structure
-
-See [Dependency Management Guide](docs/DependencyManagement.md) for detailed project structure and architecture information.
 
 ## 📚 Additional Resources
 
