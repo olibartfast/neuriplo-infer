@@ -7,7 +7,7 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 ## 🚀 Key Features
 
-- **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, D-FINE, DEIM, RF-DETR
+- **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, RT-DETRv2, D-FINE, DEIM, DEIMv2, RF-DETR
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: GStreamer integration (via [VideoCapture library](https://github.com/olibartfast/videocapture/))
 - **Docker Deployment Ready**: Multi-backend container support
@@ -169,7 +169,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 - `[--input_sizes | -is=<input_sizes>]`: Input sizes for each model input when models have dynamic axes or the backend can't retrieve input layer information (like the OpenCV DNN module). Format: `CHW;CHW;...`. For example:
   - `'3,224,224'` for a single input
   - `'3,224,224;3,224,224'` for two inputs
-  - `'3,640,640;2'` for RT-DETR/D-FINE/DEIM models
+  - `'3,640,640;2'` for RT-DETR/RT-DETRv2/D-FINE/DEIM/DEIMv2 models
 
 - `[--use-gpu]`: Activates GPU support for inference. This can significantly speed up the inference process if a compatible GPU is available. Default is `false`.
 
@@ -266,6 +266,7 @@ See [Dependency Management Guide](docs/DependencyManagement.md) for detailed pro
   - [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)
   - [D-FINE](docs/d-fine-export.md)
   - [DEIM](docs/deim-export.md)
+  - [DEIMv2](docs/deimv2-export.md)
   - [RF-DETR](docs/rf-detr-export.md)
 
 ## ⚠️ Known Limitations
