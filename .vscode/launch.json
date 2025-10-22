@@ -406,7 +406,21 @@
                     "--labels=labels/coco-labels-91.txt"
                     ],
             "cwd": "${workspaceFolder}"
-        },                      
+        },       
+        {
+            "name": "rfdetr libtorch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=rfdetr",
+                    "--weights=${env:HOME}/repos/object-detection-inference/rfdetr_medium_torchscript.pt",
+                    "--source=data/test.jpg", 
+                    "--input_sizes='3,640,640'",
+                    "--labels=labels/coco-labels-91.txt"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                        
 
     ]
 }
