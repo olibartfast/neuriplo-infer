@@ -80,10 +80,6 @@ For other inference backends, setup dependencies first:
   ./scripts/setup_dependencies.sh --backend all
   ```
 
-#### 🔧 Advanced Setup
-### Version Management & Dependencies
-Backend versions and dependencies are managed automatically. See [Dependency Management Guide](docs/DependencyManagement.md) for detailed information, examples and advanced setup options..
-
 ## 🏗 Building
 
 ### Complete Build (Shared Library + Application)
@@ -113,9 +109,6 @@ cmake --build .
 ### Inference Backend Options
 Replace `<backend>` with one of the supported options. See [Dependency Management Guide](docs/DependencyManagement.md) for complete list and details.
 
-### Notes  
-
-See [Dependency Management Guide](docs/DependencyManagement.md) for detailed troubleshooting and advanced configuration information.
 ### Test Builds
 ```bash
 # App tests
