@@ -8,13 +8,41 @@ RfDetr::RfDetr(const ModelInfo& model_info, float confidenceThreshold) : Detecto
         output_name_to_index[outputs[i].name] = i;
     }
 
-    if (output_name_to_index.count("dets")) dets_idx_ = output_name_to_index["dets"];
-    if (output_name_to_index.count("labels")) labels_idx_ = output_name_to_index["labels"];
+    // Try to match outputs by name or pattern
+    for (const auto& [name, idx] : output_name_to_index) {
+        // Check for explicit names
+        if (name == "dets") {
+            dets_idx_ = idx;
+        } else if (name == "labels") {
+            labels_idx_ = idx;
+        }
+        // Check for tuple element patterns (e.g., "15_elem_0", "15_elem_1")
+        else if (name.find("_elem_0") != std::string::npos) {
+            // elem_0 is typically logits/labels for detection models
+            labels_idx_ = idx;
+        } else if (name.find("_elem_1") != std::string::npos) {
+            // elem_1 is typically boxes/dets for detection models
+            dets_idx_ = idx;
+        }
+    }
 
     // Check if all indices are set
     if (!dets_idx_.has_value() || !labels_idx_.has_value()) {
-        throw std::runtime_error("Not all required output indices were set in the model info");
+        LOG(ERROR) << "Available outputs:";
+        for (const auto& output : outputs) {
+            LOG(ERROR) << "  - " << output.name << " : shape [";
+            for (size_t i = 0; i < output.shape.size(); ++i) {
+                LOG(ERROR) << output.shape[i] << (i < output.shape.size() - 1 ? ", " : "");
+            }
+            LOG(ERROR) << "]";
+        }
+        throw std::runtime_error("Not all required output indices were set in the model info. Expected 'dets'/'labels' or 'elem_0'/'elem_1' pattern.");
     }
+    
+    LOG(INFO) << "RfDetr initialized with labels_idx=" << labels_idx_.value() 
+              << " (name: " << outputs[labels_idx_.value()].name << "), "
+              << "dets_idx=" << dets_idx_.value() 
+              << " (name: " << outputs[dets_idx_.value()].name << ")";
 }
 std::vector<Detection> RfDetr::postprocess(
     const std::vector<std::vector<TensorElement>>& outputs,
