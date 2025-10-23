@@ -1,7 +1,30 @@
 # **RF-DETR Export Instructions**  
-* Follow the procedure listed https://github.com/roboflow/rf-detr?tab=readme-ov-file#onnx-export
 
-### ONNX Export for onnxruntime
+## Export Scripts
+This project provides dedicated export scripts for RF-DETR models:
+
+### ONNX Export
+Use the provided export script:
+```bash
+python export/rf-detr/export_onnx.py --model_type <model_type>
+```
+
+Where `<model_type>` can be: `base`, `nano`, `small`, `medium`, or `large`
+
+### LibTorch Export
+Use the provided export script:
+```bash
+python export/rf-detr/export_libtorch.py --model_type <model_type>
+```
+
+Where `<model_type>` can be: `base`, `nano`, `small`, `medium`, or `large`
+
+---
+
+## Alternative Export Methods
+You can also follow the official procedure: https://github.com/roboflow/rf-detr?tab=readme-ov-file#onnx-export
+
+### ONNX Export for onnxruntime (Official Method)
 
 > [!IMPORTANT]
 > Starting with RF-DETR 1.2.0, you'll have to run `pip install rfdetr[onnxexport]` before exporting model weights to ONNX format.  
@@ -29,3 +52,5 @@ export NGC_TAG_VERSION=24.12
 docker run --rm -it --gpus=all -v $(pwd)/exports:/exports --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -v $(pwd)/model.onnx:/workspace/model.onnx -w /workspace nvcr.io/nvidia/tensorrt$NGC_TAG_VERSION:-py3 /bin/bash -cx "trtexec --onnx=model.onnx --saveEngine=/exports/model.engine --memPoolSize=workspace:4096 --fp16 --useCudaGraph --useSpinWait --warmUp=500 --avgRuns=1000 --duration=10"
 ```
  
+
+### Libtorch/Torchscript export 

@@ -26,4 +26,4 @@ The table represents a specific model and includes the following details:
 | d-fine models                                      | dfine      | x          | o        | x        | o            | x         | x         |
 | deim models                                        | deim       | x          | o        | x        | o            | x         | x         |
 | deimv2 models                                      | deim     | x          | o        | x        | o            | x         | x         |
-| rf-detr models                                     | rfdetr     | x          | o        | x        | o            | x         | x         |
+| rf-detr models                                     | rfdetr     | x          | o        | o        | o            | x         | x         |
