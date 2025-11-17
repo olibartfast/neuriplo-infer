@@ -5,3 +5,4 @@ build
 !.vscode/launch.json
 data/processed.png
 logs
+build_tests/
