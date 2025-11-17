@@ -9,7 +9,7 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 - **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, RT-DETRv2, D-FINE, DEIM, DEIMv2, RF-DETR
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
-- **Real-time Video Processing**: GStreamer integration (via [VideoCapture library](https://github.com/olibartfast/videocapture/))
+- **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
 
 ## 🔧 Requirements
@@ -89,9 +89,24 @@ cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DCMAKE_BUILD_TYPE=Releas
 cmake --build .
 ```
 
-#### Enabling GStreamer Support
+#### Enabling Video Backend Support
+
+The VideoCapture library supports multiple video processing backends with the following priority:
+1. **FFmpeg** (if `USE_FFMPEG=ON`) - Maximum format/codec compatibility
+2. **GStreamer** (if `USE_GSTREAMER=ON`) - Advanced pipeline capabilities
+3. **OpenCV** (default) - Simple and reliable
+
 ```bash
+# Enable GStreamer support
 cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+
+# Enable FFmpeg support
+cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+
+# Enable both (FFmpeg takes priority)
+cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 

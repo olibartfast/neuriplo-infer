@@ -136,7 +136,7 @@ The system automatically validates dependencies before building:
 | Component | Type | Setup Method | Validation | Notes |
 |-----------|------|-------------|------------|-------|
 | **Object Detectors** | This Project | Built-in | ✓ | YOLO, RT-DETR variants |
-| **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup |
+| **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup, supports OpenCV/GStreamer/FFmpeg backends |
 | **neuriplo** | Inference Backend Manager | CMake FetchContent | ✓ | Automatic setup |
 | **OpenCV DNN** | Inference Backend | System Package | ✓ | Default - it comes with OpenCV installation, no setup needed for CPU inference, to support multiple inference backends you must customize the building process |
 | **ONNX Runtime** | Inference Backend | Script| ✓ | CPU/GPU support available based on download binaries and local hardware available|
@@ -144,6 +144,84 @@ The system automatically validates dependencies before building:
 | **LibTorch** | Inference Backend | Script | ✓ | CPU/GPU support available based on download binaries and local hardware available |
 | **OpenVINO** | Inference Backend | Script | ✓ | Complex installation |
 | **TensorFlow** | Inference Backend | Script | ✓ | Complex installation |
+
+### VideoCapture Library Video Backends
+
+The VideoCapture library supports multiple video processing backends:
+
+#### Backend Priority
+When multiple backends are enabled, the library uses this priority order:
+1. **FFmpeg** (if `USE_FFMPEG=ON`) - Maximum format/codec compatibility
+2. **GStreamer** (if `USE_GSTREAMER=ON`) - Advanced pipelines, hardware acceleration  
+3. **OpenCV** (default) - Simple and reliable
+
+#### Enabling Video Backends
+
+```bash
+# Build with GStreamer backend
+cmake -DUSE_GSTREAMER=ON ..
+cmake --build .
+
+# Build with FFmpeg backend
+cmake -DUSE_FFMPEG=ON ..
+cmake --build .
+
+# Build with both (FFmpeg takes priority)
+cmake -DUSE_GSTREAMER=ON -DUSE_FFMPEG=ON ..
+cmake --build .
+```
+
+#### Backend Features
+
+- **OpenCV Backend** (Default)
+  - File-based and camera device video capture
+  - Multiple video and image formats
+  - No additional dependencies required
+  - Best for: Simple video processing, getting started quickly
+
+- **GStreamer Backend**
+  - Advanced video processing pipelines
+  - Network streaming (RTSP, HTTP, etc.)
+  - Hardware-accelerated video decoding/encoding
+  - Extensive plugin ecosystem
+  - Best for: Complex pipelines, streaming, hardware acceleration
+
+- **FFmpeg Backend**
+  - Maximum codec and container format support
+  - Streaming protocols (RTSP, RTMP, HLS, etc.)
+  - Low-level API for fine-grained control
+  - Excellent for batch processing
+  - Best for: Maximum compatibility, diverse video sources
+
+#### Installing Video Backend Dependencies
+
+The VideoCapture library provides its own setup scripts for video processing dependencies:
+
+```bash
+# Note: The VideoCapture library is automatically fetched by CMake
+# but you may need to install video backend dependencies manually
+
+# Install GStreamer dependencies (Ubuntu/Debian)
+sudo apt-get install -y \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    libgstreamer-plugins-good1.0-dev \
+    libgstreamer-plugins-bad1.0-dev \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    gstreamer1.0-tools
+
+# Install FFmpeg dependencies (Ubuntu/Debian)
+sudo apt-get install -y \
+    libavformat-dev \
+    libavcodec-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libavdevice-dev \
+    libavfilter-dev
+```
+
+For more details on VideoCapture dependency management, see the [VideoCapture documentation](https://github.com/olibartfast/videocapture/blob/main/docs/DEPENDENCY_MANAGEMENT.md).
 
 ## Platform Support
 

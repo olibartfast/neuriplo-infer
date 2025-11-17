@@ -15,10 +15,10 @@ The project follows a **modular architecture** with clear separation of concerns
 │                         │                     │                     │
 │  • YOLO variants        │  • Video processing │  • Backend abstractions│
 │  • RT-DETR variants     │  • RTSP streams     │  • ONNX Runtime      │
-│  • D-FINE, DEIM, RF-DETR│  • GStreamer        │  • TensorRT          │
-│                         │  • Unified API      │  • LibTorch          │
-│                         │                     │  • OpenVINO          │
-│                         │                     │  • OpenCV DNN        │
+│  • D-FINE, DEIM, RF-DETR│  • OpenCV backend   │  • TensorRT          │
+│                         │  • GStreamer backend│  • LibTorch          │
+│                         │  • FFmpeg backend   │  • OpenVINO          │
+│                         │  • Unified API      │  • OpenCV DNN        │
 │                         │                     │  • TensorFlow        │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -89,14 +89,17 @@ neuriplo/
 ## 📚 **VideoCapture Library: Video Processing**
 
 ### What It Provides
-- **Video Input Processing**: RTSP streams, video files, images
-- **GStreamer Integration**: Real-time video processing
+- **Video Input Processing**: RTSP streams, video files, images, camera devices
+- **Multiple Video Backends**: OpenCV (default), GStreamer, FFmpeg
+- **Backend Selection Priority**: FFmpeg > GStreamer > OpenCV
 - **Unified Video Interface**: Consistent API for different video sources
+- **Advanced Features**: Hardware acceleration, streaming protocols, complex pipelines
 
 ### What It Should Manage
-- **Video processing dependencies**
-- **GStreamer integration**
-- **Platform-specific video handling**
+- **Video processing dependencies**: OpenCV, GStreamer, FFmpeg
+- **Backend version management**: Centralized in `cmake/versions.cmake`
+- **Platform-specific video handling**: Linux, macOS, Windows support
+- **Dependency validation**: Automatic validation of video processing libraries
 
 ## 🔄 **Dependency Management Responsibilities**
 
@@ -242,8 +245,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE neuriplo)
 4. **Performance benchmarking**
 
 ### **For VideoCapture Library:**
-1. **More video source support**
-2. **Better GStreamer integration**
-3. **Cross-platform compatibility**
+1. **Enhanced FFmpeg integration**: Additional codec and format support
+2. **Hardware acceleration**: Improved GPU-accelerated video processing
+3. **Cross-platform compatibility**: Enhanced Windows and macOS support
+4. **Advanced streaming features**: WebRTC, SRT protocol support
 
 This architecture ensures that each component has a clear responsibility and can evolve independently while providing a seamless user experience. 

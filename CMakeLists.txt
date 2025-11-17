@@ -13,7 +13,10 @@ if(NOT DEFINED DEFAULT_BACKEND)
    set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
 endif()
 
-# set(USE_GSTREAMER ON)
+# Video backend options (managed by VideoCapture library)
+# set(USE_GSTREAMER ON)  # Enable GStreamer backend
+# set(USE_FFMPEG ON)     # Enable FFmpeg backend (takes priority over GStreamer)
+# If both enabled, priority: FFmpeg > GStreamer > OpenCV (default)
 
 message(STATUS "Home path: $ENV{HOME}")
 
