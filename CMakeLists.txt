@@ -57,8 +57,8 @@ endif()
 validate_all_dependencies()
 
 # Define paths
-set(DETECTORS_ROOT ${CMAKE_SOURCE_DIR}/detectors)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set(DETECTORS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/detectors)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 message(STATUS "CMake module path: ${CMAKE_MODULE_PATH}")
 
 # Add subdirectories for the detectors module
