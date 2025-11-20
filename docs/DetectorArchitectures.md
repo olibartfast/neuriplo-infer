@@ -257,16 +257,30 @@ Detection with Enhanced Instance Modeling for improved instance-level reasoning.
 
 ### RF-DETR
 
-Refined Detection Transformer emphasizing better convergence and feature quality.
+RF-DETR is a lightweight specialist detection transformer that uses weight-sharing Neural Architecture Search (NAS) to discover accuracy-latency Pareto curves for target datasets. Unlike heavy-weight vision-language models, RF-DETR fine-tunes a pre-trained base network and evaluates thousands of network configurations with different accuracy-latency tradeoffs without re-training.
 
-- Key Improvements
-  - Optimized transformer components and training schedule.
-  - Improved feature representations and decoding strategy.
-  - Accuracy-focused while maintaining reasonable efficiency.
+- Core Innovation
+  - Weight-sharing NAS for real-time detection transformers.
+  - Fine-tunes on target datasets to discover optimal accuracy-latency tradeoffs.
+  - Evaluates thousands of configurations without re-training each one.
+  - Revisits "tunable knobs" for NAS to improve DETR transferability across diverse domains.
+
+- Key Performance Highlights
+  - RF-DETR (nano): 48.0 AP on COCO, beating D-FINE (nano) by 5.3 AP at similar latency.
+  - RF-DETR (2x-large): First real-time detector to surpass 60 AP on COCO.
+  - Outperforms GroundingDINO (tiny) by 1.2 AP on Roboflow100-VL while running 20× faster.
+  - State-of-the-art on both COCO and Roboflow100-VL benchmarks.
 
 - Strengths
-  - High accuracy and more stable training.
-  - Strong feature quality and interpretability.
+  - Exceptional accuracy-latency balance through NAS optimization.
+  - Strong generalization to real-world datasets with out-of-distribution classes.
+  - Lightweight architecture suitable for real-time deployment.
+  - Better domain transfer than heavy VLMs.
+
+- References
+  - Paper: RF-DETR: Neural Architecture Search for Real-Time Detection Transformers — https://arxiv.org/abs/2511.09554
+  - Code: https://github.com/roboflow/rf-detr
+  - Project Page: https://rfdetr.roboflow.com/
 
 ---
 
@@ -281,7 +295,7 @@ Refined Detection Transformer emphasizing better convergence and feature quality
 | YOLO-NAS | NAS-optimized CNN | Varies | Typically Yes | S/M/L | S: edge CPU/GPU, mobile/edge NPUs with QAT<br>M: edge or desktop GPU<br>L: desktop/server GPU | S: low<br>M: medium<br>L: high |
 | D-FINE (project) | Fine-grained CNN | Varies | Usually Yes | T/S/M/L | T/S: edge devices where detail matters<br>M: desktop/edge GPU<br>L: desktop/server GPU | T: very low<br>S: low<br>M: medium<br>L: high |
 | DEIM (project) | Instance-focused | Varies | Usually Yes | S/M/L | S: edge GPU, desktop GPU<br>M: desktop/server GPU<br>L: server GPU | S: low–medium<br>M: medium–high<br>L: high |
-| RF-DETR (project) | Refined Transformer | N/A | No | S/M/L/XL | S: desktop/strong edge GPU<br>M/L: server GPU<br>XL: high-memory server GPU | S: medium<br>M: medium–high<br>L: high<br>XL: very high |
+| RF-DETR | NAS-optimized DETR | N/A | No | Nano/S/M/L/XL/2XL | Nano: mobile/edge devices with hardware accel<br>S/M: edge/desktop GPU<br>L/XL: desktop/server GPU<br>2XL: server GPU (60+ AP COCO) | Nano: very low<br>S: low<br>M: medium<br>L: medium–high<br>XL/2XL: high |
 
 Scale key: T = Tiny, S = Small, M = Medium, L = Large, XL = Extra Large.  
 Notes:
@@ -322,3 +336,6 @@ Notes:
 - RT-DETR (2023): https://arxiv.org/abs/2304.08069  
 - RT-DETR (Ultralytics, docs): https://docs.ultralytics.com/models/rtdetr/  
 - YOLO-NAS (repo): https://github.com/Deci-AI/super-gradients
+- RF-DETR (2025): https://arxiv.org/abs/2511.09554  
+- RF-DETR (repo): https://github.com/roboflow/rf-detr  
+- RF-DETR (project page): https://rfdetr.roboflow.com/
