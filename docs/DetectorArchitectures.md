@@ -38,7 +38,7 @@
 
 * **Edge real-time (speed/accuracy balanced):** YOLOv8/YOLO11 (S/M), YOLO-NAS (with QAT) 
 * **Highest accuracy on server GPUs:** RT-DETR or transformer-based refinements 
-* **NMS-free pipeline:** YOLOv10, RT-DETR 
+* **NMS-free pipeline:** YOLOv10, RT-DETR, RF-DETR 
 * **Strict memory/latency budgets:** YOLO-NAS (QAT) or Tiny/Small YOLO models 
 
 ---
@@ -238,6 +238,7 @@ A NAS‑optimized DETR variant exploring the accuracy–latency frontier using w
 
 **Strengths**
 
+* NMS-free inference (DETR-based set prediction).
 * Exceptional accuracy/latency balance.
 * Lightweight enough for real-time.
 * Strong generalization across domains.

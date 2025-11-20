@@ -55,9 +55,6 @@ std::vector<Detection> RfDetr::postprocess(
     const std::vector<int64_t>& shape_labels = shapes[labels_idx_.value()];
 
     std::vector<Detection> detections;
-    std::vector<cv::Rect> bboxes;
-    std::vector<float> scores;
-    std::vector<int> labels_vec;
 
     if (shape_boxes.size() < 3 || shape_labels.size() < 3) {
         throw std::runtime_error("Invalid output tensor shapes");
@@ -115,28 +112,15 @@ std::vector<Detection> RfDetr::postprocess(
                 static_cast<int>((y_max - y_min) * scale_h)
             );
 
-            bboxes.push_back(bbox);
-            scores.push_back(max_score);
-            labels_vec.push_back(max_class_idx);
+            Detection detection;
+            detection.bbox = bbox;
+            detection.score = max_score;
+            detection.label = max_class_idx;
+            detections.push_back(detection);
         }
     }
 
-    // Apply NMS
-    std::vector<int> indices;
-    const float nms_threshold = 0.45f; // IoU threshold for NMS
-    cv::dnn::NMSBoxes(bboxes, scores, confidenceThreshold_, nms_threshold, indices);
-
-    // Create final detections list using NMS indices
-    std::vector<Detection> final_detections;
-    for (int idx : indices) {
-        Detection detection;
-        detection.bbox = bboxes[idx];
-        detection.score = scores[idx];
-        detection.label = labels_vec[idx];
-        final_detections.push_back(detection);
-    }
-
-    return final_detections;
+    return detections;
 }
 
 cv::Mat RfDetr::preprocess_image(const cv::Mat& image) {

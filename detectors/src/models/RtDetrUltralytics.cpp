@@ -12,9 +12,7 @@ std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vec
     const TensorElement* output0 = outputs.front().data();
     const  std::vector<int64_t> shape0 = shapes.front();
 
-    std::vector<int> classIds;
-    std::vector<float> confidences;
-    std::vector<cv::Rect> boxes;
+    std::vector<Detection> detections;
 
     // idx 0 boxes, idx 1 scores
     int rows = shape0[1]; // 300
@@ -30,9 +28,9 @@ std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vec
         float score = std::get<float>(*maxSPtr);
         if (score >= confidenceThreshold_) 
         {
-            int label = maxSPtr - output0 - 4;
-            confidences.push_back(score);
-            classIds.push_back(label);
+            Detection det;
+            det.label = maxSPtr - output0 - 4;
+            det.score = score;
             float r_w = frame_size.width;
             float r_h = frame_size.height;
 
@@ -49,23 +47,11 @@ std::vector<Detection> RtDetrUltralytics::postprocess(const std::vector<std::vec
             y2 *= r_h;
             x1 *= r_w;
             y1 *= r_h;
-            boxes.push_back(cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)));
+            det.bbox = cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2));
+            
+            detections.emplace_back(det);
         }
         output0 += shape0[2];
-    }
-
-    // Perform Non Maximum Suppression and draw predictions.
-    std::vector<int> indices;
-    cv::dnn::NMSBoxes(boxes, confidences, confidenceThreshold_, nms_threshold_, indices);
-    std::vector<Detection> detections;
-    for (int i = 0; i < indices.size(); i++) 
-    {
-        Detection det;
-        int idx = indices[i];
-        det.label = classIds[idx];
-        det.bbox = boxes[idx];
-        det.score = confidences[idx];
-        detections.emplace_back(det);
     }
     return detections; 
 }

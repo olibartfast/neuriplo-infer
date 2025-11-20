@@ -32,9 +32,7 @@ std::vector<Detection> RtDetr::postprocess(
     const auto& labels = outputs[labels_idx_.value()];
     const std::vector<int64_t>& shape_labels = shapes[labels_idx_.value()];
 
-    std::vector<int> classIds;
-    std::vector<float> confidences;
-    std::vector<cv::Rect> boxes_rect;
+    std::vector<Detection> detections;
 
     int rows = shape_labels[1]; // 300
 
@@ -42,15 +40,17 @@ std::vector<Detection> RtDetr::postprocess(
     for (int i = 0; i < rows; ++i) {
         float score = std::get<float>(scores[i]);
         if (score >= confidenceThreshold_) {
+            Detection det;
+            
             // Handle label using std::visit
-            std::visit([&classIds](auto&& label) {
+            std::visit([&det](auto&& label) {
                 using T = std::decay_t<decltype(label)>;
                 if constexpr (std::is_same_v<T, int32_t> || std::is_same_v<T, int64_t>) {
-                    classIds.push_back(static_cast<int>(label));
+                    det.label = static_cast<int>(label);
                 }
             }, labels[i]);
 
-            confidences.push_back(score);
+            det.score = score;
             float r_w = (float)frame_size.width / network_width_;
             float r_h = (float)frame_size.height / network_height_;
             
@@ -63,23 +63,10 @@ std::vector<Detection> RtDetr::postprocess(
             y2 *= r_h;
             x1 *= r_w;
             y1 *= r_h;
-            boxes_rect.push_back(cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)));
+            det.bbox = cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2));
+            
+            detections.emplace_back(det);
         }
-    }
-
-    // Perform Non Maximum Suppression and draw predictions.
-    std::vector<int> indices;
-    cv::dnn::NMSBoxes(boxes_rect, confidences, confidenceThreshold_, nms_threshold_, indices);
-    
-    std::vector<Detection> detections;
-    for (int i = 0; i < indices.size(); i++) 
-    {
-        Detection det;
-        int idx = indices[i];
-        det.label = classIds[idx];
-        det.bbox = boxes_rect[idx];
-        det.score = confidences[idx];
-        detections.emplace_back(det);
     }
     return detections; 
 }
