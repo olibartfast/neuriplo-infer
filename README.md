@@ -5,6 +5,8 @@
 
 C++ framework for [real-time object detection](https://leaderboard.roboflow.com/), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models on video streams, video files, or images with configurable hardware acceleration.
 
+> 🚧 Status: Under Development — expect frequent updates.
+
 ## 🚀 Key Features
 
 - **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, RT-DETRv2, D-FINE, DEIM, DEIMv2, RF-DETR
