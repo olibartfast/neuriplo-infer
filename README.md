@@ -265,12 +265,10 @@ For GPU support, add `--gpus all` to the docker run command.
   - [YOLO11](docs/yolo11-export.md)
   - [YOLOv12](docs/yolov12-export.md)
   - [YOLO-NAS](docs/yolo-nas-export.md)
-  - [RT-DETR (lyuwenyu implementation)](docs/rtdetr-lyuwenyu-export.md)
-  - [RT-DETRV2](docs/rtdetrv2-lyuwenyu-export.md)
+  - [RT-DETR V1/V2](docs/rtdetr-export.md)
   - [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)
   - [D-FINE](docs/d-fine-export.md)
-  - [DEIM](docs/deim-export.md)
-  - [DEIMv2](docs/deimv2-export.md)
+  - [DEIM V1/V2](docs/deim-export.md)
   - [RF-DETR](docs/rf-detr-export.md)
 
 ## ⚠️ Known Limitations
