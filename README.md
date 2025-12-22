@@ -9,7 +9,7 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 ## 🚀 Key Features
 
-- **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR v1/v2/v4, D-FINE, DEIM v1/v2, RF-DETR
+- **Multiple Object Detection Models**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (YOLOv4-v12, RT-DETR v1/v2/v4, D-FINE, DEIM v1/v2, RF-DETR)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
@@ -30,7 +30,10 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 ### Dependency Management
 
-This project automatically fetches [Neuriplo, the inference engines library](https://github.com/olibartfast/neuriplo) which provides inference backend abstractions. The neuriplo library handles all backend-specific dependencies.
+This project automatically fetches:
+1. [vision-core](https://github.com/olibartfast/vision-core) - Contains pre/post-processing and model logic.
+2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
+3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
 
 #### 🚀 Quick Setup (Recommended)
 ```bash
