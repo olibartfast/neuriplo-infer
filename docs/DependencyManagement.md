@@ -10,6 +10,7 @@ The project now uses a **dependency management approach** that combines:
 **Automatic Version Fetching** - Versions sourced from repositories or GitHub
 **Selective Backend Setup** - Only setup the backend you need
 **Docker Integration** - Containerized dependency management
+**Vision-Core Integration** - Computer vision library with model implementations and export utilities
 
 
 ## Quick Start
@@ -136,6 +137,7 @@ The system automatically validates dependencies before building:
 | Component | Type | Setup Method | Validation | Notes |
 |-----------|------|-------------|------------|-------|
 | **Object Detectors** | This Project | Built-in | ✓ | YOLO, RT-DETR variants |
+| **Vision-Core** | Computer Vision Library | CMake FetchContent | ✓ | Model implementations and export utilities |
 | **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup, supports OpenCV/GStreamer/FFmpeg backends |
 | **neuriplo** | Inference Backend Manager | CMake FetchContent | ✓ | Automatic setup |
 | **OpenCV DNN** | Inference Backend | System Package | ✓ | Default - it comes with OpenCV installation, no setup needed for CPU inference, to support multiple inference backends you must customize the building process |
