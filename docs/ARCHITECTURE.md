@@ -7,50 +7,68 @@ This document explains the architecture and separation of concerns in the object
 The project follows a **modular architecture** with clear separation of concerns:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
 │                    object-detection-inference                   │
 │                         (This Project)                         │
 ├─────────────────────────────────────────────────────────────────┤
-│  🎯 Object Detectors    │  📚 VideoCapture    │  🔧 neuriplo │
+│  🧠 vision-core         │  📚 VideoCapture    │  🔧 neuriplo │
 │                         │                     │                     │
-│  • YOLO variants        │  • Video processing │  • Backend abstractions│
-│  • RT-DETR variants     │  • RTSP streams     │  • ONNX Runtime      │
-│  • D-FINE, DEIM, RF-DETR│  • OpenCV backend   │  • TensorRT          │
-│                         │  • GStreamer backend│  • LibTorch          │
+│  • Preprocessing        │  • Video processing │  • Backend abstractions│
+│  • Postprocessing       │  • RTSP streams     │  • ONNX Runtime      │
+│  • Model implementations│  • OpenCV backend   │  • TensorRT          │
+│  • Task Interface       │  • GStreamer backend│  • LibTorch          │
 │                         │  • FFmpeg backend   │  • OpenVINO          │
 │                         │  • Unified API      │  • OpenCV DNN        │
 │                         │                     │  • TensorFlow        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 🎯 **This Project: Object Detectors**
+## 🎯 **This Project: Object Detection Application**
 
 ### What We Implement
-- **Object Detection Algorithms**: YOLO variants (v4-v12), RT-DETR variants, D-FINE, DEIM, RF-DETR
-- **Detection Logic**: Preprocessing, postprocessing, bounding box handling
-- **Model-Specific Implementations**: Each detector type has its own class
+- **Application Logic**: CLI parsing, configuration management, logging, main loop
+- **Integration**: Glue code connecting `vision-core`, `neuriplo`, and `VideoCapture`
+- **Output Handling**: Visualization, benchmarking, result reporting
 
 ### What We Manage
 - **System Dependencies**: OpenCV, glog, CMake version requirements
-- **Fetched Library Versions**: neuriplo and VideoCapture library versions
+- **Fetched Library Versions**: `vision-core`, `neuriplo`, and `VideoCapture` library versions
 - **Build Configuration**: Compile definitions for selected inference backend
 
 ### Files We Own
 ```
-detectors/
+app/
 ├── src/
-│   ├── models/
-│   │   ├── YoloV4.cpp/hpp
-│   │   ├── YoloVn.cpp/hpp      # YOLOv5-v12
-│   │   ├── YOLOv10.cpp/hpp
-│   │   ├── YoloNas.cpp/hpp
-│   │   ├── RtDetr.cpp/hpp
-│   │   ├── RtDetrUltralytics.cpp/hpp
-│   │   └── RfDetr.cpp/hpp
-│   └── DetectorSetup.cpp
-└── inc/
-    ├── Detector.hpp
-    └── DetectorSetup.hpp
+│   ├── ObjectDetectionApp.cpp
+│   └── main.cpp
+├── inc/
+│   └── ObjectDetectionApp.hpp
+└── ...
+```
+
+## 🧠 **vision-core Library: Object Detection Logic**
+
+### What It Provides
+- **Object Detection Algorithms**: YOLO variants (v4-v12), RT-DETR variants, D-FINE, DEIM, RF-DETR
+- **Preprocessing Implementation**: Letterbox resizing, normalization, color space conversion (using `neuriplo` compatible blobs)
+- **Postprocessing Implementation**: Decoding bounding boxes, NMS (if needed), class score filtering
+- **Model-Specific Implementations**: Encapsulated within Task classes (e.g., `YoloTask`, `RtDetrTask`)
+
+### What It Should Manage
+- **Model specific logic and parameters**
+- **Input/Output tensor shapes and formats**
+
+### Files It Should Own
+```
+vision-core/
+├── src/
+│   ├── object_detection/
+│   │   ├── object_detection_task.cpp
+│   │   ├── detection_preprocessor.cpp
+│   │   └── ...
+│   └── ...
+└── include/
+    └── vision-core/
+        └── ...
 ```
 
 ## 🔧 **neuriplo Library: Inference Backends**
@@ -106,7 +124,8 @@ neuriplo/
 ### ✅ **This Project Should Manage:**
 ```cmake
 # cmake/versions.cmake
-set(NEURIPLO_VERSION "v1.0.0")  # Fetched library version
+set(VISION_CORE_VERSION "v1.0.0")        # Fetched library version
+set(NEURIPLO_VERSION "v1.0.0")           # Fetched library version
 set(VIDEOCAPTURE_VERSION "v1.0.0")       # Fetched library version
 set(OPENCV_MIN_VERSION "4.6.0")          # System dependency
 set(GLOG_MIN_VERSION "0.6.0")            # System dependency
@@ -185,7 +204,8 @@ Object detectors use neuriplo API
 ## 🎯 **Benefits of This Architecture**
 
 ### **Separation of Concerns**
-- **This project**: Focuses on object detection algorithms
+- **This project**: Application wrapper and integration point
+- **vision-core**: Encapsulates object detection algorithms and logic
 - **neuriplo**: Handles inference backend complexity
 - **VideoCapture**: Manages video input processing
 
