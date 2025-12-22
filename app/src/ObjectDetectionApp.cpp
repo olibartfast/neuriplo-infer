@@ -32,20 +32,47 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig &config)
       model_info.addOutput(output.name, output.shape, output.batch_size);
     }
 
-    // Set input format for vision-core (ONNX models typically use NCHW format)
-    if (!model_info.input_formats.empty()) {
-      model_info.input_formats[0] = "FORMAT_NCHW";
+    // Set input format for vision-core based on shape
+    if (!model_info.input_formats.empty() && !model_info.input_shapes.empty() &&
+        !model_info.input_shapes[0].empty()) {
+      const auto &shape = model_info.input_shapes[0];
+      if (shape.size() == 4) {
+        // Heuristic: check if channels (1 or 3) are at index 1 (NCHW) or index
+        // 3 (NHWC) NCHW: [Batch, Channels, Height, Width] NHWC: [Batch, Height,
+        // Width, Channels]
+
+        bool is_nchw = (shape[1] == 1 || shape[1] == 3);
+        bool is_nhwc = (shape[3] == 1 || shape[3] == 3);
+
+        if (is_nchw && !is_nhwc) {
+          model_info.input_formats[0] = "FORMAT_NCHW";
+        } else if (!is_nchw && is_nhwc) {
+          model_info.input_formats[0] = "FORMAT_NHWC";
+        } else {
+          // Ambiguous or neither (e.g. 1x3x224x3 or non-standard).
+          // Defaulting to NCHW as it's standard for ONNX/Torch vision models.
+          // If height/width are significantly larger, we can use that to
+          // disambiguate.
+          if (shape[2] > 3 && shape[3] > 3) {
+            model_info.input_formats[0] = "FORMAT_NCHW";
+          } else if (shape[1] > 3 && shape[2] > 3) {
+            model_info.input_formats[0] = "FORMAT_NHWC";
+          } else {
+            model_info.input_formats[0] = "FORMAT_NCHW";
+          }
+        }
+      }
     }
 
     // Set input type (float32)
     if (!model_info.input_types.empty()) {
       model_info.input_types[0] = CV_32F;
     }
-    
+
     // Use exact model type from docs/TablePage.md
     // Valid types: yolov4, yolo, yolonas, rtdetr, rtdetrul, rfdetr
     LOG(INFO) << "Using vision-core model type: " << config.detectorType;
-    
+
     task = vision_core::TaskFactory::createTaskInstance(config.detectorType,
                                                         model_info);
     if (!task) {
