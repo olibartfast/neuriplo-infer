@@ -2,19 +2,6 @@
     "version": "0.2.0",
     "configurations": [  
         {
-            "name": "YOLOv10 saved model",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/object-detection-inference",
-            "args": [
-                    "--type=yolov10",
-                    "--weights=${env:HOME}/yolov10x_saved_model",
-                    "--source=data/person.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
-            "cwd": "${workspaceFolder}"            
-        },  
-        {
             "name": "dfine onnx",
             "type": "cppdbg",
             "request": "launch",
@@ -26,7 +13,7 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"
-        },                     
+        },                    
         {
             "name": "rtdetr onnx",
             "type": "cppdbg",
@@ -228,7 +215,20 @@
                     "--labels=labels/coco.names"
                     ],
             "cwd": "${workspaceFolder}"            
-        },         
+        },        
+        {
+            "name": "YOLOv10 saved model",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=yolov10",
+                    "--weights=${env:HOME}/yolov10x_saved_model",
+                    "--source=data/person.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"            
+        },           
         {
             "name": "YOLO11 libtorch",
             "type": "cppdbg",
@@ -284,7 +284,21 @@
                     //"--benchmark"
                     ],
             "cwd": "${workspaceFolder}"
-        },   
+        },  
+        {
+            "name": "YOLOv10 openvino",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=yolov10",
+                    "--weights=${env:HOME}/yolov10x_openvino_model/yolov10x.bin",
+                    "--source=data/dog.jpg", 
+                    "--input_sizes='3,640,640'",
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },         
         {
             "name": "YOLO11 onnx",
             "type": "cppdbg",
@@ -299,20 +313,6 @@
                     ],
             "cwd": "${workspaceFolder}"
         },                
-        {
-            "name": "YOLOv10 openvino",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/object-detection-inference",
-            "args": [
-                    "--type=yolov10",
-                    "--weights=${env:HOME}/yolov10x_openvino_model/yolov10x.bin",
-                    "--source=data/dog.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"
-                    ],
-            "cwd": "${workspaceFolder}"
-        },
        {
             "name": "YOLO12s onnx",
             "type": "cppdbg",
@@ -393,6 +393,20 @@
             ],
             "miDebuggerPath": "/usr/bin/gdb"          
         },
+        {
+            "name": "deim v2 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=rtdetr",
+                    "--weights=${env:HOME}/model_repository/deimv2_dinov3_s_coco_onnx/1/model.onnx",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names",
+                    "--input_sizes='3,640,640;2'" 
+                    ],
+            "cwd": "${workspaceFolder}"
+        },         
         {
             "name": "rfdetr onnx",
             "type": "cppdbg",
