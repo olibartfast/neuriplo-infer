@@ -41,6 +41,11 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig &config)
     if (!model_info.input_types.empty()) {
       model_info.input_types[0] = CV_32F;
     }
+    
+    // Use exact model type from docs/TablePage.md
+    // Valid types: yolov4, yolo, yolonas, rtdetr, rtdetrul, rfdetr
+    LOG(INFO) << "Using vision-core model type: " << config.detectorType;
+    
     task = vision_core::TaskFactory::createTaskInstance(config.detectorType,
                                                         model_info);
     if (!task) {

@@ -261,8 +261,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
-                    "--type=yolov9",
-                    "--weights=${env:HOME}/repos/yolov9/yolov9-c-converted.onnx",
+                    "--type=yolo",
+                    "--weights=${env:HOME}/model_repository/yolov9c_onnx/1/model.onnx",
                     "--source=data/dog.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
@@ -276,7 +276,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov10",
-                    "--weights=${env:HOME}/model_repository/yolov10_onnx/1/model.onnx",
+                    "--weights=${env:HOME}/model_repository/yolov10n_onnx/1/model.onnx",
                     "--source=data/person.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"//,
@@ -313,6 +313,20 @@
                     ],
             "cwd": "${workspaceFolder}"
         },
+       {
+            "name": "YOLO12s onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=yolo",
+                    "--weights=${env:HOME}/model_repository/yolov12s_onnx/1/model.onnx",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names",
+                    "--input_sizes='3,640,640'"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },          
        {
             "name": "YOLO12 torchscript/libtorch",
             "type": "cppdbg",
