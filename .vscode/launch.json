@@ -1,19 +1,6 @@
 {
     "version": "0.2.0",
-    "configurations": [  
-        {
-            "name": "dfine onnx",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/object-detection-inference",
-            "args": [
-                    "--type=rtdetr",
-                    "--weights=${env:HOME}/D-FINE/dfine_s_coco.onnx",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
-            "cwd": "${workspaceFolder}"
-        },                    
+    "configurations": [                    
         {
             "name": "rtdetr onnx",
             "type": "cppdbg",
@@ -340,7 +327,20 @@
                     "--input_sizes='3,640,640'"
                     ],
             "cwd": "${workspaceFolder}"
-        },            
+        },   
+        {
+            "name": "dfine onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                    "--type=rtdetr",
+                    "--weights=${env:HOME}/D-FINE/dfine_s_coco.onnx",
+                    "--source=data/dog.jpg", 
+                    "--labels=labels/coco.names"
+                    ],
+            "cwd": "${workspaceFolder}"
+        },                   
         {
             "name": "DFINE tensorrt",
            "type": "cppdbg",
@@ -373,8 +373,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
-                    "--type=deim",
-                    "--weights=${env:HOME}/repos/DEIM/deim_dfine_hgnetv2_s_coco_120e.onnx",
+                    "--type=rtdetr",
+                    "--weights=${env:HOME}/model_repository/deim_dfine_hgnetv2_s_coco_onnx/1/model.onnx",
                     "--source=data/horses.jpg", 
                     "--labels=labels/coco.names",
                     "--input_sizes='3,640,640;2'" 
