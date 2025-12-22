@@ -254,22 +254,7 @@ For GPU support, add `--gpus all` to the docker run command.
 - [Detector Architectures Guide](docs/DetectorArchitectures.md)
 - [Supported Models](docs/TablePage.md)
 - [Model Export Guide](docs/ExportInstructions.md)
-- Backend-specific export documentation:
-  - [YOLOv5](docs/yolov5-export.md)
-  - [YOLOv8](docs/yolov8-export.md)
-  - [YOLOv6](docs/yolov6-export.md)
-  - [YOLOv7](docs/yolov7-export.md)
-  - [YOLOv8](docs/yolov8-export.md)
-  - [YOLOv9](docs/yolov9-export.md)
-  - [YOLOv10](docs/yolov10-export.md)
-  - [YOLO11](docs/yolo11-export.md)
-  - [YOLOv12](docs/yolov12-export.md)
-  - [YOLO-NAS](docs/yolo-nas-export.md)
-  - [RT-DETR V1/V2](docs/rtdetr-export.md)
-  - [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)
-  - [D-FINE](docs/d-fine-export.md)
-  - [DEIM V1/V2](docs/deim-export.md)
-  - [RF-DETR](docs/rf-detr-export.md)
+- [Vision-Core Export Tools](https://github.com/olibartfast/vision-core/tree/main/export) - Comprehensive export utilities for all supported models
 
 ## ⚠️ Known Limitations
 - Windows builds not currently supported

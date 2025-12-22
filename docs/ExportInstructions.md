@@ -1,20 +1,23 @@
 ### Export the model for the inference
 
-* [YOLO11 Export Instructions](yolo11-export.md)
-* [YOLOv10 Export Instructions](yolov10-export.md)
-* [YOLOv9 Export Instructions](yolov9-export.md)
-* [YOLOv8 Export Instructions](yolov8-export.md)
-* [YOLOv7 Export Instructions](yolov7-export.md)
-* [YOLOv6 Export Instructions](yolov6-export.md)
-* [YOLOv5 Export Instructions](yolov5-export.md)
-* [RT-DETR (Ultralytics) Export Instructions](rtdetr-ultralytics-export.md)
-* [RT-DETR (lyuwenyu) Export Instructions](rtdetr-lyuwenyu-export.md)
-* [RT-DETRV2 (lyuwenyu) Export Instructions](rtdetrv2-lyuwenyu-export.md)
-* [YOLO-NAS Export Instructions](yolo-nas-export.md)
-* [D-FINE Export Instructions](d-fine-export.md)
-* [DEIM Export Instructions](deim-export.md)
-* [DEIMv2 Export Instructions](deimv2-export.md)
-* [RF-DETR Export Instructions](rf-detr-export.md)
+For comprehensive model export instructions, see the [vision-core export section](https://github.com/olibartfast/vision-core/tree/main/export) which provides generic export utilities for:
+
+- **YOLO models**: Universal export for YOLOv5-v12, YOLO11, YOLO-NAS
+- **Detection models**: RT-DETR (all versions), D-FINE, DEIM, DEIMv2, RF-DETR
+- **Multiple formats**: ONNX, TorchScript, TensorRT, SavedModel
+
+#### Quick Export Examples
+
+```bash
+# Export any YOLO model (v5-v12, YOLO11, NAS)
+python export/detection/yolo/export.py --model your_model.pt --format onnx
+
+# Export RT-DETR models
+python export/detection/rtdetr/export.py --model your_rtdetr.pt --format onnx
+
+# Export RF-DETR models  
+python export/detection/rfdetr/export.py --model your_rfdetr.pt --format onnx
+```
 
 ## Note
 The opencv-dnn module is configured to load ONNX models(not dynamic axis) and .weights for YOLOv4.
