@@ -11,6 +11,7 @@ The project now uses a **dependency management approach** that combines:
 **Selective Backend Setup** - Only setup the backend you need
 **Docker Integration** - Containerized dependency management
 **Vision-Core Integration** - Computer vision library with model implementations and export utilities
+**Version Management** - Centralized version control via `versions.env`
 
 
 ## Quick Start
@@ -37,9 +38,9 @@ The project uses a version management system with local override capabilities:
 
 ```
 object-detection-inference/
-├── versions.env # Dependencies needed by this project
-├── versions.neuriplo.env    # Overrides neuriplos (if present), otherwise will be automatically created and fetched from Inferencneuriploory
-├── versions.videocapture.env         # Overrides VideoCapture versions (if present), otherwise will be automatically created and fetched from VideoCapture repository
+├── versions.env               # Dependencies needed by this project (vision-core, etc.)
+├── versions.neuriplo.env      # Overrides neuriplo versions
+├── versions.videocapture.env  # Overrides VideoCapture versions
 ├── scripts/
 │   ├── setup_dependencies.sh         # Main setup script
 │   ├── update_backend_versions.sh    # Version management script
@@ -137,15 +138,15 @@ The system automatically validates dependencies before building:
 | Component | Type | Setup Method | Validation | Notes |
 |-----------|------|-------------|------------|-------|
 | **Object Detectors** | This Project | Built-in | ✓ | YOLO, RT-DETR variants |
-| **Vision-Core** | Computer Vision Library | CMake FetchContent | ✓ | Model implementations and export utilities |
-| **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup, supports OpenCV/GStreamer/FFmpeg backends |
-| **neuriplo** | Inference Backend Manager | CMake FetchContent | ✓ | Automatic setup |
-| **OpenCV DNN** | Inference Backend | System Package | ✓ | Default - it comes with OpenCV installation, no setup needed for CPU inference, to support multiple inference backends you must customize the building process |
-| **ONNX Runtime** | Inference Backend | Script| ✓ | CPU/GPU support available based on download binaries and local hardware available|
-| **TensorRT** | Inference Backend | Script | ✓ | Requires NVIDIA account to download the binaries |
-| **LibTorch** | Inference Backend | Script | ✓ | CPU/GPU support available based on download binaries and local hardware available |
-| **OpenVINO** | Inference Backend | Script | ✓ | Complex installation |
-| **TensorFlow** | Inference Backend | Script | ✓ | Complex installation |
+| **Vision-Core** | Computer Vision Library | CMake FetchContent | ✓ | Model implementations (YOLO, RT-DETR) and logic |
+| **VideoCapture** | Video Processing | CMake FetchContent | ✓ | Automatic setup, supports OpenCV/GStreamer/FFmpeg |
+| **neuriplo** | Inference Backend Manager | CMake FetchContent | ✓ | Automatic setup of inference engines |
+| **OpenCV DNN** | Inference Backend | System Package | ✓ | Default backend (included in OpenCV) |
+| **ONNX Runtime** | Inference Backend | Script| ✓ | High performance CPU/GPU inference |
+| **TensorRT** | Inference Backend | Script | ✓ | NVIDIA GPU specialized inference |
+| **LibTorch** | Inference Backend | Script | ✓ | PyTorch C++ API |
+| **OpenVINO** | Inference Backend | Script | ✓ | Intel hardware optimization |
+| **TensorFlow** | Inference Backend | Script | ✓ | TensorFlow C++ API |
 
 ### VideoCapture Library Video Backends
 
