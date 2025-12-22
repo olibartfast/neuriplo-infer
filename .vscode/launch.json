@@ -414,7 +414,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=rfdetr",
-                    "--weights=${env:HOME}/inference_model.onnx",
+                    "--weights=${env:HOME}/model_repository/rfdetr_base/1/model.onnx",
                     "--source=data/bus.jpg", 
                     "--input_sizes='3,560,560'",
                     "--labels=labels/coco-labels-91.txt"
