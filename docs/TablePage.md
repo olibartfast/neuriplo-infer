@@ -16,14 +16,12 @@ The table represents a specific model and includes the following details:
 | yolov7 models                                      | yolo     | o          | x        | o        | o            | x         | x         |
 | yolov8 models                                      | yolo     | o          | o        | o        | o            | o         | o         |
 | yolov9 models                                      | yolo     | o          | o        | o        | o            | x         | x         |
-| yolov10 models                                     | yolo    | x          | o        | o        | o            | o         | o         |
+| yolov10 models                                     | yolov10    | x          | o        | o        | o            | o         | o         |
 | yolo11 models                                      | yolo     | o          | o        | o        | o            | x         | x         |
 | yolov12 models                                     | yolo    | o          | o        | o        | o            | o         | o         |
 | yolo-nas models                                    | yolonas    | o          | x        | x        | o            | x         | x         |
-| rt-detr models                                     | rtdetr     | x          | o        | x        | o            | x         | x         |
-| rt-detr v2 models                                  | rtdetr   | x          | o        | x        | o            | x         | x         |
+| rt-detr v1/v2/v4 models                                     | rtdetr     | x          | o        | x        | o            | x         | x         |
 | rt-detr ultralytics models                         | rtdetrul   | x          | o        | o        | o            | x         | x         |
 | d-fine models                                      | rtdetr      | x          | o        | x        | o            | x         | x         |
-| deim models                                        | rtdetr       | x          | o        | x        | o            | x         | x         |
-| deimv2 models                                      | rtdetr     | x          | o        | x        | o            | x         | x         |
+| deim v1/v2 models                                        | rtdetr       | x          | o        | x        | o            | x         | x         |
 | rf-detr models                                     | rfdetr     | x          | o        | o        | o            | x         | x         |

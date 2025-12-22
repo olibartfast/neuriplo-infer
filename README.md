@@ -157,7 +157,14 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 #### Required Parameters
 
-- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`, `yolov10`, `yolo11`, `yolov12`, `rtdetr`,`rtdetrv2`, `rtdetrul`, `dfine`, `deim`, `rfdetr`.
+- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values:
+  - `yolov4`: YOLOv4/YOLOv4-tiny models
+  - `yolo`: YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLO11, YOLOv12 models
+  - `yolov10`: YOLOv10 models (different postprocessing)
+  - `yolonas`: YOLO-NAS models
+  - `rtdetr`: RT-DETR, RT-DETR v2, D-FINE, DEIM, DEIMv2 models
+  - `rtdetrul`: RT-DETR Ultralytics implementation
+  - `rfdetr`: RF-DETR models
 
 - `--source=<input_source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
