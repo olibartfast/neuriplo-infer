@@ -126,7 +126,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov5",
-                    "--weights=${env:HOME}/repos/yolov5/yolov5s.onnx",
+                    "--weights=${env:HOME}/model_repository/yolov5x_onnx/1/model.onnx",
                     "--source=data/horses.jpg", 
                     "--labels=labels/coco.names",
                      "--input_sizes='3,640,640'"
