@@ -9,7 +9,7 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 ## 🚀 Key Features
 
-- **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, RT-DETRv2, D-FINE, DEIM, DEIMv2, RF-DETR
+- **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, RT-DETRv2, RT-DETRv4, D-FINE, DEIM, DEIMv2, RF-DETR
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
