@@ -26,7 +26,12 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig &config)
     const auto inference_metadata = engine->get_inference_metadata();
     vision_core::ModelInfo model_info;
     for (const auto &input : inference_metadata.getInputs()) {
-      model_info.addInput(input.name, input.shape, input.batch_size);
+      auto shape = input.shape;
+      // Normalize 3D shape (C,H,W) to 4D (1,C,H,W) to satisfy vision-core
+      if (shape.size() == 3) {
+        shape.insert(shape.begin(), 1); // Add batch dim
+      }
+      model_info.addInput(input.name, shape, input.batch_size);
     }
     for (const auto &output : inference_metadata.getOutputs()) {
       model_info.addOutput(output.name, output.shape, output.batch_size);
@@ -60,6 +65,15 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig &config)
           } else {
             model_info.input_formats[0] = "FORMAT_NCHW";
           }
+        }
+      } else if (shape.size() == 3) {
+        // Handle 3D shape (C, H, W) or (H, W, C)
+        // Assume CHW if first dim is small (channels)
+        if (shape[0] == 1 || shape[0] == 3) {
+          model_info.input_formats[0] = "FORMAT_NCHW";
+        } else {
+          // Fallback to NCHW as safe default
+          model_info.input_formats[0] = "FORMAT_NCHW";
         }
       }
     }
@@ -109,16 +123,9 @@ void ObjectDetectionApp::warmup_gpu(const cv::Mat &image) {
       const auto inference_metadata = engine->get_inference_metadata();
       const auto &first_input = inference_metadata.getInputs()[0];
 
-      if (first_input.shape.size() < 4) {
-        throw std::runtime_error(
-            "Invalid input shape: expected 4D tensor (NCHW)");
-      }
-
       // Extract actual dimensions from model shape
-      int batch = first_input.shape[0];
-      int channels = first_input.shape[1];
-      int height = first_input.shape[2];
-      int width = first_input.shape[3];
+      auto [batch, channels, height, width] =
+          extractInputDims(first_input.shape);
 
       // Create cv::Mat from preprocessed data with correct shape
       cv::Mat input_blob(std::vector<int>{batch, channels, height, width},
@@ -153,16 +160,9 @@ void ObjectDetectionApp::benchmark(const cv::Mat &image) {
       const auto inference_metadata = engine->get_inference_metadata();
       const auto &first_input = inference_metadata.getInputs()[0];
 
-      if (first_input.shape.size() < 4) {
-        throw std::runtime_error(
-            "Invalid input shape: expected 4D tensor (NCHW)");
-      }
-
       // Extract actual dimensions from model shape
-      int batch = first_input.shape[0];
-      int channels = first_input.shape[1];
-      int height = first_input.shape[2];
-      int width = first_input.shape[3];
+      auto [batch, channels, height, width] =
+          extractInputDims(first_input.shape);
 
       // Create cv::Mat from preprocessed data with correct shape
       cv::Mat input_blob(std::vector<int>{batch, channels, height, width},
@@ -239,16 +239,8 @@ void ObjectDetectionApp::processImage(const std::string &source) {
     const auto inference_metadata = engine->get_inference_metadata();
     const auto &first_input = inference_metadata.getInputs()[0];
 
-    if (first_input.shape.size() < 4) {
-      throw std::runtime_error(
-          "Invalid input shape: expected 4D tensor (NCHW)");
-    }
-
     // Extract actual dimensions from model shape
-    int batch = first_input.shape[0];
-    int channels = first_input.shape[1];
-    int height = first_input.shape[2];
-    int width = first_input.shape[3];
+    auto [batch, channels, height, width] = extractInputDims(first_input.shape);
 
     LOG(INFO) << "Model input shape: " << batch << "x" << channels << "x"
               << height << "x" << width;
@@ -312,16 +304,9 @@ void ObjectDetectionApp::processVideo(const std::string &source) {
       const auto inference_metadata = engine->get_inference_metadata();
       const auto &first_input = inference_metadata.getInputs()[0];
 
-      if (first_input.shape.size() < 4) {
-        throw std::runtime_error(
-            "Invalid input shape: expected 4D tensor (NCHW)");
-      }
-
       // Extract actual dimensions from model shape
-      int batch = first_input.shape[0];
-      int channels = first_input.shape[1];
-      int height = first_input.shape[2];
-      int width = first_input.shape[3];
+      auto [batch, channels, height, width] =
+          extractInputDims(first_input.shape);
 
       // Create cv::Mat from preprocessed data with correct shape
       cv::Mat input_blob(std::vector<int>{batch, channels, height, width},
@@ -363,5 +348,20 @@ void ObjectDetectionApp::processVideo(const std::string &source) {
   } catch (const std::exception &e) {
     LOG(ERROR) << "Error: " << e.what();
     throw;
+  }
+}
+
+std::tuple<int, int, int, int>
+ObjectDetectionApp::extractInputDims(const std::vector<int64_t> &shape) {
+  if (shape.size() == 4) {
+    return {static_cast<int>(shape[0]), static_cast<int>(shape[1]),
+            static_cast<int>(shape[2]), static_cast<int>(shape[3])};
+  } else if (shape.size() == 3) {
+    // Assume CHW with batch size 1
+    return {1, static_cast<int>(shape[0]), static_cast<int>(shape[1]),
+            static_cast<int>(shape[2])};
+  } else {
+    throw std::runtime_error(
+        "Invalid input shape: expected 3D (CHW) or 4D (NCHW) tensor");
   }
 }
