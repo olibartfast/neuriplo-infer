@@ -165,7 +165,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
   - `yolo`: YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLO11, YOLOv12 models
   - `yolov10`: YOLOv10 models (different postprocessing)
   - `yolonas`: YOLO-NAS models
-  - `rtdetr`: RT-DETR, RT-DETR v2, D-FINE, DEIM, DEIMv2 models
+  - `rtdetr`: RT-DETR, RT-DETRv2, RT-DETRv4, D-FINE, DEIM, DEIMv2 models
   - `rtdetrul`: RT-DETR Ultralytics implementation
   - `rfdetr`: RF-DETR models
 
