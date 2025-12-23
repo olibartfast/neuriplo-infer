@@ -223,9 +223,10 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolo",
-                    "--weights=${env:HOME}/yolo11x.torchscript",
+                    "--weights=${env:HOME}/model_repository/yolo11x_libtorch/1/model.pt",
                     "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
+                    "--labels=labels/coco.names",
+                    "--input_sizes='3,640,640'"
                     ],
             "cwd": "${workspaceFolder}"
         },  
