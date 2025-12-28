@@ -29,6 +29,13 @@ find_package(glog REQUIRED)
 message(STATUS "✓ OpenCV ${OpenCV_VERSION} found")
 message(STATUS "✓ glog found")
 
+include(FetchContent)
+FetchContent_Declare(
+    vision-core
+    GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
+    GIT_TAG        ${VISION_CORE_VERSION}  # Use specific version instead of master
+)
+
 # Fetch the neuriplo project from GitHub with specific version
 include(FetchContent)
 FetchContent_Declare(
@@ -43,7 +50,8 @@ FetchContent_Declare(
     GIT_TAG        ${VIDEOCAPTURE_VERSION}  # Use specific version instead of master
 )
 
-FetchContent_MakeAvailable(neuriplo VideoCapture)
+FetchContent_MakeAvailable(neuriplo VideoCapture vision-core)
+message(STATUS "vision-core_SOURCE_DIR: ${vision-core_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
 
@@ -57,33 +65,23 @@ endif()
 validate_all_dependencies()
 
 # Define paths
-set(DETECTORS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/detectors)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 message(STATUS "CMake module path: ${CMAKE_MODULE_PATH}")
 
-# Add subdirectories for the detectors module
-add_subdirectory(${DETECTORS_ROOT})
-
-# Option to build only the detectors library
-option(BUILD_ONLY_LIB "Build only the detectors library" OFF)
-
-if(NOT BUILD_ONLY_LIB)
     # Add the app module subdirectory
     add_subdirectory(app)
-endif()
 
-# Option to enable unit tests for the detectors library
-option(ENABLE_DETECTORS_TESTS "Enable unit testing for detectors lib" OFF)
+# Option to enable unit tests for vision-core library
+option(ENABLE_VISION_CORE_TESTS "Enable unit testing for vision-core lib" OFF)
 
-if(ENABLE_DETECTORS_TESTS)
+if(ENABLE_VISION_CORE_TESTS)
     enable_testing()
-    add_subdirectory(${DETECTORS_ROOT}/test)
+    add_subdirectory(${vision-core_SOURCE_DIR}/tests)
 endif()
 
 # Print final configuration summary
 message(STATUS "=== Build Configuration Summary ===")
 message(STATUS "Backend: ${DEFAULT_BACKEND}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Build Only Library: ${BUILD_ONLY_LIB}")
-message(STATUS "Enable Detector Tests: ${ENABLE_DETECTORS_TESTS}")
+message(STATUS "Enable Vision Core Tests: ${ENABLE_VISION_CORE_TESTS}")
 message(STATUS "=====================================")

@@ -9,7 +9,7 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 ## 🚀 Key Features
 
-- **Multiple Object Detection Models**: YOLO series from YOLOv4 to YOLOv12, RT-DETR, RT-DETRv2, RT-DETRv4, D-FINE, DEIM, DEIMv2, RF-DETR
+- **Multiple Object Detection Models**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (YOLOv4-v12, RT-DETR v1/v2/v4, D-FINE, DEIM v1/v2, RF-DETR)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
@@ -30,7 +30,10 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 ### Dependency Management
 
-This project automatically fetches [Neuriplo, the inference engines library](https://github.com/olibartfast/neuriplo) which provides inference backend abstractions. The neuriplo library handles all backend-specific dependencies.
+This project automatically fetches:
+1. [vision-core](https://github.com/olibartfast/vision-core) - Contains pre/post-processing and model logic.
+2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
+3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
 
 #### 🚀 Quick Setup (Recommended)
 ```bash
@@ -157,7 +160,14 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 #### Required Parameters
 
-- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values include `yolov4`, `yolov5`, `yolov6`, `yolov7`, `yolov8`, `yolov9`, `yolov10`, `yolo11`, `yolov12`, `rtdetr`,`rtdetrv2`, `rtdetrul`, `dfine`, `deim`, `rfdetr`.
+- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values:
+  - `yolov4`: YOLOv4/YOLOv4-tiny models
+  - `yolo`: YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLO11, YOLOv12 models
+  - `yolov10`: YOLOv10 models (different postprocessing)
+  - `yolonas`: YOLO-NAS models
+  - `rtdetr`: RT-DETR, RT-DETRv2, RT-DETRv4, D-FINE, DEIM, DEIMv2 models
+  - `rtdetrul`: RT-DETR Ultralytics implementation
+  - `rfdetr`: RF-DETR models
 
 - `--source=<input_source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
@@ -254,22 +264,7 @@ For GPU support, add `--gpus all` to the docker run command.
 - [Detector Architectures Guide](docs/DetectorArchitectures.md)
 - [Supported Models](docs/TablePage.md)
 - [Model Export Guide](docs/ExportInstructions.md)
-- Backend-specific export documentation:
-  - [YOLOv5](docs/yolov5-export.md)
-  - [YOLOv8](docs/yolov8-export.md)
-  - [YOLOv6](docs/yolov6-export.md)
-  - [YOLOv7](docs/yolov7-export.md)
-  - [YOLOv8](docs/yolov8-export.md)
-  - [YOLOv9](docs/yolov9-export.md)
-  - [YOLOv10](docs/yolov10-export.md)
-  - [YOLO11](docs/yolo11-export.md)
-  - [YOLOv12](docs/yolov12-export.md)
-  - [YOLO-NAS](docs/yolo-nas-export.md)
-  - [RT-DETR V1/V2/V4](docs/rtdetr-export.md)
-  - [RT-DETR (Ultralytics implementation)](docs/rtdetr-ultralytics-export.md)
-  - [D-FINE](docs/d-fine-export.md)
-  - [DEIM V1/V2](docs/deim-export.md)
-  - [RF-DETR](docs/rf-detr-export.md)
+- [Vision-Core Export Tools](https://github.com/olibartfast/vision-core/tree/main/export) - Comprehensive export utilities for all supported models
 
 ## ⚠️ Known Limitations
 - Windows builds not currently supported

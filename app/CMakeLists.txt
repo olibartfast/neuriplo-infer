@@ -30,8 +30,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${VideoCapture_SOURCE_DIR}/src
     ${neuriplo_SOURCE_DIR}/backends
     ${neuriplo_SOURCE_DIR}/backends/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../detectors/inc  # Relative path to detectors/inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/../detectors/src/models  # Relative path to detectors models
     ${OpenCV_INCLUDE_DIRS}
     ${GLOG_INCLUDE_DIRS}
 )
@@ -40,9 +38,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glog::glog
     ${OpenCV_LIBS}
-    detectors
     neuriplo
     VideoCapture
+    vision-core
 )
 
 # Option to enable unit tests for the app module
