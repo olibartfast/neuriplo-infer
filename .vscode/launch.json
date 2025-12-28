@@ -60,7 +60,7 @@
             "program": "${workspaceFolder}/build/app/object-detection-inference",
             "args": [
                     "--type=yolov4",
-                    "--weights=${env:HOME}/Downloads/weights/yolov4-tiny.weights",
+                    "--weights=${env:HOME}/Downloads/yolov4.weights",
                     "--source=data/horses.jpg", 
                     "--input_sizes='3,640,640'",
                     "--labels=labels/coco.names"
