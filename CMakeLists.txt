@@ -10,7 +10,7 @@ include(cmake/versions.cmake)
 
 # Set DEFAULT_BACKEND as a CACHE variable with its type and a help string.
 if(NOT DEFINED DEFAULT_BACKEND)
-   set(DEFAULT_BACKEND "ONNX_RUNTIME" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
+   set(DEFAULT_BACKEND "OPENCV_DNN" CACHE STRING "Default inference backend: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
 endif()
 
 # Video backend options (managed by VideoCapture library)
