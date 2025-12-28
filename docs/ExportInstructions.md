@@ -20,6 +20,6 @@ python export/detection/rfdetr/export.py --model your_rfdetr.pt --format onnx
 ```
 
 ## Note
-The opencv-dnn module is configured to load ONNX models(not dynamic axis) and .weights for YOLOv4.
+The opencv-dnn module is configured to load ONNX models(not dynamic axis) and .weights(i.e. darknet format) for YOLOv4.
 
 For detailed instructions on exporting each model, please refer to the linked documents above.
