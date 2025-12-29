@@ -208,14 +208,14 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 ```bash
 # YOLOv8 Onnx Runtime image processing
 ./object-detection-inference \
-  --type=yolov8 \
+  --type=yolo \
   --source=image.png \
   --weights=models/yolov8s.onnx \
   --labels=data/coco.names
 
 # YOLOv8 TensorRT video processing
 ./object-detection-inference \
-  --type=yolov8 \
+  --type=yolo \
   --source=video.mp4 \
   --weights=models/yolov8s.engine \
   --labels=data/coco.names \
