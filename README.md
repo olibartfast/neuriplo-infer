@@ -7,14 +7,14 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 > 🚧 Status: Under Development — expect frequent updates.
 
-## 🚀 Key Features
+## Key Features
 
 - **Multiple Object Detection Models**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (YOLOv4-v12, RT-DETR v1/v2/v4, D-FINE, DEIM v1/v2, RF-DETR)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
 
-## 🔧 Requirements
+## Requirements
 
 ### Core Dependencies
 - CMake (≥ 3.15)
@@ -35,19 +35,9 @@ This project automatically fetches:
 2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
 3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
 
-#### 🚀 Quick Setup (Recommended)
-```bash
-# 1. Setup default backend (OPENCV_DNN - no additional dependencies required)
-./scripts/setup_dependencies.sh
 
-# 2. Build project
-mkdir build && cd build
-cmake ..
-cmake --build .
-```
-
-#### 🔧 Alternative Backends
-For other inference backends, setup dependencies first:
+#### Setup
+For the selected inference backends, set up the required dependencies first:
 
 - **ONNX Runtime**:
   ```bash
@@ -85,7 +75,7 @@ For other inference backends, setup dependencies first:
   ./scripts/setup_dependencies.sh --backend all
   ```
 
-## 🏗 Building
+## Building
 
 ### Complete Build (Shared Library + Application)
 ```bash
@@ -114,17 +104,6 @@ cmake --build .
 cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
-
----
-
-### Library-Only Build
-```bash
-mkdir build && cd build
-cmake -DBUILD_ONLY_LIB=ON -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-```
-
----
 
 ### Inference Backend Options
 Replace `<backend>` with one of the supported options. See [Dependency Management Guide](docs/DependencyManagement.md) for complete list and details.
@@ -231,7 +210,7 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 *Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 ### Building Images
 Inside the project, in the [Dockerfiles folder](docker), there will be a dockerfile for each inference backend (currently onnxruntime, libtorch, tensorrt, openvino)
@@ -259,7 +238,7 @@ docker run --rm \
 For GPU support, add `--gpus all` to the docker run command.
 
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [Detector Architectures Guide](docs/DetectorArchitectures.md)
 - [Supported Models](docs/TablePage.md)
@@ -279,7 +258,7 @@ For GPU support, add `--gpus all` to the docker run command.
  - https://paperswithcode.com/sota/real-time-object-detection-on-coco (No more available)
  - https://leaderboard.roboflow.com/
 
-## 📫 Support
+## Support
 
 - Open an [issue](https://github.com/olibartfast/object-detection-inference/issues) for bug reports or feature requests: contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
 - Check existing issues for solutions to common problems
