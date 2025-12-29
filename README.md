@@ -1,20 +1,21 @@
-# Object Detection Inference
+# Vision Inference Framework
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for [real-time object detection](https://leaderboard.roboflow.com/), supporting multiple deep learning backends and input sources. Run state-of-the-art object detection models on video streams, video files, or images with configurable hardware acceleration.
+C++ framework for computer vision inference, supporting multiple vision tasks and deep learning backends.
 
 > 🚧 Status: Under Development — expect frequent updates.
 
-## 🚀 Key Features
+## Key Features
 
-- **Multiple Object Detection Models**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (YOLOv4-v12, RT-DETR v1/v2/v4, D-FINE, DEIM v1/v2, RF-DETR)
+- **Multiple Vision Tasks**: Object Detection, Classification, Instance Segmentation, Optical Flow via [vision-core library](https://github.com/olibartfast/vision-core/)
+- **Wide Model Support**: YOLOv4-v12, RT-DETR variants, ResNet, ViT, TimeSformer, RAFT, and more
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
 
-## 🔧 Requirements
+## Requirements
 
 ### Core Dependencies
 - CMake (≥ 3.15)
@@ -35,19 +36,9 @@ This project automatically fetches:
 2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
 3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
 
-#### 🚀 Quick Setup (Recommended)
-```bash
-# 1. Setup default backend (OPENCV_DNN - no additional dependencies required)
-./scripts/setup_dependencies.sh
 
-# 2. Build project
-mkdir build && cd build
-cmake ..
-cmake --build .
-```
-
-#### 🔧 Alternative Backends
-For other inference backends, setup dependencies first:
+#### Setup
+For chosen inference backends, setup dependencies first:
 
 - **ONNX Runtime**:
   ```bash
@@ -85,7 +76,7 @@ For other inference backends, setup dependencies first:
   ./scripts/setup_dependencies.sh --backend all
   ```
 
-## 🏗 Building
+## Building
 
 ### Complete Build (Shared Library + Application)
 ```bash
@@ -115,16 +106,6 @@ cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DUSE_
 cmake --build .
 ```
 
----
-
-### Library-Only Build
-```bash
-mkdir build && cd build
-cmake -DBUILD_ONLY_LIB=ON -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-```
-
----
 
 ### Inference Backend Options
 Replace `<backend>` with one of the supported options. See [Dependency Management Guide](docs/DependencyManagement.md) for complete list and details.
@@ -138,12 +119,12 @@ cmake -DENABLE_APP_TESTS=ON ..
 cmake -DENABLE_DETECTORS_TESTS=ON ..
 ```
 
-## 💻 App Usage
+## App Usage
 
 ### Command Line Options
 
 ```bash
-./object-detection-inference \
+./vision-inference \
   [--help | -h] \
   --type=<model_type> \
   --source=<input_source> \
@@ -160,7 +141,9 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 
 #### Required Parameters
 
-- `--type=<model_type>`: Specifies the type of object detection model to use. Possible values:
+- `--type=<model_type>`: Specifies the type of vision model to use. Supported categories:
+
+  **Object Detection:**
   - `yolov4`: YOLOv4/YOLOv4-tiny models
   - `yolo`: YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLO11, YOLOv12 models
   - `yolov10`: YOLOv10 models (different postprocessing)
@@ -168,6 +151,19 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
   - `rtdetr`: RT-DETR, RT-DETRv2, RT-DETRv4, D-FINE, DEIM, DEIMv2 models
   - `rtdetrul`: RT-DETR Ultralytics implementation
   - `rfdetr`: RF-DETR models
+
+  **Classification:**
+  - `torchvisionclassifier`: TorchVision classification models
+  - `tensorflowclassifier`: TensorFlow classification models
+  - `vitclassifier`: Vision Transformer models
+  - `timesformer`: Video action recognition models
+
+  **Instance Segmentation:**
+  - `yoloseg`: YOLO-based segmentation models
+  - `rfdetr-seg`: RF-DETR-based segmentation models
+
+  **Optical Flow:**
+  - `raft`: RAFT optical flow models
 
 - `--source=<input_source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
@@ -200,44 +196,58 @@ cmake -DENABLE_DETECTORS_TESTS=ON ..
 ### To check all available options:
 
 ```bash
-./object-detection-inference --help
+./vision-inference --help
 ```
 
 ### Common Use Case Examples
 
 ```bash
-# YOLOv8 Onnx Runtime image processing
-./object-detection-inference \
-  --type=yolov8 \
+# Object Detection - YOLOv8 ONNX Runtime image processing
+./vision-inference \
+  --type=yolo \
   --source=image.png \
   --weights=models/yolov8s.onnx \
   --labels=data/coco.names
 
-# YOLOv8 TensorRT video processing
-./object-detection-inference \
-  --type=yolov8 \
+# Object Detection - RT-DETR video processing
+./vision-inference \
+  --type=rtdetr \
   --source=video.mp4 \
-  --weights=models/yolov8s.engine \
+  --weights=models/rtdetr-l.onnx \
   --labels=data/coco.names \
   --min_confidence=0.4
 
-# RTSP stream processing using RT-DETR Ultralytics implementation
-    --type=rtdetrul \
-    --source="rtsp://camera:554/stream" \
-    --weights=models/rtdetr-l.onnx \
-    --labels=data/coco.names \
-    --use-gpu
+# Classification - Image classification
+./vision-inference \
+  --type=torchvisionclassifier \
+  --source=image.png \
+  --weights=models/resnet50.onnx \
+  --labels=data/imagenet_labels.txt
+
+# Instance Segmentation - YOLO segmentation
+./vision-inference \
+  --type=yoloseg \
+  --source=video.mp4 \
+  --weights=models/yolov8s-seg.onnx \
+  --labels=data/coco.names \
+  --use-gpu
+
+# Optical Flow - RAFT model
+./vision-inference \
+  --type=raft \
+  --source=video.mp4 \
+  --weights=models/raft-small.onnx
 ```
 
 *Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 ### Building Images
 Inside the project, in the [Dockerfiles folder](docker), there will be a dockerfile for each inference backend (currently onnxruntime, libtorch, tensorrt, openvino)
 ```bash
 # Build for specific backend
-docker build --rm -t object-detection-inference:<backend_tag>  \
+docker build --rm -t vision-inference:<backend_tag>  \
     -f docker/Dockerfile.backend .
 ```
 
@@ -248,7 +258,7 @@ docker run --rm \
     -v<path_host_data_folder>:/app/data \
     -v<path_host_weights_folder>:/weights \
     -v<path_host_labels_folder>:/labels \
-    object-detection-inference:<backend_tag> \
+    vision-inference:<backend_tag> \
     --type=<model_type> \
     --weights=<weight_according_your_backend> \
     --source=/app/data/<image_or_video> \
@@ -259,7 +269,7 @@ docker run --rm \
 For GPU support, add `--gpus all` to the docker run command.
 
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [Detector Architectures Guide](docs/DetectorArchitectures.md)
 - [Supported Models](docs/TablePage.md)
@@ -279,7 +289,7 @@ For GPU support, add `--gpus all` to the docker run command.
  - https://paperswithcode.com/sota/real-time-object-detection-on-coco (No more available)
  - https://leaderboard.roboflow.com/
 
-## 📫 Support
+## Support
 
-- Open an [issue](https://github.com/olibartfast/object-detection-inference/issues) for bug reports or feature requests: contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
+- Open an [issue](https://github.com/olibartfast/vision-inference/issues) for bug reports or feature requests: contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
 - Check existing issues for solutions to common problems
