@@ -106,12 +106,9 @@ cmake --build .
 ### Inference Backend Options
 Replace `<backend>` with one of the supported options. See [Dependency Management Guide](docs/DependencyManagement.md) for complete list and details.
 
-### Test Builds
+### Test Build
 ```bash
-# App tests
 cmake -DENABLE_APP_TESTS=ON ..
-
-
 ```
 
 ## 💻 App Usage
