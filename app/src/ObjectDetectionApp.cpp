@@ -1,6 +1,7 @@
 #include "ObjectDetectionApp.hpp"
+#include <algorithm>
 
-ObjectDetectionApp::ObjectDetectionApp(const AppConfig &config)
+VisionApp::VisionApp(const AppConfig &config)
     : config(config) {
   try {
     setupLogging();
@@ -99,7 +100,7 @@ ObjectDetectionApp::ObjectDetectionApp(const AppConfig &config)
   }
 }
 
-void ObjectDetectionApp::run() {
+void VisionApp::run() {
   try {
     if (config.source.find(".jpg") != std::string::npos ||
         config.source.find(".png") != std::string::npos) {
@@ -113,7 +114,7 @@ void ObjectDetectionApp::run() {
   }
 }
 
-void ObjectDetectionApp::warmup_gpu(const cv::Mat &image) {
+void VisionApp::warmup_gpu(const cv::Mat &image) {
   try {
     for (int i = 0; i < 5; ++i) { // Warmup for 5 iterations
       // Use vision-core preprocessing
@@ -134,13 +135,8 @@ void ObjectDetectionApp::warmup_gpu(const cv::Mat &image) {
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(input_blob);
       auto results = task->postprocess(image.size(), outputs, shapes);
-      // Results contain individual Detection variants, extract them
-      std::vector<vision_core::Detection> detections;
-      for (const auto &result : results) {
-        if (std::holds_alternative<vision_core::Detection>(result)) {
-          detections.push_back(std::get<vision_core::Detection>(result));
-        }
-      }
+      // Process results for warmup (no need to visualize)
+      (void)results; // Suppress unused variable warning
     }
   } catch (const std::exception &e) {
     LOG(ERROR) << "Error: " << e.what();
@@ -148,7 +144,7 @@ void ObjectDetectionApp::warmup_gpu(const cv::Mat &image) {
   }
 }
 
-void ObjectDetectionApp::benchmark(const cv::Mat &image) {
+void VisionApp::benchmark(const cv::Mat &image) {
   try {
     double total_time = 0.0;
     for (int i = 0; i < config.benchmark_iterations; ++i) {
@@ -171,13 +167,8 @@ void ObjectDetectionApp::benchmark(const cv::Mat &image) {
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(input_blob);
       auto results = task->postprocess(image.size(), outputs, shapes);
-      // Results contain individual Detection variants, extract them
-      std::vector<vision_core::Detection> detections;
-      for (const auto &result : results) {
-        if (std::holds_alternative<vision_core::Detection>(result)) {
-          detections.push_back(std::get<vision_core::Detection>(result));
-        }
-      }
+      // Process results for benchmark (no need to visualize)
+      (void)results; // Suppress unused variable warning
       auto end = std::chrono::steady_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -194,7 +185,7 @@ void ObjectDetectionApp::benchmark(const cv::Mat &image) {
   }
 }
 
-void ObjectDetectionApp::setupLogging(const std::string &log_folder) {
+void VisionApp::setupLogging(const std::string &log_folder) {
   try {
     // Create logs folder if it doesn't exist
     if (!std::filesystem::exists(log_folder)) {
@@ -227,7 +218,7 @@ void ObjectDetectionApp::setupLogging(const std::string &log_folder) {
   }
 }
 
-void ObjectDetectionApp::processImage(const std::string &source) {
+void VisionApp::processImage(const std::string &source) {
   try {
     cv::Mat image = cv::imread(source);
     if (config.enable_warmup) {
@@ -257,23 +248,14 @@ void ObjectDetectionApp::processImage(const std::string &source) {
                 preprocessed[0].size());
     const auto [outputs, shapes] = engine->get_infer_results(input_blob);
     auto results = task->postprocess(image.size(), outputs, shapes);
-    // Results contain individual Detection variants, extract them
-    std::vector<vision_core::Detection> detections;
-    for (const auto &result : results) {
-      if (std::holds_alternative<vision_core::Detection>(result)) {
-        detections.push_back(std::get<vision_core::Detection>(result));
-      }
-    }
     auto end = std::chrono::steady_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
             .count();
     LOG(INFO) << "Inference time: " << duration << " ms";
-    for (const auto &d : detections) {
-      cv::rectangle(image, d.bbox, cv::Scalar(255, 0, 0), 3);
-      draw_label(image, classes[static_cast<int>(d.class_id)],
-                 d.class_confidence, d.bbox.x, d.bbox.y);
-    }
+    
+    // Process results based on task type
+    processResults(results, image);
     cv::imwrite("data/processed.png", image);
     if (config.enable_benchmark) {
       benchmark(image); // Benchmark
@@ -284,7 +266,7 @@ void ObjectDetectionApp::processImage(const std::string &source) {
   }
 }
 
-void ObjectDetectionApp::processVideo(const std::string &source) {
+void VisionApp::processVideo(const std::string &source) {
   try {
     std::unique_ptr<VideoCaptureInterface> videoInterface =
         createVideoInterface();
@@ -315,13 +297,6 @@ void ObjectDetectionApp::processVideo(const std::string &source) {
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(input_blob);
       auto results = task->postprocess(frame.size(), outputs, shapes);
-      // Results contain individual Detection variants, extract them
-      std::vector<vision_core::Detection> detections;
-      for (const auto &result : results) {
-        if (std::holds_alternative<vision_core::Detection>(result)) {
-          detections.push_back(std::get<vision_core::Detection>(result));
-        }
-      }
       auto end = std::chrono::steady_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -330,11 +305,9 @@ void ObjectDetectionApp::processVideo(const std::string &source) {
       std::string fpsText = "FPS: " + std::to_string(fps);
       cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX,
                   1, cv::Scalar(0, 255, 0), 2);
-      for (const auto &d : detections) {
-        cv::rectangle(frame, d.bbox, cv::Scalar(255, 0, 0), 3);
-        draw_label(frame, classes[static_cast<int>(d.class_id)],
-                   d.class_confidence, d.bbox.x, d.bbox.y);
-      }
+      
+      // Process results based on task type
+      processResults(results, frame);
 
       cv::imshow("opencv feed", frame);
       char key = cv::waitKey(1);
@@ -352,7 +325,7 @@ void ObjectDetectionApp::processVideo(const std::string &source) {
 }
 
 std::tuple<int, int, int, int>
-ObjectDetectionApp::extractInputDims(const std::vector<int64_t> &shape) {
+VisionApp::extractInputDims(const std::vector<int64_t> &shape) {
   if (shape.size() == 4) {
     return {static_cast<int>(shape[0]), static_cast<int>(shape[1]),
             static_cast<int>(shape[2]), static_cast<int>(shape[3])};
@@ -363,5 +336,92 @@ ObjectDetectionApp::extractInputDims(const std::vector<int64_t> &shape) {
   } else {
     throw std::runtime_error(
         "Invalid input shape: expected 3D (CHW) or 4D (NCHW) tensor");
+  }
+}
+
+vision_core::TaskType VisionApp::getTaskType(const std::string& model_type) {
+  std::string normalized = model_type;
+  std::transform(normalized.begin(), normalized.end(), normalized.begin(), ::tolower);
+  
+  if (normalized == "torchvisionclassifier" || normalized == "tensorflowclassifier" || 
+      normalized == "vitclassifier" || normalized == "timesformer") {
+    return vision_core::TaskType::Classification;
+  } else if (normalized.find("seg") != std::string::npos || normalized == "yoloseg") {
+    return vision_core::TaskType::InstanceSegmentation;
+  } else if (normalized == "raft") {
+    return vision_core::TaskType::OpticalFlow;
+  } else {
+    return vision_core::TaskType::Detection; // Default for YOLO, RTDETR, etc.
+  }
+}
+
+void VisionApp::processResults(const std::vector<vision_core::Result> &results, cv::Mat &image) {
+  auto task_type = getTaskType(config.detectorType);
+  
+  switch (task_type) {
+    case vision_core::TaskType::Detection: {
+      for (const auto &result : results) {
+        if (std::holds_alternative<vision_core::Detection>(result)) {
+          const auto &detection = std::get<vision_core::Detection>(result);
+          cv::rectangle(image, detection.bbox, cv::Scalar(255, 0, 0), 3);
+          draw_label(image, classes[static_cast<int>(detection.class_id)],
+                    detection.class_confidence, detection.bbox.x, detection.bbox.y);
+        }
+      }
+      break;
+    }
+    case vision_core::TaskType::Classification: {
+      std::string result_text = "Classification: ";
+      for (const auto &result : results) {
+        if (std::holds_alternative<vision_core::Classification>(result)) {
+          const auto &classification = std::get<vision_core::Classification>(result);
+          if (classification.class_id >= 0 && classification.class_id < classes.size()) {
+            result_text += classes[static_cast<int>(classification.class_id)] + 
+                          " (" + std::to_string(classification.class_confidence) + ")";
+          }
+        } else if (std::holds_alternative<vision_core::VideoClassification>(result)) {
+          const auto &video_classification = std::get<vision_core::VideoClassification>(result);
+          result_text += video_classification.action_label + 
+                        " (" + std::to_string(video_classification.class_confidence) + ")";
+        }
+      }
+      cv::putText(image, result_text, cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX,
+                  1, cv::Scalar(0, 255, 255), 2);
+      break;
+    }
+    case vision_core::TaskType::InstanceSegmentation: {
+      for (const auto &result : results) {
+        if (std::holds_alternative<vision_core::InstanceSegmentation>(result)) {
+          const auto &segmentation = std::get<vision_core::InstanceSegmentation>(result);
+          // Draw bounding box
+          cv::rectangle(image, segmentation.bbox, cv::Scalar(255, 0, 0), 3);
+          draw_label(image, classes[static_cast<int>(segmentation.class_id)],
+                    segmentation.class_confidence, segmentation.bbox.x, segmentation.bbox.y);
+          
+          // Overlay mask if available
+          if (!segmentation.mask.empty()) {
+            cv::Mat colored_mask;
+            cv::applyColorMap(segmentation.mask, colored_mask, cv::COLORMAP_JET);
+            cv::addWeighted(image, 0.7, colored_mask, 0.3, 0, image);
+          }
+        }
+      }
+      break;
+    }
+    case vision_core::TaskType::OpticalFlow: {
+      for (const auto &result : results) {
+        if (std::holds_alternative<vision_core::OpticalFlow>(result)) {
+          const auto &flow = std::get<vision_core::OpticalFlow>(result);
+          if (!flow.flow.empty()) {
+            // Replace the image with the flow visualization
+            image = flow.flow.clone();
+          }
+          std::string flow_text = "Max displacement: " + std::to_string(flow.max_displacement);
+          cv::putText(image, flow_text, cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX,
+                      1, cv::Scalar(255, 255, 255), 2);
+        }
+      }
+      break;
+    }
   }
 }

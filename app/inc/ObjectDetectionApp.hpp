@@ -6,9 +6,9 @@
 #include "vision-core/core/task_factory.hpp"
 #include "vision-core/core/task_interface.hpp"
 
-class ObjectDetectionApp {
+class VisionApp {
 public:
-  ObjectDetectionApp(const AppConfig &config);
+  VisionApp(const AppConfig &config);
   void run();
   void setTask(std::unique_ptr<vision_core::TaskInterface> newTask) {
     task = std::move(newTask);
@@ -23,6 +23,8 @@ private:
   void setupLogging(const std::string &log_folder = "./logs");
   void processImage(const std::string &source);
   void processVideo(const std::string &source);
+  void processResults(const std::vector<vision_core::Result> &results, cv::Mat &image);
+  vision_core::TaskType getTaskType(const std::string& model_type);
   std::tuple<int, int, int, int>
   extractInputDims(const std::vector<int64_t> &shape);
 
