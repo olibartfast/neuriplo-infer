@@ -29,7 +29,8 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     validateArguments(parser);
 
     AppConfig config;
-    config.source = parser.get<std::string>("source");
+    std::string source_str = parser.get<std::string>("source");
+    config.sources = split(source_str, ',');
     config.use_gpu = parser.get<bool>("use-gpu");
     config.enable_warmup = parser.get<bool>("warmup");
     config.enable_benchmark = parser.get<bool>("benchmark");
@@ -81,6 +82,15 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
         LOG(ERROR) << "Cannot open video stream";
         std::exit(1);
     }
+    
+    // Validate each source file exists
+    std::vector<std::string> sources = split(source, ',');
+    for (const auto& src : sources) {
+        if (!isFile(src) && !isDirectory(src)) {
+            LOG(ERROR) << "Source file/directory " << src << " doesn't exist";
+            std::exit(1);
+        }
+    }
 
     std::string weights = parser.get<std::string>("weights");
     if (!isFile(weights)) {
@@ -89,7 +99,7 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
     }
 
     std::string labelsPath = parser.get<std::string>("labels");
-    if (!isFile(labelsPath)) {
+    if (!labelsPath.empty() && !isFile(labelsPath)) {
         LOG(ERROR) << "Labels file " << labelsPath << " doesn't exist";
         std::exit(1);
     }

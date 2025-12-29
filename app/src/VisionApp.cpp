@@ -6,7 +6,10 @@ VisionApp::VisionApp(const AppConfig &config)
   try {
     setupLogging();
 
-    LOG(INFO) << "Source " << config.source;
+    LOG(INFO) << "Sources: ";
+    for (const auto& src : config.sources) {
+        LOG(INFO) << "  " << src;
+    }
     LOG(INFO) << "Weights " << config.weights;
     LOG(INFO) << "Labels file " << config.labelsPath;
     LOG(INFO) << "Detector type " << config.detectorType;
@@ -102,11 +105,32 @@ VisionApp::VisionApp(const AppConfig &config)
 
 void VisionApp::run() {
   try {
-    if (config.source.find(".jpg") != std::string::npos ||
-        config.source.find(".png") != std::string::npos) {
-      processImage(config.source);
+    // Check if we have image files
+    bool hasImages = false;
+    for (const auto& src : config.sources) {
+      if (src.find(".jpg") != std::string::npos || 
+          src.find(".png") != std::string::npos) {
+        hasImages = true;
+        break;
+      }
+    }
+    
+    if (hasImages) {
+      if (config.sources.size() == 1) {
+        processImage(config.sources[0]);
+      } else if (config.sources.size() >= 2 && 
+                 getTaskType(config.detectorType) == vision_core::TaskType::OpticalFlow) {
+        processOpticalFlow();
+      } else {
+        LOG(ERROR) << "Multiple image sources only supported for optical flow";
+        throw std::runtime_error("Multiple image sources only supported for optical flow");
+      }
     } else {
-      processVideo(config.source);
+      if (config.sources.size() != 1) {
+        LOG(ERROR) << "Video processing requires single source";
+        throw std::runtime_error("Video processing requires single source");
+      }
+      processVideo(config.sources[0]);
     }
   } catch (const std::exception &e) {
     LOG(ERROR) << "Error: " << e.what();
@@ -322,6 +346,17 @@ void VisionApp::processVideo(const std::string &source) {
     LOG(ERROR) << "Error: " << e.what();
     throw;
   }
+}
+
+void VisionApp::processOpticalFlow() {
+  // TODO: Optical flow with multiple input tensors is not yet supported.
+  // The neuriplo library's InferenceInterface::get_infer_results() method
+  // currently only accepts a single cv::Mat input, but optical flow models
+  // require multiple input tensors (typically two frames).
+  // This needs to be implemented in neuriplo before optical flow can be fully supported.
+  
+  throw std::runtime_error("Optical flow with multiple input tensors is not yet supported. "
+                          "The neuriplo library needs to be updated to handle multiple input tensors.");
 }
 
 std::tuple<int, int, int, int>

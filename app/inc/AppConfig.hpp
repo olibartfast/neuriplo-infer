@@ -17,7 +17,7 @@
 
 struct AppConfig {
     std::string detectorType;
-    std::string source;
+    std::vector<std::string> sources;
     std::string labelsPath;
     std::string weights;
     bool use_gpu;

@@ -53,11 +53,11 @@ void draw_label(cv::Mat& input_image, const std::string& label, float confidence
 
 std::vector<std::string> readLabelNames(const std::string& fileName)
 {
-    if(!std::filesystem::exists(fileName)){
-        std::cerr << "Wrong path to labels " <<  fileName << std::endl;
-        exit(1);
-    } 
     std::vector<std::string> classes;
+    if(fileName.empty() || !std::filesystem::exists(fileName)){
+        std::cerr << "Warning: No labels file provided or file doesn't exist: " << fileName << std::endl;
+        return classes; // Return empty vector instead of exiting
+    } 
     std::ifstream ifs(fileName.c_str());
     std::string line;
     while (getline(ifs, line))

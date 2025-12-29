@@ -449,7 +449,22 @@
                     "--labels=labels/coco-labels-91.txt"
                     ],
             "cwd": "${workspaceFolder}"
-        },                        
+        },    
+        {
+            "name": "raft large onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": ["--source='data/frame_001.png,data/frame_002.png'", 
+            "--weights=${env:HOME}/model_repository/raft_large_onnx/1/model.onnx",
+            "--type=raft",
+            "--input_sizes='3,520,960;3,520,960'"
+            ],
+            "environment": [{ "name": "config", "value": "Debug" }],
+            "cwd": "${workspaceFolder}" 
+        },
+
+                         
 
     ]
 }

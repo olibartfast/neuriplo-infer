@@ -23,6 +23,7 @@ private:
   void setupLogging(const std::string &log_folder = "./logs");
   void processImage(const std::string &source);
   void processVideo(const std::string &source);
+  void processOpticalFlow();
   void processResults(const std::vector<vision_core::Result> &results, cv::Mat &image);
   vision_core::TaskType getTaskType(const std::string& model_type);
   std::tuple<int, int, int, int>
