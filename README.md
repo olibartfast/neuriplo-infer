@@ -36,7 +36,7 @@ This project automatically fetches:
 3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
 
 
-#### Setup
+## Setup
 For the selected inference backends, set up the required dependencies first:
 
 - **ONNX Runtime**:
