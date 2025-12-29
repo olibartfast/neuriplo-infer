@@ -1,6 +1,6 @@
 # Dependency Management Guide
 
-This document describes the improved dependency management system for the object-detection-inference project.
+This document describes the improved dependency management system for the vision-inference project.
 
 ## Overview
 
@@ -37,7 +37,7 @@ The project uses a version management system with local override capabilities:
 ### 📁 **Version File Structure**
 
 ```
-object-detection-inference/
+vision-inference/
 ├── versions.env               # Dependencies needed by this project (vision-core, etc.)
 ├── versions.neuriplo.env      # Overrides neuriplo versions
 ├── versions.videocapture.env  # Overrides VideoCapture versions
@@ -330,11 +330,11 @@ Docker containers handle dependencies automatically:
 
 ```bash
 # Build with specific inference backend
-docker build --rm -t object-detection-inference:onnxruntime \
+docker build --rm -t vision-inference:onnxruntime \
     -f docker/Dockerfile.onnxruntime .
 
 # Run with GPU support
-docker run --gpus all object-detection-inference:onnxruntime \
+docker run --gpus all vision-inference:onnxruntime \
     --type=yolov8 --weights=model.onnx --source=image.jpg
 ```
 

@@ -1,4 +1,4 @@
-#include "ObjectDetectionApp.hpp"
+#include "VisionApp.hpp"
 int main(int argc, char *argv[]) {
     try {
         AppConfig config = CommandLineParser::parseCommandLineArguments(argc, argv);

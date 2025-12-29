@@ -1,4 +1,4 @@
-#include "ObjectDetectionApp.hpp"
+#include "VisionApp.hpp"
 #include <algorithm>
 
 VisionApp::VisionApp(const AppConfig &config)

@@ -1,4 +1,4 @@
-# docker build --rm -t object-detection-inference:ort -f Dockerfiles/Dockerfile.onnxruntime .
+# docker build --rm -t vision-inference:ort -f Dockerfiles/Dockerfile.onnxruntime .
 
 # Stage 1: Common dependencies
 ARG UBUNTU_VERSION=24.04
@@ -46,7 +46,7 @@ FROM backend_dependencies AS final
 WORKDIR /app
 
 # Copy the executable
-COPY --from=builder /app/build/app/object-detection-inference /app/object-detection-inference
+COPY --from=builder /app/build/app/vision-inference /app/vision-inference
 
 # Copy the shared libraries
 COPY --from=builder /app/build/detectors/libdetectors.so /app/
@@ -57,4 +57,4 @@ COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
 
 # Set the entry point to the compiled executable
-ENTRYPOINT ["./object-detection-inference"]
+ENTRYPOINT ["./vision-inference"]

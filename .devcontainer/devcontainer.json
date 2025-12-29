@@ -1,7 +1,7 @@
 {
-    "name": "object-detection-inference",
+    "name": "vision-inference",
     // Use the image property instead of dockerFile
-    "image": "object-detection-inference:tensorrt", // Replace with your image name and tag
+    "image": "vision-inference:tensorrt", // Replace with your image name and tag
 
     "features": {
         "ghcr.io/devcontainers/features/nvidia-cuda:1": {}
@@ -26,6 +26,6 @@
 
     // OR: Run a specific command. Example: run your app with arguments
     // "overrideCommand": true,
-    // "command": ["./object-detection-inference", "-m", "your_model.engine", "-i", "your_input.mp4"]  
+    // "command": ["./vision-inference", "-m", "your_model.engine", "-i", "your_input.mp4"]  
 }
 

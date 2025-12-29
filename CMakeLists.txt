@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(object-detection-inference)
+project(vision-inference)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)

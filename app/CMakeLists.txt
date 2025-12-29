@@ -15,7 +15,7 @@ message(STATUS "CMAKE_CURRENT_SOURCE_DIR:  ${CMAKE_CURRENT_SOURCE_DIR}")
 # Define sources using CMAKE_CURRENT_SOURCE_DIR instead of CMAKE_SOURCE_DIR
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/ObjectDetectionApp.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionApp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
 )
