@@ -111,8 +111,7 @@ Replace `<backend>` with one of the supported options. See [Dependency Managemen
 # App tests
 cmake -DENABLE_APP_TESTS=ON ..
 
-# Library tests
-cmake -DENABLE_DETECTORS_TESTS=ON ..
+
 ```
 
 ## 💻 App Usage
