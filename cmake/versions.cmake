@@ -44,7 +44,7 @@ set(CMAKE_MIN_VERSION ${CMAKE_MIN_VERSION} CACHE STRING "Minimum CMake version")
 
 # Print version information for debugging
 message(STATUS "=== Project Dependency Versions ===")
-message(STATUS "neuriploRENCE_ENGINES_VERSION}")
+message(STATUS "neuriplo: ${NEURIPLO_VERSION}")
 message(STATUS "VideoCapture: ${VIDEOCAPTURE_VERSION}")
 message(STATUS "OpenCV Min: ${OPENCV_MIN_VERSION}")
 message(STATUS "glog Min: ${GLOG_MIN_VERSION}")
