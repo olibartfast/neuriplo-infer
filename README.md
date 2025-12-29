@@ -37,8 +37,8 @@ This project automatically fetches:
 3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
 
 
-#### Setup
-For chosen inference backends, setup dependencies first:
+## Setup
+For the selected inference backends, set up the required dependencies first:
 
 - **ONNX Runtime**:
   ```bash
@@ -77,8 +77,6 @@ For chosen inference backends, setup dependencies first:
   ```
 
 ## Building
-
-### Complete Build (Shared Library + Application)
 ```bash
 mkdir build && cd build
 cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
@@ -106,17 +104,12 @@ cmake -DDEFAULT_BACKEND=<backend>  -DUSE_GSTREAMER=ON -DUSE_FFMPEG=ON -DCMAKE_BU
 cmake --build .
 ```
 
-
 ### Inference Backend Options
 Replace `<backend>` with one of the supported options. See [Dependency Management Guide](docs/DependencyManagement.md) for complete list and details.
 
-### Test Builds
+### Test Build
 ```bash
-# App tests
 cmake -DENABLE_APP_TESTS=ON ..
-
-# Library tests
-cmake -DENABLE_DETECTORS_TESTS=ON ..
 ```
 
 ## App Usage
