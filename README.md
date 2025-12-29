@@ -76,11 +76,9 @@ For the selected inference backends, set up the required dependencies first:
   ```
 
 ## Building
-
-### Complete Build (Shared Library + Application)
 ```bash
 mkdir build && cd build
-cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DCMAKE_BUILD_TYPE=Release ..
+cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
@@ -93,15 +91,15 @@ The VideoCapture library supports multiple video processing backends with the fo
 
 ```bash
 # Enable GStreamer support
-cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake -DDEFAULT_BACKEND=<backend>  -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 
 # Enable FFmpeg support
-cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake -DDEFAULT_BACKEND=<backend>  -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 
 # Enable both (FFmpeg takes priority)
-cmake -DDEFAULT_BACKEND=<backend> -DBUILD_ONLY_LIB=OFF -DUSE_GSTREAMER=ON -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
+cmake -DDEFAULT_BACKEND=<backend>  -DUSE_GSTREAMER=ON -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
