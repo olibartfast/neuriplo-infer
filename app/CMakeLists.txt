@@ -49,5 +49,5 @@ unset(ENABLE_APP_TESTS CACHE) # Clear any previous cache
 
 if(ENABLE_APP_TESTS)
     enable_testing()
-    add_subdirectory(app/test)
+    add_subdirectory(test)
 endif()

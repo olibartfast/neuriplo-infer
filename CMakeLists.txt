@@ -71,17 +71,9 @@ message(STATUS "CMake module path: ${CMAKE_MODULE_PATH}")
     # Add the app module subdirectory
     add_subdirectory(app)
 
-# Option to enable unit tests for vision-core library
-option(ENABLE_VISION_CORE_TESTS "Enable unit testing for vision-core lib" OFF)
-
-if(ENABLE_VISION_CORE_TESTS)
-    enable_testing()
-    add_subdirectory(${vision-core_SOURCE_DIR}/tests)
-endif()
-
 # Print final configuration summary
 message(STATUS "=== Build Configuration Summary ===")
 message(STATUS "Backend: ${DEFAULT_BACKEND}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Enable Vision Core Tests: ${ENABLE_VISION_CORE_TESTS}")
+
 message(STATUS "=====================================")
