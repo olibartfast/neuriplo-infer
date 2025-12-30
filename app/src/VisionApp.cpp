@@ -1,5 +1,7 @@
 #include "VisionApp.hpp"
 #include <algorithm>
+#include <filesystem>
+#include <chrono>
 
 VisionApp::VisionApp(const AppConfig &config)
     : config(config) {
@@ -349,14 +351,108 @@ void VisionApp::processVideo(const std::string &source) {
 }
 
 void VisionApp::processOpticalFlow() {
-  // TODO: Optical flow with multiple input tensors is not yet supported.
-  // The neuriplo library's InferenceInterface::get_infer_results() method
-  // currently only accepts a single cv::Mat input, but optical flow models
-  // require multiple input tensors (typically two frames).
-  // This needs to be implemented in neuriplo before optical flow can be fully supported.
+  // Process optical flow with multiple input tensors
+  // Now supported with updated neuriplo library
   
-  throw std::runtime_error("Optical flow with multiple input tensors is not yet supported. "
-                          "The neuriplo library needs to be updated to handle multiple input tensors.");
+  LOG(INFO) << "Processing optical flow for image pairs";
+  
+  // Process pairs of images
+  for(size_t i = 0; i < config.sources.size() - 1; i++) {
+    std::vector<std::string> flowInputs = {config.sources[i], config.sources[i+1]};
+    
+    // Load images
+    std::vector<cv::Mat> images;
+    for (const auto& name : flowInputs) {
+      cv::Mat img = cv::imread(name);
+      if (img.empty()) {
+        LOG(ERROR) << "Could not open or read the image: " << name;
+        continue;
+      }
+      images.push_back(img);
+    }
+    
+    if (images.size() != 2) continue;
+
+    auto start = std::chrono::steady_clock::now();
+    
+    // Get input dimensions from model metadata
+    const auto inference_metadata = engine->get_inference_metadata();
+    const auto inputs = inference_metadata.getInputs();
+    
+    // Use vision-core preprocessing
+    const auto preprocessed = task->preprocess(images);
+    
+    // Create input tensors for both frames
+    std::vector<cv::Mat> input_tensors;
+    
+    for (size_t i = 0; i < std::min(inputs.size(), preprocessed.size()); i++) {
+      // Use provided input sizes if available, otherwise extract from model metadata
+      std::vector<int> dims;
+      if (i < config.input_sizes.size() && !config.input_sizes[i].empty()) {
+        // Use provided input sizes: convert int64_t to int and add batch dimension
+        dims = {1}; // batch size
+        for (auto dim : config.input_sizes[i]) {
+          dims.push_back(static_cast<int>(dim));
+        }
+      } else {
+        // Fallback to model metadata
+        auto [batch, channels, height, width] = extractInputDims(inputs[i].shape);
+        dims = {batch, channels, height, width};
+      }
+      
+      LOG(INFO) << "Input " << i << " dimensions: " << dims[0] << "x" << dims[1] << "x" << dims[2] << "x" << dims[3];
+      
+      // Calculate expected total size
+      size_t expected_size = 1;
+      for (int dim : dims) {
+        expected_size *= dim;
+      }
+      expected_size *= sizeof(float); // CV_32F uses float
+      
+      LOG(INFO) << "Preprocessed data size: " << preprocessed[i].size() << " bytes, expected: " << expected_size << " bytes";
+      
+      if (preprocessed[i].size() != expected_size) {
+        LOG(WARNING) << "Data size mismatch! Using available data size for tensor creation";
+        // Calculate what dimensions we can actually support
+        size_t float_count = preprocessed[i].size() / sizeof(float);
+        LOG(INFO) << "Available float elements: " << float_count;
+      }
+      
+      // Create cv::Mat from preprocessed data with correct shape
+      cv::Mat input_blob(dims, CV_32F);
+      size_t copy_size = std::min(preprocessed[i].size(), static_cast<size_t>(input_blob.total() * input_blob.elemSize()));
+      std::memcpy(input_blob.data, preprocessed[i].data(), copy_size);
+      input_tensors.push_back(input_blob);
+    }
+    
+    // Run inference with multiple input tensors
+    auto [infer_results, infer_shapes] = engine->get_infer_results(input_tensors);
+    
+    // Use vision-core postprocessing
+    auto predictions = task->postprocess(cv::Size(images[0].cols, images[0].rows), 
+                                        infer_results, infer_shapes);
+    
+    auto end = std::chrono::steady_clock::now();
+    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    LOG(INFO) << "Infer time for " << images.size() << " images: " << diff << " ms";
+    
+    // Visualization for optical flow
+    cv::Mat& image = images[0];
+    for (const auto& prediction : predictions) {
+      if (std::holds_alternative<vision_core::OpticalFlow>(prediction)) {
+        vision_core::OpticalFlow flow = std::get<vision_core::OpticalFlow>(prediction);
+        flow.flow.copyTo(image);
+      }
+    }
+    
+    // Save result
+    std::string sourceDir = flowInputs[0].substr(0, flowInputs[0].find_last_of("/\\"));
+    std::string outputDir = sourceDir + "/output";
+    std::filesystem::create_directories(outputDir);
+    std::string processedFrameFilename = outputDir + "/processed_frame_optical_flow.jpg";
+    LOG(INFO) << "Saving frame to: " << processedFrameFilename;
+    cv::imwrite(processedFrameFilename, image);
+  }
 }
 
 std::tuple<int, int, int, int>
