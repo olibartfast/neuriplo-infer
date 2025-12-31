@@ -31,12 +31,24 @@ VisionApp::VisionApp(const AppConfig &config)
 
     const auto inference_metadata = engine->get_inference_metadata();
     vision_core::ModelInfo model_info;
-    for (const auto &input : inference_metadata.getInputs()) {
-      auto shape = input.shape;
-      // Normalize 3D shape (C,H,W) to 4D (1,C,H,W) to satisfy vision-core
-      if (shape.size() == 3) {
-        shape.insert(shape.begin(), 1); // Add batch dim
+    for (size_t i = 0; i < inference_metadata.getInputs().size(); i++) {
+      const auto &input = inference_metadata.getInputs()[i];
+      std::vector<int64_t> shape;
+      
+      // Use command line input sizes if provided, otherwise use model metadata
+      if (i < config.input_sizes.size() && !config.input_sizes[i].empty()) {
+        shape = {1}; // batch size
+        for (auto dim : config.input_sizes[i]) {
+          shape.push_back(dim);
+        }
+      } else {
+        shape = input.shape;
+        // Normalize 3D shape (C,H,W) to 4D (1,C,H,W) to satisfy vision-core
+        if (shape.size() == 3) {
+          shape.insert(shape.begin(), 1); // Add batch dim
+        }
       }
+      
       model_info.addInput(input.name, shape, input.batch_size);
     }
     for (const auto &output : inference_metadata.getOutputs()) {
@@ -159,7 +171,7 @@ void VisionApp::warmup_gpu(const cv::Mat &image) {
                          CV_32F);
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
-      const auto [outputs, shapes] = engine->get_infer_results(input_blob);
+      const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
       auto results = task->postprocess(image.size(), outputs, shapes);
       // Process results for warmup (no need to visualize)
       (void)results; // Suppress unused variable warning
@@ -191,7 +203,7 @@ void VisionApp::benchmark(const cv::Mat &image) {
                          CV_32F);
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
-      const auto [outputs, shapes] = engine->get_infer_results(input_blob);
+      const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
       auto results = task->postprocess(image.size(), outputs, shapes);
       // Process results for benchmark (no need to visualize)
       (void)results; // Suppress unused variable warning
@@ -268,11 +280,15 @@ void VisionApp::processImage(const std::string &source) {
     const auto preprocessed = task->preprocess({image});
 
     // Create cv::Mat from preprocessed data with correct shape
-    cv::Mat input_blob(std::vector<int>{batch, channels, height, width},
-                       CV_32F);
-    std::memcpy(input_blob.data, preprocessed[0].data(),
-                preprocessed[0].size());
-    const auto [outputs, shapes] = engine->get_infer_results(input_blob);
+    std::vector<int> shape_dims = {batch, channels, height, width};
+    cv::Mat input_blob(shape_dims.size(), shape_dims.data(), CV_32F);
+    size_t expected_bytes = input_blob.total() * input_blob.elemSize();
+    if (preprocessed[0].size() != expected_bytes) {
+      LOG(ERROR) << "Size mismatch: expected " << expected_bytes << " bytes, got " << preprocessed[0].size() << " bytes";
+      throw std::runtime_error("Preprocessed data size mismatch");
+    }
+    std::memcpy(input_blob.data, preprocessed[0].data(), preprocessed[0].size());
+    const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
     auto results = task->postprocess(image.size(), outputs, shapes);
     auto end = std::chrono::steady_clock::now();
     auto duration =
@@ -321,7 +337,7 @@ void VisionApp::processVideo(const std::string &source) {
                          CV_32F);
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
-      const auto [outputs, shapes] = engine->get_infer_results(input_blob);
+      const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
       auto results = task->postprocess(frame.size(), outputs, shapes);
       auto end = std::chrono::steady_clock::now();
       auto duration =
