@@ -133,7 +133,14 @@ void ObjectDetectionApp::warmup_gpu(const cv::Mat &image) {
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(input_blob);
-      auto results = task->postprocess(image.size(), outputs, shapes);
+      
+      // Convert engine outputs to vision-core Tensor format
+      std::vector<vision_core::Tensor> tensors;
+      for (size_t i = 0; i < outputs.size(); ++i) {
+        tensors.emplace_back(outputs[i], shapes[i]);
+      }
+      
+      auto results = task->postprocess(image.size(), tensors);
       // Results contain individual Detection variants, extract them
       std::vector<vision_core::Detection> detections;
       for (const auto &result : results) {
@@ -170,7 +177,14 @@ void ObjectDetectionApp::benchmark(const cv::Mat &image) {
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(input_blob);
-      auto results = task->postprocess(image.size(), outputs, shapes);
+      
+      // Convert engine outputs to vision-core Tensor format
+      std::vector<vision_core::Tensor> tensors;
+      for (size_t i = 0; i < outputs.size(); ++i) {
+        tensors.emplace_back(outputs[i], shapes[i]);
+      }
+      
+      auto results = task->postprocess(image.size(), tensors);
       // Results contain individual Detection variants, extract them
       std::vector<vision_core::Detection> detections;
       for (const auto &result : results) {
@@ -256,7 +270,14 @@ void ObjectDetectionApp::processImage(const std::string &source) {
     std::memcpy(input_blob.data, preprocessed[0].data(),
                 preprocessed[0].size());
     const auto [outputs, shapes] = engine->get_infer_results(input_blob);
-    auto results = task->postprocess(image.size(), outputs, shapes);
+    
+    // Convert engine outputs to vision-core Tensor format
+    std::vector<vision_core::Tensor> tensors;
+    for (size_t i = 0; i < outputs.size(); ++i) {
+      tensors.emplace_back(outputs[i], shapes[i]);
+    }
+    
+    auto results = task->postprocess(image.size(), tensors);
     // Results contain individual Detection variants, extract them
     std::vector<vision_core::Detection> detections;
     for (const auto &result : results) {
@@ -314,7 +335,14 @@ void ObjectDetectionApp::processVideo(const std::string &source) {
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(input_blob);
-      auto results = task->postprocess(frame.size(), outputs, shapes);
+      
+      // Convert engine outputs to vision-core Tensor format
+      std::vector<vision_core::Tensor> tensors;
+      for (size_t i = 0; i < outputs.size(); ++i) {
+        tensors.emplace_back(outputs[i], shapes[i]);
+      }
+      
+      auto results = task->postprocess(frame.size(), tensors);
       // Results contain individual Detection variants, extract them
       std::vector<vision_core::Detection> detections;
       for (const auto &result : results) {
