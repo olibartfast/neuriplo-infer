@@ -3,6 +3,19 @@
 #include <filesystem>
 #include <chrono>
 
+namespace {
+// Helper to convert raw outputs and shapes to vision_core::Tensor objects
+template<typename T1, typename T2>
+std::vector<vision_core::Tensor> convertToTensors(const T1& outputs, const T2& shapes) {
+    std::vector<vision_core::Tensor> tensors;
+    tensors.reserve(outputs.size());
+    for (size_t i = 0; i < outputs.size(); ++i) {
+        tensors.emplace_back(outputs[i], shapes[i]);
+    }
+    return tensors;
+}
+}
+
 VisionApp::VisionApp(const AppConfig &config)
     : config(config) {
   try {
@@ -172,7 +185,8 @@ void VisionApp::warmup_gpu(const cv::Mat &image) {
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
-      auto results = task->postprocess(image.size(), outputs, shapes);
+      auto tensors = convertToTensors(outputs, shapes);
+      auto results = task->postprocess(image.size(), tensors);
       // Process results for warmup (no need to visualize)
       (void)results; // Suppress unused variable warning
     }
@@ -204,7 +218,8 @@ void VisionApp::benchmark(const cv::Mat &image) {
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
-      auto results = task->postprocess(image.size(), outputs, shapes);
+      auto tensors = convertToTensors(outputs, shapes);
+      auto results = task->postprocess(image.size(), tensors);
       // Process results for benchmark (no need to visualize)
       (void)results; // Suppress unused variable warning
       auto end = std::chrono::steady_clock::now();
@@ -289,7 +304,8 @@ void VisionApp::processImage(const std::string &source) {
     }
     std::memcpy(input_blob.data, preprocessed[0].data(), preprocessed[0].size());
     const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
-    auto results = task->postprocess(image.size(), outputs, shapes);
+    auto tensors = convertToTensors(outputs, shapes);
+    auto results = task->postprocess(image.size(), tensors);
     auto end = std::chrono::steady_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -338,7 +354,8 @@ void VisionApp::processVideo(const std::string &source) {
       std::memcpy(input_blob.data, preprocessed[0].data(),
                   preprocessed[0].size());
       const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
-      auto results = task->postprocess(frame.size(), outputs, shapes);
+      auto tensors = convertToTensors(outputs, shapes);
+      auto results = task->postprocess(frame.size(), tensors);
       auto end = std::chrono::steady_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -445,8 +462,9 @@ void VisionApp::processOpticalFlow() {
     auto [infer_results, infer_shapes] = engine->get_infer_results(input_tensors);
     
     // Use vision-core postprocessing
+    auto tensors = convertToTensors(infer_results, infer_shapes);
     auto predictions = task->postprocess(cv::Size(images[0].cols, images[0].rows), 
-                                        infer_results, infer_shapes);
+                                        tensors);
     
     auto end = std::chrono::steady_clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
