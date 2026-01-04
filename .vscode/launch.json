@@ -1,359 +1,359 @@
 {
     "version": "0.2.0",
-    "configurations": [                    
+    "configurations": [
         {
             "name": "rtdetr onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rtdetr",
-                    "--weights=${env:HOME}/repos/RT-DETR/rtdetr_pytorch/model.onnx",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=rtdetr",
+                "--weights=${env:HOME}/repos/RT-DETR/rtdetr_pytorch/model.onnx",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },               
+        },
         {
             "name": "rtdetr ultralytics onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rtdetrul",
-                    "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.onnx",
-                    "--source=data/person.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=rtdetrul",
+                "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.onnx",
+                "--source=data/person.jpg",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },    
+        },
         {
             "name": "rtdetr ultralytics libtorch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rtdetrul",
-                    "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.torchscript",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=rtdetrul",
+                "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.torchscript",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },       
+        },
         {
             "name": "rtdetr v2 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rtdetr",
-                    "--weights=${env:HOME}/repos/RT-DETR/rtdetrv2_pytorch/model.onnx",
-                    "--source=data/horses.jpg", 
-                    "--labels=labels/coco.names",
-                    ],
+                "--type=rtdetr",
+                "--weights=${env:HOME}/repos/RT-DETR/rtdetrv2_pytorch/model.onnx",
+                "--source=data/horses.jpg",
+                "--labels=labels/coco.names",
+            ],
             "cwd": "${workspaceFolder}"
-        },                    
+        },
         {
             "name": "YOLOv4 OpenCV DNN",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolov4",
-                    "--weights=${env:HOME}/Downloads/yolov4.weights",
-                    "--source=data/horses.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolov4",
+                "--weights=${env:HOME}/Downloads/yolov4.weights",
+                "--source=data/horses.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },                    
+        },
         {
             "name": "YOLO NAS onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolonas",
-                    "--weights=${env:HOME}/Downloads/weights/yolo_nas_s.onnx",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolonas",
+                "--weights=${env:HOME}/Downloads/weights/yolo_nas_s.onnx",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },         
+        },
         {
             "name": "YOLOv5 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/model_repository/yolov5x_onnx/1/model.onnx",
-                    "--source=data/horses.jpg", 
-                    "--labels=labels/coco.names",
-                     "--input_sizes='3,640,640'"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolov5x_onnx/1/model.onnx",
+                "--source=data/horses.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640'"
+            ],
             "cwd": "${workspaceFolder}"
-        },   
+        },
         {
             "name": "YOLOv5 libtorch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/repos/yolov5/yolov5s.torchscript",
-                    "--source=data/person.jpg", 
-                    "--labels=labels/coco.names",
-                     "--input_sizes='3,640,640'"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/repos/yolov5/yolov5s.torchscript",
+                "--source=data/person.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640'"
+            ],
             "cwd": "${workspaceFolder}"
-        },     
+        },
         {
             "name": "YOLOv5 openvino",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/model_repository/yolov5s_openvino/1/model.bin",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolov5s_openvino/1/model.bin",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },         
+        },
         {
             "name": "YOLOv5 libtorch video processing",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/repos/yolov5/yolov5s.torchscript",
-                    "--source=${env:HOME}/Videos/driving.mp4", 
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/repos/yolov5/yolov5s.torchscript",
+                "--source=${env:HOME}/Videos/driving.mp4",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },              
+        },
         {
             "name": "YOLOv6 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/model_repository/yolov6l_onnx/1/model.onnx",
-                    "--source=data/horses.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolov6l_onnx/1/model.onnx",
+                "--source=data/horses.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },           
+        },
         {
             "name": "YOLOv7 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/model_repository/yolov7_onnx/1/model.onnx",
-                    "--source=data/horses.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolov7_onnx/1/model.onnx",
+                "--source=data/horses.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },               
+        },
         {
             "name": "YOLOv8 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/model_repository/yolov8x_onnx/1/model.onnx",
-                    "--source=data/horses.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolov8x_onnx/1/model.onnx",
+                "--source=data/horses.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },    
+        },
         {
             "name": "YOLOv8 libtorch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/repos/ultralytics/yolov8s.torchscript",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names",
-                    "--input_sizes='3,640,640'"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/repos/ultralytics/yolov8s.torchscript",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640'"
+            ],
             "cwd": "${workspaceFolder}"
-        },  
+        },
         {
             "name": "YOLOv8 saved model",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/saved_model",
-                    "--source=data/person.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
-            "cwd": "${workspaceFolder}"            
-        },        
+                "--type=yolo",
+                "--weights=${env:HOME}/saved_model",
+                "--source=data/person.jpg",
+                "--labels=labels/coco.names"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
         {
             "name": "YOLOv10 saved model",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolov10",
-                    "--weights=${env:HOME}/yolov10x_saved_model",
-                    "--source=data/person.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
-            "cwd": "${workspaceFolder}"            
-        },           
+                "--type=yolov10",
+                "--weights=${env:HOME}/yolov10x_saved_model",
+                "--source=data/person.jpg",
+                "--labels=labels/coco.names"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
         {
             "name": "YOLO11 libtorch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/model_repository/yolo11x_libtorch/1/model.pt",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names",
-                    "--input_sizes='3,640,640'"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolo11x_libtorch/1/model.pt",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640'"
+            ],
             "cwd": "${workspaceFolder}"
-        },  
+        },
         {
             "name": "YOLO12 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/repos/yolov12/yolov12x.onnx",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/repos/yolov12/yolov12x.onnx",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },                              
+        },
         {
             "name": "YOLOv9 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/model_repository/yolov9c_onnx/1/model.onnx",
-                    "--source=data/dog.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolov9c_onnx/1/model.onnx",
+                "--source=data/dog.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },               
+        },
         {
             "name": "YOLOv10 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolov10",
-                    "--weights=${env:HOME}/model_repository/yolov10n_onnx/1/model.onnx",
-                    "--source=data/person.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"//,
-                    //"--warmup",
-                    //"--benchmark"
-                    ],
+                "--type=yolov10",
+                "--weights=${env:HOME}/model_repository/yolov10n_onnx/1/model.onnx",
+                "--source=data/person.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names" //,
+                //"--warmup",
+                //"--benchmark"
+            ],
             "cwd": "${workspaceFolder}"
-        },  
+        },
         {
             "name": "YOLOv10 openvino",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolov10",
-                    "--weights=${env:HOME}/yolov10x_openvino_model/yolov10x.bin",
-                    "--source=data/dog.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolov10",
+                "--weights=${env:HOME}/yolov10x_openvino_model/yolov10x.bin",
+                "--source=data/dog.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },         
+        },
         {
             "name": "YOLO11 onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo11",
-                    "--weights=${env:HOME}/yolo11x.onnx",
-                    "--source=data/horses.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=yolo11",
+                "--weights=${env:HOME}/yolo11x.onnx",
+                "--source=data/horses.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },                
-       {
+        },
+        {
             "name": "YOLO12s onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolo",
-                    "--weights=${env:HOME}/model_repository/yolov12s_onnx/1/model.onnx",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names",
-                    "--input_sizes='3,640,640'"
-                    ],
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolov12s_onnx/1/model.onnx",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640'"
+            ],
             "cwd": "${workspaceFolder}"
-        },          
-       {
+        },
+        {
             "name": "YOLO12 torchscript/libtorch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=yolov12",
-                    "--weights=${env:HOME}/repos/yolov12/yolov12x.torchscript",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names",
-                    "--input_sizes='3,640,640'"
-                    ],
+                "--type=yolov12",
+                "--weights=${env:HOME}/repos/yolov12/yolov12x.torchscript",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640'"
+            ],
             "cwd": "${workspaceFolder}"
-        },   
+        },
         {
             "name": "dfine onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rtdetr",
-                    "--weights=${env:HOME}/D-FINE/dfine_s_coco.onnx",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names"
-                    ],
+                "--type=rtdetr",
+                "--weights=${env:HOME}/D-FINE/dfine_s_coco.onnx",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names"
+            ],
             "cwd": "${workspaceFolder}"
-        },                   
+        },
         {
             "name": "DFINE tensorrt",
-           "type": "cppdbg",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=dfine",
-                    "--weights=model.engine",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names",
-                    "--input_sizes='3,640,640;2'" 
-                    ],
+                "--type=dfine",
+                "--weights=model.engine",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640;2'"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -366,20 +366,20 @@
                     "ignoreFailures": true
                 }
             ],
-            "miDebuggerPath": "/usr/bin/gdb"          
+            "miDebuggerPath": "/usr/bin/gdb"
         },
         {
             "name": "DEIM onnx",
-           "type": "cppdbg",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rtdetr",
-                    "--weights=${env:HOME}/model_repository/deim_dfine_hgnetv2_s_coco_onnx/1/model.onnx",
-                    "--source=data/horses.jpg", 
-                    "--labels=labels/coco.names",
-                    "--input_sizes='3,640,640;2'" 
-                    ],
+                "--type=rtdetr",
+                "--weights=${env:HOME}/model_repository/deim_dfine_hgnetv2_s_coco_onnx/1/model.onnx",
+                "--source=data/horses.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640;2'"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -392,7 +392,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "miDebuggerPath": "/usr/bin/gdb"          
+            "miDebuggerPath": "/usr/bin/gdb"
         },
         {
             "name": "deim v2 onnx",
@@ -400,72 +400,88 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rtdetr",
-                    "--weights=${env:HOME}/model_repository/deimv2_dinov3_s_coco_onnx/1/model.onnx",
-                    "--source=data/dog.jpg", 
-                    "--labels=labels/coco.names",
-                    "--input_sizes='3,640,640;2'" 
-                    ],
+                "--type=rtdetr",
+                "--weights=${env:HOME}/model_repository/deimv2_dinov3_s_coco_onnx/1/model.onnx",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640;2'"
+            ],
             "cwd": "${workspaceFolder}"
-        },         
+        },
         {
             "name": "rfdetr onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rfdetr",
-                    "--weights=${env:HOME}/model_repository/rfdetr_base/1/model.onnx",
-                    "--source=data/bus.jpg", 
-                    "--input_sizes='3,560,560'",
-                    "--labels=labels/coco-labels-91.txt"
-                    ],
+                "--type=rfdetr",
+                "--weights=${env:HOME}/model_repository/rfdetr_base/1/model.onnx",
+                "--source=data/bus.jpg",
+                "--input_sizes='3,560,560'",
+                "--labels=labels/coco-labels-91.txt"
+            ],
             "cwd": "${workspaceFolder}"
-        },    
+        },
         {
             "name": "rfdetr tensorrt",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rfdetr",
-                    "--weights=${env:HOME}/output/exports/model.engine",
-                    "--source=data/person.jpg", 
-                    "--input_sizes='3,560,560'",
-                    "--labels=labels/coco-labels-91.txt"
-                    ],
+                "--type=rfdetr",
+                "--weights=${env:HOME}/output/exports/model.engine",
+                "--source=data/person.jpg",
+                "--input_sizes='3,560,560'",
+                "--labels=labels/coco-labels-91.txt"
+            ],
             "cwd": "${workspaceFolder}"
-        },       
+        },
+        {
+            "name": "rfdetr seg tensorrt",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=rfdetr-seg",
+                "--weights=${env:HOME}/model_repository/rf-detr-seg-preview_trt/1/model.plan",
+                "--source=data/person.jpg",
+                "--input_sizes='3,432,432'",
+                "--labels=labels/coco-labels-91.txt"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
         {
             "name": "rfdetr libtorch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
             "args": [
-                    "--type=rfdetr",
-                    "--weights=${env:HOME}/repos/vision-inference/rfdetr_medium_torchscript.pt",
-                    "--source=data/test.jpg", 
-                    "--input_sizes='3,640,640'",
-                    "--labels=labels/coco-labels-91.txt"
-                    ],
+                "--type=rfdetr",
+                "--weights=${env:HOME}/repos/vision-inference/rfdetr_medium_torchscript.pt",
+                "--source=data/test.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco-labels-91.txt"
+            ],
             "cwd": "${workspaceFolder}"
-        },    
+        },
         {
             "name": "raft large onnx",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": ["--source='data/frame_001.png,data/frame_002.png'", 
-            "--weights=${env:HOME}/model_repository/raft_large_onnx/1/model.onnx",
-            "--type=raft",
-            "--input_sizes='3,520,960;3,520,960'"
+            "args": [
+                "--source='data/frame_001.png,data/frame_002.png'",
+                "--weights=${env:HOME}/model_repository/raft_large_onnx/1/model.onnx",
+                "--type=raft",
+                "--input_sizes='3,520,960;3,520,960'"
             ],
-            "environment": [{ "name": "config", "value": "Debug" }],
-            "cwd": "${workspaceFolder}" 
+            "environment": [
+                {
+                    "name": "config",
+                    "value": "Debug"
+                }
+            ],
+            "cwd": "${workspaceFolder}"
         },
-
-                         
-
     ]
 }
-               
