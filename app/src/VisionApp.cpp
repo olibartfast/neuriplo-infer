@@ -557,7 +557,7 @@ void VisionApp::processResults(const std::vector<vision_core::Result> &results, 
     case vision_core::TaskType::InstanceSegmentation: {
       for (const auto &result : results) {
         if (std::holds_alternative<vision_core::InstanceSegmentation>(result)) {
-          const auto &segmentation = std::get<vision_core::InstanceSegmentation>(result);
+          const auto& segmentation = std::get<vision_core::InstanceSegmentation>(result);
           // Draw bounding box
           cv::rectangle(image, segmentation.bbox, cv::Scalar(255, 0, 0), 3);
           draw_label(image, classes[static_cast<int>(segmentation.class_id)],
@@ -565,9 +565,15 @@ void VisionApp::processResults(const std::vector<vision_core::Result> &results, 
           
           // Overlay mask if available
           if (!segmentation.mask.empty()) {
-            cv::Mat colored_mask;
-            cv::applyColorMap(segmentation.mask, colored_mask, cv::COLORMAP_JET);
-            cv::addWeighted(image, 0.7, colored_mask, 0.3, 0, image);
+            cv::Mat mask = cv::Mat(segmentation.mask_height, segmentation.mask_width, 
+                                  CV_8UC1, const_cast<uint8_t*>(segmentation.mask_data.data()));
+            
+            cv::Mat colorMask = cv::Mat::zeros(image.size(), CV_8UC3);
+            cv::Scalar color = cv::Scalar(rand() & 255, rand() & 255, rand() & 255);
+            colorMask.setTo(color, mask);
+            
+            cv::addWeighted(image, 1, colorMask, 0.7, 0, image);
+          
           }
         }
       }

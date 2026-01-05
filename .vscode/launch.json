@@ -437,20 +437,6 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "rfdetr seg tensorrt",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": [
-                "--type=rfdetr-seg",
-                "--weights=${env:HOME}/model_repository/rf-detr-seg-preview_trt/1/model.plan",
-                "--source=data/person.jpg",
-                "--input_sizes='3,432,432'",
-                "--labels=labels/coco-labels-91.txt"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
             "name": "rfdetr libtorch",
             "type": "cppdbg",
             "request": "launch",
@@ -460,6 +446,34 @@
                 "--weights=${env:HOME}/repos/vision-inference/rfdetr_medium_torchscript.pt",
                 "--source=data/test.jpg",
                 "--input_sizes='3,640,640'",
+                "--labels=labels/coco-labels-91.txt"
+            ],
+            "cwd": "${workspaceFolder}"
+        },        
+        {
+            "name": "rfdetr seg onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=rfdetr-seg",
+                "--weights=${env:HOME}/model_repository/rf-detr-seg-preview_onnx/1/model.onnx",
+                "--source=data/person.jpg",
+                "--input_sizes='3,432,432'",
+                "--labels=labels/coco-labels-91.txt"
+            ],
+            "cwd": "${workspaceFolder}"
+        },        
+        {
+            "name": "rfdetr seg tensorrt",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=rfdetr-seg",
+                "--weights=${env:HOME}/model_repository/rf-detr-seg-preview_trt/1/model.plan",
+                "--source=data/person.jpg",
+                "--input_sizes='3,432,432'",
                 "--labels=labels/coco-labels-91.txt"
             ],
             "cwd": "${workspaceFolder}"
