@@ -2,58 +2,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "rtdetr onnx",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": [
-                "--type=rtdetr",
-                "--weights=${env:HOME}/repos/RT-DETR/rtdetr_pytorch/model.onnx",
-                "--source=data/dog.jpg",
-                "--labels=labels/coco.names"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "rtdetr ultralytics onnx",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": [
-                "--type=rtdetrul",
-                "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.onnx",
-                "--source=data/person.jpg",
-                "--labels=labels/coco.names"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "rtdetr ultralytics libtorch",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": [
-                "--type=rtdetrul",
-                "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.torchscript",
-                "--source=data/dog.jpg",
-                "--labels=labels/coco.names"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "rtdetr v2 onnx",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": [
-                "--type=rtdetr",
-                "--weights=${env:HOME}/repos/RT-DETR/rtdetrv2_pytorch/model.onnx",
-                "--source=data/horses.jpg",
-                "--labels=labels/coco.names",
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
             "name": "YOLOv4 OpenCV DNN",
             "type": "cppdbg",
             "request": "launch",
@@ -204,46 +152,6 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "YOLOv10 saved model",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": [
-                "--type=yolov10",
-                "--weights=${env:HOME}/yolov10x_saved_model",
-                "--source=data/person.jpg",
-                "--labels=labels/coco.names"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "YOLO11 libtorch",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": [
-                "--type=yolo",
-                "--weights=${env:HOME}/model_repository/yolo11x_libtorch/1/model.pt",
-                "--source=data/dog.jpg",
-                "--labels=labels/coco.names",
-                "--input_sizes='3,640,640'"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "name": "YOLO12 onnx",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
-            "args": [
-                "--type=yolo",
-                "--weights=${env:HOME}/repos/yolov12/yolov12x.onnx",
-                "--source=data/dog.jpg",
-                "--labels=labels/coco.names"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
             "name": "YOLOv9 onnx",
             "type": "cppdbg",
             "request": "launch",
@@ -256,7 +164,21 @@
                 "--labels=labels/coco.names"
             ],
             "cwd": "${workspaceFolder}"
+        },        
+        {
+            "name": "YOLOv10 saved model",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=yolov10",
+                "--weights=${env:HOME}/yolov10x_saved_model",
+                "--source=data/person.jpg",
+                "--labels=labels/coco.names"
+            ],
+            "cwd": "${workspaceFolder}"
         },
+
         {
             "name": "YOLOv10 onnx",
             "type": "cppdbg",
@@ -286,7 +208,7 @@
                 "--labels=labels/coco.names"
             ],
             "cwd": "${workspaceFolder}"
-        },
+        },        
         {
             "name": "YOLO11 onnx",
             "type": "cppdbg",
@@ -297,6 +219,33 @@
                 "--weights=${env:HOME}/yolo11x.onnx",
                 "--source=data/horses.jpg",
                 "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
+            "cwd": "${workspaceFolder}"
+        },        
+        {
+            "name": "YOLO11 libtorch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=yolo",
+                "--weights=${env:HOME}/model_repository/yolo11x_libtorch/1/model.pt",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names",
+                "--input_sizes='3,640,640'"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "YOLO12 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=yolo",
+                "--weights=${env:HOME}/repos/yolov12/yolov12x.onnx",
+                "--source=data/dog.jpg",
                 "--labels=labels/coco.names"
             ],
             "cwd": "${workspaceFolder}"
@@ -329,6 +278,58 @@
             ],
             "cwd": "${workspaceFolder}"
         },
+       {
+            "name": "rtdetr onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=rtdetr",
+                "--weights=${env:HOME}/repos/RT-DETR/rtdetr_pytorch/model.onnx",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "rtdetr ultralytics onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=rtdetrul",
+                "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.onnx",
+                "--source=data/person.jpg",
+                "--labels=labels/coco.names"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "rtdetr ultralytics libtorch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=rtdetrul",
+                "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.torchscript",
+                "--source=data/dog.jpg",
+                "--labels=labels/coco.names"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "rtdetr v2 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=rtdetr",
+                "--weights=${env:HOME}/repos/RT-DETR/rtdetrv2_pytorch/model.onnx",
+                "--source=data/horses.jpg",
+                "--labels=labels/coco.names",
+            ],
+            "cwd": "${workspaceFolder}"
+        },        
         {
             "name": "dfine onnx",
             "type": "cppdbg",
@@ -450,6 +451,8 @@
             ],
             "cwd": "${workspaceFolder}"
         },        
+
+        // Instance segmentation
         {
             "name": "rfdetr seg onnx",
             "type": "cppdbg",
@@ -478,6 +481,8 @@
             ],
             "cwd": "${workspaceFolder}"
         },
+
+        // Optical flow
         {
             "name": "raft large onnx",
             "type": "cppdbg",
