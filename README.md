@@ -10,7 +10,7 @@ C++ framework for computer vision inference, supporting multiple vision tasks an
 ## Key Features
 
 - **Multiple Vision Tasks**: Object Detection, Classification, Instance Segmentation, Optical Flow via [vision-core library](https://github.com/olibartfast/vision-core/)
-- **Wide Model Support**: YOLOv4-v12, RT-DETR variants, ResNet, ViT, TimeSformer, RAFT, and more
+- **Wide Model Support**: YOLOv4-v12, RT-DETR variants(v1/v2/v4), ResNet, ViT, RAFT, and more
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
