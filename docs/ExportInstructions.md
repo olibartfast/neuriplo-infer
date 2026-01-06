@@ -2,7 +2,7 @@
 
 Refer to:
 * [Object Detection](https://github.com/olibartfast/vision-core/blob/master/export/detection/ObjectDetection.md) 
-* [Classification](https://github.com/olibartfast/vision-core/blob/master/export/detection/Classification.md)
+* [Classification](https://github.com/olibartfast/vision-core/blob/master/export/classification/Classification.md)
 
 ## Note
 The opencv-dnn module is configured to load ONNX models(not dynamic axis) and .weights(i.e. darknet format) for YOLOv4.
