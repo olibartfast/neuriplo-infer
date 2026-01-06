@@ -79,6 +79,7 @@ For the selected inference backends, set up the required dependencies first:
 ## Building
 ```bash
 mkdir build && cd build
+# <backend> must be one between OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW
 cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
