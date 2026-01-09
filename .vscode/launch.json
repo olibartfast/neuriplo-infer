@@ -502,5 +502,24 @@
             ],
             "cwd": "${workspaceFolder}"
         },
+        {
+            "name": "raft large trt",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--source='data/frame_001.png,data/frame_002.png'",
+                "--weights=${env:HOME}/model_repository/raft_large_trt/1/model.plan",
+                "--type=raft",
+                "--input_sizes='3,520,960;3,520,960'"
+            ],
+            "environment": [
+                {
+                    "name": "config",
+                    "value": "Debug"
+                }
+            ],
+            "cwd": "${workspaceFolder}"
+        },        
     ]
 }
