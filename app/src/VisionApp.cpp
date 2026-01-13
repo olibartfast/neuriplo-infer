@@ -14,6 +14,43 @@ std::vector<vision_core::Tensor> convertToTensors(const T1& outputs, const T2& s
     }
     return tensors;
 }
+
+// Helper to convert preprocessed data to cv::Mat
+std::vector<cv::Mat> convertPreprocessedToMats(
+    const std::vector<std::vector<uint8_t>>& preprocessed,
+    const std::vector<std::vector<int64_t>>& input_sizes) {
+    
+    std::vector<cv::Mat> input_mats;
+    for (size_t i = 0; i < preprocessed.size(); ++i) {
+        if (i >= input_sizes.size() || input_sizes[i].size() < 3) {
+            throw std::runtime_error("Invalid input size configuration");
+        }
+        
+        // Extract dimensions (assuming CHW or HWC format)
+        int channels = static_cast<int>(input_sizes[i][0]);
+        int height = static_cast<int>(input_sizes[i][1]);
+        int width = static_cast<int>(input_sizes[i][2]);
+        
+        // Check if dimensions suggest HWC instead of CHW
+        if (channels > 3 && (input_sizes[i][0] == 1 || input_sizes[i][0] == 3)) {
+            // Likely CHW, convert to HWC
+            height = static_cast<int>(input_sizes[i][1]);
+            width = static_cast<int>(input_sizes[i][2]);
+            channels = static_cast<int>(input_sizes[i][0]);
+        } else if (input_sizes[i][2] == 1 || input_sizes[i][2] == 3) {
+            // Likely HWC
+            height = static_cast<int>(input_sizes[i][0]);
+            width = static_cast<int>(input_sizes[i][1]);
+            channels = static_cast<int>(input_sizes[i][2]);
+        }
+        
+        // Create cv::Mat in HWC format
+        cv::Mat input_mat(height, width, CV_8UC(channels), 
+                         const_cast<uint8_t*>(preprocessed[i].data()));
+        input_mats.push_back(input_mat.clone()); // Clone to ensure data ownership
+    }
+    return input_mats;
+}
 }
 
 VisionApp::VisionApp(const AppConfig &config)
@@ -171,20 +208,11 @@ void VisionApp::warmup_gpu(const cv::Mat &image) {
       // Use vision-core preprocessing
       const auto preprocessed = task->preprocess({image});
 
-      // Get input dimensions from model metadata
-      const auto inference_metadata = engine->get_inference_metadata();
-      const auto &first_input = inference_metadata.getInputs()[0];
+      // Convert preprocessed data to cv::Mat (HWC format)
+      std::vector<cv::Mat> input_mats = convertPreprocessedToMats(preprocessed, config.input_sizes);
 
-      // Extract actual dimensions from model shape
-      auto [batch, channels, height, width] =
-          extractInputDims(first_input.shape);
-
-      // Create cv::Mat from preprocessed data with correct shape
-      cv::Mat input_blob(std::vector<int>{batch, channels, height, width},
-                         CV_32F);
-      std::memcpy(input_blob.data, preprocessed[0].data(),
-                  preprocessed[0].size());
-      const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
+      // Pass cv::Mat directly - get_infer_results will handle HWC -> BCHW conversion
+      const auto [outputs, shapes] = engine->get_infer_results(input_mats);
       auto tensors = convertToTensors(outputs, shapes);
       auto results = task->postprocess(image.size(), tensors);
       // Process results for warmup (no need to visualize)
@@ -201,27 +229,20 @@ void VisionApp::benchmark(const cv::Mat &image) {
     double total_time = 0.0;
     for (int i = 0; i < config.benchmark_iterations; ++i) {
       auto start = std::chrono::steady_clock::now();
+      
       // Use vision-core preprocessing
       const auto preprocessed = task->preprocess({image});
 
-      // Get input dimensions from model metadata
-      const auto inference_metadata = engine->get_inference_metadata();
-      const auto &first_input = inference_metadata.getInputs()[0];
+      // Convert preprocessed data to cv::Mat (HWC format)
+      std::vector<cv::Mat> input_mats = convertPreprocessedToMats(preprocessed, config.input_sizes);
 
-      // Extract actual dimensions from model shape
-      auto [batch, channels, height, width] =
-          extractInputDims(first_input.shape);
-
-      // Create cv::Mat from preprocessed data with correct shape
-      cv::Mat input_blob(std::vector<int>{batch, channels, height, width},
-                         CV_32F);
-      std::memcpy(input_blob.data, preprocessed[0].data(),
-                  preprocessed[0].size());
-      const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
+      // Pass cv::Mat directly - get_infer_results will handle HWC -> BCHW conversion
+      const auto [outputs, shapes] = engine->get_infer_results(input_mats);
       auto tensors = convertToTensors(outputs, shapes);
       auto results = task->postprocess(image.size(), tensors);
       // Process results for benchmark (no need to visualize)
       (void)results; // Suppress unused variable warning
+      
       auto end = std::chrono::steady_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -278,34 +299,26 @@ void VisionApp::processImage(const std::string &source) {
       LOG(INFO) << "Warmup...";
       warmup_gpu(image); // Warmup before inference
     }
+    
     auto start = std::chrono::steady_clock::now();
-    // Get input dimensions from model metadata
-    const auto inference_metadata = engine->get_inference_metadata();
-    const auto &first_input = inference_metadata.getInputs()[0];
-
-    // Extract actual dimensions from model shape
-    auto [batch, channels, height, width] = extractInputDims(first_input.shape);
-
-    LOG(INFO) << "Model input shape: " << batch << "x" << channels << "x"
-              << height << "x" << width;
+    
     LOG(INFO) << "Image dimensions: " << image.rows << "x" << image.cols << "x"
               << image.channels();
 
     // Use vision-core preprocessing
     const auto preprocessed = task->preprocess({image});
 
-    // Create cv::Mat from preprocessed data with correct shape
-    std::vector<int> shape_dims = {batch, channels, height, width};
-    cv::Mat input_blob(shape_dims.size(), shape_dims.data(), CV_32F);
-    size_t expected_bytes = input_blob.total() * input_blob.elemSize();
-    if (preprocessed[0].size() != expected_bytes) {
-      LOG(ERROR) << "Size mismatch: expected " << expected_bytes << " bytes, got " << preprocessed[0].size() << " bytes";
-      throw std::runtime_error("Preprocessed data size mismatch");
-    }
-    std::memcpy(input_blob.data, preprocessed[0].data(), preprocessed[0].size());
-    const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
+    // Convert preprocessed data to cv::Mat (HWC format)
+    std::vector<cv::Mat> input_mats = convertPreprocessedToMats(preprocessed, config.input_sizes);
+
+    LOG(INFO) << "Input mat dimensions: " << input_mats[0].rows << "x" 
+              << input_mats[0].cols << "x" << input_mats[0].channels();
+
+    // Pass cv::Mat directly - get_infer_results will handle HWC -> BCHW conversion
+    const auto [outputs, shapes] = engine->get_infer_results(input_mats);
     auto tensors = convertToTensors(outputs, shapes);
     auto results = task->postprocess(image.size(), tensors);
+    
     auto end = std::chrono::steady_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -315,6 +328,7 @@ void VisionApp::processImage(const std::string &source) {
     // Process results based on task type
     processResults(results, image);
     cv::imwrite("data/processed.png", image);
+    
     if (config.enable_benchmark) {
       benchmark(image); // Benchmark
     }
@@ -337,25 +351,18 @@ void VisionApp::processVideo(const std::string &source) {
     cv::Mat frame;
     while (videoInterface->readFrame(frame)) {
       auto start = std::chrono::steady_clock::now();
+      
       // Use vision-core preprocessing
       const auto preprocessed = task->preprocess({frame});
 
-      // Get input dimensions from model metadata
-      const auto inference_metadata = engine->get_inference_metadata();
-      const auto &first_input = inference_metadata.getInputs()[0];
+      // Convert preprocessed data to cv::Mat (HWC format)
+      std::vector<cv::Mat> input_mats = convertPreprocessedToMats(preprocessed, config.input_sizes);
 
-      // Extract actual dimensions from model shape
-      auto [batch, channels, height, width] =
-          extractInputDims(first_input.shape);
-
-      // Create cv::Mat from preprocessed data with correct shape
-      cv::Mat input_blob(std::vector<int>{batch, channels, height, width},
-                         CV_32F);
-      std::memcpy(input_blob.data, preprocessed[0].data(),
-                  preprocessed[0].size());
-      const auto [outputs, shapes] = engine->get_infer_results(std::vector<cv::Mat>{input_blob});
+      // Pass cv::Mat directly - get_infer_results will handle HWC -> BCHW conversion
+      const auto [outputs, shapes] = engine->get_infer_results(input_mats);
       auto tensors = convertToTensors(outputs, shapes);
       auto results = task->postprocess(frame.size(), tensors);
+      
       auto end = std::chrono::steady_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -385,7 +392,6 @@ void VisionApp::processVideo(const std::string &source) {
 
 void VisionApp::processOpticalFlow() {
   // Process optical flow with multiple input tensors
-  // Now supported with updated neuriplo library
   
   LOG(INFO) << "Processing optical flow for image pairs";
   
@@ -408,58 +414,19 @@ void VisionApp::processOpticalFlow() {
 
     auto start = std::chrono::steady_clock::now();
     
-    // Get input dimensions from model metadata
-    const auto inference_metadata = engine->get_inference_metadata();
-    const auto inputs = inference_metadata.getInputs();
-    
     // Use vision-core preprocessing
     const auto preprocessed = task->preprocess(images);
     
-    // Create input tensors for both frames
-    std::vector<cv::Mat> input_tensors;
+    // Convert preprocessed data to cv::Mat (HWC format)
+    std::vector<cv::Mat> input_mats = convertPreprocessedToMats(preprocessed, config.input_sizes);
     
-    for (size_t i = 0; i < std::min(inputs.size(), preprocessed.size()); i++) {
-      // Use provided input sizes if available, otherwise extract from model metadata
-      std::vector<int> dims;
-      if (i < config.input_sizes.size() && !config.input_sizes[i].empty()) {
-        // Use provided input sizes: convert int64_t to int and add batch dimension
-        dims = {1}; // batch size
-        for (auto dim : config.input_sizes[i]) {
-          dims.push_back(static_cast<int>(dim));
-        }
-      } else {
-        // Fallback to model metadata
-        auto [batch, channels, height, width] = extractInputDims(inputs[i].shape);
-        dims = {batch, channels, height, width};
-      }
-      
-      LOG(INFO) << "Input " << i << " dimensions: " << dims[0] << "x" << dims[1] << "x" << dims[2] << "x" << dims[3];
-      
-      // Calculate expected total size
-      size_t expected_size = 1;
-      for (int dim : dims) {
-        expected_size *= dim;
-      }
-      expected_size *= sizeof(float); // CV_32F uses float
-      
-      LOG(INFO) << "Preprocessed data size: " << preprocessed[i].size() << " bytes, expected: " << expected_size << " bytes";
-      
-      if (preprocessed[i].size() != expected_size) {
-        LOG(WARNING) << "Data size mismatch! Using available data size for tensor creation";
-        // Calculate what dimensions we can actually support
-        size_t float_count = preprocessed[i].size() / sizeof(float);
-        LOG(INFO) << "Available float elements: " << float_count;
-      }
-      
-      // Create cv::Mat from preprocessed data with correct shape
-      cv::Mat input_blob(dims, CV_32F);
-      size_t copy_size = std::min(preprocessed[i].size(), static_cast<size_t>(input_blob.total() * input_blob.elemSize()));
-      std::memcpy(input_blob.data, preprocessed[i].data(), copy_size);
-      input_tensors.push_back(input_blob);
+    for (size_t j = 0; j < input_mats.size(); j++) {
+      LOG(INFO) << "Input " << j << " dimensions: " << input_mats[j].rows << "x" 
+                << input_mats[j].cols << "x" << input_mats[j].channels();
     }
     
-    // Run inference with multiple input tensors
-    auto [infer_results, infer_shapes] = engine->get_infer_results(input_tensors);
+    // Pass cv::Mat directly - get_infer_results will handle HWC -> BCHW conversion
+    auto [infer_results, infer_shapes] = engine->get_infer_results(input_mats);
     
     // Use vision-core postprocessing
     auto tensors = convertToTensors(infer_results, infer_shapes);
