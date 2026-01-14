@@ -9,7 +9,7 @@ C++ framework for [real-time object detection](https://leaderboard.roboflow.com/
 
 ## Key Features
 
-- **Multiple Object Detection Models**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (YOLOv4-v12, RT-DETR v1/v2/v4, D-FINE, DEIM v1/v2, RF-DETR)
+- **Multiple Object Detection Models**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (YOLOv4-v12, YOLO26, RT-DETR v1/v2/v4, D-FINE, DEIM v1/v2, RF-DETR)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
@@ -137,6 +137,7 @@ cmake -DENABLE_APP_TESTS=ON ..
   - `yolov4`: YOLOv4/YOLOv4-tiny models
   - `yolo`: YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLO11, YOLOv12 models
   - `yolov10`: YOLOv10 models (different postprocessing)
+  - `yolo26`: YOLOv10 models (different postprocessing, i.e. same of yolov10)
   - `yolonas`: YOLO-NAS models
   - `rtdetr`: RT-DETR, RT-DETRv2, RT-DETRv4, D-FINE, DEIM, DEIMv2 models
   - `rtdetrul`: RT-DETR Ultralytics implementation
