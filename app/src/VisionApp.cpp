@@ -54,11 +54,15 @@ VisionApp::VisionApp(const AppConfig &config)
     for (auto dim : config.input_sizes[i]) {
      shape.push_back(dim);
     }
+    // Normalize 3D shape (C,H,W) to 4D (1,C,H,W) for CLI inputs
+    if (shape.size() == 3) {
+     shape.insert(shape.begin(), config.batch_size); 
+    }
    } else {
     shape = input.shape;
     // Normalize 3D shape (C,H,W) to 4D (1,C,H,W) to satisfy vision-core
     if (shape.size() == 3) {
-     shape.insert(shape.begin(), 1); // Add batch dim
+     shape.insert(shape.begin(), config.batch_size); // Add batch dim
     }
    }
     
