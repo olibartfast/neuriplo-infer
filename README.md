@@ -137,7 +137,7 @@ cmake -DENABLE_APP_TESTS=ON ..
   - `yolov4`: YOLOv4/YOLOv4-tiny models
   - `yolo`: YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLO11, YOLOv12 models
   - `yolov10`: YOLOv10 models (different postprocessing)
-  - `yolo26`: YOLOv10 models (different postprocessing, i.e. same of yolov10)
+  - `yolo26`: YOLO26 models (different postprocessing, i.e. same of yolov10)
   - `yolonas`: YOLO-NAS models
   - `rtdetr`: RT-DETR, RT-DETRv2, RT-DETRv4, D-FINE, DEIM, DEIMv2 models
   - `rtdetrul`: RT-DETR Ultralytics implementation
