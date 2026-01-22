@@ -5,7 +5,7 @@
 
 C++ framework for computer vision inference, supporting multiple vision tasks and deep learning backends.
 
-> 🚧 Status: Under Development — expect frequent updates.
+> 🚧 Status: Under Development — expect frequent updates. Once the `vision-inference` feature branch is completed, the repository and project references will be renamed accordingly.
 
 ## Key Features
 
