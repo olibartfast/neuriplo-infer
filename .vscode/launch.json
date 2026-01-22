@@ -331,6 +331,20 @@
             "cwd": "${workspaceFolder}"
         },        
         {
+            "name": "YOLO26 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "args": [
+                "--type=yolo26",
+                "--weights=${env:HOME}/yolo26x.onnx",
+                "--source=data/bus.jpg",
+                "--input_sizes='3,640,640'",
+                "--labels=labels/coco.names"
+            ],
+            "cwd": "${workspaceFolder}"
+        },        
+        {
             "name": "dfine onnx",
             "type": "cppdbg",
             "request": "launch",
