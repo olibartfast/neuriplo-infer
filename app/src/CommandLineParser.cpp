@@ -5,7 +5,7 @@
 
 const std::string CommandLineParser::params =
     "{ help h   |   | print help message }"
-    "{ type     |  yolov10 | Object Detection: yolo, yolov4, yolov7e2e, yolov10, yolonas, rtdetr, rtdetrul, rfdetr | Classification: torchvisionclassifier, tensorflowclassifier, vitclassifier, timesformer | Instance Segmentation: yoloseg | Optical Flow: raft }"
+    "{ type     |  yolov10 | Object Detection: yolo, yolov4, yolov7e2e, yolov10, yolonas, rtdetr, rtdetrul, rfdetr | Classification: torchvisionclassifier, tensorflowclassifier, vitclassifier, timesformer | Instance Segmentation: yoloseg | Optical Flow: raft | Pose Estimation: vitpose }"
     "{ source s   | <none>  | path to image or video source}"
     "{ labels lb  |<none>  | path to class labels}"
     "{ weights w  | <none>  | path to models weights}"

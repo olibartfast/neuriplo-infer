@@ -519,6 +519,8 @@ vision_core::TaskType VisionApp::getTaskType(const std::string& model_type) {
   return vision_core::TaskType::InstanceSegmentation;
  } else if (normalized == "raft") {
   return vision_core::TaskType::OpticalFlow;
+ } else if (normalized == "vitpose") {
+  return vision_core::TaskType::PoseEstimation;
  } else {
   return vision_core::TaskType::Detection; // Default for YOLO, RTDETR, etc.
  }
@@ -603,6 +605,51 @@ void VisionApp::processResults(const std::vector<vision_core::Result> &results, 
      std::string flow_text = "Max displacement: " + std::to_string(flow.max_displacement);
      cv::putText(image, flow_text, cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX,
            1, cv::Scalar(255, 255, 255), 2);
+    }
+   }
+   break;
+  }
+  case vision_core::TaskType::PoseEstimation: {
+   // COCO skeleton connections (pairs of keypoint indices)
+   const std::vector<std::pair<int, int>> skeleton = {
+    {0, 1}, {0, 2}, {1, 3}, {2, 4},           // Head
+    {5, 6}, {5, 7}, {7, 9}, {6, 8}, {8, 10},  // Arms
+    {5, 11}, {6, 12}, {11, 12},               // Torso
+    {11, 13}, {13, 15}, {12, 14}, {14, 16}    // Legs
+   };
+
+   for (const auto &result : results) {
+    if (std::holds_alternative<vision_core::PoseEstimation>(result)) {
+     const auto &pose = std::get<vision_core::PoseEstimation>(result);
+
+     // Draw skeleton connections
+     for (const auto &[i, j] : skeleton) {
+      if (i < pose.keypoints.size() && j < pose.keypoints.size()) {
+       const auto &kp1 = pose.keypoints[i];
+       const auto &kp2 = pose.keypoints[j];
+       if (kp1.confidence > config.confidenceThreshold &&
+         kp2.confidence > config.confidenceThreshold) {
+        cv::line(image,
+             cv::Point(static_cast<int>(kp1.x), static_cast<int>(kp1.y)),
+             cv::Point(static_cast<int>(kp2.x), static_cast<int>(kp2.y)),
+             cv::Scalar(0, 255, 255), 2);
+       }
+      }
+     }
+
+     // Draw keypoints
+     for (const auto &kp : pose.keypoints) {
+      if (kp.confidence > config.confidenceThreshold) {
+       cv::circle(image,
+            cv::Point(static_cast<int>(kp.x), static_cast<int>(kp.y)),
+            5, cv::Scalar(0, 255, 0), -1);
+      }
+     }
+
+     // Display pose score
+     std::string score_text = "Pose score: " + std::to_string(pose.score);
+     cv::putText(image, score_text, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX,
+           0.8, cv::Scalar(0, 255, 255), 2);
     }
    }
    break;
