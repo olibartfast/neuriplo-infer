@@ -149,7 +149,7 @@ void VisionApp::run() {
   if (hasImages) {
    if (config.sources.size() == 1) {
     processImage(config.sources[0]);
-   } else if (config.sources.size() >= 2 && 
+   } else if (config.sources.size() >= 2 &&
          getTaskType(config.detectorType) == vision_core::TaskType::OpticalFlow) {
     processOpticalFlow();
    } else {
@@ -161,7 +161,12 @@ void VisionApp::run() {
     LOG(ERROR) << "Video processing requires single source";
     throw std::runtime_error("Video processing requires single source");
    }
-   processVideo(config.sources[0]);
+   // Use video classification processing for temporal models
+   if (getTaskType(config.detectorType) == vision_core::TaskType::VideoClassification) {
+    processVideoClassification(config.sources[0]);
+   } else {
+    processVideo(config.sources[0]);
+   }
   }
  } catch (const std::exception &e) {
   LOG(ERROR) << "Error: " << e.what();
@@ -349,6 +354,82 @@ void VisionApp::processVideo(const std::string &source) {
  }
 }
 
+int VisionApp::getRequiredFrameCount() const {
+ // Use CLI override if provided, otherwise get from task
+ if (config.num_frames > 0) {
+  return config.num_frames;
+ }
+ return task ? task->getRequiredFrames() : 1;
+}
+
+void VisionApp::processVideoClassification(const std::string &source) {
+ try {
+  std::unique_ptr<VideoCaptureInterface> videoInterface =
+    createVideoInterface();
+
+  if (!videoInterface->initialize(source)) {
+   throw std::runtime_error(
+     "Failed to initialize video capture for input: " + source);
+  }
+
+  const int requiredFrames = getRequiredFrameCount();
+  LOG(INFO) << "Video classification mode: accumulating " << requiredFrames << " frames";
+
+  cv::Mat frame;
+  frameBuffer.clear();
+  frameBuffer.reserve(requiredFrames);
+
+  while (videoInterface->readFrame(frame)) {
+   // Accumulate frames
+   frameBuffer.push_back(frame.clone());
+
+   // Process when we have enough frames
+   if (static_cast<int>(frameBuffer.size()) >= requiredFrames) {
+    auto start = std::chrono::steady_clock::now();
+
+    // Use vision-core preprocessing with accumulated frames
+    const auto preprocessed = task->preprocess(frameBuffer);
+
+    // Pass preprocessed data directly to engine
+    const auto [outputs, shapes] = engine->get_infer_results(preprocessed);
+
+    auto tensors = convertToTensors(outputs, shapes);
+    auto results = task->postprocess(frame.size(), tensors);
+    auto end = std::chrono::steady_clock::now();
+    auto duration =
+      std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+        .count();
+    double fps = 1000.0 / duration;
+    std::string fpsText = "FPS: " + std::to_string(fps);
+
+    // Display on the most recent frame
+    cv::Mat displayFrame = frameBuffer.back().clone();
+    cv::putText(displayFrame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX,
+          1, cv::Scalar(0, 255, 0), 2);
+
+    // Process results based on task type
+    processResults(results, displayFrame);
+
+    cv::imshow("opencv feed", displayFrame);
+
+    // Use sliding window: remove oldest frame, keep the rest
+    frameBuffer.erase(frameBuffer.begin());
+   }
+
+   char key = cv::waitKey(1);
+   if (key == 27 || key == 'q') {
+    LOG(INFO) << "Exit requested";
+    break;
+   }
+  }
+
+  videoInterface->release();
+ } catch (const std::exception &e) {
+  LOG(ERROR) << "Error: " << e.what();
+  throw;
+ }
+}
+
 void VisionApp::processOpticalFlow() {
  // Process optical flow with multiple input tensors
  // Now supported with updated neuriplo library
@@ -426,9 +507,13 @@ VisionApp::extractInputDims(const std::vector<int64_t> &shape) {
 vision_core::TaskType VisionApp::getTaskType(const std::string& model_type) {
  std::string normalized = model_type;
  std::transform(normalized.begin(), normalized.end(), normalized.begin(), ::tolower);
-  
- if (normalized == "torchvisionclassifier" || normalized == "tensorflowclassifier" || 
-   normalized == "vitclassifier" || normalized == "timesformer") {
+
+ // Video classification models (temporal, multi-frame)
+ if (normalized == "timesformer" || normalized == "videomae" || normalized == "vivit") {
+  return vision_core::TaskType::VideoClassification;
+ // Single-frame classification models
+ } else if (normalized == "torchvisionclassifier" || normalized == "tensorflowclassifier" ||
+       normalized == "vitclassifier") {
   return vision_core::TaskType::Classification;
  } else if (normalized.find("seg") != std::string::npos || normalized == "yoloseg") {
   return vision_core::TaskType::InstanceSegmentation;
@@ -460,12 +545,21 @@ void VisionApp::processResults(const std::vector<vision_core::Result> &results, 
     if (std::holds_alternative<vision_core::Classification>(result)) {
      const auto &classification = std::get<vision_core::Classification>(result);
      if (classification.class_id >= 0 && classification.class_id < classes.size()) {
-      result_text += classes[static_cast<int>(classification.class_id)] + 
+      result_text += classes[static_cast<int>(classification.class_id)] +
              " (" + std::to_string(classification.class_confidence) + ")";
      }
-    } else if (std::holds_alternative<vision_core::VideoClassification>(result)) {
+    }
+   }
+   cv::putText(image, result_text, cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX,
+         1, cv::Scalar(0, 255, 255), 2);
+   break;
+  }
+  case vision_core::TaskType::VideoClassification: {
+   std::string result_text = "Action: ";
+   for (const auto &result : results) {
+    if (std::holds_alternative<vision_core::VideoClassification>(result)) {
      const auto &video_classification = std::get<vision_core::VideoClassification>(result);
-     result_text += video_classification.action_label + 
+     result_text += video_classification.action_label +
             " (" + std::to_string(video_classification.class_confidence) + ")";
     }
    }

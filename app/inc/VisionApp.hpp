@@ -23,14 +23,17 @@ private:
   void setupLogging(const std::string &log_folder = "./logs");
   void processImage(const std::string &source);
   void processVideo(const std::string &source);
+  void processVideoClassification(const std::string &source);
   void processOpticalFlow();
   void processResults(const std::vector<vision_core::Result> &results, cv::Mat &image);
   vision_core::TaskType getTaskType(const std::string& model_type);
   std::tuple<int, int, int, int>
   extractInputDims(const std::vector<int64_t> &shape);
+  int getRequiredFrameCount() const;
 
   AppConfig config;
   std::unique_ptr<InferenceInterface> engine;
   std::unique_ptr<vision_core::TaskInterface> task;
   std::vector<std::string> classes;
+  std::vector<cv::Mat> frameBuffer;  // Buffer for video classification frames
 };

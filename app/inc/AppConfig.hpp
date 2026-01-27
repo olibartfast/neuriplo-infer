@@ -27,5 +27,6 @@ struct AppConfig {
     float confidenceThreshold;
     int batch_size;
     std::vector<std::vector<int64_t>> input_sizes;
+    int num_frames{0};  // Number of frames for video classification (0 = use model default)
 };
 

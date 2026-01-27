@@ -3,7 +3,7 @@
 #include <glog/logging.h>
 #include "utils.hpp"
 
-const std::string CommandLineParser::params = 
+const std::string CommandLineParser::params =
     "{ help h   |   | print help message }"
     "{ type     |  yolov10 | Object Detection: yolo, yolov4, yolov7e2e, yolov10, yolonas, rtdetr, rtdetrul, rfdetr | Classification: torchvisionclassifier, tensorflowclassifier, vitclassifier, timesformer | Instance Segmentation: yoloseg | Optical Flow: raft }"
     "{ source s   | <none>  | path to image or video source}"
@@ -15,7 +15,8 @@ const std::string CommandLineParser::params =
     "{ input_sizes is | | Input sizes for each model input. Format: CHW;CHW;... (e.g., '3,224,224' for single input or '3,224,224;3,224,224' for two inputs, '3,640,640;2' for rtdetr/dfine models) }"
     "{ warmup     | false  | enable GPU warmup}"
     "{ benchmark  | false  | enable benchmarking}"
-    "{ iterations | 10     | number of iterations for benchmarking}";
+    "{ iterations | 10     | number of iterations for benchmarking}"
+    "{ num_frames nf | 0   | number of frames for video classification (0 = use model default, e.g., 16 for VideoMAE)}";
 
 AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     cv::CommandLineParser parser(argc, argv, params);
@@ -63,6 +64,12 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     }    
     // copy input sizes to config
     config.input_sizes = input_sizes;
+
+    // Parse num_frames for video classification
+    config.num_frames = parser.get<int>("num_frames");
+    if (config.num_frames > 0) {
+        LOG(INFO) << "Using " << config.num_frames << " frames for video classification";
+    }
 
     return config;
 }
