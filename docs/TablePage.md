@@ -25,3 +25,25 @@ The table represents a specific model and includes the following details:
 | d-fine models                  | rtdetr     | x          | o        | x        | o            | x        | x             |
 | deim v1/v2 models              | rtdetr     | x          | o        | x        | o            | x        | x             |
 | rf-detr models                 | rfdetr     | x          | o        | o        | o            | x        | x             |
+
+### Classification
+
+| Model                                         | Model Type            | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
+|-----------------------------------------------|-----------------------|------------|----------|----------|--------------|----------|---------------|
+| TorchVision Models (ResNet, EfficientNet...)  | torchvisionclassifier | o          | o        | o        | o            | o        | x             |
+| TensorFlow Models (MobileNet, Inception...)   | tensorflowclassifier  | x          | x        | x        | x            | x        | o             |
+| Vision Transformers (ViT, Swin...)            | vitclassifier         | x          | o        | o        | o            | x        | x             |
+| Video Transformers (TimeSformer)              | timesformer           | x          | x        | o        | o            | x        | x             |
+
+### Instance Segmentation
+
+| Model                               | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
+|-------------------------------------|------------|------------|----------|----------|--------------|----------|---------------|
+| YOLO Segmentation (v5, v8, v11)     | yoloseg    | x          | o        | o        | o            | o        | x             |
+| RF-DETR Segmentation                | rfdetr-seg | x          | o        | o        | o            | x        | x             |
+
+### Optical Flow
+
+| Model | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
+|-------|------------|------------|----------|----------|--------------|----------|---------------|
+| RAFT  | raft       | x          | o        | o        | o            | x        | x             |
