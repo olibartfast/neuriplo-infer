@@ -5,8 +5,7 @@
 
 C++ framework for computer vision inference, supporting multiple vision tasks and deep learning backends.
 
-> 🚧 Status: Under Development — expect frequent updates. Once the `vision-inference` feature branch is completed, the repository and project references will be renamed accordingly.
-
+> 🚧 Status: Under Development — expect frequent updates.
 ## Key Features
 
 - **Multiple Computer Vision Tasks**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (Object Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation)
