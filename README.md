@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ framework for computer vision inference, supporting multiple vision tasks and deep learning backends.
+C++ application for computer vision inference, supporting multiple vision tasks and deep learning backends.
 
 > 🚧 Status: Under Development — expect frequent updates.
 ## Key Features
