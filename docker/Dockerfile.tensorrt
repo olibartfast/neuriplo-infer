@@ -1,8 +1,8 @@
 
 # Stage 1: Cuda dependencies
 ARG UBUNTU_VERSION=24.04
-ARG NGC_CUDA_VERSION=12.6.3
-FROM nvcr.io/nvidia/cuda:${NGC_CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} as cuda_dependencies
+ARG NGC_CUDA_VERSION=13.0.0
+FROM nvcr.io/nvidia/cuda:${NGC_CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS cuda_dependencies
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -25,12 +25,12 @@ ARG BACKEND=TENSORRT
 
 # TensorRT version configuration
 ARG TRT_MAJOR=10
-ARG TRT_MINOR=.7
-ARG TRT_PATCH=.0
-ARG TRT_BUILD=.23
+ARG TRT_MINOR=.13
+ARG TRT_PATCH=.3
+ARG TRT_BUILD=.9
 ARG TRT_VERSION=${TRT_MAJOR}${TRT_MINOR}${TRT_PATCH}${TRT_BUILD}
-ARG TRT_CUDA_VERSION=12.6
-ARG TENSORRT_DIR=/opt/tensorrt
+ARG TRT_CUDA_VERSION=13.0
+ARG TENSORRT_DIR=/opt/TensorRT-${TRT_VERSION}
 
 # Download and install TensorRT
 RUN wget --tries=3 --retry-connrefused \
@@ -39,23 +39,32 @@ RUN wget --tries=3 --retry-connrefused \
     && rm TensorRT-${TRT_VERSION}.Linux.x86_64-gnu.cuda-${TRT_CUDA_VERSION}.tar.gz
 
 # Set TensorRT environment variables
-ENV LD_LIBRARY_PATH=/opt/TensorRT-${TRT_VERSION}/lib:${LD_LIBRARY_PATH}
-ENV LIBRARY_PATH=/opt/TensorRT-${TRT_VERSION}/lib:${LIBRARY_PATH}
-ENV CPATH=/opt/TensorRT-${TRT_VERSION}/include:${CPATH}
-
-# Set TensorRT environment variables
+ENV TENSORRT_DIR=${TENSORRT_DIR}
 ENV LD_LIBRARY_PATH=${TENSORRT_DIR}/lib:${LD_LIBRARY_PATH}
 ENV LIBRARY_PATH=${TENSORRT_DIR}/lib:${LIBRARY_PATH}
-ENV PATH=${TENSORRT_DIR}/include:${PATH}
+ENV CPATH=${TENSORRT_DIR}/include
+ENV PATH=${TENSORRT_DIR}/bin:${PATH}
+
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder
+
+ARG TRT_MAJOR=10
+ARG TRT_MINOR=.13
+ARG TRT_PATCH=.3
+ARG TRT_BUILD=.9
+ARG TRT_VERSION=${TRT_MAJOR}${TRT_MINOR}${TRT_PATCH}${TRT_BUILD}
+ARG BACKEND=TENSORRT
 
 WORKDIR /app
 
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DTRT_VERSION=$TRT_VERSION -DTENSORRT_DIR=$TENSORRT_DIR && \
+RUN cmake -Bbuild -H. \
+    -DDEFAULT_BACKEND=${BACKEND} \
+    -DTRT_VERSION=${TRT_VERSION} \
+    -DTENSORRT_DIR=${TENSORRT_DIR} \
+    -DBUILD_TESTS=OFF && \
     cmake --build build --config Release
 
 # Stage 4: Final image
@@ -67,7 +76,6 @@ WORKDIR /app
 COPY --from=builder /app/build/app/vision-inference /app/vision-inference
 
 # Copy the shared libraries
-COPY --from=builder /app/build/detectors/libdetectors.so /app/
 COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
