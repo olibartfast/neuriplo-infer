@@ -60,7 +60,8 @@ jobs:
           sudo apt-get install -y \
             cmake build-essential git wget \
             libopencv-dev \
-            libgoogle-glog-dev
+            libgoogle-glog-dev \
+            libgtest-dev
 
       - name: Cache ONNX Runtime download
         uses: actions/cache@v4
