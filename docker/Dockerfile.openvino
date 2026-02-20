@@ -1,7 +1,7 @@
 # docker build --rm -t vision-inference:openvino -f Dockerfiles/Dockerfile.openvino .
 ARG OPENVINO_VERSION=2024.0.0
 
-# Build stage
+# Stage 1: Build
 FROM openvino/ubuntu20_runtime:${OPENVINO_VERSION} AS builder
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -13,7 +13,7 @@ USER root
 
 # Install common dependencies
 RUN apt-get update \
-    && apt-get -y install build-essential cppcheck valgrind clang lldb llvm gdb libopencv-dev  libgoogle-glog-dev wget \    
+    && apt-get -y install build-essential cppcheck valgrind clang lldb llvm gdb libopencv-dev libgoogle-glog-dev wget \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Install additional OS packages.
@@ -28,8 +28,8 @@ RUN apt-get update \
 
 # Install newer CMake version (Is needed for OpenVINO version > 3.20)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends aria2 aria2 && aria2c -q -d /tmp -o cmake-3.21.0-linux-x86_64.tar.gz https://github.com/Kitware/CMake/releases/download/v3.21.0/cmake-3.21.0-linux-x86_64.tar.gz && tar -zxf /tmp/cmake-3.21.0-linux-x86_64.tar.gz --strip=1 -C /usr \
-    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*    
+    && apt-get install -y --no-install-recommends aria2 && aria2c -q -d /tmp -o cmake-3.21.0-linux-x86_64.tar.gz https://github.com/Kitware/CMake/releases/download/v3.21.0/cmake-3.21.0-linux-x86_64.tar.gz && tar -zxf /tmp/cmake-3.21.0-linux-x86_64.tar.gz --strip=1 -C /usr \
+    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 ARG BACKEND=OPENVINO
 
@@ -38,11 +38,18 @@ WORKDIR /app
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO  && \
+RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO -DBUILD_TESTS=OFF && \
     cmake --build build --config Release
 
-# Stage 4: Final image
-FROM backend_dependencies AS final
+# Stage 2: Final image
+ARG OPENVINO_VERSION=2024.0.0
+FROM openvino/ubuntu20_runtime:${OPENVINO_VERSION} AS final
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV HOME=/root
+ENV OpenVINO_DIR=${INTEL_OPENVINO_DIR}/runtime/cmake
+ENV IE_PLUGINS_PATH=${INTEL_OPENVINO_DIR}/runtime/lib/intel64
+ENV LD_LIBRARY_PATH=/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:${LD_LIBRARY_PATH}
 
 WORKDIR /app
 
@@ -50,7 +57,6 @@ WORKDIR /app
 COPY --from=builder /app/build/app/vision-inference /app/vision-inference
 
 # Copy the shared libraries
-COPY --from=builder /app/build/detectors/libdetectors.so /app/
 COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
@@ -59,5 +65,3 @@ ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
 
 # Set the entry point to the compiled executable
 ENTRYPOINT ["./vision-inference"]
-
-

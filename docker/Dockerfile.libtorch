@@ -26,7 +26,7 @@ ARG BACKEND=LIBTORCH
 ARG LIBTORCH_VERSION=2.3.0
 ARG Torch_DIR=$HOME/libtorch/share/cmake/Torch/
 # Compute platform from pytorch.org, i.e. cu118, cu121, rocm6.0 or cpu
-ARG COMPUTE_PLATFORM=cpu 
+ARG COMPUTE_PLATFORM=cpu
 RUN wget https://download.pytorch.org/libtorch/$COMPUTE_PLATFORM/libtorch-cxx11-abi-shared-with-deps-$LIBTORCH_VERSION%2B$COMPUTE_PLATFORM.zip && \
     unzip libtorch-cxx11-abi-shared-with-deps-$LIBTORCH_VERSION+$COMPUTE_PLATFORM.zip -d $HOME && \
     rm libtorch-cxx11-abi-shared-with-deps-$LIBTORCH_VERSION+$COMPUTE_PLATFORM.zip
@@ -39,7 +39,7 @@ WORKDIR /app
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DTorch_DIR=$Torch_DIR && \
+RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DTorch_DIR=$Torch_DIR -DBUILD_TESTS=OFF && \
     cmake --build build --config Release
 
 # Stage 4: Final image
@@ -51,8 +51,7 @@ WORKDIR /app
 COPY --from=builder /app/build/app/vision-inference /app/vision-inference
 
 # Copy the shared libraries
-COPY --from=builder /app/build/detectors/libdetectors.so /app/
-COPY --from=builder /app/build/_deps/neuriploneuriplo
+COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
 # Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located

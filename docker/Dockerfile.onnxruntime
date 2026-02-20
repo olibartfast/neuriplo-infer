@@ -23,7 +23,7 @@ FROM common_dependencies AS backend_dependencies
 ENV HOME=/root
 ARG BACKEND=ONNX_RUNTIME
 ARG ORT_VERSION=1.19.2
-ARG ONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-$ORT_VERSION 
+ARG ONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-$ORT_VERSION
 
 RUN wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz && \
     tar -xzvf onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz -C $HOME && \
@@ -37,7 +37,7 @@ WORKDIR /app
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DORT_VERSION=$ORT_VERSION  -DONNX_RUNTIME_DIR=$ONNX_RUNTIME_DIR && \
+RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DORT_VERSION=$ORT_VERSION -DONNX_RUNTIME_DIR=$ONNX_RUNTIME_DIR -DBUILD_TESTS=OFF && \
     cmake --build build --config Release
 
 # Stage 4: Final image
@@ -49,8 +49,7 @@ WORKDIR /app
 COPY --from=builder /app/build/app/vision-inference /app/vision-inference
 
 # Copy the shared libraries
-COPY --from=builder /app/build/detectors/libdetectors.so /app/
-COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo/
+COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
 # Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located
