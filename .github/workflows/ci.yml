@@ -14,14 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            cmake build-essential git \
-            libopencv-dev \
-            libgoogle-glog-dev \
-            libgtest-dev
+      - name: Install shared dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Install job-specific dependencies
+        run: sudo apt-get install -y libgtest-dev
 
       - name: Cache CMake build
         uses: actions/cache@v4
@@ -54,13 +51,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            cmake build-essential git wget \
-            libopencv-dev \
-            libgoogle-glog-dev
+      - name: Install shared dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Install job-specific dependencies
+        run: sudo apt-get install -y wget
 
       - name: Cache ONNX Runtime download
         uses: actions/cache@v4
