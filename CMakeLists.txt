@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 project(vision-inference)
 
 # Set C++ standard
@@ -30,6 +30,7 @@ message(STATUS "✓ OpenCV ${OpenCV_VERSION} found")
 message(STATUS "✓ glog found")
 
 include(FetchContent)
+
 FetchContent_Declare(
     vision-core
     GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
@@ -37,7 +38,6 @@ FetchContent_Declare(
 )
 
 # Fetch the neuriplo project from GitHub with specific version
-include(FetchContent)
 FetchContent_Declare(
     neuriplo
     GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git
@@ -50,6 +50,8 @@ FetchContent_Declare(
     GIT_TAG        ${VIDEOCAPTURE_VERSION}  # Use specific version instead of master
 )
 
+# Disable VideoCapture's tests so it doesn't require GTest
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(neuriplo VideoCapture vision-core)
 message(STATUS "vision-core_SOURCE_DIR: ${vision-core_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
