@@ -74,7 +74,7 @@ download_with_retry() {
     
     while [[ $retry_count -lt $max_retries ]]; do
         # Use curl for better URL handling (especially for URLs with + characters)
-        if curl -L -o "$output" "$url"; then
+        if curl -L --fail -o "$output" "$url"; then
             return 0
         fi
         retry_count=$((retry_count + 1))
