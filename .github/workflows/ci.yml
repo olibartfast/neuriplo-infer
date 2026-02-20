@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-opencv-dnn:
+    name: Build & Test (OPENCV_DNN)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake build-essential git \
+            libopencv-dev \
+            libgoogle-glog-dev \
+            libgtest-dev
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: ${{ runner.os }}-opencv-dnn-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt') }}
+          restore-keys: ${{ runner.os }}-opencv-dnn-
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DENABLE_APP_TESTS=ON \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(nproc)
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+
+  build-onnxruntime:
+    name: Build (ONNX_RUNTIME)
+    runs-on: ubuntu-24.04
+
+    env:
+      ORT_VERSION: "1.19.2"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake build-essential git wget \
+            libopencv-dev \
+            libgoogle-glog-dev
+
+      - name: Cache ONNX Runtime download
+        uses: actions/cache@v4
+        id: cache-ort
+        with:
+          path: ~/onnxruntime-linux-x64-gpu-${{ env.ORT_VERSION }}
+          key: onnxruntime-linux-x64-gpu-${{ env.ORT_VERSION }}
+
+      - name: Download ONNX Runtime
+        if: steps.cache-ort.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
+          tar -xzf onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz -C ~
+          rm onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: ${{ runner.os }}-onnxruntime-${{ env.ORT_VERSION }}-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt') }}
+          restore-keys: ${{ runner.os }}-onnxruntime-${{ env.ORT_VERSION }}-
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DDEFAULT_BACKEND=ONNX_RUNTIME \
+            -DORT_VERSION=${ORT_VERSION} \
+            -DONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-${ORT_VERSION} \
+            -DENABLE_APP_TESTS=OFF \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(nproc)
