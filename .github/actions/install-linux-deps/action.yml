@@ -1,0 +1,15 @@
+name: Install Linux Dependencies
+description: Installs shared apt packages required by all CI jobs
+
+runs:
+  using: composite
+  steps:
+    - name: Install shared dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          cmake build-essential git \
+          libopencv-dev \
+          libgoogle-glog-dev \
+          libcurl4-openssl-dev
