@@ -17,9 +17,6 @@ jobs:
       - name: Install shared dependencies
         uses: ./.github/actions/install-linux-deps
 
-      - name: Install job-specific dependencies
-        run: sudo apt-get install -y libgtest-dev
-
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -53,9 +50,6 @@ jobs:
 
       - name: Install shared dependencies
         uses: ./.github/actions/install-linux-deps
-
-      - name: Install job-specific dependencies
-        run: sudo apt-get install -y wget
 
       - name: Cache ONNX Runtime download
         uses: actions/cache@v4

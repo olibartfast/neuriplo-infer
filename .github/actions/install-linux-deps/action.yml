@@ -9,7 +9,8 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          cmake build-essential git \
+          cmake build-essential git wget \
           libopencv-dev \
           libgoogle-glog-dev \
-          libcurl4-openssl-dev
+          libcurl4-openssl-dev \
+          libgtest-dev
