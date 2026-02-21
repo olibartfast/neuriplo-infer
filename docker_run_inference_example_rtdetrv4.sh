@@ -28,7 +28,7 @@ VENV_DIR="$VISION_CORE_DIR/environments/$VENV_NAME"
 
 MODEL_NAME="rtv4_hgnetv2_s_model"
 CONFIG="3rdparty/repositories/pytorch/RT-DETRv4/configs/rtv4/rtv4_hgnetv2_s_coco.yml"
-NGC_TAG="24.02"  # Ensure this tag exists (changed from 25.12 as an example)
+NGC_TAG="25.12"  # Ensure this tag exists 
 
 # ─────────────────────────────────────────────
 # Step 0: Set up and activate Python venv

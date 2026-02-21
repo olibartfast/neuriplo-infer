@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libopencv-dev \
     libgoogle-glog-dev \
+    libgtest-dev \
     git \
     wget \
     python3 \
@@ -42,7 +43,7 @@ RUN TF_SITE=$(/opt/tensorflow_env/bin/python3 -c "import tensorflow; import os; 
     cp -r ${TF_SITE}/include/* ${TENSORFLOW_DIR}/include/ || true
 
 ENV TENSORFLOW_DIR=${TENSORFLOW_DIR}
-ENV LD_LIBRARY_PATH=${TENSORFLOW_DIR}/lib:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=${TENSORFLOW_DIR}/lib
 
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder
@@ -74,7 +75,7 @@ COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
 # Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located
-ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/app:${TENSORFLOW_DIR}/lib
 
 # Set the entry point to the compiled executable
 ENTRYPOINT ["./vision-inference"]

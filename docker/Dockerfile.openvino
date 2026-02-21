@@ -22,6 +22,7 @@ RUN apt-get update \
     ninja-build \
     git \
     libgoogle-glog-dev \
+    libgtest-dev \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 ARG BACKEND=OPENVINO
