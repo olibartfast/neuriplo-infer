@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libopencv-dev \
     libgoogle-glog-dev \
-    libgtest-dev \
     git \
     wget \
     python3 \
@@ -59,7 +58,7 @@ COPY . .
 RUN cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=${BACKEND} \
     -DTENSORFLOW_DIR=${TENSORFLOW_DIR} \
-    -DBUILD_TESTS=OFF && \
+    -DBUILD_INFERENCE_ENGINE_TESTS=OFF && \
     cmake --build build --config Release
 
 # Stage 4: Final image

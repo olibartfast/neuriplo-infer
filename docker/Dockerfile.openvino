@@ -22,7 +22,6 @@ RUN apt-get update \
     ninja-build \
     git \
     libgoogle-glog-dev \
-    libgtest-dev \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 ARG BACKEND=OPENVINO
@@ -32,7 +31,7 @@ WORKDIR /app
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO -DBUILD_TESTS=OFF && \
+RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO -DBUILD_INFERENCE_ENGINE_TESTS=OFF && \
     cmake --build build --config Release -j$(nproc)
 
 # Stage 2: Final image

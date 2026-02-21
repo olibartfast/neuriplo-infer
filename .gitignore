@@ -7,3 +7,4 @@ data/processed.png
 logs
 build_tests/
 .cache
+3rdparty/

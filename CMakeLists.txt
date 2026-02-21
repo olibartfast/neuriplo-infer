@@ -50,8 +50,8 @@ FetchContent_Declare(
     GIT_TAG        ${VIDEOCAPTURE_VERSION}  # Use specific version instead of master
 )
 
-# Disable VideoCapture's tests so it doesn't require GTest
-set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+# Disable neuriplo's tests so it doesn't require GTest
+set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(neuriplo VideoCapture vision-core)
 message(STATUS "vision-core_SOURCE_DIR: ${vision-core_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
