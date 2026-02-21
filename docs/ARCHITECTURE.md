@@ -1,31 +1,32 @@
 # Project Architecture
 
-This document explains the architecture and separation of concerns in the object-detection-inference project.
+This document explains the architecture and separation of concerns in the vision-inference project.
 
-## 🏗️ Overall Architecture
+## Overall Architecture
 
 The project follows a **modular architecture** with clear separation of concerns:
 
 ```
-│                    object-detection-inference                   │
+│                        vision-inference                         │
 │                         (This Project)                         │
 ├─────────────────────────────────────────────────────────────────┤
-│  🧠 vision-core         │  📚 VideoCapture    │  🔧 neuriplo │
-│                         │                     │                     │
-│  • Preprocessing        │  • Video processing │  • Backend abstractions│
-│  • Postprocessing       │  • RTSP streams     │  • ONNX Runtime      │
-│  • Model implementations│  • OpenCV backend   │  • TensorRT          │
-│  • Task Interface       │  • GStreamer backend│  • LibTorch          │
-│                         │  • FFmpeg backend   │  • OpenVINO          │
-│                         │  • Unified API      │  • OpenCV DNN        │
-│                         │                     │  • TensorFlow        │
+│  vision-core            │  VideoCapture       │  neuriplo       │
+│                         │                     │                 │
+│  • Preprocessing        │  • Video processing │  • Backend abstractions
+│  • Postprocessing       │  • RTSP streams     │  • ONNX Runtime │
+│  • Model implementations│  • OpenCV backend   │  • TensorRT     │
+│  • Task Interface       │  • GStreamer backend │  • LibTorch     │
+│  • Multi-task support   │  • FFmpeg backend   │  • OpenVINO     │
+│                         │  • Unified API      │  • OpenCV DNN   │
+│                         │                     │  • TensorFlow   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 🎯 **This Project: Object Detection Application**
+## **This Project: Vision Inference Application**
 
 ### What We Implement
 - **Application Logic**: CLI parsing, configuration management, logging, main loop
+- **Task Dispatch**: Routing inputs to the correct processing path (image, video, optical flow, video classification)
 - **Integration**: Glue code connecting `vision-core`, `neuriplo`, and `VideoCapture`
 - **Output Handling**: Visualization, benchmarking, result reporting
 
@@ -38,24 +39,37 @@ The project follows a **modular architecture** with clear separation of concerns
 ```
 app/
 ├── src/
-│   ├── ObjectDetectionApp.cpp
-│   └── main.cpp
+│   ├── VisionApp.cpp
+│   ├── CommandLineParser.cpp
+│   └── utils.cpp
 ├── inc/
-│   └── ObjectDetectionApp.hpp
-└── ...
+│   ├── VisionApp.hpp
+│   ├── AppConfig.hpp
+│   ├── CommandLineParser.hpp
+│   └── utils.hpp
+├── main.cpp
+└── test/
+    └── ...
 ```
 
-## 🧠 **vision-core Library: Object Detection Logic**
+## **vision-core Library: Vision Task Logic**
 
 ### What It Provides
-- **Object Detection Algorithms**: YOLO variants (v4-v12), RT-DETR variants, D-FINE, DEIM, RF-DETR
+- **Vision Task Algorithms**:
+  - **Object Detection**: YOLO variants (v4–v12), RT-DETR variants, D-FINE, DEIM, RF-DETR, YOLO-NAS
+  - **Classification**: TorchVision, TensorFlow, Vision Transformer (ViT) classifiers
+  - **Instance Segmentation**: YOLO-based and RF-DETR-based segmentation models
+  - **Video Classification**: TimeSformer and similar video action recognition models
+  - **Optical Flow**: RAFT
 - **Preprocessing Implementation**: Letterbox resizing, normalization, color space conversion (using `neuriplo` compatible blobs)
-- **Postprocessing Implementation**: Decoding bounding boxes, NMS (if needed), class score filtering
-- **Model-Specific Implementations**: Encapsulated within Task classes (e.g., `YoloTask`, `RtDetrTask`)
+- **Postprocessing Implementation**: Decoding bounding boxes, NMS (if needed), class score filtering, mask decoding
+- **Unified Task Interface**: `TaskInterface` and `TaskFactory` for task-agnostic dispatch
+- **Result Types**: Shared `Result` variant covering all task outputs
 
 ### What It Should Manage
-- **Model specific logic and parameters**
+- **Task-specific logic and parameters**
 - **Input/Output tensor shapes and formats**
+- **Model-specific pre/postprocessing**
 
 ### Files It Should Own
 ```
@@ -65,13 +79,21 @@ vision-core/
 │   │   ├── object_detection_task.cpp
 │   │   ├── detection_preprocessor.cpp
 │   │   └── ...
-│   └── ...
+│   ├── classification/
+│   │   └── ...
+│   ├── instance_segmentation/
+│   │   └── ...
+│   ├── optical_flow/
+│   │   └── ...
+│   └── core/
+│       ├── task_interface.cpp
+│       └── task_factory.cpp
 └── include/
     └── vision-core/
         └── ...
 ```
 
-## 🔧 **neuriplo Library: Inference Backends**
+## **neuriplo Library: Inference Backends**
 
 ### What It Provides
 - **Inference Backend Abstractions**: Unified interface to different inference engines
@@ -104,7 +126,7 @@ neuriplo/
 └── ...
 ```
 
-## 📚 **VideoCapture Library: Video Processing**
+## **VideoCapture Library: Video Processing**
 
 ### What It Provides
 - **Video Input Processing**: RTSP streams, video files, images, camera devices
@@ -119,9 +141,9 @@ neuriplo/
 - **Platform-specific video handling**: Linux, macOS, Windows support
 - **Dependency validation**: Automatic validation of video processing libraries
 
-## 🔄 **Dependency Management Responsibilities**
+## **Dependency Management Responsibilities**
 
-### ✅ **This Project Should Manage:**
+### This Project Should Manage:
 ```cmake
 # cmake/versions.cmake
 set(VISION_CORE_VERSION "v1.0.0")        # Fetched library version
@@ -132,7 +154,7 @@ set(GLOG_MIN_VERSION "0.6.0")            # System dependency
 set(CMAKE_MIN_VERSION "3.20")            # Build system
 ```
 
-### ❌ **This Project Should NOT Manage:**
+### This Project Should NOT Manage:
 ```cmake
 # These should be in neuriplo library
 set(ONNX_RUNTIME_VERSION "1.19.2")       # Inference backend
@@ -142,7 +164,7 @@ set(OPENVINO_VERSION "2023.1.0")         # Inference backend
 set(CUDA_VERSION "12.6")                 # Inference backend dependency
 ```
 
-## 🛠️ **Setup Scripts Purpose**
+## **Setup Scripts Purpose**
 
 The setup scripts in this project (`scripts/setup_dependencies.sh`) are **convenience scripts** that:
 
@@ -160,7 +182,7 @@ The setup scripts in this project (`scripts/setup_dependencies.sh`) are **conven
 - Link inference backend libraries (done by neuriplo)
 - Handle inference backend configuration (done by neuriplo)
 
-## 📋 **Correct Workflow**
+## **Correct Workflow**
 
 ### For Users:
 ```bash
@@ -185,7 +207,7 @@ set(ONNX_RUNTIME_VERSION "1.20.0")
 set(TENSORRT_VERSION "10.8.0.0")
 ```
 
-## 🔧 **Configuration Flow**
+## **Configuration Flow**
 
 ```
 User selects backend
@@ -198,76 +220,56 @@ neuriplo library handles:
   - Library linking
   - Backend-specific setup
         ↓
-Object detectors use neuriplo API
+vision-core tasks use neuriplo API for inference
+        ↓
+VisionApp dispatches results to the appropriate output handler
 ```
 
-## 🎯 **Benefits of This Architecture**
+## **Benefits of This Architecture**
 
-### **Separation of Concerns**
-- **This project**: Application wrapper and integration point
-- **vision-core**: Encapsulates object detection algorithms and logic
+### Separation of Concerns
+- **This project**: Application wrapper, task dispatch, and integration point
+- **vision-core**: Encapsulates vision task algorithms and logic for all supported tasks
 - **neuriplo**: Handles inference backend complexity
 - **VideoCapture**: Manages video input processing
 
-### **Maintainability**
+### Maintainability
 - **Version updates**: Each library manages its own versions
 - **Bug fixes**: Issues are isolated to specific components
-- **Feature additions**: New backends don't affect object detectors
+- **Feature additions**: New backends don't affect vision tasks; new tasks don't affect backends
 
-### **Reusability**
-- **neuriplobe used by other projects
+### Reusability
+- **neuriplo**: Can be used by other inference projects
 - **VideoCapture**: Can be used by other projects
-- **Object detectors**: Can be used with different inference backends
+- **vision-core**: Can be used with different inference backends and applications
 
-### **User Experience**
+### User Experience
 - **Simple setup**: One command to setup inference backends
-- **Flexible configuration**: Easy to switch between backends
+- **Flexible configuration**: Easy to switch between backends and task types
 - **Clear documentation**: Each component has its own docs
 
-## 🚨 **Common Misconceptions**
+## **Future Improvements**
 
-### ❌ **Wrong: This project manages inference backend versions**
-```cmake
-# This should NOT be in this project
-set(ONNX_RUNTIME_VERSION "1.19.2")
-```
+### For This Project:
+1. **Expand task coverage**: Add support for new vision tasks as vision-core gains them
+2. **Improve result rendering**: Task-specific visualization (e.g., flow maps, pose skeletons)
+3. **Batch inference**: Support batch size > 1 across all task types
 
-### ✅ **Correct: This project manages fetched library versions**
-```cmake
-# This should be in this project
-set(NEURIPLO_VERSION "v1.0.0")
-```
+### For vision-core Library:
+1. **Add new task types**: Depth estimation, pose estimation, panoptic segmentation
+2. **Improve preprocessing**: Shared, reusable preprocessing primitives across tasks
+3. **Unified result format**: Consistent output structure across all task types
 
-### ❌ **Wrong: This project links inference backend libraries**
-```cmake
-# This should NOT be in this project
-target_link_libraries(${PROJECT_NAME} PRIVATE libonnxruntime.so)
-```
-
-### ✅ **Correct: neuriplo handles linking**
-```cmake
-# This should be in neuriplo library
-target_link_libraries(${PROJECT_NAME} PRIVATE neuriplo)
-```
-
-## 🔮 **Future Improvements**
-
-### **For This Project:**
-1. **Focus on object detection algorithms**
-2. **Improve detector implementations**
-3. **Add new detector types**
-4. **Enhance preprocessing/postprocessing**
-
-### **For neuriplo Library:**
+### For neuriplo Library:
 1. **Centralized version management**
 2. **Better backend validation**
 3. **Automatic backend setup**
 4. **Performance benchmarking**
 
-### **For VideoCapture Library:**
+### For VideoCapture Library:
 1. **Enhanced FFmpeg integration**: Additional codec and format support
 2. **Hardware acceleration**: Improved GPU-accelerated video processing
 3. **Cross-platform compatibility**: Enhanced Windows and macOS support
 4. **Advanced streaming features**: WebRTC, SRT protocol support
 
-This architecture ensures that each component has a clear responsibility and can evolve independently while providing a seamless user experience. 
+This architecture ensures that each component has a clear responsibility and can evolve independently while providing a seamless user experience.
