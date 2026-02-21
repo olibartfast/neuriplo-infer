@@ -1,0 +1,13 @@
+name: Fetch neuriplo versions.env
+description: Downloads versions.env from the neuriplo repo at the version pinned in the root versions.env
+
+runs:
+  using: composite
+  steps:
+    - name: Fetch neuriplo versions.env
+      shell: bash
+      run: |
+        . ./versions.env
+        mkdir -p build/_deps/neuriplo-src
+        curl -fsSL https://raw.githubusercontent.com/olibartfast/neuriplo/${NEURIPLO_VERSION}/versions.env \
+          -o build/_deps/neuriplo-src/versions.env
