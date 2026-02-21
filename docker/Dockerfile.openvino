@@ -1,4 +1,9 @@
 # docker build --rm -t vision-inference:openvino -f Dockerfiles/Dockerfile.openvino .
+#
+# NOTE: OPENVINO_VERSION must be declared as a hardcoded ARG here (before FROM)
+# because Docker evaluates FROM instructions before any RUN commands can execute.
+# This means versions.env cannot be sourced to populate it at build time.
+# Keep this version in sync with OPENVINO_VERSION in build/_deps/neuriplo-src/versions.env.
 ARG OPENVINO_VERSION=2025.4.1
 
 # Stage 1: Build
@@ -23,6 +28,8 @@ RUN apt-get update \
     git \
     libgoogle-glog-dev \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+COPY build/_deps/neuriplo-src/versions.env /tmp/versions.env
 
 ARG BACKEND=OPENVINO
 

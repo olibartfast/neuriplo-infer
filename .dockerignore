@@ -1,6 +1,7 @@
 .git
 .gitignore
-build/
+build/*
+!build/_deps/neuriplo-src/versions.env
 *.md
 .dockerignore
 Dockerfile

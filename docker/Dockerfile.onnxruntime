@@ -17,17 +17,18 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
+COPY build/_deps/neuriplo-src/versions.env /tmp/versions.env
+
 # Stage 2: Install backend-specific C++ dependencies
 FROM common_dependencies AS backend_dependencies
 
 ENV HOME=/root
 ARG BACKEND=ONNX_RUNTIME
-ARG ORT_VERSION=1.19.2
-ARG ONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-$ORT_VERSION
 
-RUN wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz && \
-    tar -xzvf onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz -C $HOME && \
-    rm onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
+RUN . /tmp/versions.env && \
+    wget https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_RUNTIME_VERSION}/onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION}.tgz && \
+    tar -xzvf onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION}.tgz -C $HOME && \
+    rm onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION}.tgz
 
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder
@@ -37,7 +38,12 @@ WORKDIR /app
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=$BACKEND -DORT_VERSION=$ORT_VERSION -DONNX_RUNTIME_DIR=$ONNX_RUNTIME_DIR -DBUILD_TESTS=OFF && \
+RUN . /tmp/versions.env && \
+    cmake -Bbuild -H. \
+    -DDEFAULT_BACKEND=$BACKEND \
+    -DORT_VERSION=${ONNX_RUNTIME_VERSION} \
+    -DONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION} \
+    -DBUILD_TESTS=OFF && \
     cmake --build build --config Release
 
 # Stage 4: Final image

@@ -18,18 +18,20 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
+COPY build/_deps/neuriplo-src/versions.env /tmp/versions.env
+
 # Stage 2: Install backend-specific C++ dependencies
 FROM common_dependencies AS backend_dependencies
 
 ENV HOME=/root
 ARG BACKEND=LIBTORCH
-ARG LIBTORCH_VERSION=2.3.0
 ARG Torch_DIR=$HOME/libtorch/share/cmake/Torch/
 # Compute platform from pytorch.org, i.e. cu118, cu121, rocm6.0 or cpu
 ARG COMPUTE_PLATFORM=cpu
-RUN wget https://download.pytorch.org/libtorch/$COMPUTE_PLATFORM/libtorch-cxx11-abi-shared-with-deps-$LIBTORCH_VERSION%2B$COMPUTE_PLATFORM.zip && \
-    unzip libtorch-cxx11-abi-shared-with-deps-$LIBTORCH_VERSION+$COMPUTE_PLATFORM.zip -d $HOME && \
-    rm libtorch-cxx11-abi-shared-with-deps-$LIBTORCH_VERSION+$COMPUTE_PLATFORM.zip
+RUN . /tmp/versions.env && \
+    wget https://download.pytorch.org/libtorch/$COMPUTE_PLATFORM/libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}%2B$COMPUTE_PLATFORM.zip && \
+    unzip libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}+$COMPUTE_PLATFORM.zip -d $HOME && \
+    rm libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}+$COMPUTE_PLATFORM.zip
 
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder

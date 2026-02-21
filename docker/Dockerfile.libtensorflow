@@ -20,18 +20,20 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
+COPY build/_deps/neuriplo-src/versions.env /tmp/versions.env
+
 # Stage 2: Install TensorFlow and extract C++ libraries
 FROM common_dependencies AS backend_dependencies
 
 ENV HOME=/root
 ARG BACKEND=LIBTENSORFLOW
-ARG TF_VERSION=2.19.0
 ARG TENSORFLOW_DIR=/opt/tensorflow
 
 # Install TensorFlow via pip and extract C++ shared libraries
-RUN python3 -m venv /opt/tensorflow_env && \
+RUN . /tmp/versions.env && \
+    python3 -m venv /opt/tensorflow_env && \
     /opt/tensorflow_env/bin/pip install --upgrade pip && \
-    /opt/tensorflow_env/bin/pip install tensorflow==${TF_VERSION}
+    /opt/tensorflow_env/bin/pip install tensorflow==${TENSORFLOW_VERSION}
 
 RUN TF_SITE=$(/opt/tensorflow_env/bin/python3 -c "import tensorflow; import os; print(os.path.dirname(tensorflow.__file__))") && \
     mkdir -p ${TENSORFLOW_DIR}/lib ${TENSORFLOW_DIR}/include && \
