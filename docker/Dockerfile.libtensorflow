@@ -58,7 +58,7 @@ COPY . .
 RUN cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=${BACKEND} \
     -DTENSORFLOW_DIR=${TENSORFLOW_DIR} \
-    -DBUILD_INFERENCE_ENGINE_TESTS=OFF && \
+    -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DBUILD_TESTS=OFF && \
     cmake --build build --config Release
 
 # Stage 4: Final image
