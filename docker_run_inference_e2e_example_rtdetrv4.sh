@@ -106,8 +106,7 @@ docker run --rm --gpus=all \
     nvcr.io/nvidia/tensorrt:${NGC_TAG}-py3 \
     trtexec \
         --onnx=/weights/${MODEL_NAME}.onnx \
-        --saveEngine=/weights/${MODEL_NAME}.engine \
-        --fp32
+        --saveEngine=/weights/${MODEL_NAME}.engine 
 
 echo "TensorRT engine saved: $WEIGHTS_DIR/${MODEL_NAME}.engine"
 

@@ -37,6 +37,7 @@ SOURCE="$ROOT_DIR/data/dog.jpg"
 LABELS="$ROOT_DIR/labels/coco.names"
 WEIGHTS_DIR="$VISION_CORE_DIR/weights"
 NGC_TAG="25.12"          # nvcr.io/nvidia/tensorrt tag used by trtexec
+TRT_PRECISION="fp16"     # fp16 (default, faster) or fp32 (higher precision)
 SKIP_EXPORT=false
 SKIP_CONVERT=false
 # Override inference --type (auto-set per model family if empty)
@@ -69,7 +70,7 @@ INPUT OPTIONS:
 
 TENSORRT OPTIONS:
   --ngc-tag       TAG      NVIDIA TensorRT container tag for trtexec (default: 25.11)
-
+  --precision     PREC     TensorRT precision: fp16 or fp32            (default: fp16)
 SKIP OPTIONS:
   --skip-export            Skip ONNX export step
   --skip-convert           Skip backend-format conversion step
@@ -106,6 +107,7 @@ while [[ $# -gt 0 ]]; do
         --labels)           LABELS="$2";                shift 2 ;;
         --weights-dir)      WEIGHTS_DIR="$2";           shift 2 ;;
         --ngc-tag)          NGC_TAG="$2";               shift 2 ;;
+        --precision)        TRT_PRECISION="$2";          shift 2 ;;
         --skip-export)      SKIP_EXPORT=true;           shift   ;;
         --skip-convert)     SKIP_CONVERT=true;          shift   ;;
         -h|--help)          usage ;;
@@ -324,13 +326,15 @@ if [[ "$SKIP_CONVERT" == false ]]; then
     if [[ "$NEEDS_TRT_CONV" == true ]]; then
         echo ""
         echo "=== Step 2: Converting ONNX → TensorRT engine ==="
+        TRT_PRECISION_FLAG=""
+        [[ "$TRT_PRECISION" == "fp16" ]] && TRT_PRECISION_FLAG="--fp16"
         docker run --rm --gpus=all \
             -v "$WEIGHTS_DIR":/weights \
             nvcr.io/nvidia/tensorrt:${NGC_TAG}-py3 \
             trtexec \
                 --onnx=/weights/${MODEL_NAME}.onnx \
                 --saveEngine=/weights/${MODEL_NAME}.engine \
-                --fp16
+                ${TRT_PRECISION_FLAG}
         echo "TensorRT engine saved: $WEIGHT_FILE"
 
     elif [[ "$NEEDS_OV_CONV" == true ]]; then
