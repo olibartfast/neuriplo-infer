@@ -107,7 +107,7 @@ docker run --rm --gpus=all \
     trtexec \
         --onnx=/weights/${MODEL_NAME}.onnx \
         --saveEngine=/weights/${MODEL_NAME}.engine \
-        --fp16
+        --fp32
 
 echo "TensorRT engine saved: $WEIGHTS_DIR/${MODEL_NAME}.engine"
 
@@ -120,6 +120,7 @@ echo "=== Step 3: Running inference ==="
 cd "$SCRIPT_DIR"
 
 docker run --gpus=all --rm \
+    -e GLOG_minloglevel=1 \
     -v "$SCRIPT_DIR/data":/app/data \
     -v "$WEIGHTS_DIR":/weights \
     -v "$SCRIPT_DIR/labels":/labels \
