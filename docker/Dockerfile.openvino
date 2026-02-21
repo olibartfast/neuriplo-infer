@@ -31,7 +31,7 @@ WORKDIR /app
 COPY . .
 
 # Build the project using CMake
-RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO -DBUILD_INFERENCE_ENGINE_TESTS=OFF && \
+RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DBUILD_TESTS=OFF && \
     cmake --build build --config Release -j$(nproc)
 
 # Stage 2: Final image
