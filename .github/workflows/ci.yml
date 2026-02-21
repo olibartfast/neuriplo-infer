@@ -130,41 +130,40 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)
 
-  build-openvino:
-    name: Build (OPENVINO)
+  build-libtensorflow:
+    name: Build (LIBTENSORFLOW)
     runs-on: ubuntu-24.04
-
-    env:
-      OPENVINO_VERSION: "2024.5.0"
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install shared dependencies
-        uses: ./.github/actions/install-linux-deps
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Install OpenVINO
-        run: |
-          wget -q https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
-          sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
-          echo "deb https://apt.repos.intel.com/openvino/2024 ubuntu24 main" | \
-            sudo tee /etc/apt/sources.list.d/intel-openvino-2024.list
-          sudo apt-get update -q
-          sudo apt-get install -y openvino-${OPENVINO_VERSION}
-
-      - name: Cache CMake build
-        uses: actions/cache@v4
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
         with:
-          path: build
-          key: ${{ runner.os }}-openvino-${{ env.OPENVINO_VERSION }}-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt') }}
-          restore-keys: ${{ runner.os }}-openvino-${{ env.OPENVINO_VERSION }}-
+          context: .
+          file: docker/Dockerfile.libtensorflow
+          push: false
+          tags: vision-inference:libtensorflow
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Configure
-        run: |
-          cmake -B build \
-            -DDEFAULT_BACKEND=OPENVINO \
-            -DENABLE_APP_TESTS=OFF \
-            -DCMAKE_BUILD_TYPE=Release
+  build-openvino:
+    name: Build (OPENVINO)
+    runs-on: ubuntu-24.04
 
-      - name: Build
-        run: cmake --build build --config Release --parallel $(nproc)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.openvino
+          push: false
+          tags: vision-inference:openvino
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

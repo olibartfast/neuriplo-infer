@@ -1,0 +1,80 @@
+# docker build --rm -t vision-inference:libtensorflow -f docker/Dockerfile.libtensorflow .
+
+# Stage 1: Common dependencies
+ARG UBUNTU_VERSION=24.04
+FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
+
+# Set environment variable to avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install common dependencies
+RUN apt-get update && apt-get install -y \
+    cmake \
+    build-essential \
+    libopencv-dev \
+    libgoogle-glog-dev \
+    git \
+    wget \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Stage 2: Install TensorFlow and extract C++ libraries
+FROM common_dependencies AS backend_dependencies
+
+ENV HOME=/root
+ARG BACKEND=LIBTENSORFLOW
+ARG TF_VERSION=2.19.0
+ARG TENSORFLOW_DIR=/opt/tensorflow
+
+# Install TensorFlow via pip and extract C++ shared libraries
+RUN python3 -m venv /opt/tensorflow_env && \
+    /opt/tensorflow_env/bin/pip install --upgrade pip && \
+    /opt/tensorflow_env/bin/pip install tensorflow==${TF_VERSION}
+
+RUN TF_SITE=$(/opt/tensorflow_env/bin/python3 -c "import tensorflow; import os; print(os.path.dirname(tensorflow.__file__))") && \
+    mkdir -p ${TENSORFLOW_DIR}/lib ${TENSORFLOW_DIR}/include && \
+    cp ${TF_SITE}/libtensorflow_cc.so.2 ${TENSORFLOW_DIR}/lib/ && \
+    cp ${TF_SITE}/libtensorflow_framework.so.2 ${TENSORFLOW_DIR}/lib/ && \
+    ln -sf libtensorflow_cc.so.2 ${TENSORFLOW_DIR}/lib/libtensorflow_cc.so && \
+    ln -sf libtensorflow_framework.so.2 ${TENSORFLOW_DIR}/lib/libtensorflow_framework.so && \
+    cp -r ${TF_SITE}/include/* ${TENSORFLOW_DIR}/include/ || true
+
+ENV TENSORFLOW_DIR=${TENSORFLOW_DIR}
+ENV LD_LIBRARY_PATH=${TENSORFLOW_DIR}/lib:${LD_LIBRARY_PATH}
+
+# Stage 3: Copy application code and build
+FROM backend_dependencies AS builder
+
+ARG BACKEND=LIBTENSORFLOW
+ARG TENSORFLOW_DIR=/opt/tensorflow
+
+WORKDIR /app
+
+COPY . .
+
+# Build the project using CMake
+RUN cmake -Bbuild -H. \
+    -DDEFAULT_BACKEND=${BACKEND} \
+    -DTENSORFLOW_DIR=${TENSORFLOW_DIR} \
+    -DBUILD_TESTS=OFF && \
+    cmake --build build --config Release
+
+# Stage 4: Final image
+FROM backend_dependencies AS final
+
+WORKDIR /app
+
+# Copy the executable
+COPY --from=builder /app/build/app/vision-inference /app/vision-inference
+
+# Copy the shared libraries
+COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
+COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
+
+# Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located
+ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
+
+# Set the entry point to the compiled executable
+ENTRYPOINT ["./vision-inference"]
