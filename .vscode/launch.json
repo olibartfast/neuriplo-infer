@@ -534,6 +534,21 @@
                 }
             ],
             "cwd": "${workspaceFolder}"
-        },        
+        },
+
+        // Depth estimation
+        {
+            "name": "Depth Anything V2 onnx",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app/vision-inference",
+            "args": [
+                "--type=depth_anything_v2",
+                "--weights=${env:HOME}/model_repository/depth_anything_v2.onnx",
+                "--source=data/dog.jpg",
+                "--input_sizes='3,518,518'"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
     ]
 }
