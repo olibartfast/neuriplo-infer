@@ -8,7 +8,7 @@ C++ application for computer vision inference, supporting multiple vision tasks 
 > 🚧 Status: Under Development — expect frequent updates.
 ## Key Features
 
-- **Multiple Computer Vision Tasks**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (Object Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation)
+- **Multiple Computer Vision Tasks**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (Object Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
