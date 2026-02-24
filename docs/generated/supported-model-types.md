@@ -3,7 +3,7 @@
 Auto-generated from `vision-core` TaskFactory documentation.
 Do not edit manually; run `python scripts/sync_supported_model_types.py`.
 
-Source: `/home/oli/repos/vision-inference/build/_deps/vision-core-src/README.md`
+Source: `vision-inference/build/_deps/vision-core-src/README.md`
 
 The TaskFactory supports the following model type strings:
 
