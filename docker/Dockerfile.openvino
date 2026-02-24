@@ -3,7 +3,7 @@
 # NOTE: OPENVINO_VERSION must be declared as a hardcoded ARG here (before FROM)
 # because Docker evaluates FROM instructions before any RUN commands can execute.
 # This means versions.env cannot be sourced to populate it at build time.
-# Keep this version in sync with OPENVINO_VERSION in build/_deps/neuriplo-src/versions.env.
+# Keep this version in sync with OPENVINO_VERSION in neuriplo/versions.env.
 ARG OPENVINO_VERSION=2025.4.1
 
 # Stage 1: Build
@@ -14,6 +14,7 @@ ENV HOME=/root
 ENV OpenVINO_DIR=${INTEL_OPENVINO_DIR}/runtime/cmake
 ENV IE_PLUGINS_PATH=${INTEL_OPENVINO_DIR}/runtime/lib/intel64
 ENV LD_LIBRARY_PATH=/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:${LD_LIBRARY_PATH}
+ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 USER root
 
 # Install common dependencies
@@ -29,7 +30,7 @@ RUN apt-get update \
     libgoogle-glog-dev \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-COPY build/_deps/neuriplo-src/versions.env /tmp/versions.env
+RUN wget -q -O /tmp/versions.env "${NEURIPLO_VERSIONS_URL}"
 
 ARG BACKEND=OPENVINO
 

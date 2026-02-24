@@ -6,6 +6,7 @@ FROM nvcr.io/nvidia/cuda:${NGC_CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS cu
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
+ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 
 # Install system dependencies with version pinning
 RUN apt-get update && apt-get upgrade -y && \
@@ -18,7 +19,7 @@ RUN apt-get update && apt-get upgrade -y && \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY build/_deps/neuriplo-src/versions.env /tmp/versions.env
+RUN wget -q -O /tmp/versions.env "${NEURIPLO_VERSIONS_URL}"
 
 # Stage 2: Install TensorRT dependencies
 FROM cuda_dependencies AS backend_dependencies

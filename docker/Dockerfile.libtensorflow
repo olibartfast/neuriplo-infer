@@ -6,6 +6,7 @@ FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
 
 # Set environment variable to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
+ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 
 # Install common dependencies
 RUN apt-get update && apt-get install -y \
@@ -20,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-COPY build/_deps/neuriplo-src/versions.env /tmp/versions.env
+RUN wget -q -O /tmp/versions.env "${NEURIPLO_VERSIONS_URL}"
 
 # Stage 2: Install TensorFlow and extract C++ libraries
 FROM common_dependencies AS backend_dependencies
