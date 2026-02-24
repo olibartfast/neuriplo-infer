@@ -8,3 +8,4 @@ logs
 build_tests/
 .cache
 3rdparty/
+data/output/
