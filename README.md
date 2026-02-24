@@ -135,8 +135,6 @@ cmake -DENABLE_APP_TESTS=ON ..
 
 - `--type=<model_type>`: Specifies the type of vision model to use. Supported categories:
   <!-- SUPPORTED_MODEL_TYPES:START -->
-This section is auto-synced from `vision-core` to avoid duplicated manual edits.
-
 The TaskFactory supports the following model type strings:
 
 **Object Detection:**

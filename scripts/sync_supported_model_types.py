@@ -95,7 +95,6 @@ def main() -> int:
     generated_doc_path.write_text(generated_doc, encoding="utf-8")
 
     readme_replacement = (
-        "This section is auto-synced from `vision-core` to avoid duplicated manual edits.\n\n"
         f"{block}\n\n"
         "Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md)."
     )
