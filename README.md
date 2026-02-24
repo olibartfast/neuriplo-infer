@@ -134,29 +134,46 @@ cmake -DENABLE_APP_TESTS=ON ..
 #### Required Parameters
 
 - `--type=<model_type>`: Specifies the type of vision model to use. Supported categories:
+  <!-- SUPPORTED_MODEL_TYPES:START -->
+This section is auto-synced from `vision-core` to avoid duplicated manual edits.
 
-  **Object Detection:**
-  - `yolov4`: YOLOv4/YOLOv4-tiny models
-  - `yolo`: YOLOv5, YOLOv6, YOLOv7, YOLOv8, YOLOv9, YOLO11, YOLOv12 models
-  - `yolov10`: YOLOv10 models (different postprocessing)
-  - `yolo26`: YOLO26 models (different postprocessing, i.e. same of yolov10)
-  - `yolonas`: YOLO-NAS models
-  - `rtdetr`: RT-DETR, RT-DETRv2, RT-DETRv4, D-FINE, DEIM, DEIMv2 models
-  - `rtdetrul`: RT-DETR Ultralytics implementation
-  - `rfdetr`: RF-DETR models
+The TaskFactory supports the following model type strings:
 
-  **Classification:**
-  - `torchvisionclassifier`: TorchVision classification models
-  - `tensorflowclassifier`: TensorFlow classification models
-  - `vitclassifier`: Vision Transformer models
-  - `timesformer`: Video action recognition models
+**Object Detection:**
 
-  **Instance Segmentation:**
-  - `yoloseg`: YOLO-based segmentation models
-  - `rfdetr-seg`: RF-DETR-based segmentation models
+- `"yolo"`, `"yolov7e2e"`, `"yolov10"`, `"yolo26"`, `"yolov4"` - YOLO-based variants
+- `"yolonas"` - YOLO-NAS
+- `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
+- `"rtdetrul"` - RT-DETR (Ultralytics implementation)
+- `"rfdetr"` - RF-DETR
 
-  **Optical Flow:**
-  - `raft`: RAFT optical flow models
+**Instance Segmentation:**
+- `"yoloseg"` - YOLOv5/YOLOv8/YOLO11
+- `"yolov10seg"`- YOLOv10
+- `"yolo26seg"` - YOLO26
+- `"rfdetrseg"` - RF-DETR
+
+**Classification:**
+- `"torchvision-classifier"` - Torchvision models (ResNet, EfficientNet, etc.)
+- `"tensorflow-classifier"` - TensorFlow/Keras models
+- `"vit-classifier"` - Vision Transformers
+
+**Video Classification:**
+- `"videomae"` - VideoMAE
+- `"vivit"` - ViViT
+- `"timesformer"` - TimeSformer
+
+**Optical Flow:**
+- `"raft"` - RAFT optical flow
+
+**Pose Estimation:**
+- `"vitpose"` - ViTPose
+
+**Depth Estimation:**
+- `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
+
+Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
+<!-- SUPPORTED_MODEL_TYPES:END -->
 
 - `--source=<input_source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
