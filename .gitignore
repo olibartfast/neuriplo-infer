@@ -1,11 +1,9 @@
-build
-# Ignore everything in .vscode folder
+build*
 .vscode/*
 # But don't ignore launch.json
 !.vscode/launch.json
 data/processed.png
 logs
-build_tests/
 .cache
 3rdparty/
 data/output/

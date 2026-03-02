@@ -1,5 +1,11 @@
 #include <gtest/gtest.h>
+#include <fstream>
 #include "CommandLineParser.hpp"
+
+// Helper: create a minimal on-disk file so validation passes.
+static void touchFile(const char* path) {
+    std::ofstream f(path); f.close();
+}
 
 TEST(ParseCommandLineArguments, Basic) {
     // Simulate command-line arguments
@@ -8,24 +14,44 @@ TEST(ParseCommandLineArguments, Basic) {
         "--type=yolov5",
         "--source=input.mp4",
         "--weights=model.weights",
-        "--config=model.cfg",
         "--labels=labels.txt",
         "--use-gpu",
         "--min_confidence=0.5"
     };
     int argc = sizeof(argv) / sizeof(argv[0]);
-    std::ofstream myFile("fake_model.cfg");
-    myFile.close();
-    std::ofstream myFile2("fake_model.weights");
-    myFile2.close();
+    touchFile("input.mp4");
+    touchFile("model.weights");
+    touchFile("labels.txt");
     AppConfig config = CommandLineParser::parseCommandLineArguments(argc, const_cast<char**>(argv));
 
-
     EXPECT_EQ(config.detectorType, "yolov5");
-    EXPECT_EQ(config.source, "input.mp4");
-    EXPECT_EQ(config.weights, "fake_model.weights");
-    EXPECT_EQ(config.config, "fake_model.cfg");
+    ASSERT_FALSE(config.sources.empty());
+    EXPECT_EQ(config.sources[0], "input.mp4");
+    EXPECT_EQ(config.weights, "model.weights");
     EXPECT_EQ(config.labelsPath, "labels.txt");
     EXPECT_TRUE(config.use_gpu);
-    EXPECT_FLOAT_EQ(config.confidenceThreshold, 0.5);
+    EXPECT_FLOAT_EQ(config.confidenceThreshold, 0.5f);
+    // Defaults
+    EXPECT_FLOAT_EQ(config.nmsThreshold, 0.45f);
+    EXPECT_FLOAT_EQ(config.maskThreshold, 0.50f);
+}
+
+TEST(ParseCommandLineArguments, ThresholdFlags) {
+    const char* argv[] = {
+        "program",
+        "--type=yoloseg",
+        "--source=input.mp4",
+        "--weights=model.weights",
+        "--min_confidence=0.3",
+        "--nms_threshold=0.6",
+        "--mask_threshold=0.7"
+    };
+    int argc = sizeof(argv) / sizeof(argv[0]);
+    touchFile("input.mp4");
+    touchFile("model.weights");
+    AppConfig config = CommandLineParser::parseCommandLineArguments(argc, const_cast<char**>(argv));
+
+    EXPECT_FLOAT_EQ(config.confidenceThreshold, 0.3f);
+    EXPECT_FLOAT_EQ(config.nmsThreshold, 0.6f);
+    EXPECT_FLOAT_EQ(config.maskThreshold, 0.7f);
 }

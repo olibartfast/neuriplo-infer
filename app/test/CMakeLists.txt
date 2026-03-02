@@ -13,6 +13,9 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_SOURCE_DIR}/app/src/utils.cpp 
     ${CMAKE_SOURCE_DIR}/app/src/CommandLineParser.cpp
     ${CMAKE_SOURCE_DIR}/app/src/VisionApp.cpp
+    ${CMAKE_SOURCE_DIR}/app/src/VisionAppProcessing.cpp
+    ${CMAKE_SOURCE_DIR}/app/src/VisionAppRendering.cpp
+    ${CMAKE_SOURCE_DIR}/app/src/VisionAppTaskRouting.cpp
 )
 
 
@@ -21,9 +24,7 @@ target_include_directories(${PROJECT_NAME_TEST}
     ${OpenCV_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/app/inc 
     ${CMAKE_SOURCE_DIR}/app/src 
-    ${CMAKE_SOURCE_DIR}/detectors/inc
-    ${CMAKE_SOURCE_DIR}/detectors/src
-    ${CMAKE_SOURCE_DIR}/detectors/src/models
+    ${vision-core_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/src
     ${neuriplo_SOURCE_DIR}/backends/src
@@ -53,7 +54,7 @@ elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")
     target_link_libraries(${PROJECT_NAME_TEST} PRIVATE openvino::runtime )
 endif()
 
-target_link_libraries(${PROJECT_NAME_TEST} PUBLIC gtest gtest_main glog::glog ${OpenCV_LIBS} detectors VideoCapture neuriplo)
+target_link_libraries(${PROJECT_NAME_TEST} PUBLIC gtest gtest_main glog::glog ${OpenCV_LIBS} vision-core VideoCapture neuriplo)
 
 # Discover and run tests
 gtest_discover_tests(${PROJECT_NAME_TEST})

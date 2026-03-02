@@ -48,7 +48,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 # Option to enable unit tests for the app module
 option(ENABLE_APP_TESTS "Enable unit testing for app module" OFF)
-unset(ENABLE_APP_TESTS CACHE) # Clear any previous cache
 
 if(ENABLE_APP_TESTS)
     enable_testing()

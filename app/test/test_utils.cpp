@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "utils.hpp"
 #include <filesystem>
+#include <fstream>
 
 
 // Test Fixture for setting up temporary files and directories
