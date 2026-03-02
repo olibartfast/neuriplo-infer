@@ -107,8 +107,12 @@ VisionApp::VisionApp(const AppConfig &config)
   // Valid types: yolov4, yolo, yolonas, rtdetr, rtdetrul, rfdetr
   LOG(INFO) << "Using vision-core model type: " << config.detectorType;
 
-  task = vision_core::TaskFactory::createTaskInstance(config.detectorType,
-                                model_info);
+  vision_core::TaskConfig task_config;
+  task_config.confidence_threshold = config.confidenceThreshold;
+  task_config.nms_threshold = config.nmsThreshold;
+  task_config.mask_threshold = config.maskThreshold;
+
+  task = vision_core::TaskFactory::createTaskInstance(config.detectorType, model_info, task_config);
   if (!task) {
    throw std::runtime_error("Can't setup a task for " + config.detectorType);
   }

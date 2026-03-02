@@ -11,6 +11,8 @@ const std::string CommandLineParser::params =
     "{ weights w  | <none>  | path to models weights}"
     "{ use-gpu   | false  | activate gpu support}"
     "{ min_confidence | 0.25   | optional min confidence}"
+    "{ nms_threshold  | 0.45   | NMS IoU threshold (YOLO-based detectors/segmenters) }"
+    "{ mask_threshold | 0.50   | Mask binarization threshold (instance segmentation) }"
     "{ batch b | 1 | Batch size}"
     "{ input_sizes is | | Input sizes for each model input. Format: CHW;CHW;... (e.g., '3,224,224' for single input or '3,224,224;3,224,224' for two inputs, '3,640,640;2' for rtdetr/dfine models) }"
     "{ warmup     | false  | enable GPU warmup}"
@@ -37,6 +39,8 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     config.enable_benchmark = parser.get<bool>("benchmark");
     config.benchmark_iterations = parser.get<int>("iterations");
     config.confidenceThreshold = parser.get<float>("min_confidence");
+    config.nmsThreshold = parser.get<float>("nms_threshold");
+    config.maskThreshold = parser.get<float>("mask_threshold");
     config.detectorType = parser.get<std::string>("type");
     config.weights = parser.get<std::string>("weights");
     config.labelsPath = parser.get<std::string>("labels");
