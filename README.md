@@ -123,6 +123,8 @@ cmake -DENABLE_APP_TESTS=ON ..
   --labels=<labels_file> \
   --weights=<model_weights> \
   [--min_confidence=<threshold>] \
+  [--nms_threshold=<threshold>] \
+  [--mask_threshold=<threshold>] \
   [--batch|-b=<batch_size>] \
   [--input_sizes|-is='<input_sizes>'] \
   [--use-gpu] \
@@ -186,6 +188,10 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 
 - `[--min_confidence=<confidence_value>]`: Sets the minimum confidence threshold for detections. Detections with a confidence score below this value will be discarded. The default value is `0.25`.
 
+- `[--nms_threshold=<iou_value>]`: IoU threshold used for Non-Maximum Suppression in YOLO-based detectors and segmenters. Higher values keep more overlapping boxes. The default value is `0.45`.
+
+- `[--mask_threshold=<value>]`: Binarization threshold applied to predicted masks in instance segmentation models. Pixels above this value are considered foreground. The default value is `0.50`.
+
 - `[--batch | -b=<batch_size>]`: Specifies the batch size for inference. Default value is `1`, inference with batch size bigger than 1 is not currently supported.
 
 - `[--input_sizes | -is=<input_sizes>]`: Input sizes for each model input when models have dynamic axes or the backend can't retrieve input layer information (like the OpenCV DNN module). Format: `CHW;CHW;...`. For example:
@@ -238,6 +244,9 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   --source=video.mp4 \
   --weights=models/yolov8s-seg.onnx \
   --labels=data/coco.names \
+  --min_confidence=0.4 \
+  --nms_threshold=0.5 \
+  --mask_threshold=0.5 \
   --use-gpu
 
 # Optical Flow - RAFT model
