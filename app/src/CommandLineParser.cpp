@@ -1,13 +1,18 @@
 #include "CommandLineParser.hpp"
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <glog/logging.h>
 #include "utils.hpp"
 
 const std::string CommandLineParser::params =
     "{ help h   |   | print help message }"
-    "{ type     |  yolov10 | Object Detection: yolo, yolov4, yolov7e2e, yolov10, yolonas, rtdetr, rtdetrul, rfdetr | Classification: torchvisionclassifier, tensorflowclassifier, vitclassifier, timesformer | Instance Segmentation: yoloseg | Optical Flow: raft | Pose Estimation: vitpose }"
+    "{ type     |  yolov10 | Object Detection: yolo, yolov4, yolov7e2e, yolov10, yolonas, rtdetr, rtdetrul, rfdetr, owlv2 | Classification: torchvisionclassifier, tensorflowclassifier, vitclassifier, timesformer | Instance Segmentation: yoloseg | Optical Flow: raft | Pose Estimation: vitpose }"
     "{ source s   | <none>  | path to image or video source}"
     "{ labels lb  |<none>  | path to class labels}"
+    "{ text_prompts tp | | semicolon-separated text prompts for open-vocabulary detection (e.g. 'cat;dog;bus')}"
+    "{ tokenizer_vocab | | path to tokenizer vocab.json for open-vocabulary detection }"
+    "{ tokenizer_merges | | path to tokenizer merges.txt for open-vocabulary detection }"
     "{ weights w  | <none>  | path to models weights}"
     "{ use-gpu   | false  | activate gpu support}"
     "{ min_confidence | 0.25   | optional min confidence}"
@@ -44,7 +49,15 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     config.detectorType = parser.get<std::string>("type");
     config.weights = parser.get<std::string>("weights");
     config.labelsPath = parser.get<std::string>("labels");
+    config.tokenizerVocabPath = parser.get<std::string>("tokenizer_vocab");
+    config.tokenizerMergesPath = parser.get<std::string>("tokenizer_merges");
     config.batch_size = parser.get<int>("batch");
+    {
+        const std::string prompts = parser.get<std::string>("text_prompts");
+        if (!prompts.empty()) {
+            config.textPrompts = split(prompts, ';');
+        }
+    }
 
     std::vector<std::vector<int64_t>> input_sizes;
     if(parser.has("input_sizes")) {
@@ -113,5 +126,32 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
     if (!labelsPath.empty() && !isFile(labelsPath)) {
         LOG(ERROR) << "Labels file " << labelsPath << " doesn't exist";
         std::exit(1);
+    }
+
+    const std::string detectorType = parser.get<std::string>("type");
+    std::string normalizedType = detectorType;
+    std::transform(normalizedType.begin(), normalizedType.end(), normalizedType.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    normalizedType.erase(std::remove_if(normalizedType.begin(), normalizedType.end(),
+                                        [](unsigned char c) { return c == '-' || c == '_' || std::isspace(c) != 0; }),
+                         normalizedType.end());
+
+    if (normalizedType == "owlv2" || normalizedType == "owlvit") {
+        const std::string textPrompts = parser.get<std::string>("text_prompts");
+        const std::string tokenizerVocab = parser.get<std::string>("tokenizer_vocab");
+        const std::string tokenizerMerges = parser.get<std::string>("tokenizer_merges");
+
+        if (textPrompts.empty()) {
+            LOG(ERROR) << "Open-vocabulary detection requires --text_prompts";
+            std::exit(1);
+        }
+        if (!isFile(tokenizerVocab)) {
+            LOG(ERROR) << "Tokenizer vocab file " << tokenizerVocab << " doesn't exist";
+            std::exit(1);
+        }
+        if (!isFile(tokenizerMerges)) {
+            LOG(ERROR) << "Tokenizer merges file " << tokenizerMerges << " doesn't exist";
+            std::exit(1);
+        }
     }
 }

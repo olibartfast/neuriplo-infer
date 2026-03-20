@@ -8,7 +8,7 @@ C++ application for computer vision inference, supporting multiple vision tasks 
 > 🚧 Status: Under Development — expect frequent updates.
 ## Key Features
 
-- **Multiple Computer Vision Tasks**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (Object Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation)
+- **Multiple Computer Vision Tasks**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
@@ -33,6 +33,8 @@ This project automatically fetches:
 1. [vision-core](https://github.com/olibartfast/vision-core) - Contains pre/post-processing and model logic.
 2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
 3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
+
+When a sibling checkout exists at `../vision-core`, the build uses that local source tree instead of fetching from GitHub. This is the recommended setup for integrating current `vision-core` `develop` changes into `vision-inference`.
 
 
 ## Setup
@@ -120,8 +122,11 @@ cmake -DENABLE_APP_TESTS=ON ..
   [--help | -h] \
   --type=<model_type> \
   --source=<input_source> \
-  --labels=<labels_file> \
   --weights=<model_weights> \
+  [--labels=<labels_file>] \
+  [--text_prompts='<prompt_a;prompt_b;...>'] \
+  [--tokenizer_vocab=<vocab_json_path>] \
+  [--tokenizer_merges=<merges_txt_path>] \
   [--min_confidence=<threshold>] \
   [--nms_threshold=<threshold>] \
   [--mask_threshold=<threshold>] \
@@ -146,6 +151,7 @@ The TaskFactory supports the following model type strings:
 - `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
 - `"rtdetrul"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
+- `"owlv2"` - OWLv2 open-vocabulary detection
 
 **Instance Segmentation:**
 - `"yoloseg"` - YOLOv5/YOLOv8/YOLO11
@@ -180,9 +186,15 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   - A path to a video file, e.g., `path/to/video.format`
   - A path to an image file, e.g., `path/to/image.format`
 
-- `--labels=<path/to/labels/file>`: Specifies the path to the file containing the class labels. This file should list the labels used by the model, with each label on a new line.
+- `--labels=<path/to/labels/file>`: Optional for fixed-label models. Specifies the path to the file containing the class labels. This file should list the labels used by the model, with each label on a new line.
 
 - `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights.
+
+- `--text_prompts='<prompt_a;prompt_b;...>'`: Required for open-vocabulary detection with OWLv2. Prompts are semicolon-separated and passed at runtime.
+
+- `--tokenizer_vocab=<path/to/vocab.json>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `vision-core`.
+
+- `--tokenizer_merges=<path/to/merges.txt>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `vision-core`.
 
 #### Optional Parameters
 
@@ -254,6 +266,16 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   --type=raft \
   --source=video.mp4 \
   --weights=models/raft-small.onnx
+
+# Open-vocabulary detection - OWLv2 image processing
+./vision-inference \
+  --type=owlv2 \
+  --source=image.png \
+  --weights=models/owlv2.onnx \
+  --text_prompts='cat;dog;bus' \
+  --tokenizer_vocab=models/owlv2/vocab.json \
+  --tokenizer_merges=models/owlv2/merges.txt \
+  --min_confidence=0.2
 ```
 
 *Check the [`.vscode folder`](.vscode/launch.json) for other examples.*

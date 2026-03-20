@@ -11,8 +11,24 @@ void renderDetectionResults(const std::vector<vision_core::Result>& results, cv:
     if (std::holds_alternative<vision_core::Detection>(result)) {
       const auto& detection = std::get<vision_core::Detection>(result);
       cv::rectangle(image, detection.bbox, cv::Scalar(255, 0, 0), 3);
-      draw_label(image, classes[static_cast<int>(detection.class_id)], detection.class_confidence,
-                 detection.bbox.x, detection.bbox.y);
+      std::string label = std::to_string(static_cast<int>(detection.class_id));
+      if (detection.class_id >= 0 && detection.class_id < classes.size()) {
+        label = classes[static_cast<int>(detection.class_id)];
+      }
+      draw_label(image, label, detection.class_confidence, detection.bbox.x,
+                 detection.bbox.y);
+    }
+  }
+}
+
+void renderOpenVocabDetectionResults(const std::vector<vision_core::Result>& results, cv::Mat& image) {
+  for (const auto& result : results) {
+    if (std::holds_alternative<vision_core::OpenVocabDetection>(result)) {
+      const auto& detection = std::get<vision_core::OpenVocabDetection>(result);
+      cv::rectangle(image, detection.bbox, cv::Scalar(0, 165, 255), 3);
+      const std::string label =
+        detection.label.empty() ? std::to_string(detection.prompt_index) : detection.label;
+      draw_label(image, label, detection.score, detection.bbox.x, detection.bbox.y);
     }
   }
 }
@@ -182,6 +198,9 @@ void VisionApp::processResults(const std::vector<vision_core::Result>& results, 
     break;
   case vision_core::TaskType::DepthEstimation:
     renderDepthEstimationResults(results, image);
+    break;
+  case vision_core::TaskType::OpenVocabDetection:
+    renderOpenVocabDetectionResults(results, image);
     break;
   }
 }

@@ -1,5 +1,7 @@
 #include "VisionApp.hpp"
+#include <fstream>
 #include <filesystem>
+#include <sstream>
 
 VisionApp::VisionApp(const AppConfig &config)
   : config(config) {
@@ -13,8 +15,15 @@ VisionApp::VisionApp(const AppConfig &config)
   LOG(INFO) << "Weights " << config.weights;
   LOG(INFO) << "Labels file " << config.labelsPath;
   LOG(INFO) << "Detector type " << config.detectorType;
+  if (!config.textPrompts.empty()) {
+   LOG(INFO) << "Open-vocab prompts count " << config.textPrompts.size();
+  }
 
-  classes = readLabelNames(config.labelsPath);
+  if (!config.labelsPath.empty()) {
+   classes = readLabelNames(config.labelsPath);
+  } else {
+   classes.clear();
+  }
 
   LOG(INFO) << "CPU info " << getCPUInfo();
   const auto gpuInfo = getGPUModel();
@@ -111,6 +120,29 @@ VisionApp::VisionApp(const AppConfig &config)
   task_config.confidence_threshold = config.confidenceThreshold;
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
+  task_config.text_prompts = config.textPrompts;
+
+  if (!config.tokenizerVocabPath.empty()) {
+   std::ifstream vocab_stream(config.tokenizerVocabPath);
+   if (!vocab_stream) {
+    throw std::runtime_error("Can't open tokenizer vocab file: " +
+                 config.tokenizerVocabPath);
+   }
+   std::stringstream buffer;
+   buffer << vocab_stream.rdbuf();
+   task_config.tokenizer_vocab_json = buffer.str();
+  }
+
+  if (!config.tokenizerMergesPath.empty()) {
+   std::ifstream merges_stream(config.tokenizerMergesPath);
+   if (!merges_stream) {
+    throw std::runtime_error("Can't open tokenizer merges file: " +
+                 config.tokenizerMergesPath);
+   }
+   std::stringstream buffer;
+   buffer << merges_stream.rdbuf();
+   task_config.tokenizer_merges_text = buffer.str();
+  }
 
   task = vision_core::TaskFactory::createTaskInstance(config.detectorType, model_info, task_config);
   if (!task) {

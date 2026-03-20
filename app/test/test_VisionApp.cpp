@@ -35,3 +35,19 @@ TEST(VisionAppTaskConfig, DefaultThresholdsRoundtrip) {
     EXPECT_FLOAT_EQ(task_config.nms_threshold,        0.45f);
     EXPECT_FLOAT_EQ(task_config.mask_threshold,       0.50f);
 }
+
+TEST(VisionAppTaskConfig, OpenVocabFieldsRoundtrip) {
+    AppConfig config;
+    config.textPrompts = {"cat", "dog"};
+    config.tokenizerVocabPath = "vocab.json";
+    config.tokenizerMergesPath = "merges.txt";
+
+    vision_core::TaskConfig task_config;
+    task_config.text_prompts = config.textPrompts;
+
+    EXPECT_EQ(task_config.text_prompts.size(), 2u);
+    EXPECT_EQ(task_config.text_prompts[0], "cat");
+    EXPECT_EQ(task_config.text_prompts[1], "dog");
+    EXPECT_EQ(config.tokenizerVocabPath, "vocab.json");
+    EXPECT_EQ(config.tokenizerMergesPath, "merges.txt");
+}

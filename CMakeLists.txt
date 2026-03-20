@@ -31,11 +31,22 @@ message(STATUS "✓ glog found")
 
 include(FetchContent)
 
-FetchContent_Declare(
-    vision-core
-    GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
-    GIT_TAG        ${VISION_CORE_VERSION}  # Use specific version instead of master
-)
+set(VISION_CORE_LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../vision-core" CACHE PATH
+    "Local vision-core checkout to use for development integration")
+
+if(EXISTS "${VISION_CORE_LOCAL_PATH}/CMakeLists.txt")
+    message(STATUS "Using local vision-core checkout: ${VISION_CORE_LOCAL_PATH}")
+    FetchContent_Declare(
+        vision-core
+        SOURCE_DIR ${VISION_CORE_LOCAL_PATH}
+    )
+else()
+    FetchContent_Declare(
+        vision-core
+        GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
+        GIT_TAG        ${VISION_CORE_VERSION}  # Use specific version instead of master
+    )
+endif()
 
 # Fetch the neuriplo project from GitHub with specific version
 FetchContent_Declare(

@@ -55,3 +55,29 @@ TEST(ParseCommandLineArguments, ThresholdFlags) {
     EXPECT_FLOAT_EQ(config.nmsThreshold, 0.6f);
     EXPECT_FLOAT_EQ(config.maskThreshold, 0.7f);
 }
+
+TEST(ParseCommandLineArguments, OpenVocabFlags) {
+    const char* argv[] = {
+        "program",
+        "--type=owlv2",
+        "--source=input.jpg",
+        "--weights=model.onnx",
+        "--text_prompts=cat;dog",
+        "--tokenizer_vocab=vocab.json",
+        "--tokenizer_merges=merges.txt"
+    };
+    int argc = sizeof(argv) / sizeof(argv[0]);
+    touchFile("input.jpg");
+    touchFile("model.onnx");
+    touchFile("vocab.json");
+    touchFile("merges.txt");
+
+    AppConfig config = CommandLineParser::parseCommandLineArguments(argc, const_cast<char**>(argv));
+
+    EXPECT_EQ(config.detectorType, "owlv2");
+    ASSERT_EQ(config.textPrompts.size(), 2u);
+    EXPECT_EQ(config.textPrompts[0], "cat");
+    EXPECT_EQ(config.textPrompts[1], "dog");
+    EXPECT_EQ(config.tokenizerVocabPath, "vocab.json");
+    EXPECT_EQ(config.tokenizerMergesPath, "merges.txt");
+}

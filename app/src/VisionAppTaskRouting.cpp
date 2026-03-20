@@ -48,5 +48,8 @@ vision_core::TaskType VisionApp::getTaskType(const std::string& model_type) {
   if (normalized.find("depthanythingv2") != std::string::npos) {
     return vision_core::TaskType::DepthEstimation;
   }
+  if (normalized == "owlv2" || normalized == "owlvit") {
+    return vision_core::TaskType::OpenVocabDetection;
+  }
   return vision_core::TaskType::Detection; // Default for YOLO, RTDETR, etc.
 }

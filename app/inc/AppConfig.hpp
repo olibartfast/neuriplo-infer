@@ -19,7 +19,10 @@ struct AppConfig {
     std::string detectorType;
     std::vector<std::string> sources;
     std::string labelsPath;
+    std::string tokenizerVocabPath;
+    std::string tokenizerMergesPath;
     std::string weights;
+    std::vector<std::string> textPrompts;
     bool use_gpu;
     bool enable_warmup;
     bool enable_benchmark;
@@ -31,4 +34,3 @@ struct AppConfig {
     std::vector<std::vector<int64_t>> input_sizes;
     int num_frames{0};  // Number of frames for video classification (0 = use model default)
 };
-
