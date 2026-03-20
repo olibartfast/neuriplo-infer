@@ -106,19 +106,21 @@ void VisionApp::processImage(const std::string &source) {
    
   // Process results based on task type
   processResults(results, image);
-  std::filesystem::create_directories("data/output");
-  std::string processed_path = "data/output/processed.png";
-  if (!cv::imwrite(processed_path, image)) {
-   const std::string fallback_path = "/tmp/vision-inference-processed.png";
-   if (!cv::imwrite(fallback_path, image)) {
-    LOG(ERROR) << "Failed to save output image to both " << processed_path
-           << " and " << fallback_path;
+  const std::filesystem::path processed_path =
+    std::filesystem::path("data") / "output" / "processed.png";
+  std::filesystem::create_directories(processed_path.parent_path());
+  if (!cv::imwrite(processed_path.string(), image)) {
+   const std::filesystem::path fallback_path =
+     std::filesystem::temp_directory_path() / "vision-inference-processed.png";
+   if (!cv::imwrite(fallback_path.string(), image)) {
+    LOG(ERROR) << "Failed to save output image to both " << processed_path.string()
+           << " and " << fallback_path.string();
    } else {
-    LOG(WARNING) << "Could not write " << processed_path
-             << ", saved output to " << fallback_path;
+    LOG(WARNING) << "Could not write " << processed_path.string()
+                 << ", saved output to " << fallback_path.string();
    }
   } else {
-   LOG(INFO) << "Saved processed image to: " << processed_path;
+   LOG(INFO) << "Saved processed image to: " << processed_path.string();
   }
   if (config.enable_benchmark) {
    benchmark(image); // Benchmark
@@ -304,12 +306,13 @@ void VisionApp::processOpticalFlow() {
   }
    
   // Save result
-  std::string sourceDir = flowInputs[0].substr(0, flowInputs[0].find_last_of("/\\"));
-  std::string outputDir = sourceDir + "/output";
+  const std::filesystem::path sourcePath(flowInputs[0]);
+  const std::filesystem::path outputDir = sourcePath.parent_path() / "output";
   std::filesystem::create_directories(outputDir);
-  std::string processedFrameFilename = outputDir + "/processed_frame_optical_flow.jpg";
-  LOG(INFO) << "Saving frame to: " << processedFrameFilename;
-  cv::imwrite(processedFrameFilename, image);
+  const std::filesystem::path processedFrameFilename =
+    outputDir / "processed_frame_optical_flow.jpg";
+  LOG(INFO) << "Saving frame to: " << processedFrameFilename.string();
+  cv::imwrite(processedFrameFilename.string(), image);
  }
 }
 

@@ -1,5 +1,21 @@
 #include "VisionApp.hpp"
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
+
+namespace {
+
+bool hasImageExtension(const std::string& source) {
+  const std::filesystem::path sourcePath(source);
+  std::string extension = sourcePath.extension().string();
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return extension == ".jpg" || extension == ".jpeg" || extension == ".png" ||
+         extension == ".bmp" || extension == ".tif" || extension == ".tiff" ||
+         extension == ".webp";
+}
+
+} // namespace
 
 VisionApp::VisionApp(const AppConfig &config)
   : config(config) {
@@ -128,8 +144,7 @@ void VisionApp::run() {
   // Check if we have image files
   bool hasImages = false;
   for (const auto& src : config.sources) {
-   if (src.find(".jpg") != std::string::npos || 
-     src.find(".png") != std::string::npos) {
+   if (hasImageExtension(src)) {
     hasImages = true;
     break;
    }
@@ -167,7 +182,7 @@ void VisionApp::setupLogging(const std::string &log_folder) {
  try {
   // Create logs folder if it doesn't exist
   if (!std::filesystem::exists(log_folder)) {
-   std::filesystem::create_directory(log_folder);
+   std::filesystem::create_directories(log_folder);
   } else {
    // Clean old logs
    std::filesystem::directory_iterator end_itr;

@@ -1,13 +1,22 @@
 #include <fstream>
 #include <sstream>
 #include <cstring>
-#include <cpuid.h>
+#include <iomanip>
 #include <iostream>
 #include <vector>
 #include <filesystem>
 #include <algorithm>
 #include <stdexcept>
 #include "utils.hpp"
+
+#if defined(_MSC_VER)
+#include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
+
+#include <opencv2/core/cuda.hpp>
+
 namespace fs = std::filesystem;
 
 
@@ -17,7 +26,7 @@ bool isDirectory(const std::string& path) {
 }
 
 bool isFile(const std::string& path) {
-    return std::filesystem::exists(path);
+    return std::filesystem::is_regular_file(path);
 }
 
 
@@ -73,9 +82,30 @@ std::string getFileExtension(const std::string& filename) {
     return ""; // Return empty string if no extension found
 }
 std::vector<std::string> getGPUModels() {
-    constexpr auto GPU_DIRECTORY = "/proc/driver/nvidia/gpus";
     std::vector<std::string> gpuModels;
 
+    try {
+        const int deviceCount = cv::cuda::getCudaEnabledDeviceCount();
+        if (deviceCount > 0) {
+            gpuModels.reserve(static_cast<size_t>(deviceCount));
+            for (int i = 0; i < deviceCount; ++i) {
+                const cv::cuda::DeviceInfo deviceInfo(i);
+                const std::string modelName = deviceInfo.name();
+                if (!modelName.empty()) {
+                    gpuModels.push_back(modelName);
+                }
+            }
+        }
+    } catch (const cv::Exception&) {
+        // Fall back to platform-specific probes below.
+    }
+
+    if (!gpuModels.empty()) {
+        return gpuModels;
+    }
+
+#if defined(__linux__)
+    constexpr auto GPU_DIRECTORY = "/proc/driver/nvidia/gpus";
     if (!fs::exists(GPU_DIRECTORY)) {
         throw std::runtime_error("NVIDIA GPU directory not found");
     }
@@ -101,6 +131,7 @@ std::vector<std::string> getGPUModels() {
         }
         gpuInfoStream.close();
     }
+#endif
 
     if (gpuModels.empty()) {
         throw std::runtime_error("No GPU models found");
@@ -123,11 +154,27 @@ std::string getGPUModel() {
 std::string getCPUInfo() {
     std::string cpuInfo;
 
+#if defined(_MSC_VER)
+    int cpuInfoRegs[4] = {0, 0, 0, 0};
+    char brand[49] = {};
+
+    __cpuid(cpuInfoRegs, 0x80000000);
+    const unsigned int extMaxId = static_cast<unsigned int>(cpuInfoRegs[0]);
+    if (extMaxId >= 0x80000004) {
+        __cpuid(cpuInfoRegs, 0x80000002);
+        memcpy(brand, cpuInfoRegs, sizeof(cpuInfoRegs));
+        __cpuid(cpuInfoRegs, 0x80000003);
+        memcpy(brand + 16, cpuInfoRegs, sizeof(cpuInfoRegs));
+        __cpuid(cpuInfoRegs, 0x80000004);
+        memcpy(brand + 32, cpuInfoRegs, sizeof(cpuInfoRegs));
+        cpuInfo = brand;
+    }
+#else
     unsigned int cpuInfoRegs[4];
     __cpuid(0x80000000, cpuInfoRegs[0], cpuInfoRegs[1], cpuInfoRegs[2], cpuInfoRegs[3]);
     unsigned int extMaxId = cpuInfoRegs[0];
 
-    char brand[48];
+    char brand[49] = {};
     if (extMaxId >= 0x80000004) {
         __cpuid(0x80000002, cpuInfoRegs[0], cpuInfoRegs[1], cpuInfoRegs[2], cpuInfoRegs[3]);
         memcpy(brand, cpuInfoRegs, sizeof(cpuInfoRegs));
@@ -137,12 +184,22 @@ std::string getCPUInfo() {
         memcpy(brand + 32, cpuInfoRegs, sizeof(cpuInfoRegs));
         cpuInfo = brand;
     }
+#endif
 
     return cpuInfo;
 }
 
 
 bool hasNvidiaGPU() {
+    try {
+        if (cv::cuda::getCudaEnabledDeviceCount() > 0) {
+            return true;
+        }
+    } catch (const cv::Exception&) {
+        // Fall back to filesystem probes below.
+    }
+
+#if defined(__linux__)
     const std::vector<std::string> nvidiaIndicators = {
         "/proc/driver/nvidia",
         "/dev/nvidia0",
@@ -154,6 +211,7 @@ bool hasNvidiaGPU() {
             return true;
         }
     }
+#endif
 
     return false;
 }

@@ -82,6 +82,12 @@ cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
+### Windows Notes
+
+For native Windows builds, use a Visual Studio generator and start with `OPENCV_DNN`.
+The shell setup scripts in `scripts/` are Linux-oriented; on Windows, install OpenCV,
+glog, and any backend SDKs through your preferred package manager or local SDK installs.
+
 #### Enabling Video Backend Support
 
 The VideoCapture library supports multiple video processing backends with the following priority:

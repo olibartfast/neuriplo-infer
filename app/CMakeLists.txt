@@ -1,14 +1,15 @@
-# Fetch the VideoCapture project from GitHub with specific version
-include(FetchContent)
-FetchContent_Declare(
-    VideoCapture
-    GIT_REPOSITORY https://github.com/olibartfast/VideoCapture.git
-    GIT_TAG        ${VIDEOCAPTURE_VERSION}  
-)
-# Pass video backend options to VideoCapture library
-set(USE_GSTREAMER ${USE_GSTREAMER})
-set(USE_FFMPEG ${USE_FFMPEG})
-FetchContent_MakeAvailable(VideoCapture)
+if(NOT TARGET VideoCapture)
+    include(FetchContent)
+    FetchContent_Declare(
+        VideoCapture
+        GIT_REPOSITORY https://github.com/olibartfast/videocapture.git
+        GIT_TAG        ${VIDEOCAPTURE_VERSION}
+    )
+    # Pass video backend options to VideoCapture library
+    set(USE_GSTREAMER ${USE_GSTREAMER})
+    set(USE_FFMPEG ${USE_FFMPEG})
+    FetchContent_MakeAvailable(VideoCapture)
+endif()
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR:  ${CMAKE_CURRENT_SOURCE_DIR}")
 

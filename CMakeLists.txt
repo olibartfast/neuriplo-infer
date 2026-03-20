@@ -5,6 +5,13 @@ project(vision-inference)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(WIN32)
+    # Help Windows builds avoid common macro collisions and export shared-library symbols
+    # for fetched dependencies that do not provide explicit export annotations.
+    add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 # Include centralized version management
 include(cmake/versions.cmake)
 
@@ -18,7 +25,12 @@ endif()
 # set(USE_FFMPEG ON)     # Enable FFmpeg backend (takes priority over GStreamer)
 # If both enabled, priority: FFmpeg > GStreamer > OpenCV (default)
 
-message(STATUS "Home path: $ENV{HOME}")
+if(WIN32)
+    set(HOME_PATH "$ENV{USERPROFILE}")
+else()
+    set(HOME_PATH "$ENV{HOME}")
+endif()
+message(STATUS "Home path: ${HOME_PATH}")
 
 # Include dependency validation
 include(cmake/DependencyValidation.cmake)
