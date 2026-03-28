@@ -124,6 +124,7 @@ jobs:
           cmake -B build \
             -DDEFAULT_BACKEND=LIBTORCH \
             -DCMAKE_PREFIX_PATH=$HOME/libtorch \
+            -DLIBTORCH_DIR=$HOME/libtorch \
             -DENABLE_APP_TESTS=OFF \
             -DCMAKE_BUILD_TYPE=Release
 

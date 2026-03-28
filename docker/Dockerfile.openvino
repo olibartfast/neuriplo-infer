@@ -4,7 +4,7 @@
 # because Docker evaluates FROM instructions before any RUN commands can execute.
 # This means versions.env cannot be sourced to populate it at build time.
 # Keep this version in sync with OPENVINO_VERSION in neuriplo/versions.env.
-ARG OPENVINO_VERSION=2025.4.1
+ARG OPENVINO_VERSION=2025.2.0
 
 # Stage 1: Build
 FROM openvino/ubuntu24_runtime:${OPENVINO_VERSION} AS builder
@@ -14,7 +14,7 @@ ENV HOME=/root
 ENV OpenVINO_DIR=${INTEL_OPENVINO_DIR}/runtime/cmake
 ENV IE_PLUGINS_PATH=${INTEL_OPENVINO_DIR}/runtime/lib/intel64
 ENV LD_LIBRARY_PATH=/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:${LD_LIBRARY_PATH}
-ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
+ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/develop/versions.env
 USER root
 
 # Install common dependencies
@@ -32,6 +32,10 @@ RUN apt-get update \
 
 RUN wget -q -O /tmp/versions.env "${NEURIPLO_VERSIONS_URL}"
 
+RUN . /tmp/versions.env && \
+    mkdir -p "$HOME/dependencies" && \
+    ln -s "${INTEL_OPENVINO_DIR}" "$HOME/dependencies/openvino_${OPENVINO_VERSION}"
+
 ARG BACKEND=OPENVINO
 
 WORKDIR /app
@@ -43,7 +47,7 @@ RUN cmake -Bbuild -H. -DDEFAULT_BACKEND=OPENVINO -DBUILD_INFERENCE_ENGINE_TESTS=
     cmake --build build --config Release -j$(nproc)
 
 # Stage 2: Final image
-ARG OPENVINO_VERSION=2025.4.1
+ARG OPENVINO_VERSION=2025.2.0
 FROM openvino/ubuntu24_runtime:${OPENVINO_VERSION} AS final
 
 ENV DEBIAN_FRONTEND=noninteractive
