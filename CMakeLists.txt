@@ -5,6 +5,11 @@ project(vision-inference)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(ENABLE_APP_TESTS "Enable unit testing for app module" OFF)
+if(ENABLE_APP_TESTS)
+    enable_testing()
+endif()
+
 # Include centralized version management
 include(cmake/versions.cmake)
 

@@ -1,0 +1,43 @@
+name: Release Check
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  release-validate:
+    name: Release Validation
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install shared dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Verify release branch ancestry
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin develop master
+          if ! git merge-base --is-ancestor origin/develop HEAD; then
+            echo "Release PR head must contain the current develop branch history." >&2
+            exit 1
+          fi
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DENABLE_APP_TESTS=ON \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(nproc)
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure

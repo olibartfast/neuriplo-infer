@@ -333,9 +333,23 @@ Docker containers handle dependencies automatically:
 docker build --rm -t vision-inference:onnxruntime \
     -f docker/Dockerfile.onnxruntime .
 
-# Run with GPU support
-docker run --gpus all vision-inference:onnxruntime \
-    --type=yolov8 --weights=model.onnx --source=image.jpg
+# Run a direct container invocation
+docker run --rm vision-inference:onnxruntime \
+    --type=yolo --weights=model.onnx --source=image.jpg
+```
+
+For export-plus-inference examples, use the generic helper script from the repo root:
+
+```bash
+# Preview the OWLv2 end-to-end flow
+bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
+
+# Run the full OWLv2 flow with ONNX Runtime
+mkdir -p /tmp/vision-inference-e2e
+bash docker_run_inference_e2e_example.sh \
+    --preset owlv2 \
+    --text-prompts 'person;dog;bicycle' \
+    --weights-dir /tmp/vision-inference-e2e
 ```
 
 ## Best Practices

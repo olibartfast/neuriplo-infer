@@ -33,9 +33,64 @@ endfunction()
 # Read versions from the .env file
 read_versions_from_env()
 
+if(NOT DEFINED DEPENDENCIES_VERSION OR "${DEPENDENCIES_VERSION}" STREQUAL "")
+    message(FATAL_ERROR "DEPENDENCIES_VERSION must be set in versions.env")
+endif()
+
+function(validate_current_branch_matches_dependencies_ref)
+    if(NOT EXISTS "${CMAKE_SOURCE_DIR}/.git")
+        message(STATUS "Skipping branch/ref validation because ${CMAKE_SOURCE_DIR} is not a git checkout")
+        return()
+    endif()
+
+    execute_process(
+        COMMAND git rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE CURRENT_BRANCH
+        ERROR_VARIABLE GIT_ERROR
+        RESULT_VARIABLE GIT_RESULT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if(NOT GIT_RESULT EQUAL 0)
+        string(STRIP "${GIT_ERROR}" GIT_ERROR)
+        message(FATAL_ERROR
+            "Failed to determine the current vision-inference branch with "
+            "'git rev-parse --abbrev-ref HEAD': ${GIT_ERROR}")
+    endif()
+
+    if("${CURRENT_BRANCH}" STREQUAL "HEAD")
+        message(FATAL_ERROR
+            "vision-inference is in a detached HEAD state, but DEPENDENCIES_VERSION="
+            "${DEPENDENCIES_VERSION} requires a matching branch checkout.")
+    endif()
+
+    if(NOT "${CURRENT_BRANCH}" STREQUAL "${DEPENDENCIES_VERSION}")
+        message(FATAL_ERROR
+            "Current vision-inference branch '${CURRENT_BRANCH}' does not match "
+            "DEPENDENCIES_VERSION='${DEPENDENCIES_VERSION}'. "
+            "Check out the '${DEPENDENCIES_VERSION}' branch or update versions.env.")
+    endif()
+endfunction()
+
+validate_current_branch_matches_dependencies_ref()
+
+foreach(COMPONENT_VERSION_VAR NEURIPLO_VERSION VIDEOCAPTURE_VERSION VISION_CORE_VERSION)
+    if(DEFINED ${COMPONENT_VERSION_VAR} AND NOT "${${COMPONENT_VERSION_VAR}}" STREQUAL "" AND
+       NOT "${${COMPONENT_VERSION_VAR}}" STREQUAL "${DEPENDENCIES_VERSION}")
+        message(FATAL_ERROR
+            "${COMPONENT_VERSION_VAR}=${${COMPONENT_VERSION_VAR}} does not match "
+            "DEPENDENCIES_VERSION=${DEPENDENCIES_VERSION}. "
+            "vision-inference requires neuriplo, videocapture, and vision-core to target the same ref.")
+    endif()
+endforeach()
+
 # External C++ Libraries (fetched via CMake FetchContent)
-set(NEURIPLO_VERSION ${NEURIPLO_VERSION} CACHE STRING "neuriplo")
-set(VIDEOCAPTURE_VERSION ${VIDEOCAPTURE_VERSION} CACHE STRING "VideoCapture library version")
+set(DEPENDENCIES_VERSION ${DEPENDENCIES_VERSION} CACHE STRING
+    "Shared git ref for neuriplo, VideoCapture, and vision-core" FORCE)
+set(NEURIPLO_VERSION ${DEPENDENCIES_VERSION} CACHE STRING "neuriplo" FORCE)
+set(VIDEOCAPTURE_VERSION ${DEPENDENCIES_VERSION} CACHE STRING "VideoCapture library version" FORCE)
+set(VISION_CORE_VERSION ${DEPENDENCIES_VERSION} CACHE STRING "vision-core library version" FORCE)
 
 # System Dependencies (minimum versions)
 set(OPENCV_MIN_VERSION ${OPENCV_MIN_VERSION} CACHE STRING "Minimum OpenCV version")
@@ -44,8 +99,10 @@ set(CMAKE_MIN_VERSION ${CMAKE_MIN_VERSION} CACHE STRING "Minimum CMake version")
 
 # Print version information for debugging
 message(STATUS "=== Project Dependency Versions ===")
+message(STATUS "shared dependency ref: ${DEPENDENCIES_VERSION}")
 message(STATUS "neuriplo: ${NEURIPLO_VERSION}")
 message(STATUS "VideoCapture: ${VIDEOCAPTURE_VERSION}")
+message(STATUS "vision-core: ${VISION_CORE_VERSION}")
 message(STATUS "OpenCV Min: ${OPENCV_MIN_VERSION}")
 message(STATUS "glog Min: ${GLOG_MIN_VERSION}")
 message(STATUS "CMake Min: ${CMAKE_MIN_VERSION}")

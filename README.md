@@ -36,6 +36,14 @@ This project automatically fetches:
 
 When a sibling checkout exists at `../vision-core`, the build uses that local source tree instead of fetching from GitHub. This is the recommended setup for integrating current `vision-core` `develop` changes into `vision-inference`.
 
+## Development Workflow
+
+- `develop` is the integration branch for normal feature and fix work.
+- `master` is release-only and should only receive release PRs and tagged releases.
+- Use short-lived topic branches such as `feat/...`, `fix/...`, `refactor/...`, `docs/...`, and `chore/...`.
+- Open normal pull requests into `develop`.
+- Open release pull requests into `master`, then cut tags from `master`.
+
 
 ## Setup
 For the selected inference backends, set up the required dependencies first:
@@ -286,8 +294,8 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 Inside the project, in the [Dockerfiles folder](docker), there will be a dockerfile for each inference backend (currently onnxruntime, libtorch, tensorrt, openvino)
 ```bash
 # Build for specific backend
-docker build --rm -t vision-inference:<backend_tag>  \
-    -f docker/Dockerfile.backend .
+docker build --rm -t vision-inference:<backend_tag> \
+    -f docker/Dockerfile.<backend_tag> .
 ```
 
 ### Running Containers
@@ -306,6 +314,57 @@ docker run --rm \
 
 
 For GPU support, add `--gpus all` to the docker run command.
+
+### Generic End-to-End Example Script
+
+Use the generic Docker end-to-end helper at [`docker_run_inference_e2e_example.sh`](docker_run_inference_e2e_example.sh). It replaces the old task-specific RT-DETRv4 script and provides preset-driven export and inference workflows.
+
+Inspect the available presets:
+
+```bash
+bash docker_run_inference_e2e_example.sh --list-presets
+```
+
+Preview a workflow without executing it:
+
+```bash
+bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
+```
+
+### Full OWLv2 End-to-End Run
+
+OWLv2 uses the `onnxruntime` backend by default in the generic e2e script.
+
+Build the container:
+
+```bash
+docker build --rm -t vision-inference:onnxruntime \
+    -f docker/Dockerfile.onnxruntime .
+```
+
+Run the full export and inference flow:
+
+```bash
+mkdir -p /tmp/vision-inference-e2e
+
+bash docker_run_inference_e2e_example.sh \
+    --preset owlv2 \
+    --text-prompts 'person;dog;bicycle' \
+    --weights-dir /tmp/vision-inference-e2e
+```
+
+This flow expects:
+
+- a sibling `vision-core` checkout at `../vision-core`
+- tokenizer assets at `../vision-core/vocab.json` and `../vision-core/merges.txt`
+- sample input image at `data/dog.jpg`
+- a working `python3` or `python` on the host for export-time virtualenv creation
+
+The script-level OWLv2 dry-run test is also exposed through CTest:
+
+```bash
+ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
+```
 
 
 ## Additional Resources

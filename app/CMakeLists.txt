@@ -46,10 +46,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     vision-core
 )
 
-# Option to enable unit tests for the app module
-option(ENABLE_APP_TESTS "Enable unit testing for app module" OFF)
-
 if(ENABLE_APP_TESTS)
-    enable_testing()
     add_subdirectory(test)
 endif()

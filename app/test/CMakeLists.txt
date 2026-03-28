@@ -58,3 +58,8 @@ target_link_libraries(${PROJECT_NAME_TEST} PUBLIC gtest gtest_main glog::glog ${
 
 # Discover and run tests
 gtest_discover_tests(${PROJECT_NAME_TEST})
+
+add_test(
+    NAME docker_run_inference_e2e_owlv2_dry_run
+    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR}
+)

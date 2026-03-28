@@ -60,7 +60,7 @@ COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
 # Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located
-ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH:-}
 
 # Set the entry point to the compiled executable
 ENTRYPOINT ["./vision-inference"]

@@ -1,0 +1,31 @@
+name: Claude Review
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, ready_for_review]
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip when Anthropic secret is unavailable
+        if: env.ANTHROPIC_API_KEY == ''
+        run: echo "ANTHROPIC_API_KEY is not set; skipping Claude review."
+
+      - uses: anthropics/claude-code-action@main
+        if: env.ANTHROPIC_API_KEY != ''
+        with:
+          mode: review
+        env:
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
