@@ -8,6 +8,11 @@ runs:
       shell: bash
       run: |
         . ./versions.env
+        neuriplo_ref="${NEURIPLO_VERSION:-${DEPENDENCIES_VERSION:-}}"
+        if [[ -z "${neuriplo_ref}" ]]; then
+          echo "Neither NEURIPLO_VERSION nor DEPENDENCIES_VERSION is set in versions.env" >&2
+          exit 1
+        fi
         mkdir -p build/_deps/neuriplo-src
-        curl -fsSL https://raw.githubusercontent.com/olibartfast/neuriplo/${NEURIPLO_VERSION}/versions.env \
+        curl -fsSL "https://raw.githubusercontent.com/olibartfast/neuriplo/${neuriplo_ref}/versions.env" \
           -o build/_deps/neuriplo-src/versions.env

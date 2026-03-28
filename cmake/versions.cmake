@@ -43,6 +43,26 @@ function(validate_current_branch_matches_dependencies_ref)
         return()
     endif()
 
+    set(CURRENT_BRANCH "")
+
+    # GitHub Actions checks out pull requests in detached HEAD state.
+    # Prefer the explicit branch name from the workflow environment when present.
+    if(DEFINED ENV{GITHUB_HEAD_REF} AND NOT "$ENV{GITHUB_HEAD_REF}" STREQUAL "")
+        set(CURRENT_BRANCH "$ENV{GITHUB_HEAD_REF}")
+    elseif(DEFINED ENV{GITHUB_REF_NAME} AND NOT "$ENV{GITHUB_REF_NAME}" STREQUAL "")
+        set(CURRENT_BRANCH "$ENV{GITHUB_REF_NAME}")
+    endif()
+
+    if(NOT "${CURRENT_BRANCH}" STREQUAL "")
+        if(NOT "${CURRENT_BRANCH}" STREQUAL "${DEPENDENCIES_VERSION}")
+            message(FATAL_ERROR
+                "Current vision-inference branch '${CURRENT_BRANCH}' does not match "
+                "DEPENDENCIES_VERSION='${DEPENDENCIES_VERSION}'. "
+                "Check out the '${DEPENDENCIES_VERSION}' branch or update versions.env.")
+        endif()
+        return()
+    endif()
+
     execute_process(
         COMMAND git rev-parse --abbrev-ref HEAD
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
