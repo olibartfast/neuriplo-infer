@@ -43,6 +43,26 @@ function(validate_current_branch_matches_dependencies_ref)
         return()
     endif()
 
+    set(IS_ALLOWED_RELEASE_BRANCH FALSE)
+
+    function(check_branch_ref_match BRANCH_NAME)
+        if("${BRANCH_NAME}" STREQUAL "${DEPENDENCIES_VERSION}")
+            set(BRANCH_MATCH_RESULT TRUE PARENT_SCOPE)
+            return()
+        endif()
+
+        if("${DEPENDENCIES_VERSION}" STREQUAL "develop" AND
+           ("${BRANCH_NAME}" STREQUAL "master" OR "${BRANCH_NAME}" MATCHES "^release/"))
+            message(STATUS
+                "Allowing release branch '${BRANCH_NAME}' to use DEPENDENCIES_VERSION="
+                "'${DEPENDENCIES_VERSION}'")
+            set(BRANCH_MATCH_RESULT TRUE PARENT_SCOPE)
+            return()
+        endif()
+
+        set(BRANCH_MATCH_RESULT FALSE PARENT_SCOPE)
+    endfunction()
+
     set(CURRENT_BRANCH "")
 
     # GitHub Actions checks out pull requests in detached HEAD state.
@@ -54,11 +74,13 @@ function(validate_current_branch_matches_dependencies_ref)
     endif()
 
     if(NOT "${CURRENT_BRANCH}" STREQUAL "")
-        if(NOT "${CURRENT_BRANCH}" STREQUAL "${DEPENDENCIES_VERSION}")
+        check_branch_ref_match("${CURRENT_BRANCH}")
+        if(NOT BRANCH_MATCH_RESULT)
             message(FATAL_ERROR
                 "Current vision-inference branch '${CURRENT_BRANCH}' does not match "
                 "DEPENDENCIES_VERSION='${DEPENDENCIES_VERSION}'. "
-                "Check out the '${DEPENDENCIES_VERSION}' branch or update versions.env.")
+                "Check out the '${DEPENDENCIES_VERSION}' branch, use a release branch, "
+                "or update versions.env.")
         endif()
         return()
     endif()
@@ -85,11 +107,13 @@ function(validate_current_branch_matches_dependencies_ref)
             "${DEPENDENCIES_VERSION} requires a matching branch checkout.")
     endif()
 
-    if(NOT "${CURRENT_BRANCH}" STREQUAL "${DEPENDENCIES_VERSION}")
+    check_branch_ref_match("${CURRENT_BRANCH}")
+    if(NOT BRANCH_MATCH_RESULT)
         message(FATAL_ERROR
             "Current vision-inference branch '${CURRENT_BRANCH}' does not match "
             "DEPENDENCIES_VERSION='${DEPENDENCIES_VERSION}'. "
-            "Check out the '${DEPENDENCIES_VERSION}' branch or update versions.env.")
+            "Check out the '${DEPENDENCIES_VERSION}' branch, use a release branch, "
+            "or update versions.env.")
     endif()
 endfunction()
 
