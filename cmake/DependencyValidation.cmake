@@ -15,7 +15,9 @@ function(validate_dependency dependency_name dependency_path)
 endfunction()
 
 # Function to validate system dependencies
-function(validate_system_dependencies)
+# Named validate_project_system_dependencies to avoid collision with neuriplo's
+# validate_system_dependencies which gets loaded via FetchContent
+function(validate_project_system_dependencies)
     # OpenCV and glog should already be found before this function is called
     # Just validate versions if they're already found
     if(NOT OpenCV_FOUND)
@@ -54,10 +56,12 @@ function(validate_fetched_dependencies)
 endfunction()
 
 # Function to validate all dependencies for this project
-function(validate_all_dependencies)
+# Named validate_project_dependencies to avoid collision with neuriplo's
+# validate_all_dependencies which gets loaded via FetchContent
+function(validate_project_dependencies)
     message(STATUS "=== Validating Project Dependencies ===")
     
-    validate_system_dependencies()
+    validate_project_system_dependencies()
     validate_fetched_dependencies()
     
     message(STATUS "=== All Project Dependencies Validated Successfully ===")

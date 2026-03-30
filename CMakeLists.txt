@@ -80,7 +80,7 @@ if(TARGET VideoCapture)
 endif()
 
 # Validate all dependencies after they have been fetched
-validate_all_dependencies()
+validate_project_dependencies()
 
 # Define paths
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
