@@ -6,7 +6,7 @@ FROM nvcr.io/nvidia/cuda:${NGC_CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS cu
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
-ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
+ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/develop/versions.env
 
 # Install system dependencies with version pinning
 RUN apt-get update && apt-get upgrade -y && \
