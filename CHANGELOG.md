@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-31
+
 ### Added
 - TensorRT Docker build job in CI workflow
 - OWLv2 open-vocabulary detection support (via vision-core)
@@ -31,14 +33,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Composite GitHub Action to fetch neuriplo `versions.env`
 - OpenVINO and LibTensorflow Docker CI builds
 - GTest-based unit test suite (CLI parsing, threshold mapping, utils)
-
-### Fixed
 - Docker builds no longer depend on pre-existing `build/_deps/neuriplo-src/versions.env` (#15)
 - Confidence/NMS/mask thresholds now correctly passed from CLI to task factory (#18)
-
-### Changed
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via vision-core)
 
-[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/olibartfast/vision-inference/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/olibartfast/vision-inference/releases/tag/v0.1.0
