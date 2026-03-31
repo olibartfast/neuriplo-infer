@@ -10,6 +10,12 @@ Short description of the change.
 - [ ] Refactor (no behavior change)
 - [ ] Docs or generated metadata sync
 
+## Change Class
+
+Must match one canonical change-class ID from `ops/policies.yaml`.
+
+- Change class ID: ``
+
 ## Evidence
 
 - Build: PASS / FAIL

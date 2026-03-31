@@ -22,6 +22,8 @@ allowed_change_classes:
     description: Align version files, setup scripts, and documentation for already-approved dependencies.
   - id: docs-sync
     description: Update docs or generated metadata to match existing behavior.
+  - id: api-migration-source
+    description: Make source-repo contract updates and required metadata changes after explicit human review of the API change.
   - id: downstream-api-migration
     description: Apply mechanical updates in consumers after a reviewed source-repo API change.
   - id: backend-config-fix

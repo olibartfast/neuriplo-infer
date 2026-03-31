@@ -56,6 +56,7 @@ consumers:
 automation_rules:
   allowed_change_classes:
     - ci-triage
+    - api-migration-source
     - test-fix
     - docs-sync
   forbidden_change_classes:

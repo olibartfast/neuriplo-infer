@@ -22,7 +22,7 @@ entrypoints:
   test:
     - ctest --test-dir build-test --output-on-failure
   benchmark_smoke:
-    - ./build/vision-inference --type=yolo --source=data/images/dog.jpg --weights=models/model.onnx --benchmark --iterations=10
+    - VISION_INFERENCE_BENCHMARK_WEIGHTS=<path-to-yolo-weights.onnx> ./build/app/vision-inference --type=yolo --source=data/dog.jpg --weights=${VISION_INFERENCE_BENCHMARK_WEIGHTS} --benchmark --iterations=10
 
 api_surface:
   cli_flags:

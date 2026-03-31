@@ -44,6 +44,7 @@ consumers:
 automation_rules:
   allowed_change_classes:
     - ci-triage
+    - dependency-sync
     - io-regression-fix
     - docs-sync
   forbidden_change_classes:
