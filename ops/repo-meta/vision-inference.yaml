@@ -1,0 +1,85 @@
+name: vision-inference
+repo_root: .
+role: application
+default_branches:
+  integration: develop
+  release: master
+
+dependencies:
+  - vision-core
+  - neuriplo
+  - videocapture
+
+entrypoints:
+  configure_default:
+    - cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release
+  configure_with_tests:
+    - cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+  build:
+    - cmake --build build
+  build_with_tests:
+    - cmake --build build-test
+  test:
+    - ctest --test-dir build-test --output-on-failure
+  benchmark_smoke:
+    - VISION_INFERENCE_BENCHMARK_WEIGHTS=<path-to-yolo-weights.onnx> ./build/app/vision-inference --type=yolo --source=data/dog.jpg --weights=${VISION_INFERENCE_BENCHMARK_WEIGHTS} --benchmark --iterations=10
+
+api_surface:
+  cli_flags:
+    - type
+    - source
+    - weights
+    - labels
+    - text_prompts
+    - tokenizer_vocab
+    - tokenizer_merges
+    - min_confidence
+    - nms_threshold
+    - mask_threshold
+    - batch
+    - input_sizes
+    - use-gpu
+    - warmup
+    - benchmark
+    - iterations
+  public_components:
+    - VisionApp
+    - CommandLineParser
+    - AppConfig
+
+constraints:
+  preserve_cli_compatibility: true
+  preserve_output_schema: true
+  protect_backend_fallback_behavior: true
+  protect_latency_sensitive_paths: true
+
+owned_paths:
+  - app/
+  - CMakeLists.txt
+  - cmake/
+  - scripts/
+  - docs/
+  - versions.env
+
+cross_repo_contracts:
+  consumes_from_vision_core:
+    - TaskFactory model types
+    - Result variant semantics
+    - Tensor shape assumptions
+  consumes_from_neuriplo:
+    - backend selection and runtime wiring
+    - dependency version compatibility
+  consumes_from_videocapture:
+    - source open semantics
+    - backend selection priority
+
+automation_rules:
+  allowed_change_classes:
+    - ci-triage
+    - test-fix
+    - docs-sync
+    - downstream-api-migration
+  forbidden_change_classes:
+    - model-io-change
+    - inference-logic-change
+    - packaging-release-change

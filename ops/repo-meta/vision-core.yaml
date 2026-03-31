@@ -1,0 +1,65 @@
+name: vision-core
+repo_root: ../vision-core
+role: task-contracts
+default_branches:
+  integration: develop
+  release: master
+
+dependencies: []
+
+entrypoints:
+  configure:
+    - cmake -S . -B build -DBUILD_TESTS=ON
+  build:
+    - cmake --build build --parallel
+  test:
+    - ctest --test-dir build --output-on-failure
+
+api_surface:
+  public_components:
+    - TaskFactory
+    - TaskInterface
+    - ModelInfo
+    - Tensor
+    - Result variant types
+  stable_model_type_strings:
+    - yolo
+    - yolonas
+    - rtdetr
+    - rtdetrul
+    - rfdetr
+    - yoloseg
+    - videomae
+    - vivit
+    - timesformer
+    - raft
+    - vitpose
+    - depth_anything_v2
+    - owlv2
+
+constraints:
+  preserve_task_contracts: true
+  preserve_result_schema: true
+  review_shape_dtype_changes: mandatory
+  avoid_unnecessary_copies: true
+
+owned_paths:
+  - include/
+  - src/
+  - tests/
+  - export/
+  - CMakeLists.txt
+
+consumers:
+  - vision-inference
+
+automation_rules:
+  allowed_change_classes:
+    - ci-triage
+    - api-migration-source
+    - test-fix
+    - docs-sync
+  forbidden_change_classes:
+    - model-io-change
+    - inference-logic-change
+    - large-refactor

@@ -60,10 +60,27 @@ function(validate_current_branch_matches_dependencies_ref)
             return()
         endif()
 
+        if("${DEPENDENCIES_VERSION}" STREQUAL "develop" AND
+           "${BRANCH_NAME}" MATCHES "^(feat|fix|refactor|docs|chore)/")
+            message(STATUS
+                "Allowing topic branch '${BRANCH_NAME}' to use DEPENDENCIES_VERSION="
+                "'${DEPENDENCIES_VERSION}'")
+            set(BRANCH_MATCH_RESULT TRUE PARENT_SCOPE)
+            return()
+        endif()
+
         set(BRANCH_MATCH_RESULT FALSE PARENT_SCOPE)
     endfunction()
 
     set(CURRENT_BRANCH "")
+
+    # On pull_request workflows, the base branch is the compatibility target.
+    if(DEFINED ENV{GITHUB_BASE_REF} AND NOT "$ENV{GITHUB_BASE_REF}" STREQUAL "")
+        check_branch_ref_match("$ENV{GITHUB_BASE_REF}")
+        if(BRANCH_MATCH_RESULT)
+            return()
+        endif()
+    endif()
 
     # GitHub Actions checks out pull requests in detached HEAD state.
     # Prefer the explicit branch name from the workflow environment when present.
