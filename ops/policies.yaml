@@ -1,0 +1,60 @@
+branch_policy:
+  integration_branch: develop
+  release_branch: master
+  normal_work_targets:
+    - develop
+  release_work_targets:
+    - master
+
+automation_policy:
+  require_small_reviewable_prs: true
+  allow_auto_merge: false
+  require_pr_evidence: true
+  require_repo_local_validation: true
+  require_cross_repo_validation_for_contract_changes: true
+
+allowed_change_classes:
+  - id: ci-triage
+    description: Fix broken builds, failing tests, or stale CI wiring without changing public behavior.
+  - id: test-fix
+    description: Add or repair tests that cover an already-understood bug or regression.
+  - id: dependency-sync
+    description: Align version files, setup scripts, and documentation for already-approved dependencies.
+  - id: docs-sync
+    description: Update docs or generated metadata to match existing behavior.
+  - id: downstream-api-migration
+    description: Apply mechanical updates in consumers after a reviewed source-repo API change.
+  - id: backend-config-fix
+    description: Repair backend path, version, or configuration wiring without changing inference semantics.
+  - id: io-regression-fix
+    description: Repair non-architectural video input regressions with matching tests.
+
+forbidden_change_classes:
+  - id: model-io-change
+    description: Any change to tensor shapes, dtype, output schema, or semantic meaning.
+  - id: inference-logic-change
+    description: Changes to model decoding, fallback behavior, or decision logic without explicit human approval.
+  - id: perf-critical-kernel-change
+    description: CUDA, TensorRT, low-level kernel, or synchronization changes.
+  - id: new-dependency
+    description: Introducing new system, package, or runtime dependencies.
+  - id: packaging-release-change
+    description: Docker, packaging, release branches, version tags, or release workflow changes.
+  - id: large-refactor
+    description: Architectural or wide-scope refactors spanning multiple modules or repos.
+
+required_evidence:
+  - build_success
+  - test_results
+  - api_breakage_assessment
+  - cross_repo_impact_summary
+
+performance_gates:
+  latency_regression_pct_max: 5
+  throughput_regression_pct_max: 5
+  accuracy_drop_max: 0.01
+
+output_consistency:
+  require_shape_stability: true
+  require_schema_stability: true
+  numerical_drift_tolerance: project_defined

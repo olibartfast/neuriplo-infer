@@ -1,0 +1,52 @@
+name: videocapture
+repo_root: ../videocapture
+role: video-io
+default_branches:
+  integration: develop
+  release: master
+
+dependencies: []
+
+entrypoints:
+  configure_default:
+    - cmake -S . -B build
+  configure_gstreamer:
+    - cmake -S . -B build -DUSE_GSTREAMER=ON
+  build:
+    - cmake --build build
+  sample_app:
+    - ./build/bin/VideoCaptureApp <path/to/video>
+
+api_surface:
+  public_components:
+    - VideoCapture library target
+    - source opening semantics
+    - backend selection behavior
+  backend_flags:
+    - USE_GSTREAMER
+    - USE_FFMPEG
+
+constraints:
+  preserve_source_semantics: true
+  preserve_backend_priority: true
+  review_stream_behavior_changes: mandatory
+
+owned_paths:
+  - src/
+  - include/
+  - app/
+  - CMakeLists.txt
+  - Readme.md
+
+consumers:
+  - vision-inference
+
+automation_rules:
+  allowed_change_classes:
+    - ci-triage
+    - io-regression-fix
+    - docs-sync
+  forbidden_change_classes:
+    - packaging-release-change
+    - large-refactor
+    - new-dependency

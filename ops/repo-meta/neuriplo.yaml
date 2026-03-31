@@ -1,0 +1,60 @@
+name: neuriplo
+repo_root: ../neuriplo
+role: backend-orchestrator
+default_branches:
+  integration: develop
+  release: master
+
+dependencies: []
+
+entrypoints:
+  configure:
+    - cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DBUILD_INFERENCE_ENGINE_TESTS=ON
+  build:
+    - cmake --build build
+  test:
+    - ctest --test-dir build --output-on-failure
+  backend_matrix:
+    - ./scripts/test_backends.sh
+
+api_surface:
+  public_components:
+    - inference backend abstraction
+    - backend selection contract
+    - versions.env driven dependency configuration
+  supported_backends:
+    - OPENCV_DNN
+    - ONNX_RUNTIME
+    - LIBTORCH
+    - TENSORRT
+    - OPENVINO
+    - LIBTENSORFLOW
+    - GGML
+    - TVM
+
+constraints:
+  preserve_backend_selection_behavior: true
+  preserve_device_placement_expectations: true
+  review_runtime_version_changes: mandatory
+  protect_fallback_behavior: true
+
+owned_paths:
+  - backends/
+  - cmake/
+  - scripts/
+  - docs/
+  - versions.env
+
+consumers:
+  - vision-inference
+
+automation_rules:
+  allowed_change_classes:
+    - ci-triage
+    - dependency-sync
+    - backend-config-fix
+    - docs-sync
+  forbidden_change_classes:
+    - inference-logic-change
+    - perf-critical-kernel-change
+    - new-dependency

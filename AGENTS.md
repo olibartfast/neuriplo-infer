@@ -38,3 +38,11 @@ Avoid:
 - Latency regressions
 - Memory copies and synchronization points
 - Backend fallback behavior and logging
+
+## Agentic maintenance assets
+
+- Cluster-level metadata and runbooks live under `ops/`.
+- Use `ops/CLUSTER_MAP.yaml` as the source of truth for repo ownership, dependency edges, and validation order.
+- Use `ops/repo-meta/*.yaml` for repo-specific build, test, benchmark, and API-surface metadata.
+- Use `ops/policies.yaml` before proposing or implementing automated changes; changes outside the allowed classes require human review.
+- Use `ops/runbooks/` for the execution flow for CI triage and cross-repo API migrations.
