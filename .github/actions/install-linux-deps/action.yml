@@ -8,7 +8,7 @@ runs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
+        sudo apt-get install -y --no-install-recommends \
           cmake build-essential git wget \
           libopencv-dev \
           libgoogle-glog-dev \
