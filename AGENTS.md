@@ -6,6 +6,8 @@
 - `master` is the protected release-only branch.
 - All normal feature, fix, refactor, docs, and chore work should land through pull requests into `develop`.
 - Pull requests into `master` are release PRs only and should be treated as release-safety checks.
+- Before creating a release, update both `VERSION` and `CHANGELOG.md`.
+- After finishing a release, delete any temporary branches created ad hoc for that release.
 - Do not suggest switching this repository to a `main`-centric trunk workflow.
 
 ## Review focus
