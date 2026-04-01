@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Require `--tokenizer_vocab` and `--tokenizer_merges` explicitly for open-vocabulary detection
 - Include TensorFlow runtime libraries in the `libtensorflow` Docker runtime image
 - Fix Docker E2E script TensorRT image naming and RAFT multi-frame input handling
+- Resolve `DEPENDENCIES_VERSION=self` correctly when fetching neuriplo versions in CI
+- Pass explicit dependency refs into Docker CI builds for libtensorflow, TensorRT, and OpenVINO
+- Honor explicit `DEPENDENCIES_VERSION` overrides in non-git build contexts such as Docker
 
 ## [0.2.0] - 2026-03-31
 
