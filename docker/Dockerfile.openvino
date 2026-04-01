@@ -14,7 +14,6 @@ ENV HOME=/root
 ENV OpenVINO_DIR=${INTEL_OPENVINO_DIR}/runtime/cmake
 ENV IE_PLUGINS_PATH=${INTEL_OPENVINO_DIR}/runtime/lib/intel64
 ENV LD_LIBRARY_PATH=/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:${LD_LIBRARY_PATH}
-ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 USER root
 
 # Install common dependencies
@@ -30,14 +29,17 @@ RUN apt-get update \
     libgoogle-glog-dev \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-RUN wget -q -O /tmp/versions.env "${NEURIPLO_VERSIONS_URL}"
+COPY VERSION /tmp/vision-inference.VERSION
+
+RUN dependency_ref=develop && \
+    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/vision-inference.VERSION; then dependency_ref=master; fi && \
+    wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
 RUN . /tmp/versions.env && \
     mkdir -p "$HOME/dependencies" && \
     ln -s "${INTEL_OPENVINO_DIR}" "$HOME/dependencies/openvino_${OPENVINO_VERSION}"
 
 ARG BACKEND=OPENVINO
-ARG DEPENDENCIES_VERSION=develop
 
 WORKDIR /app
 
@@ -46,7 +48,6 @@ COPY . .
 # Build the project using CMake
 RUN cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=OPENVINO \
-    -DDEPENDENCIES_VERSION=${DEPENDENCIES_VERSION} \
     -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DBUILD_TESTS=OFF && \
     cmake --build build --config Release -j$(nproc)
 

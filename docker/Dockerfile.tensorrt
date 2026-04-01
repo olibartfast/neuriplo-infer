@@ -6,7 +6,6 @@ FROM nvcr.io/nvidia/cuda:${NGC_CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS cu
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
-ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 
 # Install system dependencies with version pinning
 RUN apt-get update && apt-get upgrade -y && \
@@ -19,7 +18,11 @@ RUN apt-get update && apt-get upgrade -y && \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget -q -O /tmp/versions.env "${NEURIPLO_VERSIONS_URL}"
+COPY VERSION /tmp/vision-inference.VERSION
+
+RUN dependency_ref=develop && \
+    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/vision-inference.VERSION; then dependency_ref=master; fi && \
+    wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
 # Stage 2: Install TensorRT dependencies
 FROM cuda_dependencies AS backend_dependencies
@@ -46,7 +49,6 @@ ENV PATH=${TENSORRT_DIR}/bin:${PATH}
 FROM backend_dependencies AS builder
 
 ARG BACKEND=TENSORRT
-ARG DEPENDENCIES_VERSION=develop
 
 WORKDIR /app
 
@@ -56,7 +58,6 @@ COPY . .
 RUN . /tmp/versions.env && \
     cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=${BACKEND} \
-    -DDEPENDENCIES_VERSION=${DEPENDENCIES_VERSION} \
     -DTRT_VERSION=${TENSORRT_VERSION} \
     -DTENSORRT_DIR=${TENSORRT_DIR} \
     -DBUILD_TESTS=OFF && \

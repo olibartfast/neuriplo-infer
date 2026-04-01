@@ -6,7 +6,6 @@ FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
 
 # Set environment variable to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
-ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 
 # Install common dependencies
 RUN apt-get update && apt-get install -y \
@@ -23,7 +22,11 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget -q -O /tmp/versions.env "${NEURIPLO_VERSIONS_URL}"
+COPY VERSION /tmp/vision-inference.VERSION
+
+RUN dependency_ref=develop && \
+    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/vision-inference.VERSION; then dependency_ref=master; fi && \
+    wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
 # Stage 2: Common backend environment
 FROM common_dependencies AS backend_dependencies
@@ -37,7 +40,6 @@ ENV LD_LIBRARY_PATH=${TENSORFLOW_DIR}/lib
 FROM backend_dependencies AS builder
 
 ARG BACKEND=LIBTENSORFLOW
-ARG DEPENDENCIES_VERSION=develop
 
 WORKDIR /app
 
@@ -49,7 +51,6 @@ RUN cp /tmp/versions.env /app/versions.neuriplo.env && \
 # Build the project using CMake
 RUN cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=${BACKEND} \
-    -DDEPENDENCIES_VERSION=${DEPENDENCIES_VERSION} \
     -DTENSORFLOW_DIR=${TENSORFLOW_DIR} \
     -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DBUILD_TESTS=OFF && \
     cmake --build build --config Release

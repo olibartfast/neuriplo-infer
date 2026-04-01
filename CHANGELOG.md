@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Derive the shared dependency ref inside CMake and release-aware tooling instead of carrying `DEPENDENCIES_VERSION` in `versions.env`
+
 ## [0.2.1] - 2026-04-01
 
 ### Fixed
