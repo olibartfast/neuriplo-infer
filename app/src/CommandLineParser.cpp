@@ -145,8 +145,16 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
             LOG(ERROR) << "Open-vocabulary detection requires --text_prompts";
             std::exit(1);
         }
+        if (tokenizerVocab.empty()) {
+            LOG(ERROR) << "Open-vocabulary detection requires --tokenizer_vocab";
+            std::exit(1);
+        }
         if (!isFile(tokenizerVocab)) {
             LOG(ERROR) << "Tokenizer vocab file " << tokenizerVocab << " doesn't exist";
+            std::exit(1);
+        }
+        if (tokenizerMerges.empty()) {
+            LOG(ERROR) << "Open-vocabulary detection requires --tokenizer_merges";
             std::exit(1);
         }
         if (!isFile(tokenizerMerges)) {
