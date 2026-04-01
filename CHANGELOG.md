@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-04-01
+
+### Fixed
+- Dependency ref selection now follows the vision-inference release line: `master` uses dependency `master`, all other branches use dependency `develop`
+
 ## [0.2.0] - 2026-03-31
 
 ### Added
@@ -38,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via vision-core)
 
-[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/olibartfast/vision-inference/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/olibartfast/vision-inference/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/olibartfast/vision-inference/releases/tag/v0.1.0
