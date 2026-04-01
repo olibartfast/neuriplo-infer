@@ -46,6 +46,7 @@ ENV PATH=${TENSORRT_DIR}/bin:${PATH}
 FROM backend_dependencies AS builder
 
 ARG BACKEND=TENSORRT
+ARG DEPENDENCIES_VERSION=develop
 
 WORKDIR /app
 
@@ -55,6 +56,7 @@ COPY . .
 RUN . /tmp/versions.env && \
     cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=${BACKEND} \
+    -DDEPENDENCIES_VERSION=${DEPENDENCIES_VERSION} \
     -DTRT_VERSION=${TENSORRT_VERSION} \
     -DTENSORRT_DIR=${TENSORRT_DIR} \
     -DBUILD_TESTS=OFF && \

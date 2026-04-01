@@ -37,6 +37,7 @@ ENV LD_LIBRARY_PATH=${TENSORFLOW_DIR}/lib
 FROM backend_dependencies AS builder
 
 ARG BACKEND=LIBTENSORFLOW
+ARG DEPENDENCIES_VERSION=develop
 
 WORKDIR /app
 
@@ -48,6 +49,7 @@ RUN cp /tmp/versions.env /app/versions.neuriplo.env && \
 # Build the project using CMake
 RUN cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=${BACKEND} \
+    -DDEPENDENCIES_VERSION=${DEPENDENCIES_VERSION} \
     -DTENSORFLOW_DIR=${TENSORFLOW_DIR} \
     -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DBUILD_TESTS=OFF && \
     cmake --build build --config Release
