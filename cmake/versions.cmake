@@ -30,8 +30,17 @@ function(read_versions_from_env)
     endforeach()
 endfunction()
 
+# Preserve explicit CMake/cache overrides before reading versions.env.
+if(DEFINED CACHE{DEPENDENCIES_VERSION} AND NOT "$CACHE{DEPENDENCIES_VERSION}" STREQUAL "")
+    set(EXPLICIT_DEPENDENCIES_VERSION "$CACHE{DEPENDENCIES_VERSION}")
+endif()
+
 # Read versions from the .env file
 read_versions_from_env()
+
+if(DEFINED EXPLICIT_DEPENDENCIES_VERSION)
+    set(DEPENDENCIES_VERSION "${EXPLICIT_DEPENDENCIES_VERSION}")
+endif()
 
 if(NOT DEFINED DEPENDENCIES_VERSION OR "${DEPENDENCIES_VERSION}" STREQUAL "")
     message(FATAL_ERROR "DEPENDENCIES_VERSION must be set in versions.env")
