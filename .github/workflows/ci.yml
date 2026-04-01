@@ -149,6 +149,8 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.libtensorflow
+          build-args: |
+            DEPENDENCIES_VERSION=develop
           push: false
           tags: vision-inference:libtensorflow
           cache-from: type=gha
@@ -171,6 +173,8 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.tensorrt
+          build-args: |
+            DEPENDENCIES_VERSION=develop
           push: false
           tags: vision-inference:tensorrt
           cache-from: type=gha
@@ -193,6 +197,8 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.openvino
+          build-args: |
+            DEPENDENCIES_VERSION=develop
           push: false
           tags: vision-inference:openvino
           cache-from: type=gha
