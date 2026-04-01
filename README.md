@@ -44,6 +44,25 @@ When a sibling checkout exists at `../vision-core`, the build uses that local so
 - Open normal pull requests into `develop`.
 - Open release pull requests into `master`, then cut tags from `master`.
 
+## Agentic Operations
+
+This repository includes an agent-operable maintenance layer under `ops/`.
+
+- `ops/README.md` defines the control-plane intent for the repo cluster.
+- `ops/CLUSTER_MAP.yaml` declares repo ownership, dependency edges, validation order, and agent roles.
+- `ops/repo-meta/vision-inference.yaml` provides repo-local entrypoints for configure, build, test, and benchmark flows.
+- `ops/policies.yaml` defines which automated change classes are allowed and which changes require human review.
+- `ops/runbooks/` encodes repeatable maintenance workflows such as CI triage and cross-repo API migration.
+
+The intended maintenance loop is:
+
+1. Observe the failure, request, or contract change.
+2. Diagnose ownership and allowed change scope from `ops/`.
+3. Act with the smallest reviewable repo-local change.
+4. Verify repo-local and downstream impact in the declared validation order.
+
+This makes the repository not just buildable by humans, but operable by coding agents working within explicit ownership, validation, and release-safety constraints.
+
 
 ## Setup
 For the selected inference backends, set up the required dependencies first:

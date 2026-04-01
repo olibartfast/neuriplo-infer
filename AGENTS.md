@@ -1,5 +1,16 @@
 # Review Instructions
 
+## System overview
+
+`vision-inference` is the application-layer repo in the `vision-stack` cluster.
+
+- It owns the CLI, app configuration, runtime wiring, visualization, and end-to-end execution flow.
+- It consumes task contracts from `vision-core`.
+- It consumes backend orchestration and runtime compatibility from `neuriplo`.
+- It consumes source and video backend behavior from `videocapture`.
+
+Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
+
 ## Repository workflow
 
 - `develop` is the protected integration branch.
@@ -48,3 +59,39 @@ Avoid:
 - Use `ops/repo-meta/*.yaml` for repo-specific build, test, benchmark, and API-surface metadata.
 - Use `ops/policies.yaml` before proposing or implementing automated changes; changes outside the allowed classes require human review.
 - Use `ops/runbooks/` for the execution flow for CI triage and cross-repo API migrations.
+
+## Standard workflow
+
+When operating as an agent in this repo, follow this loop:
+
+1. Observe the task, failing signal, or requested change.
+2. Diagnose the owning repo, dependency edge, and allowed change class using `ops/CLUSTER_MAP.yaml` and `ops/policies.yaml`.
+3. Act with the smallest reviewable change that fixes the issue without widening scope.
+4. Verify using repo-local checks first, then downstream validation when a declared contract edge is affected.
+
+Stop and escalate to a human if the required work falls into a forbidden change class or changes inference semantics rather than mechanical wiring.
+
+## Repo-local entrypoints
+
+Use the canonical repo-local commands from `ops/repo-meta/vision-inference.yaml`:
+
+- Configure default build:
+  - `cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release`
+- Configure test build:
+  - `cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release`
+- Build default target:
+  - `cmake --build build`
+- Build test target:
+  - `cmake --build build-test`
+- Run tests:
+  - `ctest --test-dir build-test --output-on-failure`
+
+Use the benchmark smoke command from `ops/repo-meta/vision-inference.yaml` only when the required weights are available.
+
+## Operational constraints
+
+- Preserve CLI compatibility unless the task is an explicitly reviewed contract change.
+- Preserve output schema, backend fallback behavior, and latency-sensitive paths.
+- Keep changes small and reviewable.
+- For cross-repo contract work, validate in the declared order: repo-local checks first, then downstream integration, then performance/output checks.
+- PRs produced by agents should include evidence consistent with `ops/PR_EVIDENCE_TEMPLATE.md`.
