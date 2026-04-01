@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Dependency ref selection now follows the vision-inference release line: `master` uses dependency `master`, all other branches use dependency `develop`
+- Reject invalid `VERSION` contents early during CMake configure
+- Require `--tokenizer_vocab` and `--tokenizer_merges` explicitly for open-vocabulary detection
+- Include TensorFlow runtime libraries in the `libtensorflow` Docker runtime image
+- Fix Docker E2E script TensorRT image naming and RAFT multi-frame input handling
 
 ## [0.2.0] - 2026-03-31
 
