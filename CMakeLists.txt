@@ -5,6 +5,11 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" PROJECT_VERSION_RAW)
 string(STRIP "${PROJECT_VERSION_RAW}" PROJECT_VERSION_RAW)
 # Extract semver (strip -dev or other suffixes)
 string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" PROJECT_SEMVER "${PROJECT_VERSION_RAW}")
+if(PROJECT_SEMVER STREQUAL "")
+    message(FATAL_ERROR
+        "VERSION file '${CMAKE_CURRENT_SOURCE_DIR}/VERSION' does not contain a valid "
+        "semantic version (expected MAJOR.MINOR.PATCH). Got: '${PROJECT_VERSION_RAW}'")
+endif()
 
 project(vision-inference VERSION ${PROJECT_SEMVER})
 

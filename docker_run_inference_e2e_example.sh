@@ -118,6 +118,15 @@ ensure_file() {
     fi
 }
 
+ensure_files() {
+    local path_list="$1"
+    local path=""
+    IFS=',' read -r -a paths <<< "$path_list"
+    for path in "${paths[@]}"; do
+        ensure_file "$path"
+    done
+}
+
 ensure_vision_core() {
     if [[ "$DRY_RUN" == false && ! -d "$VISION_CORE_DIR" ]]; then
         echo "vision-core checkout not found: $VISION_CORE_DIR" >&2
@@ -279,7 +288,7 @@ case "$PRESET" in
         MODEL_TYPE="raft"
         MODEL_BASENAME="raft_large"
         SOURCE_IN_CONTAINER="/app/data/frame_001.png,/app/data/frame_002.png"
-        HOST_SOURCE_PATH="${DATA_DIR}/frame_001.png"
+        HOST_SOURCE_PATH="${DATA_DIR}/frame_001.png,${DATA_DIR}/frame_002.png"
         EXTRA_REQUIREMENTS=()
         EXPORT_COMMANDS=(
             "${PYTHON_BIN} -m venv \"${VISION_CORE_DIR}/environments/raft-export\""
@@ -341,7 +350,7 @@ esac
 
 if [[ -z "$DOCKER_IMAGE" ]]; then
     if [[ "$BACKEND" == "tensorrt" ]]; then
-        DOCKER_IMAGE="vision-inference:trt"
+        DOCKER_IMAGE="vision-inference:tensorrt"
     else
         DOCKER_IMAGE="vision-inference:${BACKEND}"
     fi
@@ -374,7 +383,7 @@ if [[ "${HOST_LABELS_PATH:-}" != "" ]]; then
     ensure_file "$HOST_LABELS_PATH"
 fi
 
-ensure_file "$HOST_SOURCE_PATH"
+ensure_files "$HOST_SOURCE_PATH"
 
 if [[ "$SKIP_EXPORT" == false ]]; then
     echo "=== Step 1: Exporting preset '${PRESET}' ==="

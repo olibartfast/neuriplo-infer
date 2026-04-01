@@ -60,6 +60,9 @@ WORKDIR /app
 # Copy the executable
 COPY --from=builder /app/build/app/vision-inference /app/vision-inference
 
+# Copy TensorFlow runtime libraries installed during the builder stage.
+COPY --from=builder /root/dependencies/tensorflow /root/dependencies/tensorflow
+
 # Copy the shared libraries
 COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
