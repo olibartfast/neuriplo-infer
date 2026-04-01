@@ -37,6 +37,50 @@ if(NOT DEFINED DEPENDENCIES_VERSION OR "${DEPENDENCIES_VERSION}" STREQUAL "")
     message(FATAL_ERROR "DEPENDENCIES_VERSION must be set in versions.env")
 endif()
 
+set(RAW_DEPENDENCIES_VERSION "${DEPENDENCIES_VERSION}")
+
+function(resolve_dependencies_version_from_current_branch OUTPUT_VAR)
+    if(NOT "${RAW_DEPENDENCIES_VERSION}" STREQUAL "self")
+        set(${OUTPUT_VAR} "${RAW_DEPENDENCIES_VERSION}" PARENT_SCOPE)
+        return()
+    endif()
+
+    set(CURRENT_BRANCH "")
+
+    if(DEFINED ENV{GITHUB_HEAD_REF} AND NOT "$ENV{GITHUB_HEAD_REF}" STREQUAL "")
+        set(CURRENT_BRANCH "$ENV{GITHUB_HEAD_REF}")
+    elseif(DEFINED ENV{GITHUB_REF_NAME} AND NOT "$ENV{GITHUB_REF_NAME}" STREQUAL "")
+        set(CURRENT_BRANCH "$ENV{GITHUB_REF_NAME}")
+    elseif(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+        execute_process(
+            COMMAND git rev-parse --abbrev-ref HEAD
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            OUTPUT_VARIABLE CURRENT_BRANCH
+            ERROR_VARIABLE GIT_ERROR
+            RESULT_VARIABLE GIT_RESULT
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+
+        if(NOT GIT_RESULT EQUAL 0)
+            string(STRIP "${GIT_ERROR}" GIT_ERROR)
+            message(FATAL_ERROR
+                "Failed to resolve DEPENDENCIES_VERSION=self because the current "
+                "vision-inference branch could not be determined: ${GIT_ERROR}")
+        endif()
+    else()
+        message(FATAL_ERROR
+            "DEPENDENCIES_VERSION=self requires a git checkout or CI branch metadata.")
+    endif()
+
+    if("${CURRENT_BRANCH}" STREQUAL "master")
+        set(${OUTPUT_VAR} "master" PARENT_SCOPE)
+    else()
+        set(${OUTPUT_VAR} "develop" PARENT_SCOPE)
+    endif()
+endfunction()
+
+resolve_dependencies_version_from_current_branch(DEPENDENCIES_VERSION)
+
 function(validate_current_branch_matches_dependencies_ref)
     if(NOT EXISTS "${CMAKE_SOURCE_DIR}/.git")
         message(STATUS "Skipping branch/ref validation because ${CMAKE_SOURCE_DIR} is not a git checkout")
@@ -70,6 +114,24 @@ function(validate_current_branch_matches_dependencies_ref)
         endif()
 
         set(BRANCH_MATCH_RESULT FALSE PARENT_SCOPE)
+    endfunction()
+
+    function(resolve_git_ref_commit REF_NAME OUTPUT_VAR)
+        execute_process(
+            COMMAND git rev-parse "${REF_NAME}"
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            OUTPUT_VARIABLE RESOLVED_COMMIT
+            ERROR_VARIABLE RESOLVE_ERROR
+            RESULT_VARIABLE RESOLVE_RESULT
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+
+        if(NOT RESOLVE_RESULT EQUAL 0)
+            set(${OUTPUT_VAR} "" PARENT_SCOPE)
+            return()
+        endif()
+
+        set(${OUTPUT_VAR} "${RESOLVED_COMMIT}" PARENT_SCOPE)
     endfunction()
 
     set(CURRENT_BRANCH "")
@@ -119,9 +181,45 @@ function(validate_current_branch_matches_dependencies_ref)
     endif()
 
     if("${CURRENT_BRANCH}" STREQUAL "HEAD")
-        message(FATAL_ERROR
-            "vision-inference is in a detached HEAD state, but DEPENDENCIES_VERSION="
-            "${DEPENDENCIES_VERSION} requires a matching branch checkout.")
+        resolve_git_ref_commit("${DEPENDENCIES_VERSION}" DEPENDENCIES_COMMIT)
+
+        if(NOT "${DEPENDENCIES_COMMIT}" STREQUAL "")
+            execute_process(
+                COMMAND git rev-parse HEAD
+                WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+                OUTPUT_VARIABLE CURRENT_COMMIT
+                ERROR_VARIABLE GIT_HEAD_ERROR
+                RESULT_VARIABLE GIT_HEAD_RESULT
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+
+            if(NOT GIT_HEAD_RESULT EQUAL 0)
+                string(STRIP "${GIT_HEAD_ERROR}" GIT_HEAD_ERROR)
+                message(FATAL_ERROR
+                    "vision-inference is in a detached HEAD state and the current "
+                    "commit could not be determined with 'git rev-parse HEAD': "
+                    "${GIT_HEAD_ERROR}")
+            endif()
+
+            if("${CURRENT_COMMIT}" STREQUAL "${DEPENDENCIES_COMMIT}")
+                message(STATUS
+                    "Allowing detached HEAD checkout at '${CURRENT_COMMIT}' because it "
+                    "matches DEPENDENCIES_VERSION='${DEPENDENCIES_VERSION}'")
+                return()
+            endif()
+        endif()
+
+        if(DEFINED ENV{CI} OR DEFINED ENV{GITHUB_ACTIONS})
+            message(FATAL_ERROR
+                "vision-inference is in a detached HEAD state, but DEPENDENCIES_VERSION="
+                "'${DEPENDENCIES_VERSION}' does not match the current checkout. "
+                "Check out the matching branch/ref or update versions.env.")
+        endif()
+
+        message(WARNING
+            "vision-inference is in a detached HEAD state. Skipping branch/ref "
+            "validation outside CI. DEPENDENCIES_VERSION='${DEPENDENCIES_VERSION}'.")
+        return()
     endif()
 
     check_branch_ref_match("${CURRENT_BRANCH}")
