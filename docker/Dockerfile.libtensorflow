@@ -6,7 +6,7 @@ FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
 
 # Set environment variable to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
-ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/develop/versions.env
+ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 
 # Install common dependencies
 RUN apt-get update && apt-get install -y \
@@ -37,7 +37,7 @@ ENV LD_LIBRARY_PATH=${TENSORFLOW_DIR}/lib
 FROM backend_dependencies AS builder
 
 ARG BACKEND=LIBTENSORFLOW
-ARG DEPENDENCIES_VERSION=develop
+ARG DEPENDENCIES_VERSION=master
 
 WORKDIR /app
 

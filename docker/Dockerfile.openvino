@@ -14,7 +14,7 @@ ENV HOME=/root
 ENV OpenVINO_DIR=${INTEL_OPENVINO_DIR}/runtime/cmake
 ENV IE_PLUGINS_PATH=${INTEL_OPENVINO_DIR}/runtime/lib/intel64
 ENV LD_LIBRARY_PATH=/opt/intel/opencl:${INTEL_OPENVINO_DIR}/runtime/3rdparty/tbb/lib:${IE_PLUGINS_PATH}:${LD_LIBRARY_PATH}
-ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/develop/versions.env
+ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 USER root
 
 # Install common dependencies
@@ -37,7 +37,7 @@ RUN . /tmp/versions.env && \
     ln -s "${INTEL_OPENVINO_DIR}" "$HOME/dependencies/openvino_${OPENVINO_VERSION}"
 
 ARG BACKEND=OPENVINO
-ARG DEPENDENCIES_VERSION=develop
+ARG DEPENDENCIES_VERSION=master
 
 WORKDIR /app
 
