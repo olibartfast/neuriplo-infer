@@ -46,50 +46,6 @@ if(NOT DEFINED DEPENDENCIES_VERSION OR "${DEPENDENCIES_VERSION}" STREQUAL "")
     message(FATAL_ERROR "DEPENDENCIES_VERSION must be set in versions.env")
 endif()
 
-set(RAW_DEPENDENCIES_VERSION "${DEPENDENCIES_VERSION}")
-
-function(resolve_dependencies_version_from_current_branch OUTPUT_VAR)
-    if(NOT "${RAW_DEPENDENCIES_VERSION}" STREQUAL "self")
-        set(${OUTPUT_VAR} "${RAW_DEPENDENCIES_VERSION}" PARENT_SCOPE)
-        return()
-    endif()
-
-    set(CURRENT_BRANCH "")
-
-    if(DEFINED ENV{GITHUB_HEAD_REF} AND NOT "$ENV{GITHUB_HEAD_REF}" STREQUAL "")
-        set(CURRENT_BRANCH "$ENV{GITHUB_HEAD_REF}")
-    elseif(DEFINED ENV{GITHUB_REF_NAME} AND NOT "$ENV{GITHUB_REF_NAME}" STREQUAL "")
-        set(CURRENT_BRANCH "$ENV{GITHUB_REF_NAME}")
-    elseif(EXISTS "${CMAKE_SOURCE_DIR}/.git")
-        execute_process(
-            COMMAND git rev-parse --abbrev-ref HEAD
-            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-            OUTPUT_VARIABLE CURRENT_BRANCH
-            ERROR_VARIABLE GIT_ERROR
-            RESULT_VARIABLE GIT_RESULT
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-
-        if(NOT GIT_RESULT EQUAL 0)
-            string(STRIP "${GIT_ERROR}" GIT_ERROR)
-            message(FATAL_ERROR
-                "Failed to resolve DEPENDENCIES_VERSION=self because the current "
-                "vision-inference branch could not be determined: ${GIT_ERROR}")
-        endif()
-    else()
-        message(FATAL_ERROR
-            "DEPENDENCIES_VERSION=self requires a git checkout or CI branch metadata.")
-    endif()
-
-    if("${CURRENT_BRANCH}" STREQUAL "master")
-        set(${OUTPUT_VAR} "master" PARENT_SCOPE)
-    else()
-        set(${OUTPUT_VAR} "develop" PARENT_SCOPE)
-    endif()
-endfunction()
-
-resolve_dependencies_version_from_current_branch(DEPENDENCIES_VERSION)
-
 function(validate_current_branch_matches_dependencies_ref)
     if(NOT EXISTS "${CMAKE_SOURCE_DIR}/.git")
         message(STATUS "Skipping branch/ref validation because ${CMAKE_SOURCE_DIR} is not a git checkout")

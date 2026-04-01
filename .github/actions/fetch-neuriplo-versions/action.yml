@@ -14,19 +14,6 @@ runs:
           exit 1
         fi
 
-        if [[ "${neuriplo_ref}" == "self" ]]; then
-          branch_name="${GITHUB_BASE_REF:-${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-}}}"
-          if [[ -z "${branch_name}" ]]; then
-            branch_name="$(git rev-parse --abbrev-ref HEAD)"
-          fi
-
-          if [[ "${branch_name}" == "master" ]]; then
-            neuriplo_ref="master"
-          else
-            neuriplo_ref="develop"
-          fi
-        fi
-
         mkdir -p build/_deps/neuriplo-src
         curl -fsSL "https://raw.githubusercontent.com/olibartfast/neuriplo/${neuriplo_ref}/versions.env" \
           -o build/_deps/neuriplo-src/versions.env
