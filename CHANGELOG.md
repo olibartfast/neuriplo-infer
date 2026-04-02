@@ -6,15 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-## [0.2.2] - 2026-04-02
+## [0.2.2] - 2026-04-03
 
 ### Changed
 - Derive the shared dependency ref inside CMake and release-aware tooling instead of carrying `DEPENDENCIES_VERSION` in `versions.env`
 - Single source of truth for model types via sync script (`sync_supported_model_types.py`)
-- Sync script now propagates model types into README, copilot-instructions, ARCHITECTURE, and generated docs
+- Sync generated supported model types into `README.md` and `docs/generated/supported-model-types.md`
 - Added `--check` dry-run mode to sync script for CI drift detection
 - Added CI step to verify model-type docs are in sync after cmake configure
-- Fixed TablePage model type strings and added missing task categories
+- Consolidated agent guidance into `AGENTS.md` and replaced helper instruction files with links to the canonical source
+- Reduced duplicated documentation by rewriting architecture and dependency docs around canonical sources of truth
+
+### Fixed
+- Removed the stale hand-maintained compatibility matrix and replaced its remaining references with generated or code-owned sources
 
 ## [0.2.1] - 2026-04-01
 
