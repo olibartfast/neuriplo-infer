@@ -34,8 +34,6 @@ This project automatically fetches:
 2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
 3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
 
-When a sibling checkout exists at `../vision-core`, the build uses that local source tree instead of fetching from GitHub. This is the recommended setup for integrating current `vision-core` `develop` changes into `vision-inference`.
-
 ## Development Workflow
 
 - `develop` is the integration branch for normal feature and fix work.
@@ -399,14 +397,15 @@ mkdir -p /tmp/vision-inference-e2e
 
 bash docker_run_inference_e2e_example.sh \
     --preset owlv2 \
+    --vision-core-dir /path/to/vision-core \
     --text-prompts 'person;dog;bicycle' \
     --weights-dir /tmp/vision-inference-e2e
 ```
 
 This flow expects:
 
-- a sibling `vision-core` checkout at `../vision-core`
-- tokenizer assets at `../vision-core/vocab.json` and `../vision-core/merges.txt`
+- a `vision-core` checkout passed via `--vision-core-dir` or `VISION_CORE_DIR`
+- tokenizer assets at `<vision-core-dir>/vocab.json` and `<vision-core-dir>/merges.txt`
 - sample input image at `data/dog.jpg`
 - a working `python3` or `python` on the host for export-time virtualenv creation
 
