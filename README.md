@@ -16,8 +16,8 @@ C++ application for computer vision inference, supporting multiple vision tasks 
 ## Requirements
 
 ### Core Dependencies
-- CMake (≥ 3.15)
-- C++17 compiler (GCC ≥ 8.0)
+- CMake (≥ 3.24)
+- C++20 compiler
 - OpenCV (≥ 4.6)
   ```bash
   apt install libopencv-dev
@@ -65,7 +65,8 @@ This makes the repository not just buildable by humans, but operable by coding a
 
 
 ## Setup
-For the selected inference backends, set up the required dependencies first:
+For the selected inference backends, set up the required dependencies first.
+Canonical repo-local configure/build/test commands live in [`ops/repo-meta/vision-inference.yaml`](ops/repo-meta/vision-inference.yaml).
 
 - **ONNX Runtime**:
   ```bash
@@ -105,10 +106,9 @@ For the selected inference backends, set up the required dependencies first:
 
 ## Building
 ```bash
-mkdir build && cd build
-# <backend> must be one between OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW
-cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
+# Default build
+cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
 #### Enabling Video Backend Support
@@ -137,7 +137,9 @@ Replace `<backend>` with one of the supported options. See [Dependency Managemen
 
 ### Test Build
 ```bash
-cmake -DENABLE_APP_TESTS=ON ..
+cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build-test
+ctest --test-dir build-test --output-on-failure
 ```
 
 ## App Usage
@@ -225,6 +227,7 @@ For export details, see [export/open_vocab_detection/OWLv2.md](export/open_vocab
 
 Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 <!-- SUPPORTED_MODEL_TYPES:END -->
+  App-specific routing and validation in `vision-inference` still define the end-to-end supported subset for this repo.
 
 - `--source=<input_source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
@@ -325,6 +328,16 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 
 *Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
 
+## Documentation Map
+
+- [`AGENTS.md`](AGENTS.md): canonical workflow, review focus, and repo-local entrypoints for agents and maintainers
+- [`ops/CLUSTER_MAP.yaml`](ops/CLUSTER_MAP.yaml): cluster ownership, dependency edges, and validation order
+- [`ops/repo-meta/vision-inference.yaml`](ops/repo-meta/vision-inference.yaml): canonical configure/build/test commands and public surface
+- [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated upstream model-type inventory from `vision-core`
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and canonical sources of truth
+- [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version-source guidance
+- [`docs/Versioning.md`](docs/Versioning.md): release/version workflow for `VERSION` and `CHANGELOG.md`
+
 ## Docker Deployment
 
 ### Building Images
@@ -407,7 +420,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 ## Additional Resources
 
 - [Detector Architectures Guide](docs/DetectorArchitectures.md)
-- [Supported Models](docs/TablePage.md)
+- [Supported Model Types](docs/generated/supported-model-types.md)
 - [Model Export Guide](docs/ExportInstructions.md)
 - [Vision-Core Export Tools](https://github.com/olibartfast/vision-core/tree/main/export) - Comprehensive export utilities for all supported models
 

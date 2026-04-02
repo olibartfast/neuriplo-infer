@@ -7,11 +7,6 @@ model-type list into every file that embeds it, using HTML marker comments.
 Targets updated:
   1. docs/generated/supported-model-types.md  (full block, rewritten)
   2. README.md                                (SUPPORTED_MODEL_TYPES markers)
-  3. .github/copilot-instructions.md          (MODEL_TYPES:COPILOT_INSTRUCTIONS markers)
-  4. docs/ARCHITECTURE.md                     (MODEL_TYPES:ARCHITECTURE markers)
-
-Validation (warnings, non-fatal):
-  5. docs/TablePage.md — every extracted type string must appear somewhere in the file.
 
 Usage:
   python scripts/sync_supported_model_types.py
@@ -28,21 +23,13 @@ import sys
 
 
 # ---------------------------------------------------------------------------
-# Marker definitions — each target file has its own named pair.
+# Marker definitions
 # ---------------------------------------------------------------------------
 
 MARKERS: dict[str, tuple[str, str]] = {
     "readme": (
         "<!-- SUPPORTED_MODEL_TYPES:START -->",
         "<!-- SUPPORTED_MODEL_TYPES:END -->",
-    ),
-    "copilot": (
-        "<!-- MODEL_TYPES:COPILOT_INSTRUCTIONS:START -->",
-        "<!-- MODEL_TYPES:COPILOT_INSTRUCTIONS:END -->",
-    ),
-    "architecture": (
-        "<!-- MODEL_TYPES:ARCHITECTURE:START -->",
-        "<!-- MODEL_TYPES:ARCHITECTURE:END -->",
     ),
 }
 
@@ -80,59 +67,6 @@ def extract_type_strings(block: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Category-summary builder (for ARCHITECTURE.md)
-# ---------------------------------------------------------------------------
-
-# Map from heading text in the block to the prose used in ARCHITECTURE.md.
-_CATEGORY_MAP: list[tuple[str, str]] = [
-    ("Object Detection", "Object Detection"),
-    ("Open-Vocabulary Detection", "Open-Vocabulary Detection"),
-    ("Instance Segmentation", "Instance Segmentation"),
-    ("Classification", "Classification"),
-    ("Video Classification", "Video Classification"),
-    ("Optical Flow", "Optical Flow"),
-    ("Pose Estimation", "Pose Estimation"),
-    ("Depth Estimation", "Depth Estimation"),
-]
-
-
-def _extract_category_models(block: str, category: str) -> list[str]:
-    """Return the model names listed under **<category>:** in the block."""
-    pattern = rf"\*\*{re.escape(category)}:\*\*\s*\n((?:- .+\n?)+)"
-    m = re.search(pattern, block)
-    if not m:
-        return []
-    lines = m.group(1).strip().splitlines()
-    models: list[str] = []
-    for line in lines:
-        # Pull the description after the last ` - ` on each bullet.
-        desc_match = re.search(r"-\s+.*?\s+-\s+(.+)$", line)
-        if desc_match:
-            models.append(desc_match.group(1).strip())
-    return models
-
-
-def build_architecture_block(block: str) -> str:
-    """Build the task-algorithm bullet list for ARCHITECTURE.md."""
-    lines = ["- **Vision Task Algorithms**:"]
-    for category, label in _CATEGORY_MAP:
-        models = _extract_category_models(block, category)
-        if models:
-            lines.append(f"  - **{label}**: {', '.join(models)}")
-    return "\n".join(lines)
-
-
-# ---------------------------------------------------------------------------
-# Flat type list (for copilot-instructions.md)
-# ---------------------------------------------------------------------------
-
-def build_copilot_type_list(type_strings: list[str]) -> str:
-    """Build a single-line backtick-quoted list of type strings."""
-    formatted = ", ".join(f"`{t}`" for t in type_strings)
-    return f"Valid values include: {formatted}."
-
-
-# ---------------------------------------------------------------------------
 # Generic marker replacement
 # ---------------------------------------------------------------------------
 
@@ -152,20 +86,6 @@ def replace_between_markers(
     return pattern.sub(new_block, text, count=1)
 
 
-# ---------------------------------------------------------------------------
-# TablePage validation
-# ---------------------------------------------------------------------------
-
-def validate_tablepage(table_text: str, type_strings: list[str]) -> list[str]:
-    """Return warnings for type strings missing from TablePage.md."""
-    warnings: list[str] = []
-    for ts in type_strings:
-        if ts not in table_text:
-            warnings.append(f"  type string \"{ts}\" not found in docs/TablePage.md")
-    return warnings
-
-
-# ---------------------------------------------------------------------------
 # File-write helper (supports --check dry-run)
 # ---------------------------------------------------------------------------
 
@@ -249,46 +169,6 @@ def main() -> int:
     updated_readme = replace_between_markers(readme_text, readme_replacement, ms, me)
     if write_or_check(readme_path, updated_readme, check=args.check):
         changed_files.append("README.md")
-
-    # --- 3. .github/copilot-instructions.md (flat type list) ---------------
-    copilot_path = repo_root / ".github" / "copilot-instructions.md"
-    if copilot_path.exists():
-        copilot_text = copilot_path.read_text(encoding="utf-8")
-        copilot_replacement = build_copilot_type_list(type_strings)
-        ms, me = MARKERS["copilot"]
-        try:
-            updated_copilot = replace_between_markers(copilot_text, copilot_replacement, ms, me)
-            if write_or_check(copilot_path, updated_copilot, check=args.check):
-                changed_files.append(".github/copilot-instructions.md")
-        except ValueError as exc:
-            print(f"warning: {copilot_path.name}: {exc}", file=sys.stderr)
-    else:
-        print(f"warning: {copilot_path} not found, skipping", file=sys.stderr)
-
-    # --- 4. docs/ARCHITECTURE.md (task category summary) -------------------
-    arch_path = repo_root / "docs" / "ARCHITECTURE.md"
-    if arch_path.exists():
-        arch_text = arch_path.read_text(encoding="utf-8")
-        arch_replacement = build_architecture_block(block)
-        ms, me = MARKERS["architecture"]
-        try:
-            updated_arch = replace_between_markers(arch_text, arch_replacement, ms, me)
-            if write_or_check(arch_path, updated_arch, check=args.check):
-                changed_files.append("docs/ARCHITECTURE.md")
-        except ValueError as exc:
-            print(f"warning: {arch_path.name}: {exc}", file=sys.stderr)
-    else:
-        print(f"warning: {arch_path} not found, skipping", file=sys.stderr)
-
-    # --- 5. docs/TablePage.md (validation only) ----------------------------
-    table_path = repo_root / "docs" / "TablePage.md"
-    if table_path.exists():
-        table_text = table_path.read_text(encoding="utf-8")
-        warnings = validate_tablepage(table_text, type_strings)
-        for w in warnings:
-            print(f"warning: {w}", file=sys.stderr)
-    else:
-        print(f"warning: {table_path} not found, skipping validation", file=sys.stderr)
 
     # --- Summary -----------------------------------------------------------
     if args.check:

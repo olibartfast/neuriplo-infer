@@ -112,7 +112,7 @@ VisionApp::VisionApp(const AppConfig &config)
    model_info.input_types[0] = CV_32F;
   }
 
-  // Use exact model type from docs/TablePage.md
+  // Use the exact model type expected by vision-core TaskFactory.
   // Valid types: yolov4, yolo, yolonas, rtdetr, rtdetrul, rfdetr
   LOG(INFO) << "Using vision-core model type: " << config.detectorType;
 

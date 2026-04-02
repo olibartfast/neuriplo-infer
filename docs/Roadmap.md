@@ -7,11 +7,13 @@ The vision-stack cluster consists of four repos with clean separation of concern
 | Repo | Role |
 |---|---|
 | **vision-core** | Task contracts, pre/postprocessing, result types |
-| **neuriplo** | Backend orchestration (OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, GGML, TVM) |
+| **neuriplo** | Backend orchestration for the backends currently wired into this app, plus additional backend experiments owned upstream |
 | **videocapture** | Video I/O (OpenCV, GStreamer, FFmpeg) |
 | **vision-inference** | Application layer, CLI, visualization |
 
 A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries. It maintains its own ops control plane independently.
+
+For canonical current repo boundaries and public surfaces, prefer `ops/` metadata over this roadmap.
 
 ## Phase 1: Solidify Foundations
 
