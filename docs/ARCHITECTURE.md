@@ -55,12 +55,17 @@ app/
 ## **vision-core Library: Vision Task Logic**
 
 ### What It Provides
+<!-- MODEL_TYPES:ARCHITECTURE:START -->
 - **Vision Task Algorithms**:
-  - **Object Detection**: YOLO variants (v4–v12), RT-DETR variants, D-FINE, DEIM, RF-DETR, YOLO-NAS
-  - **Classification**: TorchVision, TensorFlow, Vision Transformer (ViT) classifiers
-  - **Instance Segmentation**: YOLO-based and RF-DETR-based segmentation models
-  - **Video Classification**: TimeSformer and similar video action recognition models
-  - **Optical Flow**: RAFT
+  - **Object Detection**: YOLO-based variants, YOLO-NAS, RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2), RT-DETR (Ultralytics implementation), RF-DETR
+  - **Open-Vocabulary Detection**: OWLv2 open-vocabulary detection, OWL-ViT compatible open-vocabulary detection, Generic Open Vocabulary OWL alias
+  - **Instance Segmentation**: YOLOv5/YOLOv8/YOLO11, YOLO26, RF-DETR
+  - **Classification**: Torchvision models (ResNet, EfficientNet, etc.), TensorFlow/Keras models, Vision Transformers
+  - **Video Classification**: VideoMAE, ViViT, TimeSformer
+  - **Optical Flow**: RAFT optical flow
+  - **Pose Estimation**: YOLOv8 pose (single-stage, returns bbox + keypoints), YOLO11 pose, YOLO26 pose, YOLOv5 pose, ViTPose (top-down, heatmap-based)
+  - **Depth Estimation**: Depth Anything V2
+<!-- MODEL_TYPES:ARCHITECTURE:END -->
 - **Preprocessing Implementation**: Letterbox resizing, normalization, color space conversion (using `neuriplo` compatible blobs)
 - **Postprocessing Implementation**: Decoding bounding boxes, NMS (if needed), class score filtering, mask decoding
 - **Unified Task Interface**: `TaskInterface` and `TaskFactory` for task-agnostic dispatch
