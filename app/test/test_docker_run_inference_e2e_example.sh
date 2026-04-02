@@ -2,8 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="${1:?repo root required}"
+VISION_CORE_DIR="${2:?vision-core dir required}"
 SCRIPT_PATH="${ROOT_DIR}/docker_run_inference_e2e_example.sh"
-VISION_CORE_DIR="${ROOT_DIR}/../vision-core"
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT

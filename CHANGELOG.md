@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-04-03
+
+### Fixed
+- Restored build dependency fetching through declared refs instead of relying on local sibling checkouts
+
 ## [0.2.2] - 2026-04-03
 
 ### Changed
@@ -64,7 +69,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via vision-core)
 
-[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/olibartfast/vision-inference/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/olibartfast/vision-inference/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/olibartfast/vision-inference/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/olibartfast/vision-inference/compare/v0.1.0...v0.2.0
