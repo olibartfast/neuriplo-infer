@@ -32,6 +32,12 @@ jobs:
             -DENABLE_APP_TESTS=ON \
             -DCMAKE_BUILD_TYPE=Release
 
+      - name: Check model-type docs are in sync
+        run: |
+          python3 scripts/sync_supported_model_types.py \
+            --vision-core-readme build/_deps/vision-core-src/README.md \
+            --check
+
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)
 
@@ -149,8 +155,6 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.libtensorflow
-          build-args: |
-            DEPENDENCIES_VERSION=master
           push: false
           tags: vision-inference:libtensorflow
           cache-from: type=gha
@@ -173,8 +177,6 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.tensorrt
-          build-args: |
-            DEPENDENCIES_VERSION=master
           push: false
           tags: vision-inference:tensorrt
           cache-from: type=gha
@@ -197,8 +199,6 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.openvino
-          build-args: |
-            DEPENDENCIES_VERSION=master
           push: false
           tags: vision-inference:openvino
           cache-from: type=gha

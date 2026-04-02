@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-04-02
+
+### Changed
+- Derive the shared dependency ref inside CMake and release-aware tooling instead of carrying `DEPENDENCIES_VERSION` in `versions.env`
+- Single source of truth for model types via sync script (`sync_supported_model_types.py`)
+- Sync script now propagates model types into README, copilot-instructions, ARCHITECTURE, and generated docs
+- Added `--check` dry-run mode to sync script for CI drift detection
+- Added CI step to verify model-type docs are in sync after cmake configure
+- Fixed TablePage model type strings and added missing task categories
+
 ## [0.2.1] - 2026-04-01
 
 ### Fixed
@@ -50,7 +60,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via vision-core)
 
-[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/olibartfast/vision-inference/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/olibartfast/vision-inference/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/olibartfast/vision-inference/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/olibartfast/vision-inference/releases/tag/v0.1.0

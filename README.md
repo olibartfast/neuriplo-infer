@@ -44,6 +44,25 @@ When a sibling checkout exists at `../vision-core`, the build uses that local so
 - Open normal pull requests into `develop`.
 - Open release pull requests into `master`, then cut tags from `master`.
 
+## Agentic Operations
+
+This repository includes an agent-operable maintenance layer under `ops/`.
+
+- `ops/README.md` defines the control-plane intent for the repo cluster.
+- `ops/CLUSTER_MAP.yaml` declares repo ownership, dependency edges, validation order, and agent roles.
+- `ops/repo-meta/vision-inference.yaml` provides repo-local entrypoints for configure, build, test, and benchmark flows.
+- `ops/policies.yaml` defines which automated change classes are allowed and which changes require human review.
+- `ops/runbooks/` encodes repeatable maintenance workflows such as CI triage and cross-repo API migration.
+
+The intended maintenance loop is:
+
+1. Observe the failure, request, or contract change.
+2. Diagnose ownership and allowed change scope from `ops/`.
+3. Act with the smallest reviewable repo-local change.
+4. Verify repo-local and downstream impact in the declared validation order.
+
+This makes the repository not just buildable by humans, but operable by coding agents working within explicit ownership, validation, and release-safety constraints.
+
 
 ## Setup
 For the selected inference backends, set up the required dependencies first:
@@ -159,7 +178,6 @@ The TaskFactory supports the following model type strings:
 - `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
 - `"rtdetrul"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
-- `"owlv2"` - OWLv2 open-vocabulary detection
 
 **Instance Segmentation:**
 - `"yoloseg"` - YOLOv5/YOLOv8/YOLO11
@@ -181,10 +199,29 @@ The TaskFactory supports the following model type strings:
 - `"raft"` - RAFT optical flow
 
 **Pose Estimation:**
-- `"vitpose"` - ViTPose
+- `"yolov8pose"`, `"yolov8-pose"` - YOLOv8 pose (single-stage, returns bbox + keypoints)
+- `"yolo11pose"`, `"yolo11-pose"` - YOLO11 pose
+- `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
+- `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
+- `"vitpose"` - ViTPose (top-down, heatmap-based)
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
+
+**Open-Vocabulary Detection:**
+- `"owlv2"` - OWLv2 open-vocabulary detection
+- `"owlvit"` - OWL-ViT compatible open-vocabulary detection
+- `"openvocabowl"` - Generic Open Vocabulary OWL alias
+
+Open-vocabulary models use text prompts supplied at runtime through `TaskConfig::text_prompts`. Tokenizer assets can be passed either as file paths (`tokenizer_vocab_path`, `tokenizer_merges_path`) or preloaded text blobs (`tokenizer_vocab_json`, `tokenizer_merges_text`).
+
+The expected ONNX contract is:
+- Inputs: `pixel_values`, `input_ids`, `attention_mask`
+- Outputs: `logits`, `pred_boxes`, and optional `objectness_logits`
+
+Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
+
+For export details, see [export/open_vocab_detection/OWLv2.md](export/open_vocab_detection/OWLv2.md).
 
 Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 <!-- SUPPORTED_MODEL_TYPES:END -->

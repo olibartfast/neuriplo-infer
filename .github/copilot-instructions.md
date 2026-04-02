@@ -75,7 +75,10 @@ All fetched library versions are declared in `versions.env` (read by `cmake/vers
 Clean the build directory when switching inference backends — CMake cache will have stale backend paths.
 
 ### Model types (`--type` flag)
-The `--type` string is passed to `TaskFactory` (in vision-core). Valid values include: `yolo`, `yolov10`, `yolov4`, `yolo26`, `rtdetr`, `rtdetrul`, `rfdetr`, `yoloseg`, `yolov10seg`, `yolo26seg`, `rfdetrseg`, `torchvision-classifier`, `tensorflow-classifier`, `vit-classifier`, `videomae`, `vivit`, `timesformer`, `raft`, `vitpose`, `depth_anything_v2`. Adding a new model type requires changes in vision-core, not in this repo.
+The `--type` string is passed to `TaskFactory` (in vision-core). Adding a new model type requires changes in vision-core, not in this repo.
+<!-- MODEL_TYPES:COPILOT_INSTRUCTIONS:START -->
+Valid values include: `yolo`, `yolov7e2e`, `yolov10`, `yolo26`, `yolov4`, `yolonas`, `rtdetr`, `rtdetrul`, `rfdetr`, `yoloseg`, `yolov10seg`, `yolo26seg`, `rfdetrseg`, `torchvision-classifier`, `tensorflow-classifier`, `vit-classifier`, `videomae`, `vivit`, `timesformer`, `raft`, `yolov8pose`, `yolov8-pose`, `yolo11pose`, `yolo11-pose`, `yolo26pose`, `yolo26-pose`, `yolov5pose`, `yolov5-pose`, `vitpose`, `depth_anything_v2`, `depth-anything-v2`, `owlv2`, `owlvit`, `openvocabowl`.
+<!-- MODEL_TYPES:COPILOT_INSTRUCTIONS:END -->
 
 Both `TaskFactory` (vision-core) and `VisionApp::getTaskType()` **normalise** the type string identically: strip spaces, `-`, and `_`, then lowercase. So `"rt-detr"`, `"rtdetr"`, and `"RT_DETR"` all resolve to the same task. Keep normalisation logic in sync if either function is updated.
 

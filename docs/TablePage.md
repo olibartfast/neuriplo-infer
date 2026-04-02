@@ -12,8 +12,7 @@ The table represents a specific model and includes the following details:
 |--------------------------------|------------|------------|----------|----------|--------------|----------|---------------|
 | yolov4/yolov4-tiny             | yolov4     | o          | x        | x        | x            | x        | x             |
 | yolov5 models                  | yolo       | o          | x        | o        | o            | o        | x             |
-| yolov6 models                  | yolo       | o          | x        | x        | o            | x        | x             |
-| yolov7 models                  | yolo       | o          | x        | o        | o            | x        | x             |
+| yolov6 models                  | yolo       | o          | x        | x        | o            | x        | x             || yolov7 end-to-end models       | yolov7e2e  | x          | o        | o        | o            | x        | x             || yolov7 models                  | yolo       | o          | x        | o        | o            | x        | x             |
 | yolov8 models                  | yolo       | o          | o        | o        | o            | o        | o             |
 | yolov9 models                  | yolo       | o          | o        | o        | o            | x        | x             |
 | yolov10 models                 | yolov10    | x          | o        | o        | o            | o        | o             |
@@ -31,20 +30,47 @@ The table represents a specific model and includes the following details:
 
 | Model                                         | Model Type            | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
 |-----------------------------------------------|-----------------------|------------|----------|----------|--------------|----------|---------------|
-| TorchVision Models (ResNet, EfficientNet...)  | torchvisionclassifier | o          | o        | o        | o            | o        | x             |
-| TensorFlow Models (MobileNet, Inception...)   | tensorflowclassifier  | x          | x        | x        | x            | x        | o             |
-| Vision Transformers (ViT, Swin...)            | vitclassifier         | x          | o        | o        | o            | x        | x             |
-| Video Transformers (TimeSformer)              | timesformer           | x          | x        | o        | o            | x        | x             |
+| TorchVision Models (ResNet, EfficientNet...)  | torchvision-classifier | o          | o        | o        | o            | o        | x             |
+| TensorFlow Models (MobileNet, Inception...)   | tensorflow-classifier  | x          | x        | x        | x            | x        | o             |
+| Vision Transformers (ViT, Swin...)            | vit-classifier         | x          | o        | o        | o            | x        | x             |
+
+### Video Classification
+
+| Model                               | Model Type  | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
+|-------------------------------------|-------------|------------|----------|----------|--------------|----------|---------------|
+| TimeSformer                         | timesformer | x          | x        | o        | o            | x        | x             |
+| VideoMAE                            | videomae    | x          | x        | o        | o            | x        | x             |
+| ViViT                               | vivit       | x          | x        | o        | o            | x        | x             |
 
 ### Instance Segmentation
 
 | Model                               | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
 |-------------------------------------|------------|------------|----------|----------|--------------|----------|---------------|
 | YOLO Segmentation (v5, v8, v11)     | yoloseg    | x          | o        | o        | o            | o        | x             |
-| RF-DETR Segmentation                | rfdetr-seg | x          | o        | o        | o            | x        | x             |
+| YOLOv10 Segmentation                | yolov10seg | x          | o        | o        | o            | o        | x             |
+| YOLO26 Segmentation                 | yolo26seg  | x          | o        | o        | o            | o        | x             |
+| RF-DETR Segmentation                | rfdetrseg  | x          | o        | o        | o            | x        | x             |
 
 ### Optical Flow
 
 | Model | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
 |-------|------------|------------|----------|----------|--------------|----------|---------------|
 | RAFT  | raft       | x          | o        | o        | o            | x        | x             |
+
+### Pose Estimation
+
+| Model   | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
+|---------|------------|------------|----------|----------|--------------|----------|---------------|
+| ViTPose | vitpose    | x          | o        | o        | o            | x        | x             |
+
+### Depth Estimation
+
+| Model              | Model Type        | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
+|--------------------|-------------------|------------|----------|----------|--------------|----------|---------------|
+| Depth Anything V2  | depth_anything_v2 | x          | o        | o        | o            | x        | x             |
+
+### Open-Vocabulary Detection
+
+| Model  | Model Type | OpenCV-DNN | TensorRT | LibTorch | Onnx-runtime | OpenVino | Libtensorflow |
+|--------|------------|------------|----------|----------|--------------|----------|---------------|
+| OWLv2  | owlv2      | x          | x        | x        | o            | x        | x             |

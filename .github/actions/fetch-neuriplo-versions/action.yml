@@ -1,5 +1,5 @@
 name: Fetch neuriplo versions.env
-description: Downloads versions.env from the neuriplo repo at the version pinned in the root versions.env
+description: Downloads versions.env from the neuriplo repo selected from the current release line
 
 runs:
   using: composite
@@ -7,11 +7,9 @@ runs:
     - name: Fetch neuriplo versions.env
       shell: bash
       run: |
-        . ./versions.env
-        neuriplo_ref="${NEURIPLO_VERSION:-${DEPENDENCIES_VERSION:-}}"
-        if [[ -z "${neuriplo_ref}" ]]; then
-          echo "Neither NEURIPLO_VERSION nor DEPENDENCIES_VERSION is set in versions.env" >&2
-          exit 1
+        neuriplo_ref="develop"
+        if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' VERSION; then
+          neuriplo_ref="master"
         fi
 
         mkdir -p build/_deps/neuriplo-src
