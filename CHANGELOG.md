@@ -19,7 +19,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Removed the stale hand-maintained compatibility matrix and replaced its remaining references with generated or code-owned sources
-- Restored release metadata on `master` so `VERSION` matches the retagged `v0.2.2` release
 
 ## [0.2.1] - 2026-04-01
 
