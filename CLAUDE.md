@@ -1,5 +1,7 @@
 # Claude Instructions
 
+- This repo is part of the `vision-stack` cluster. A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries independently.
+- Consult `docs/Roadmap.md` for project direction and priorities.
 - Treat `develop` as the integration branch for all normal work.
 - Push normal feature, fix, refactor, docs, and chore work on a short-lived topic branch and open the pull request into `develop`.
 - Do not treat direct pushes to `master` as part of the normal workflow.

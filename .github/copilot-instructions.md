@@ -40,6 +40,8 @@ This project is a **thin application wrapper** — it contains only CLI parsing,
 - **[neuriplo](https://github.com/olibartfast/neuriplo)** — inference backend abstractions (ONNX Runtime, TensorRT, LibTorch, OpenVINO, OpenCV DNN, TensorFlow)
 - **[videocapture](https://github.com/olibartfast/videocapture)** — video I/O abstraction (OpenCV / GStreamer / FFmpeg)
 
+A sibling application repo, **[vision-tracking](https://github.com/olibartfast/vision-tracking)**, handles detection + tracking pipelines using the same shared libraries. It is an independent peer — vision-inference does not depend on it.
+
 The configuration flow is: user selects backend → CMake sets compile definition (e.g. `USE_ONNX_RUNTIME`) → neuriplo handles versioning and linking → vision-core tasks use neuriplo API → `VisionApp` dispatches results.
 
 **Threshold parameters** flow through a dedicated bridge struct: CLI flags → `AppConfig` fields (`confidenceThreshold`, `nmsThreshold`, `maskThreshold`) → `vision_core::TaskConfig` (built in `VisionApp.cpp`) → `TaskFactory::createTaskInstance(type, model_info, task_config)` → task constructor. `TaskConfig` also carries `top_k`, `apply_softmax`, and an `extra_params` map for future extensibility (e.g. VLM text prompts).
@@ -96,3 +98,6 @@ When adding source files to `app/test/CMakeLists.txt`:
 
 ### CI
 Defined in `.github/workflows/ci.yml`. Normal CI runs on push/PR to `develop`. Release validation for `master` lives in `.github/workflows/release-check.yml`. Only the `OPENCV_DNN` build runs tests in normal CI; other backends are build-only checks.
+
+### Roadmap
+See `docs/Roadmap.md` for the project roadmap covering testing, backend/model coverage, 3D vision, serving, and deployment plans.
