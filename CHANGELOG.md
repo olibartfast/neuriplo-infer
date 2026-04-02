@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Restored build dependency fetching through declared refs instead of relying on local sibling checkouts
+
 ## [0.2.2] - 2026-04-03
 
 ### Changed
