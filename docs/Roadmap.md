@@ -40,6 +40,8 @@ For canonical current repo boundaries and public surfaces, prefer `ops/` metadat
 
 ### Model Coverage — 2D
 - Expand VLM/multi-modal support beyond OWLv2 (tokenizer infrastructure already in CLI)
+- Add a multimodal understanding path for Gemma 4-class models with freeform text plus optional structured outputs
+- Prefer a Cactus-backed on-device path in `neuriplo` for Gemma 4 image understanding, with `llama.cpp` retained as a fallback runtime candidate
 - Add OCR/text detection task types (in vision-core)
 
 ### Model Coverage — 3D
@@ -52,6 +54,15 @@ For canonical current repo boundaries and public surfaces, prefer `ops/` metadat
 ### Video Pipeline
 - Add RTSP/WebRTC source support in videocapture for real-time deployment
 - Optimize batched video inference per-backend
+- Add multimodal video-understanding support using `videocapture` for frame decode/sampling and Gemma 4-style backends for captioning, QA, and event summarization
+- Start with short local clips, sampled frames, and text-first outputs before adding audio or streaming support
+
+### Multimodal Understanding
+- Introduce new `vision-core` task/result contracts for `ImageUnderstanding` and `VideoUnderstanding` instead of overloading classification semantics
+- Standardize outputs around a stable schema with required freeform `text` plus optional `answer`, grounded regions, and temporal events
+- Keep V1 constrained to local files, uniform frame sampling, and parseable JSON/text outputs suitable for E2E regression tests
+- Validate in this order: standalone runtime spike, upstream contract work in `vision-core`, backend integration in `neuriplo`, then CLI and E2E wiring in `vision-inference`
+- Prioritize Cactus for mobile/on-device Gemma 4 support, especially for image understanding and short video understanding, with `llama.cpp` as the generic fallback path
 
 ## Phase 3: Production & Deployment
 
@@ -80,11 +91,14 @@ For canonical current repo boundaries and public surfaces, prefer `ops/` metadat
 | Cross-backend CI tests | High | Medium | P0 |
 | Performance baseline in CI | High | Low | P0 |
 | Policy enforcement in CI | Medium | Low | P1 |
+| Gemma 4 multimodal spike via Cactus | High | Medium | P1 |
+| Image/Video understanding contracts | High | Medium | P1 |
 | GGML/TVM backend promotion | High | High | P1 |
 | Monocular 3D detection | High | Medium | P1 |
 | Stereo depth models | Medium | Medium | P2 |
+| Video understanding with sampled frames | High | Medium | P2 |
 | Serving layer (HTTP/gRPC) | High | High | P2 |
-| VLM/multi-modal expansion | Medium | Medium | P2 |
+| VLM/multi-modal expansion | High | Medium | P2 |
 | Agent workflow automation | Medium | High | P3 |
 | Kubernetes deployment | Medium | Medium | P3 |
 | BEV / point cloud models | Medium | High | P3 |
