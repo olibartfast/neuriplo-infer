@@ -11,7 +11,14 @@ The vision-stack cluster consists of four repos with clean separation of concern
 | **videocapture** | Video I/O (OpenCV, GStreamer, FFmpeg) |
 | **vision-inference** | Application layer, CLI, visualization |
 
-A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries. It maintains its own ops control plane independently.
+Sibling application repos consume vision-core independently:
+
+| Sibling Repo | Role | vision-core consumer? |
+|---|---|---|
+| [vision-tracking](https://github.com/olibartfast/vision-tracking) | Detection + tracking pipelines | Yes |
+| [tritonic](https://github.com/olibartfast/tritonic) | Triton Inference Server client for CV tasks | Yes |
+
+Both maintain their own ops control planes independently — vision-inference does not depend on them.
 
 For canonical current repo boundaries and public surfaces, prefer `ops/` metadata over this roadmap.
 
@@ -63,6 +70,8 @@ For canonical current repo boundaries and public surfaces, prefer `ops/` metadat
 - Keep V1 constrained to local files, uniform frame sampling, and parseable JSON/text outputs suitable for E2E regression tests
 - Validate in this order: standalone runtime spike, upstream contract work in `vision-core`, backend integration in `neuriplo`, then CLI and E2E wiring in `vision-inference`
 - Prioritize Cactus for mobile/on-device Gemma 4 support, especially for image understanding and short video understanding, with `llama.cpp` as the generic fallback path
+- Design multimodal contracts in `vision-core` so they are consumable by all downstream apps (vision-inference, tritonic, vision-tracking) without backend-specific coupling
+- Coordinate with tritonic's planned multimodal task mode: tritonic will consume the same `vision-core` multimodal contracts via Triton Server backends, so contract design must remain backend-agnostic and avoid assumptions about local model loading
 
 ## Phase 3: Production & Deployment
 
@@ -93,6 +102,7 @@ For canonical current repo boundaries and public surfaces, prefer `ops/` metadat
 | Policy enforcement in CI | Medium | Low | P1 |
 | Gemma 4 multimodal spike via Cactus | High | Medium | P1 |
 | Image/Video understanding contracts | High | Medium | P1 |
+| Tritonic multimodal contract alignment | Medium | Low | P1 |
 | GGML/TVM backend promotion | High | High | P1 |
 | Monocular 3D detection | High | Medium | P1 |
 | Stereo depth models | Medium | Medium | P2 |

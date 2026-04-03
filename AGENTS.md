@@ -9,7 +9,7 @@
 - It consumes backend orchestration and runtime compatibility from `neuriplo`.
 - It consumes source and video backend behavior from `videocapture`.
 
-A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries. It maintains its own ops control plane independently — vision-inference does not depend on it.
+A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries. Another sibling, [tritonic](https://github.com/olibartfast/tritonic), is a Triton Inference Server client for CV tasks that also consumes vision-core. Both maintain their own ops control planes independently — vision-inference does not depend on them.
 
 Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
 
