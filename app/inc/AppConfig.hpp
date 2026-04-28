@@ -12,6 +12,7 @@
 #include <any>
 #include <algorithm>
 #include <iterator>
+#include <map>
 #include <type_traits> // for std::remove_pointer
 #include <glog/logging.h>
 
@@ -23,6 +24,7 @@ struct AppConfig {
     std::string tokenizerMergesPath;
     std::string weights;
     std::vector<std::string> textPrompts;
+    std::map<std::string, std::string> taskExtraParams;
     bool use_gpu;
     bool enable_warmup;
     bool enable_benchmark;

@@ -18,6 +18,9 @@ VisionApp::VisionApp(const AppConfig &config)
   if (!config.textPrompts.empty()) {
    LOG(INFO) << "Open-vocab prompts count " << config.textPrompts.size();
   }
+  if (!config.taskExtraParams.empty()) {
+   LOG(INFO) << "Task extra params count " << config.taskExtraParams.size();
+  }
 
   if (!config.labelsPath.empty()) {
    classes = readLabelNames(config.labelsPath);
@@ -112,7 +115,7 @@ VisionApp::VisionApp(const AppConfig &config)
    model_info.input_types[0] = CV_32F;
   }
 
-  // Use exact model type from docs/TablePage.md
+  // Use the exact model type expected by vision-core TaskFactory.
   // Valid types: yolov4, yolo, yolonas, rtdetr, rtdetrul, rfdetr
   LOG(INFO) << "Using vision-core model type: " << config.detectorType;
 
@@ -121,6 +124,7 @@ VisionApp::VisionApp(const AppConfig &config)
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
   task_config.text_prompts = config.textPrompts;
+  task_config.extra_params = config.taskExtraParams;
 
   if (!config.tokenizerVocabPath.empty()) {
    std::ifstream vocab_stream(config.tokenizerVocabPath);

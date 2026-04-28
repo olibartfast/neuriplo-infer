@@ -27,7 +27,7 @@ DRY_RUN=false
 SKIP_EXPORT=false
 SKIP_CONVERT=false
 SKIP_INFER=false
-VISION_CORE_DIR="${ROOT_DIR}/../vision-core"
+VISION_CORE_DIR="${VISION_CORE_DIR:-}"
 WEIGHTS_DIR="${ROOT_DIR}/models/e2e"
 DATA_DIR="${ROOT_DIR}/data"
 LABELS_DIR="${ROOT_DIR}/labels"
@@ -54,7 +54,7 @@ Usage:
 Options:
   --preset <name>            Task preset to run. Default: rtdetrv4
   --backend <name>           Runtime backend: onnxruntime or tensorrt
-  --vision-core-dir <path>   Local vision-core checkout. Default: ../vision-core
+  --vision-core-dir <path>   Path to a vision-core checkout with export tooling
   --weights-dir <path>       Export/model output directory. Default: ./models/e2e
   --data-dir <path>          Host data directory to mount. Default: ./data
   --labels-dir <path>        Host labels directory to mount. Default: ./labels
@@ -128,6 +128,10 @@ ensure_files() {
 }
 
 ensure_vision_core() {
+    if [[ -z "$VISION_CORE_DIR" ]]; then
+        echo "vision-core checkout path is required. Pass --vision-core-dir or set VISION_CORE_DIR." >&2
+        exit 1
+    fi
     if [[ "$DRY_RUN" == false && ! -d "$VISION_CORE_DIR" ]]; then
         echo "vision-core checkout not found: $VISION_CORE_DIR" >&2
         exit 1

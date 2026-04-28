@@ -9,6 +9,8 @@
 - It consumes backend orchestration and runtime compatibility from `neuriplo`.
 - It consumes source and video backend behavior from `videocapture`.
 
+A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries. Another sibling, [tritonic](https://github.com/olibartfast/tritonic), is a Triton Inference Server client for CV tasks that also consumes vision-core. Both maintain their own ops control planes independently — vision-inference does not depend on them.
+
 Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
 
 ## Repository workflow
@@ -95,3 +97,4 @@ Use the benchmark smoke command from `ops/repo-meta/vision-inference.yaml` only 
 - Keep changes small and reviewable.
 - For cross-repo contract work, validate in the declared order: repo-local checks first, then downstream integration, then performance/output checks.
 - PRs produced by agents should include evidence consistent with `ops/PR_EVIDENCE_TEMPLATE.md`.
+- Consult `docs/Roadmap.md` for project direction when evaluating whether a change aligns with planned work.

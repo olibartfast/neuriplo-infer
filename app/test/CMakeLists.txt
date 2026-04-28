@@ -61,5 +61,5 @@ gtest_discover_tests(${PROJECT_NAME_TEST})
 
 add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run
-    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR}
+    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR} ${vision-core_SOURCE_DIR}
 )

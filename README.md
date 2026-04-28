@@ -16,8 +16,8 @@ C++ application for computer vision inference, supporting multiple vision tasks 
 ## Requirements
 
 ### Core Dependencies
-- CMake (≥ 3.15)
-- C++17 compiler (GCC ≥ 8.0)
+- CMake (≥ 3.24)
+- C++20 compiler
 - OpenCV (≥ 4.6)
   ```bash
   apt install libopencv-dev
@@ -33,8 +33,6 @@ This project automatically fetches:
 1. [vision-core](https://github.com/olibartfast/vision-core) - Contains pre/post-processing and model logic.
 2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
 3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
-
-When a sibling checkout exists at `../vision-core`, the build uses that local source tree instead of fetching from GitHub. This is the recommended setup for integrating current `vision-core` `develop` changes into `vision-inference`.
 
 ## Development Workflow
 
@@ -65,7 +63,8 @@ This makes the repository not just buildable by humans, but operable by coding a
 
 
 ## Setup
-For the selected inference backends, set up the required dependencies first:
+For the selected inference backends, set up the required dependencies first.
+Canonical repo-local configure/build/test commands live in [`ops/repo-meta/vision-inference.yaml`](ops/repo-meta/vision-inference.yaml).
 
 - **ONNX Runtime**:
   ```bash
@@ -105,10 +104,9 @@ For the selected inference backends, set up the required dependencies first:
 
 ## Building
 ```bash
-mkdir build && cd build
-# <backend> must be one between OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW
-cmake -DDEFAULT_BACKEND=<backend> -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
+# Default build
+cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
 #### Enabling Video Backend Support
@@ -137,7 +135,9 @@ Replace `<backend>` with one of the supported options. See [Dependency Managemen
 
 ### Test Build
 ```bash
-cmake -DENABLE_APP_TESTS=ON ..
+cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build-test
+ctest --test-dir build-test --output-on-failure
 ```
 
 ## App Usage
@@ -152,6 +152,10 @@ cmake -DENABLE_APP_TESTS=ON ..
   --weights=<model_weights> \
   [--labels=<labels_file>] \
   [--text_prompts='<prompt_a;prompt_b;...>'] \
+  [--prompt='<freeform_prompt>'] \
+  [--output_format=<text|json>] \
+  [--sample_stride=<n>] \
+  [--max_frames=<n>] \
   [--tokenizer_vocab=<vocab_json_path>] \
   [--tokenizer_merges=<merges_txt_path>] \
   [--min_confidence=<threshold>] \
@@ -178,7 +182,6 @@ The TaskFactory supports the following model type strings:
 - `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
 - `"rtdetrul"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
-- `"owlv2"` - OWLv2 open-vocabulary detection
 
 **Instance Segmentation:**
 - `"yoloseg"` - YOLOv5/YOLOv8/YOLO11
@@ -200,13 +203,33 @@ The TaskFactory supports the following model type strings:
 - `"raft"` - RAFT optical flow
 
 **Pose Estimation:**
-- `"vitpose"` - ViTPose
+- `"yolov8pose"`, `"yolov8-pose"` - YOLOv8 pose (single-stage, returns bbox + keypoints)
+- `"yolo11pose"`, `"yolo11-pose"` - YOLO11 pose
+- `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
+- `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
+- `"vitpose"` - ViTPose (top-down, heatmap-based)
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
 
+**Open-Vocabulary Detection:**
+- `"owlv2"` - OWLv2 open-vocabulary detection
+- `"owlvit"` - OWL-ViT compatible open-vocabulary detection
+- `"openvocabowl"` - Generic Open Vocabulary OWL alias
+
+Open-vocabulary models use text prompts supplied at runtime through `TaskConfig::text_prompts`. Tokenizer assets can be passed either as file paths (`tokenizer_vocab_path`, `tokenizer_merges_path`) or preloaded text blobs (`tokenizer_vocab_json`, `tokenizer_merges_text`).
+
+The expected ONNX contract is:
+- Inputs: `pixel_values`, `input_ids`, `attention_mask`
+- Outputs: `logits`, `pred_boxes`, and optional `objectness_logits`
+
+Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
+
+For export details, see [export/open_vocab_detection/OWLv2.md](export/open_vocab_detection/OWLv2.md).
+
 Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 <!-- SUPPORTED_MODEL_TYPES:END -->
+  App-specific routing and validation in `vision-inference` still define the end-to-end supported subset for this repo.
 
 - `--source=<input_source>`: Defines the input source for the object detection. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
@@ -218,6 +241,14 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 - `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights.
 
 - `--text_prompts='<prompt_a;prompt_b;...>'`: Required for open-vocabulary detection with OWLv2. Prompts are semicolon-separated and passed at runtime.
+
+- `--prompt='<freeform_prompt>'`: Optional freeform task prompt passed through `TaskConfig::extra_params["prompt"]`. This is intended for upcoming multimodal understanding models.
+
+- `--output_format=<text|json>`: Optional output hint passed through `TaskConfig::extra_params["output_format"]`. Use `json` for parseable text-first multimodal responses.
+
+- `--sample_stride=<n>`: Optional uniform frame-sampling stride for future multimodal video tasks. Passed through `TaskConfig::extra_params["sample_stride"]`.
+
+- `--max_frames=<n>`: Optional cap on sampled frames for future multimodal video tasks. Passed through `TaskConfig::extra_params["max_frames"]`.
 
 - `--tokenizer_vocab=<path/to/vocab.json>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `vision-core`.
 
@@ -307,6 +338,16 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 
 *Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
 
+## Documentation Map
+
+- [`AGENTS.md`](AGENTS.md): canonical workflow, review focus, and repo-local entrypoints for agents and maintainers
+- [`ops/CLUSTER_MAP.yaml`](ops/CLUSTER_MAP.yaml): cluster ownership, dependency edges, and validation order
+- [`ops/repo-meta/vision-inference.yaml`](ops/repo-meta/vision-inference.yaml): canonical configure/build/test commands and public surface
+- [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated upstream model-type inventory from `vision-core`
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and canonical sources of truth
+- [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version-source guidance
+- [`docs/Versioning.md`](docs/Versioning.md): release/version workflow for `VERSION` and `CHANGELOG.md`
+
 ## Docker Deployment
 
 ### Building Images
@@ -368,14 +409,15 @@ mkdir -p /tmp/vision-inference-e2e
 
 bash docker_run_inference_e2e_example.sh \
     --preset owlv2 \
+    --vision-core-dir /path/to/vision-core \
     --text-prompts 'person;dog;bicycle' \
     --weights-dir /tmp/vision-inference-e2e
 ```
 
 This flow expects:
 
-- a sibling `vision-core` checkout at `../vision-core`
-- tokenizer assets at `../vision-core/vocab.json` and `../vision-core/merges.txt`
+- a `vision-core` checkout passed via `--vision-core-dir` or `VISION_CORE_DIR`
+- tokenizer assets at `<vision-core-dir>/vocab.json` and `<vision-core-dir>/merges.txt`
 - sample input image at `data/dog.jpg`
 - a working `python3` or `python` on the host for export-time virtualenv creation
 
@@ -389,7 +431,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 ## Additional Resources
 
 - [Detector Architectures Guide](docs/DetectorArchitectures.md)
-- [Supported Models](docs/TablePage.md)
+- [Supported Model Types](docs/generated/supported-model-types.md)
 - [Model Export Guide](docs/ExportInstructions.md)
 - [Vision-Core Export Tools](https://github.com/olibartfast/vision-core/tree/main/export) - Comprehensive export utilities for all supported models
 

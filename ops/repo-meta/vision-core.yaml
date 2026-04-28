@@ -52,6 +52,7 @@ owned_paths:
 
 consumers:
   - vision-inference
+  - tritonic
 
 automation_rules:
   allowed_change_classes:
