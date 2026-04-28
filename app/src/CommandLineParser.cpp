@@ -11,6 +11,10 @@ const std::string CommandLineParser::params =
     "{ source s   | <none>  | path to image or video source}"
     "{ labels lb  |<none>  | path to class labels}"
     "{ text_prompts tp | | semicolon-separated text prompts for open-vocabulary detection (e.g. 'cat;dog;bus')}"
+    "{ prompt | | freeform prompt for multimodal understanding models }"
+    "{ output_format | | optional multimodal output hint (text or json) }"
+    "{ sample_stride | 0 | optional uniform frame sampling stride for multimodal video tasks }"
+    "{ max_frames | 0 | optional cap on sampled frames for multimodal video tasks }"
     "{ tokenizer_vocab | | path to tokenizer vocab.json for open-vocabulary detection }"
     "{ tokenizer_merges | | path to tokenizer merges.txt for open-vocabulary detection }"
     "{ weights w  | <none>  | path to models weights}"
@@ -56,6 +60,32 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
         const std::string prompts = parser.get<std::string>("text_prompts");
         if (!prompts.empty()) {
             config.textPrompts = split(prompts, ';');
+        }
+    }
+    {
+        const std::string prompt = parser.get<std::string>("prompt");
+        if (!prompt.empty()) {
+            config.taskExtraParams["prompt"] = prompt;
+        }
+    }
+    {
+        std::string outputFormat = parser.get<std::string>("output_format");
+        if (!outputFormat.empty()) {
+            std::transform(outputFormat.begin(), outputFormat.end(), outputFormat.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            config.taskExtraParams["output_format"] = outputFormat;
+        }
+    }
+    {
+        const int sampleStride = parser.get<int>("sample_stride");
+        if (sampleStride > 0) {
+            config.taskExtraParams["sample_stride"] = std::to_string(sampleStride);
+        }
+    }
+    {
+        const int maxFrames = parser.get<int>("max_frames");
+        if (maxFrames > 0) {
+            config.taskExtraParams["max_frames"] = std::to_string(maxFrames);
         }
     }
 
@@ -129,12 +159,13 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
     }
 
     const std::string detectorType = parser.get<std::string>("type");
-    std::string normalizedType = detectorType;
-    std::transform(normalizedType.begin(), normalizedType.end(), normalizedType.begin(),
+    const std::string normalizedType = normalizeModelType(detectorType);
+    std::string outputFormat = parser.get<std::string>("output_format");
+    const int sampleStride = parser.get<int>("sample_stride");
+    const int maxFrames = parser.get<int>("max_frames");
+
+    std::transform(outputFormat.begin(), outputFormat.end(), outputFormat.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    normalizedType.erase(std::remove_if(normalizedType.begin(), normalizedType.end(),
-                                        [](unsigned char c) { return c == '-' || c == '_' || std::isspace(c) != 0; }),
-                         normalizedType.end());
 
     if (normalizedType == "owlv2" || normalizedType == "owlvit") {
         const std::string textPrompts = parser.get<std::string>("text_prompts");
@@ -161,5 +192,20 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
             LOG(ERROR) << "Tokenizer merges file " << tokenizerMerges << " doesn't exist";
             std::exit(1);
         }
+    }
+
+    if (!outputFormat.empty() && outputFormat != "text" && outputFormat != "json") {
+        LOG(ERROR) << "--output_format must be either 'text' or 'json'";
+        std::exit(1);
+    }
+
+    if (sampleStride < 0) {
+        LOG(ERROR) << "--sample_stride must be >= 0";
+        std::exit(1);
+    }
+
+    if (maxFrames < 0) {
+        LOG(ERROR) << "--max_frames must be >= 0";
+        std::exit(1);
     }
 }

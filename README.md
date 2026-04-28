@@ -152,6 +152,10 @@ ctest --test-dir build-test --output-on-failure
   --weights=<model_weights> \
   [--labels=<labels_file>] \
   [--text_prompts='<prompt_a;prompt_b;...>'] \
+  [--prompt='<freeform_prompt>'] \
+  [--output_format=<text|json>] \
+  [--sample_stride=<n>] \
+  [--max_frames=<n>] \
   [--tokenizer_vocab=<vocab_json_path>] \
   [--tokenizer_merges=<merges_txt_path>] \
   [--min_confidence=<threshold>] \
@@ -237,6 +241,14 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 - `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights.
 
 - `--text_prompts='<prompt_a;prompt_b;...>'`: Required for open-vocabulary detection with OWLv2. Prompts are semicolon-separated and passed at runtime.
+
+- `--prompt='<freeform_prompt>'`: Optional freeform task prompt passed through `TaskConfig::extra_params["prompt"]`. This is intended for upcoming multimodal understanding models.
+
+- `--output_format=<text|json>`: Optional output hint passed through `TaskConfig::extra_params["output_format"]`. Use `json` for parseable text-first multimodal responses.
+
+- `--sample_stride=<n>`: Optional uniform frame-sampling stride for future multimodal video tasks. Passed through `TaskConfig::extra_params["sample_stride"]`.
+
+- `--max_frames=<n>`: Optional cap on sampled frames for future multimodal video tasks. Passed through `TaskConfig::extra_params["max_frames"]`.
 
 - `--tokenizer_vocab=<path/to/vocab.json>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `vision-core`.
 
