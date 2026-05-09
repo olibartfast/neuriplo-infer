@@ -148,6 +148,17 @@ VisionApp::VisionApp(const AppConfig &config)
    task_config.tokenizer_merges_text = buffer.str();
   }
 
+  if (!config.bertTokenizerVocabPath.empty()) {
+   std::ifstream bert_vocab_stream(config.bertTokenizerVocabPath);
+   if (!bert_vocab_stream) {
+    throw std::runtime_error("Can't open BERT tokenizer vocab file: " +
+                 config.bertTokenizerVocabPath);
+   }
+   std::stringstream buffer;
+   buffer << bert_vocab_stream.rdbuf();
+   task_config.bert_tokenizer_vocab_text = buffer.str();
+  }
+
   task = vision_core::TaskFactory::createTaskInstance(config.detectorType, model_info, task_config);
   if (!task) {
    throw std::runtime_error("Can't setup a task for " + config.detectorType);

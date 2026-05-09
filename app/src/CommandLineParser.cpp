@@ -17,6 +17,7 @@ const std::string CommandLineParser::params =
     "{ max_frames | 0 | optional cap on sampled frames for multimodal video tasks }"
     "{ tokenizer_vocab | | path to tokenizer vocab.json for open-vocabulary detection }"
     "{ tokenizer_merges | | path to tokenizer merges.txt for open-vocabulary detection }"
+    "{ bert_tokenizer_vocab | | path to BERT vocab.txt for Grounding DINO }"
     "{ weights w  | <none>  | path to models weights}"
     "{ use-gpu   | false  | activate gpu support}"
     "{ min_confidence | 0.25   | optional min confidence}"
@@ -55,6 +56,7 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     config.labelsPath = parser.get<std::string>("labels");
     config.tokenizerVocabPath = parser.get<std::string>("tokenizer_vocab");
     config.tokenizerMergesPath = parser.get<std::string>("tokenizer_merges");
+    config.bertTokenizerVocabPath = parser.get<std::string>("bert_tokenizer_vocab");
     config.batch_size = parser.get<int>("batch");
     {
         const std::string prompts = parser.get<std::string>("text_prompts");
@@ -190,6 +192,24 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
         }
         if (!isFile(tokenizerMerges)) {
             LOG(ERROR) << "Tokenizer merges file " << tokenizerMerges << " doesn't exist";
+            std::exit(1);
+        }
+    }
+
+    if (normalizedType == "groundingdino") {
+        const std::string textPrompts = parser.get<std::string>("text_prompts");
+        const std::string bertVocab = parser.get<std::string>("bert_tokenizer_vocab");
+
+        if (textPrompts.empty()) {
+            LOG(ERROR) << "Grounding DINO requires --text_prompts";
+            std::exit(1);
+        }
+        if (bertVocab.empty()) {
+            LOG(ERROR) << "Grounding DINO requires --bert_tokenizer_vocab";
+            std::exit(1);
+        }
+        if (!isFile(bertVocab)) {
+            LOG(ERROR) << "BERT tokenizer vocab file " << bertVocab << " doesn't exist";
             std::exit(1);
         }
     }

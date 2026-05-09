@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Run act CI emulator before push.
+# Skip with: SKIP_ACT=1 git push ...
+
+set -euo pipefail
+
+[[ "${SKIP_ACT:-0}" == "1" ]] && exit 0
+
+ACT=$(command -v act 2>/dev/null || echo "")
+if [[ -z "$ACT" ]]; then
+    echo "[pre-push] act not found in PATH — skipping CI check" >&2
+    exit 0
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    echo "[pre-push] Docker not running — skipping act CI check" >&2
+    exit 0
+fi
+
+echo "[pre-push] Running act CI (full pipeline) ..."
+act push --no-cache-server -q
+echo "[pre-push] act CI passed"

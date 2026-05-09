@@ -22,6 +22,7 @@ struct AppConfig {
     std::string labelsPath;
     std::string tokenizerVocabPath;
     std::string tokenizerMergesPath;
+    std::string bertTokenizerVocabPath;
     std::string weights;
     std::vector<std::string> textPrompts;
     std::map<std::string, std::string> taskExtraParams;
