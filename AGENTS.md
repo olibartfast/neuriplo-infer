@@ -107,6 +107,12 @@ Missing any of these makes the task invisible to users reading the top-level REA
 
 ---
 
+## Skipping CI for docs-only commits
+
+CI workflows have `paths-ignore` for `**.md` and `docs/**` — pure documentation pushes skip CI automatically.
+
+For mixed commits (docs + code) where CI is still unnecessary, add `[skip ci]` to the commit message subject line.
+
 ## Operational constraints
 
 - Preserve CLI compatibility unless the task is an explicitly reviewed contract change.
