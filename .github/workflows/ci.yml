@@ -3,8 +3,14 @@ name: CI
 on:
   push:
     branches: [develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
     branches: [develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 jobs:
   build-opencv-dnn:
