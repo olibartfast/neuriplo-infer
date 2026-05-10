@@ -90,6 +90,23 @@ Use the canonical repo-local commands from `ops/repo-meta/vision-inference.yaml`
 
 Use the benchmark smoke command from `ops/repo-meta/vision-inference.yaml` only when the required weights are available.
 
+## Documentation checklist when wiring a new task type
+
+When a new task type is added end-to-end (vision-core → neuriplo → vision-inference), update **all** of the following before closing the work:
+
+**vision-core:**
+1. `## Features` bullet list in `README.md` — one line for the new task.
+2. `<!-- TASKFACTORY_MODEL_LIST:START/END -->` block in `README.md` — type strings, contract, backend requirements.
+3. `export/<task_domain>/` directory — setup/download guide; update `export/README.md` tree and reference links (use absolute GitHub URLs).
+
+**vision-inference:**
+4. `## Key Features` bullet in `README.md` — update the task list inline (not synced from vision-core).
+5. Run `python3 scripts/sync_supported_model_types.py --vision-core-readme <path>` and commit the updated `README.md` and `docs/generated/supported-model-types.md`.
+
+Missing any of these makes the task invisible to users reading the top-level READMEs.
+
+---
+
 ## Operational constraints
 
 - Preserve CLI compatibility unless the task is an explicitly reviewed contract change.
