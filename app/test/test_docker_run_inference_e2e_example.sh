@@ -12,6 +12,7 @@ mkdir -p "${TMP_DIR}/data" "${TMP_DIR}/labels" "${TMP_DIR}/weights"
 touch "${TMP_DIR}/data/dog.jpg"
 touch "${TMP_DIR}/labels/coco.names"
 
+# ── owlv2 dry-run ─────────────────────────────────────────────────────────────
 OUTPUT_FILE="${TMP_DIR}/owlv2_dry_run.txt"
 
 bash "${SCRIPT_PATH}" \
@@ -30,3 +31,20 @@ grep -F -- "--text_prompts=cat\\;dog\\;bus" "${OUTPUT_FILE}"
 grep -F -- "--tokenizer_vocab=/weights/vocab.json" "${OUTPUT_FILE}"
 grep -F -- "--tokenizer_merges=/weights/merges.txt" "${OUTPUT_FILE}"
 grep -F -- "vision-inference:test" "${OUTPUT_FILE}"
+
+# ── gemma4 dry-run ────────────────────────────────────────────────────────────
+OUTPUT_FILE="${TMP_DIR}/gemma4_dry_run.txt"
+
+bash "${SCRIPT_PATH}" \
+    --preset gemma4 \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --docker-image vision-inference:llamacpp \
+    --prompt "Describe what you see in this image." \
+    --dry-run > "${OUTPUT_FILE}"
+
+grep -F -- "gemma-4-E2B-it-Q4_K_M.gguf" "${OUTPUT_FILE}"
+grep -F -- "--type=gemma4" "${OUTPUT_FILE}"
+grep -F -- "--weights=/weights/gemma-4-E2B-it-Q4_K_M.gguf" "${OUTPUT_FILE}"
+grep -F -- "--prompt=Describe" "${OUTPUT_FILE}"
+grep -F -- "vision-inference:llamacpp" "${OUTPUT_FILE}"

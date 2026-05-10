@@ -46,6 +46,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     vision-core
 )
 
+include(${CMAKE_SOURCE_DIR}/cmake/LinkBackend.cmake)
+
 if(ENABLE_APP_TESTS)
     add_subdirectory(test)
 endif()

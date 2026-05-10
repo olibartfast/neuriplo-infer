@@ -12,6 +12,7 @@ const std::string CommandLineParser::params =
     "{ labels lb  |<none>  | path to class labels}"
     "{ text_prompts tp | | semicolon-separated text prompts for open-vocabulary detection (e.g. 'cat;dog;bus')}"
     "{ prompt | | freeform prompt for multimodal understanding models }"
+    "{ mmproj | | path to multimodal projector GGUF for VLM image inference }"
     "{ output_format | | optional multimodal output hint (text or json) }"
     "{ sample_stride | 0 | optional uniform frame sampling stride for multimodal video tasks }"
     "{ max_frames | 0 | optional cap on sampled frames for multimodal video tasks }"
@@ -57,6 +58,7 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     config.tokenizerVocabPath = parser.get<std::string>("tokenizer_vocab");
     config.tokenizerMergesPath = parser.get<std::string>("tokenizer_merges");
     config.bertTokenizerVocabPath = parser.get<std::string>("bert_tokenizer_vocab");
+    config.mmprojectPath = parser.get<std::string>("mmproj");
     config.batch_size = parser.get<int>("batch");
     {
         const std::string prompts = parser.get<std::string>("text_prompts");
@@ -133,18 +135,25 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
         std::exit(1);
     }
 
+    const std::string typeForSourceCheck = normalizeModelType(parser.get<std::string>("type"));
+    const bool is_text_task = (typeForSourceCheck == "gemma4" || typeForSourceCheck == "gemma" ||
+                               typeForSourceCheck == "llama" || typeForSourceCheck == "llamacpp" ||
+                               typeForSourceCheck == "imageunderstanding");
+
     std::string source = parser.get<std::string>("source");
-    if (source.empty()) {
+    if (source.empty() && !is_text_task) {
         LOG(ERROR) << "Cannot open video stream";
         std::exit(1);
     }
-    
-    // Validate each source file exists
-    std::vector<std::string> sources = split(source, ',');
-    for (const auto& src : sources) {
-        if (!isFile(src) && !isDirectory(src)) {
-            LOG(ERROR) << "Source file/directory " << src << " doesn't exist";
-            std::exit(1);
+
+    // Validate each source file exists (when provided)
+    if (!source.empty()) {
+        std::vector<std::string> sources = split(source, ',');
+        for (const auto& src : sources) {
+            if (!isFile(src) && !isDirectory(src)) {
+                LOG(ERROR) << "Source file/directory " << src << " doesn't exist";
+                std::exit(1);
+            }
         }
     }
 
@@ -157,6 +166,12 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
     std::string labelsPath = parser.get<std::string>("labels");
     if (!labelsPath.empty() && !isFile(labelsPath)) {
         LOG(ERROR) << "Labels file " << labelsPath << " doesn't exist";
+        std::exit(1);
+    }
+
+    const std::string mmproj = parser.get<std::string>("mmproj");
+    if (!mmproj.empty() && !isFile(mmproj)) {
+        LOG(ERROR) << "Multimodal projector file " << mmproj << " doesn't exist";
         std::exit(1);
     }
 

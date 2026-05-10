@@ -313,6 +313,43 @@ void VisionApp::processOpticalFlow() {
  }
 }
 
+void VisionApp::processImageUnderstanding() {
+ try {
+  const std::string prompt_log = config.taskExtraParams.count("prompt")
+                                     ? config.taskExtraParams.at("prompt")
+                                     : "(default)";
+  LOG(INFO) << "Running image understanding with prompt: " << prompt_log;
+
+  std::vector<cv::Mat> images;
+  if (!config.sources.empty() && !config.sources[0].empty()) {
+   cv::Mat img = cv::imread(config.sources[0]);
+   if (img.empty()) {
+    LOG(WARNING) << "Could not read source image: " << config.sources[0] << " — running text-only";
+   } else {
+    LOG(INFO) << "Source image: " << config.sources[0]
+              << " (" << img.cols << "x" << img.rows << ")";
+    images.push_back(std::move(img));
+   }
+  }
+
+  const auto preprocessed = task->preprocess(images);
+
+  auto start = std::chrono::steady_clock::now();
+  const auto [outputs, shapes] = engine->get_infer_results(preprocessed);
+  auto end = std::chrono::steady_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  LOG(INFO) << "Inference time: " << duration << " ms";
+
+  auto tensors = convertToTensors(outputs, shapes);
+  cv::Mat dummy;
+  auto results = task->postprocess(cv::Size{0, 0}, tensors);
+  processResults(results, dummy);
+ } catch (const std::exception &e) {
+  LOG(ERROR) << "Error: " << e.what();
+  throw;
+ }
+}
+
 std::tuple<int, int, int, int>
 VisionApp::extractInputDims(const std::vector<int64_t> &shape) {
  if (shape.size() == 4) {

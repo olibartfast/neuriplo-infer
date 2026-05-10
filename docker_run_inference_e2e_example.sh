@@ -10,10 +10,13 @@
 #   - vitpose               Pose estimation
 #   - depth_anything_v2     Depth estimation
 #   - videomae              Video classification
+#   - gemma4                Image understanding (llama.cpp, Gemma 4 E2B IT GGUF)
 #
 # Typical usage:
 #   bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 #   bash docker_run_inference_e2e_example.sh --preset rtdetrv4
+#   bash docker_run_inference_e2e_example.sh --preset gemma4
+#   bash docker_run_inference_e2e_example.sh --preset gemma4 --text-prompts "Describe the dog in the image."
 
 set -euo pipefail
 
@@ -34,6 +37,7 @@ LABELS_DIR="${ROOT_DIR}/labels"
 DOCKER_IMAGE=""
 NGC_TAG="${NGC_TAG:-25.12}"
 TEXT_PROMPTS="${TEXT_PROMPTS:-cat;dog;bus}"
+GEMMA4_PROMPT="${GEMMA4_PROMPT:-Describe what you see in this image.}"
 
 if command -v python >/dev/null 2>&1; then
     PYTHON_BIN="python"
@@ -60,6 +64,7 @@ Options:
   --labels-dir <path>        Host labels directory to mount. Default: ./labels
   --docker-image <name>      vision-inference image override
   --text-prompts <value>     Open-vocab prompts for owlv2. Default: cat;dog;bus
+  --prompt <value>           Freeform text prompt for gemma4. Default: "Describe what you see in this image."
   --dry-run                  Print commands without executing them
   --skip-export              Skip export step
   --skip-convert             Skip TensorRT conversion step
@@ -79,6 +84,7 @@ raft
 vitpose
 depth_anything_v2
 videomae
+gemma4
 EOF
 }
 
@@ -175,6 +181,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --text-prompts)
             TEXT_PROMPTS="$2"
+            GEMMA4_PROMPT="$2"
+            shift 2
+            ;;
+        --prompt)
+            GEMMA4_PROMPT="$2"
             shift 2
             ;;
         --dry-run)
@@ -345,6 +356,21 @@ case "$PRESET" in
         )
         RUNTIME_EXTRA_ARGS=("--num_frames=16")
         ;;
+    gemma4)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="llamacpp"
+        fi
+        MODEL_TYPE="gemma4"
+        MODEL_BASENAME="gemma-4-E2B-it-Q4_K_M"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        EXTRA_REQUIREMENTS=()
+        # No export step: the GGUF is downloaded directly from HuggingFace.
+        EXPORT_COMMANDS=(
+            "mkdir -p \"${WEIGHTS_DIR}\" && wget -q --show-progress -O \"${WEIGHTS_DIR}/${MODEL_BASENAME}.gguf\" \"https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/${MODEL_BASENAME}.gguf\" && echo \"Downloaded ${MODEL_BASENAME}.gguf\""
+        )
+        RUNTIME_EXTRA_ARGS=("--prompt=${GEMMA4_PROMPT}")
+        ;;
     *)
         echo "Unsupported preset: $PRESET" >&2
         echo "Use --list-presets to inspect available values." >&2
@@ -369,6 +395,10 @@ case "$BACKEND" in
         MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.engine"
         MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.engine"
         ;;
+    llamacpp)
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.gguf"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.gguf"
+        ;;
     *)
         echo "Unsupported backend: $BACKEND" >&2
         exit 1
@@ -376,7 +406,11 @@ case "$BACKEND" in
 esac
 
 ensure_dir "$WEIGHTS_DIR"
-ensure_vision_core
+
+# gemma4 downloads its model directly — no vision-core export tooling needed.
+if [[ "$PRESET" != "gemma4" ]]; then
+    ensure_vision_core
+fi
 
 if [[ "$PRESET" == "owlv2" ]]; then
     ensure_file "$TOKENIZER_VOCAB_HOST"
