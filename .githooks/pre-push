@@ -1,22 +1,16 @@
 #!/usr/bin/env bash
-# Run act CI emulator before push.
-# Skip with: SKIP_ACT=1 git push ...
+# Pre-push checks for vision-inference.
+# Skip act with: SKIP_ACT=1 git push ...
+#
+# Why not run ci.yml via act?
+#   All CI jobs are backend build jobs (ONNX Runtime, TensorRT, LibTorch, etc.)
+#   that require installed backends not present in the act container.
+#   They are validated by real GitHub CI after push.
+#   No locally-runnable CI job exists for this repo, so act is not used here.
 
 set -euo pipefail
 
 [[ "${SKIP_ACT:-0}" == "1" ]] && exit 0
 
-ACT=$(command -v act 2>/dev/null || echo "")
-if [[ -z "$ACT" ]]; then
-    echo "[pre-push] act not found in PATH — skipping CI check" >&2
-    exit 0
-fi
-
-if ! docker info >/dev/null 2>&1; then
-    echo "[pre-push] Docker not running — skipping act CI check" >&2
-    exit 0
-fi
-
-echo "[pre-push] Running act CI (full pipeline) ..."
-act push --no-cache-server -q
-echo "[pre-push] act CI passed"
+echo "[pre-push] No local CI emulation for vision-inference (all CI jobs require backend deps)."
+echo "[pre-push] Passing. Real CI will validate after push."
