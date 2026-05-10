@@ -24,6 +24,7 @@ struct AppConfig {
     std::string tokenizerMergesPath;
     std::string bertTokenizerVocabPath;
     std::string weights;
+    std::string mmprojectPath;
     std::vector<std::string> textPrompts;
     std::map<std::string, std::string> taskExtraParams;
     bool use_gpu;

@@ -1,0 +1,103 @@
+# docker build --rm -t vision-inference:llamacpp -f docker/Dockerfile.llamacpp .
+# docker run --rm \
+#   -v $(pwd)/models/e2e:/weights \
+#   -v $(pwd)/data:/app/data \
+#   vision-inference:llamacpp \
+#   --type=gemma4 --weights=/weights/gemma-4-E2B-it-Q4_K_M.gguf \
+#   --prompt="What do you see in this image?"
+#
+# LLAMACPP_VERSION must match neuriplo's versions.env (LLAMACPP_VERSION).
+# Override with: docker build --build-arg LLAMACPP_VERSION=b9085 ...
+
+ARG UBUNTU_VERSION=24.04
+ARG LLAMACPP_VERSION=b9085
+
+FROM ubuntu:${UBUNTU_VERSION} AS base_deps
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/root
+ENV DEPENDENCIES_DIR=${HOME}/dependencies
+ENV LLAMACPP_DIR=${DEPENDENCIES_DIR}/llamacpp
+
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y \
+        cmake=3.* \
+        build-essential \
+        pkg-config \
+        wget \
+        git \
+        libopenblas-dev \
+        libgoogle-glog-dev \
+        ninja-build \
+        libopencv-dev \
+        libopencv-contrib-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Stage 2: build and install llama.cpp ─────────────────────────────────────
+FROM base_deps AS llamacpp_build
+
+ARG LLAMACPP_VERSION=b9085
+
+ENV LLAMACPP_DIR=${DEPENDENCIES_DIR}/llamacpp
+
+RUN git clone https://github.com/ggerganov/llama.cpp.git /tmp/llamacpp-src && \
+    cd /tmp/llamacpp-src && \
+    git checkout ${LLAMACPP_VERSION} && \
+    cmake -Bbuild \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="${LLAMACPP_DIR}" \
+        -DBUILD_SHARED_LIBS=ON \
+        -DGGML_BLAS=ON \
+        -DGGML_BLAS_VENDOR=OpenBLAS \
+        -DGGML_CUDA=OFF \
+        -DGGML_METAL=OFF \
+        -DGGML_NATIVE=OFF \
+        -DLLAMA_BUILD_TESTS=OFF \
+        -DLLAMA_BUILD_EXAMPLES=OFF \
+        -DLLAMA_BUILD_SERVER=OFF && \
+    cmake --build build -j$(nproc) && \
+    cmake --install build && \
+    rm -rf /tmp/llamacpp-src
+
+RUN test -f ${LLAMACPP_DIR}/include/llama.h && \
+    { test -f ${LLAMACPP_DIR}/lib/libllama.so || test -f ${LLAMACPP_DIR}/lib64/libllama.so; }
+
+# ── Stage 3: download Gemma 4 E2B IT GGUF (smallest Gemma 4, ~1.5 GB) ────────
+FROM llamacpp_build AS model_download
+
+ENV LLAMACPP_DIR=${DEPENDENCIES_DIR}/llamacpp
+
+RUN mkdir -p /opt/models && \
+    wget -q --show-progress \
+        -O /opt/models/gemma-4-E2B-it-Q4_K_M.gguf \
+        "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf" \
+    || echo "Warning: model download failed — mount the GGUF file at runtime with -v /path/to/model.gguf:/weights/gemma-4-E2B-it-Q4_K_M.gguf"
+
+# ── Stage 4: build vision-inference with LLAMACPP backend ────────────────────
+FROM model_download AS builder
+
+ENV LLAMACPP_DIR=${DEPENDENCIES_DIR}/llamacpp
+
+WORKDIR /src
+COPY . .
+
+RUN cmake -Bbuild \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DDEFAULT_BACKEND=LLAMACPP \
+        -DLLAMACPP_DIR=${LLAMACPP_DIR} && \
+    cmake --build build -j$(nproc)
+
+# ── Stage 5: lean runtime image ──────────────────────────────────────────────
+FROM base_deps AS final
+
+ENV LLAMACPP_DIR=/opt/llamacpp
+ENV LD_LIBRARY_PATH=${LLAMACPP_DIR}/lib:${LLAMACPP_DIR}/lib64:/usr/local/lib
+
+COPY --from=llamacpp_build ${DEPENDENCIES_DIR}/llamacpp /opt/llamacpp
+COPY --from=builder        /src/build/app/vision-inference /usr/local/bin/vision-inference
+COPY --from=model_download /opt/models /opt/models
+
+RUN mkdir -p /app/data /weights
+
+ENTRYPOINT ["vision-inference"]
+CMD ["--help"]

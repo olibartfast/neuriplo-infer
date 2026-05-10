@@ -32,7 +32,13 @@ VisionApp::VisionApp(const AppConfig &config)
   const auto gpuInfo = getGPUModel();
   LOG(INFO) << "GPU info: " << gpuInfo;
   const auto use_gpu = config.use_gpu && hasNvidiaGPU();
-  engine = setup_inference_engine(config.weights, use_gpu, config.batch_size,
+  // Embed mmproj path in model path so the backend can parse it without
+  // changing the InferenceInterface signature.
+  std::string engine_weights = config.weights;
+  if (!config.mmprojectPath.empty()) {
+      engine_weights += "|mmproj=" + config.mmprojectPath;
+  }
+  engine = setup_inference_engine(engine_weights, use_gpu, config.batch_size,
                   config.input_sizes);
   if (!engine) {
    throw std::runtime_error("Can't setup an inference engine for " +
@@ -172,16 +178,21 @@ VisionApp::VisionApp(const AppConfig &config)
 
 void VisionApp::run() {
  try {
+  if (getTaskType(config.detectorType) == vision_core::TaskType::ImageUnderstanding) {
+   processImageUnderstanding();
+   return;
+  }
+
   // Check if we have image files
   bool hasImages = false;
   for (const auto& src : config.sources) {
-   if (src.find(".jpg") != std::string::npos || 
+   if (src.find(".jpg") != std::string::npos ||
      src.find(".png") != std::string::npos) {
     hasImages = true;
     break;
    }
   }
-   
+
   if (hasImages) {
    if (config.sources.size() == 1) {
     processImage(config.sources[0]);

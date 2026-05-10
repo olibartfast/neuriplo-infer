@@ -27,5 +27,9 @@ vision_core::TaskType VisionApp::getTaskType(const std::string& model_type) {
   if (normalized == "owlv2" || normalized == "owlvit" || normalized == "groundingdino") {
     return vision_core::TaskType::OpenVocabDetection;
   }
+  if (normalized == "gemma4" || normalized == "gemma" || normalized == "llama" ||
+      normalized == "llamacpp" || normalized == "imageunderstanding") {
+    return vision_core::TaskType::ImageUnderstanding;
+  }
   return vision_core::TaskType::Detection; // Default for YOLO, RTDETR, etc.
 }
