@@ -20,6 +20,10 @@ Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency e
 - All normal feature, fix, refactor, docs, and chore work should land through pull requests into `develop`.
 - Pull requests into `master` are release PRs only and should be treated as release-safety checks.
 - Before creating a release, update both `VERSION` and `CHANGELOG.md`.
+- Before tagging a release, pin sibling refs in `versions.env` for reproducibility.
+  - Tag the matching commit in each sibling repo (`vision-core`, `neuriplo`, `videocapture`) with the same tag name (e.g. `v0.3.0`).
+  - Uncomment and set `NEURIPLO_VERSION`, `VIDEOCAPTURE_VERSION`, and `VISION_CORE_VERSION` in `versions.env` to that tag.
+  - Without this step, checking out an old vision-inference tag fetches sibling `master` at fetch time, which keeps moving — builds drift.
 - After finishing a release, delete any temporary branches created ad hoc for that release.
 - Do not suggest switching this repository to a `main`-centric trunk workflow.
 
