@@ -10,6 +10,56 @@
 
 set -euo pipefail
 
+# Block pushes of vision-inference release tags (v[0-9]+.[0-9]+.[0-9]+) unless
+# versions.env at the tag pins all three sibling refs to that same tag and the
+# siblings actually have a matching tag on their remote. Catches the mistake
+# locally rather than letting an unreproducible tag reach origin (see also
+# .github/workflows/release-guard.yml for the server-side check).
+#
+# Skip with: SKIP_RELEASE_GUARD=1 git push origin vX.Y.Z
+#
+# Pre-push receives ref lines on stdin: "<local_ref> <local_sha> <remote_ref> <remote_sha>".
+if [[ "${SKIP_RELEASE_GUARD:-0}" != "1" ]]; then
+  REPO_ROOT="$(git rev-parse --show-toplevel)"
+  release_tag_regex='^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+  zero_sha='0000000000000000000000000000000000000000'
+
+  while read -r local_ref local_sha remote_ref remote_sha; do
+    [[ -z "${local_ref}" ]] && continue
+    [[ "${local_sha}" == "${zero_sha}" ]] && continue  # tag deletion
+    [[ "${remote_ref}" =~ ${release_tag_regex} ]] || continue
+
+    tag="${remote_ref#refs/tags/}"
+    echo "[pre-push] Validating release pins for ${tag}..."
+    # Validate against the tree at the tag, not the working tree. Stash the
+    # working-tree state by checking out the tag's versions.env into a temp
+    # file so the validator sees the pinned values that will actually be
+    # pushed.
+    tmp_env="$(mktemp)"
+    if ! git show "${local_sha}:versions.env" > "${tmp_env}" 2>/dev/null; then
+      echo "[pre-push] FAIL: cannot read versions.env at ${tag} (${local_sha})." >&2
+      rm -f "${tmp_env}"
+      exit 1
+    fi
+    real_env="${REPO_ROOT}/versions.env"
+    backup_env="$(mktemp)"
+    cp "${real_env}" "${backup_env}"
+    cp "${tmp_env}" "${real_env}"
+    set +e
+    bash "${REPO_ROOT}/scripts/validate_release_pins.sh" "${tag}"
+    rc=$?
+    set -e
+    cp "${backup_env}" "${real_env}"
+    rm -f "${tmp_env}" "${backup_env}"
+
+    if [[ "${rc}" -ne 0 ]]; then
+      echo "[pre-push] Refusing to push ${tag}. To override (not recommended):" >&2
+      echo "  SKIP_RELEASE_GUARD=1 git push origin ${tag}" >&2
+      exit 1
+    fi
+  done
+fi
+
 [[ "${SKIP_ACT:-0}" == "1" ]] && exit 0
 
 echo "[pre-push] No local CI emulation for vision-inference (all CI jobs require backend deps)."
