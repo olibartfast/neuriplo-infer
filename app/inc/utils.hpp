@@ -13,3 +13,4 @@ std::string getCPUInfo();
 bool hasNvidiaGPU();
 std::vector<std::string> split(const std::string& s, char delimiter);
 std::vector<std::vector<int64_t>> parseInputSizes(const std::string& input);
+std::string normalizeModelType(const std::string& model_type);

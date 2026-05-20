@@ -2,9 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
-    branches: [develop]
+    branches: [develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 jobs:
   build-opencv-dnn:
@@ -148,6 +154,11 @@ jobs:
       - name: Fetch neuriplo versions.env
         uses: ./.github/actions/fetch-neuriplo-versions
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+
       - uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
@@ -170,6 +181,11 @@ jobs:
       - name: Fetch neuriplo versions.env
         uses: ./.github/actions/fetch-neuriplo-versions
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+
       - uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
@@ -191,6 +207,11 @@ jobs:
 
       - name: Fetch neuriplo versions.env
         uses: ./.github/actions/fetch-neuriplo-versions
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af
 
       - uses: docker/setup-buildx-action@v3
 

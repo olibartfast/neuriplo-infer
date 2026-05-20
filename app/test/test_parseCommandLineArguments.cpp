@@ -81,3 +81,27 @@ TEST(ParseCommandLineArguments, OpenVocabFlags) {
     EXPECT_EQ(config.tokenizerVocabPath, "vocab.json");
     EXPECT_EQ(config.tokenizerMergesPath, "merges.txt");
 }
+
+TEST(ParseCommandLineArguments, MultimodalExtraParams) {
+    const char* argv[] = {
+        "program",
+        "--type=gemma4",
+        "--source=input.mp4",
+        "--weights=model.onnx",
+        "--prompt=Summarize the clip",
+        "--output_format=JSON",
+        "--sample_stride=4",
+        "--max_frames=12"
+    };
+    int argc = sizeof(argv) / sizeof(argv[0]);
+    touchFile("input.mp4");
+    touchFile("model.onnx");
+
+    AppConfig config = CommandLineParser::parseCommandLineArguments(argc, const_cast<char**>(argv));
+
+    ASSERT_EQ(config.taskExtraParams.size(), 4u);
+    EXPECT_EQ(config.taskExtraParams.at("prompt"), "Summarize the clip");
+    EXPECT_EQ(config.taskExtraParams.at("output_format"), "json");
+    EXPECT_EQ(config.taskExtraParams.at("sample_stride"), "4");
+    EXPECT_EQ(config.taskExtraParams.at("max_frames"), "12");
+}

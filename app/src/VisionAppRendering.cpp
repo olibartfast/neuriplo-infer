@@ -1,6 +1,7 @@
 #include "VisionApp.hpp"
 
 #include <cstdlib>
+#include <iostream>
 #include <utility>
 
 namespace {
@@ -172,6 +173,15 @@ void renderDepthEstimationResults(const std::vector<vision_core::Result>& result
   }
 }
 
+void renderImageUnderstandingResults(const std::vector<vision_core::Result>& results, cv::Mat& /*image*/) {
+  for (const auto& result : results) {
+    if (std::holds_alternative<vision_core::ImageUnderstanding>(result)) {
+      const auto& understanding = std::get<vision_core::ImageUnderstanding>(result);
+      std::cout << understanding.text << '\n';
+    }
+  }
+}
+
 } // namespace
 
 void VisionApp::processResults(const std::vector<vision_core::Result>& results, cv::Mat& image) {
@@ -201,6 +211,9 @@ void VisionApp::processResults(const std::vector<vision_core::Result>& results, 
     break;
   case vision_core::TaskType::OpenVocabDetection:
     renderOpenVocabDetectionResults(results, image);
+    break;
+  case vision_core::TaskType::ImageUnderstanding:
+    renderImageUnderstandingResults(results, image);
     break;
   }
 }

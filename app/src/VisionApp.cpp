@@ -18,6 +18,9 @@ VisionApp::VisionApp(const AppConfig &config)
   if (!config.textPrompts.empty()) {
    LOG(INFO) << "Open-vocab prompts count " << config.textPrompts.size();
   }
+  if (!config.taskExtraParams.empty()) {
+   LOG(INFO) << "Task extra params count " << config.taskExtraParams.size();
+  }
 
   if (!config.labelsPath.empty()) {
    classes = readLabelNames(config.labelsPath);
@@ -29,7 +32,13 @@ VisionApp::VisionApp(const AppConfig &config)
   const auto gpuInfo = getGPUModel();
   LOG(INFO) << "GPU info: " << gpuInfo;
   const auto use_gpu = config.use_gpu && hasNvidiaGPU();
-  engine = setup_inference_engine(config.weights, use_gpu, config.batch_size,
+  // Embed mmproj path in model path so the backend can parse it without
+  // changing the InferenceInterface signature.
+  std::string engine_weights = config.weights;
+  if (!config.mmprojectPath.empty()) {
+      engine_weights += "|mmproj=" + config.mmprojectPath;
+  }
+  engine = setup_inference_engine(engine_weights, use_gpu, config.batch_size,
                   config.input_sizes);
   if (!engine) {
    throw std::runtime_error("Can't setup an inference engine for " +
@@ -121,6 +130,7 @@ VisionApp::VisionApp(const AppConfig &config)
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
   task_config.text_prompts = config.textPrompts;
+  task_config.extra_params = config.taskExtraParams;
 
   if (!config.tokenizerVocabPath.empty()) {
    std::ifstream vocab_stream(config.tokenizerVocabPath);
@@ -144,6 +154,17 @@ VisionApp::VisionApp(const AppConfig &config)
    task_config.tokenizer_merges_text = buffer.str();
   }
 
+  if (!config.bertTokenizerVocabPath.empty()) {
+   std::ifstream bert_vocab_stream(config.bertTokenizerVocabPath);
+   if (!bert_vocab_stream) {
+    throw std::runtime_error("Can't open BERT tokenizer vocab file: " +
+                 config.bertTokenizerVocabPath);
+   }
+   std::stringstream buffer;
+   buffer << bert_vocab_stream.rdbuf();
+   task_config.bert_tokenizer_vocab_text = buffer.str();
+  }
+
   task = vision_core::TaskFactory::createTaskInstance(config.detectorType, model_info, task_config);
   if (!task) {
    throw std::runtime_error("Can't setup a task for " + config.detectorType);
@@ -157,16 +178,21 @@ VisionApp::VisionApp(const AppConfig &config)
 
 void VisionApp::run() {
  try {
+  if (getTaskType(config.detectorType) == vision_core::TaskType::ImageUnderstanding) {
+   processImageUnderstanding();
+   return;
+  }
+
   // Check if we have image files
   bool hasImages = false;
   for (const auto& src : config.sources) {
-   if (src.find(".jpg") != std::string::npos || 
+   if (src.find(".jpg") != std::string::npos ||
      src.find(".png") != std::string::npos) {
     hasImages = true;
     break;
    }
   }
-   
+
   if (hasImages) {
    if (config.sources.size() == 1) {
     processImage(config.sources[0]);

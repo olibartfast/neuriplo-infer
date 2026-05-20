@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-21
+
+### Added
+- Gemma4 VLM image understanding wired via llama.cpp + libmtmd
+- Grounding DINO open-vocabulary detection wired as `OpenVocabDetection` with BERT tokenizer support
+- Multimodal CLI parameters and task routing
+- VLM image understanding how-to and agentic wiring runbook
+
+### Changed
+- Sibling refs (`neuriplo`, `vision-core`, `videocapture`) pinned in `versions.env` to each sibling's own release tag for reproducible tag checkouts; siblings now version independently
+- Release tooling reworked for per-sibling pins: `cut_release.sh` detects each sibling's latest release tag, `validate_release_pins.sh` rejects branch-name pins (e.g. `master`/`develop`), enforced by the pre-push hook and the release-guard workflow
+- Supported model types synced from vision-core (adds ImageUnderstanding)
+- CI skips on docs-only pushes; frees disk space before Docker builds
+
+### Fixed
+- Pre-push hook no longer runs `act` (no locally-runnable CI jobs for this repo)
+
 ## [0.2.3] - 2026-04-03
 
 ### Fixed
@@ -69,7 +86,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via vision-core)
 
-[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/olibartfast/vision-inference/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/olibartfast/vision-inference/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/olibartfast/vision-inference/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/olibartfast/vision-inference/compare/v0.2.0...v0.2.1

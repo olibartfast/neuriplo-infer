@@ -11,11 +11,11 @@ This project uses two files to track releases:
 
 ## VERSION file
 
-Contains a single line like `0.2.0-dev`.
+Contains a single line like `0.3.0` — a plain `MAJOR.MINOR.PATCH` semver, no suffix.
 
-- The `-dev` suffix indicates unreleased development work on `develop`.
-- CMake reads this file at configure time and strips the suffix to set `project(vision-inference VERSION X.Y.Z)`.
-- Follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
+- CMake reads this file at configure time to set `project(vision-inference VERSION X.Y.Z)`.
+- After a release, `master` and `develop` carry the **same** `VERSION` (see Release workflow). It is bumped on the next release branch, never directly on `develop`.
+- Follows [Semantic Versioning](https://semver.org/).
 
 ## CHANGELOG.md
 
@@ -43,42 +43,38 @@ When merging a PR into `develop`, add a line under `[Unreleased]` in the appropr
 
 ## Release workflow
 
+This project follows a [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) model. After a release, `master` and `develop` point at the **same** tagged commit; `develop` then moves ahead again as features land. The sibling repos (`vision-core`, `neuriplo`, `videocapture`) follow the same scheme and must be released first.
+
 1. **Create a release branch** from `develop`:
    ```
-   git checkout -b release/0.2.0 develop
+   git checkout develop
+   git checkout -b release/0.3.0
    ```
 
-2. **Update VERSION** — remove the `-dev` suffix:
+2. **Pin sibling refs and set VERSION** — run the release helper:
    ```
-   0.2.0
+   scripts/cut_release.sh 0.3.0
    ```
+   This sets `VERSION` to `0.3.0` and rewrites `versions.env`, pinning `neuriplo`, `vision-core`, and `videocapture` each to its **own current release tag**. Siblings version independently — videocapture may stay at an older tag while the others advance. Every pin must be a concrete `vX.Y.Z` tag, never a branch like `master`/`develop`. `scripts/validate_release_pins.sh` enforces this, as do the `pre-push` hook and the `release-guard` workflow. Tag the sibling repos *before* cutting the vision-inference release so their tags exist on the remote.
 
-3. **Update CHANGELOG.md** — rename `[Unreleased]` to the new version with today's date, and add a fresh empty `[Unreleased]` section:
-   ```markdown
-   ## [Unreleased]
+3. **Update CHANGELOG.md** — rename `[Unreleased]` to the new version with today's date, add a fresh empty `[Unreleased]`, and update the comparison links at the bottom.
 
-   ## [0.2.0] - 2026-04-15
-
-   ### Added
-   - ...
+4. **Commit, merge into `master`, and tag**:
    ```
-   Update the comparison links at the bottom:
-   ```markdown
-   [Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.2.0...HEAD
-   [0.2.0]: https://github.com/olibartfast/vision-inference/compare/v0.1.0...v0.2.0
-   ```
-
-4. **Merge into `master`** and tag:
-   ```
+   git commit -am "release: v0.3.0"
    git checkout master
-   git merge release/0.2.0
-   git tag v0.2.0
-   git push origin master --tags
+   git merge --no-ff release/0.3.0
+   git tag -a v0.3.0 -m "Release v0.3.0"
    ```
 
-5. **Bump develop** — merge back and set the next dev version:
+5. **Fast-forward `develop` to `master`** so both point at the release commit, then delete the release branch:
    ```
    git checkout develop
-   git merge release/0.2.0
+   git merge --ff-only master
+   git branch -d release/0.3.0
    ```
-   Update `VERSION` to `0.3.0-dev`, commit, push.
+
+6. **Push**:
+   ```
+   git push origin master develop v0.3.0
+   ```

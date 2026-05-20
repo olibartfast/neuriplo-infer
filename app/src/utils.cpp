@@ -1,5 +1,6 @@
 #include <fstream>
 #include <sstream>
+#include <cctype>
 #include <cstring>
 #include <cpuid.h>
 #include <iostream>
@@ -184,4 +185,19 @@ std::vector<std::vector<int64_t>> parseInputSizes(const std::string& input) {
     }
 
     return sizes;
+}
+
+std::string normalizeModelType(const std::string& model_type) {
+    std::string normalized;
+    normalized.reserve(model_type.size());
+
+    for (char c : model_type) {
+        const unsigned char uc = static_cast<unsigned char>(c);
+        if (std::isspace(uc) != 0 || c == '-' || c == '_') {
+            continue;
+        }
+        normalized.push_back(static_cast<char>(std::tolower(uc)));
+    }
+
+    return normalized;
 }

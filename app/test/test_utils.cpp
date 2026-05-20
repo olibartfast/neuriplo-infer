@@ -58,3 +58,9 @@ TEST_F(UtilsTest, ReadLabelNames) {
     EXPECT_EQ(labels.size(), 80); // Replace with expected size
     EXPECT_EQ(labels[0], "label_0"); // Replace with expected label (note newline)
 }
+
+TEST(UtilsStandalone, NormalizeModelType) {
+    EXPECT_EQ(normalizeModelType("OWL-ViT"), "owlvit");
+    EXPECT_EQ(normalizeModelType(" Gemma_4 "), "gemma4");
+    EXPECT_EQ(normalizeModelType("Video Understanding"), "videounderstanding");
+}

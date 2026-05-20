@@ -1,29 +1,5 @@
 #include "VisionApp.hpp"
 
-#include <algorithm>
-#include <cctype>
-
-namespace {
-
-std::string normalizeModelType(const std::string& model_type) {
-  std::string normalized;
-  normalized.reserve(model_type.size());
-
-  for (char c : model_type) {
-    if (std::isspace(static_cast<unsigned char>(c)) != 0) {
-      continue;
-    }
-    if (c == '-' || c == '_') {
-      continue;
-    }
-    normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
-  }
-
-  return normalized;
-}
-
-} // namespace
-
 vision_core::TaskType VisionApp::getTaskType(const std::string& model_type) {
   std::string normalized = normalizeModelType(model_type);
 
@@ -48,8 +24,12 @@ vision_core::TaskType VisionApp::getTaskType(const std::string& model_type) {
   if (normalized.find("depthanythingv2") != std::string::npos) {
     return vision_core::TaskType::DepthEstimation;
   }
-  if (normalized == "owlv2" || normalized == "owlvit") {
+  if (normalized == "owlv2" || normalized == "owlvit" || normalized == "groundingdino") {
     return vision_core::TaskType::OpenVocabDetection;
+  }
+  if (normalized == "gemma4" || normalized == "gemma" || normalized == "llama" ||
+      normalized == "llamacpp" || normalized == "imageunderstanding") {
+    return vision_core::TaskType::ImageUnderstanding;
   }
   return vision_core::TaskType::Detection; // Default for YOLO, RTDETR, etc.
 }

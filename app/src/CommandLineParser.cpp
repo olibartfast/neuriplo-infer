@@ -11,8 +11,14 @@ const std::string CommandLineParser::params =
     "{ source s   | <none>  | path to image or video source}"
     "{ labels lb  |<none>  | path to class labels}"
     "{ text_prompts tp | | semicolon-separated text prompts for open-vocabulary detection (e.g. 'cat;dog;bus')}"
+    "{ prompt | | freeform prompt for multimodal understanding models }"
+    "{ mmproj | | path to multimodal projector GGUF for VLM image inference }"
+    "{ output_format | | optional multimodal output hint (text or json) }"
+    "{ sample_stride | 0 | optional uniform frame sampling stride for multimodal video tasks }"
+    "{ max_frames | 0 | optional cap on sampled frames for multimodal video tasks }"
     "{ tokenizer_vocab | | path to tokenizer vocab.json for open-vocabulary detection }"
     "{ tokenizer_merges | | path to tokenizer merges.txt for open-vocabulary detection }"
+    "{ bert_tokenizer_vocab | | path to BERT vocab.txt for Grounding DINO }"
     "{ weights w  | <none>  | path to models weights}"
     "{ use-gpu   | false  | activate gpu support}"
     "{ min_confidence | 0.25   | optional min confidence}"
@@ -51,11 +57,39 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     config.labelsPath = parser.get<std::string>("labels");
     config.tokenizerVocabPath = parser.get<std::string>("tokenizer_vocab");
     config.tokenizerMergesPath = parser.get<std::string>("tokenizer_merges");
+    config.bertTokenizerVocabPath = parser.get<std::string>("bert_tokenizer_vocab");
+    config.mmprojectPath = parser.get<std::string>("mmproj");
     config.batch_size = parser.get<int>("batch");
     {
         const std::string prompts = parser.get<std::string>("text_prompts");
         if (!prompts.empty()) {
             config.textPrompts = split(prompts, ';');
+        }
+    }
+    {
+        const std::string prompt = parser.get<std::string>("prompt");
+        if (!prompt.empty()) {
+            config.taskExtraParams["prompt"] = prompt;
+        }
+    }
+    {
+        std::string outputFormat = parser.get<std::string>("output_format");
+        if (!outputFormat.empty()) {
+            std::transform(outputFormat.begin(), outputFormat.end(), outputFormat.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            config.taskExtraParams["output_format"] = outputFormat;
+        }
+    }
+    {
+        const int sampleStride = parser.get<int>("sample_stride");
+        if (sampleStride > 0) {
+            config.taskExtraParams["sample_stride"] = std::to_string(sampleStride);
+        }
+    }
+    {
+        const int maxFrames = parser.get<int>("max_frames");
+        if (maxFrames > 0) {
+            config.taskExtraParams["max_frames"] = std::to_string(maxFrames);
         }
     }
 
@@ -101,18 +135,25 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
         std::exit(1);
     }
 
+    const std::string typeForSourceCheck = normalizeModelType(parser.get<std::string>("type"));
+    const bool is_text_task = (typeForSourceCheck == "gemma4" || typeForSourceCheck == "gemma" ||
+                               typeForSourceCheck == "llama" || typeForSourceCheck == "llamacpp" ||
+                               typeForSourceCheck == "imageunderstanding");
+
     std::string source = parser.get<std::string>("source");
-    if (source.empty()) {
+    if (source.empty() && !is_text_task) {
         LOG(ERROR) << "Cannot open video stream";
         std::exit(1);
     }
-    
-    // Validate each source file exists
-    std::vector<std::string> sources = split(source, ',');
-    for (const auto& src : sources) {
-        if (!isFile(src) && !isDirectory(src)) {
-            LOG(ERROR) << "Source file/directory " << src << " doesn't exist";
-            std::exit(1);
+
+    // Validate each source file exists (when provided)
+    if (!source.empty()) {
+        std::vector<std::string> sources = split(source, ',');
+        for (const auto& src : sources) {
+            if (!isFile(src) && !isDirectory(src)) {
+                LOG(ERROR) << "Source file/directory " << src << " doesn't exist";
+                std::exit(1);
+            }
         }
     }
 
@@ -128,13 +169,20 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
         std::exit(1);
     }
 
+    const std::string mmproj = parser.get<std::string>("mmproj");
+    if (!mmproj.empty() && !isFile(mmproj)) {
+        LOG(ERROR) << "Multimodal projector file " << mmproj << " doesn't exist";
+        std::exit(1);
+    }
+
     const std::string detectorType = parser.get<std::string>("type");
-    std::string normalizedType = detectorType;
-    std::transform(normalizedType.begin(), normalizedType.end(), normalizedType.begin(),
+    const std::string normalizedType = normalizeModelType(detectorType);
+    std::string outputFormat = parser.get<std::string>("output_format");
+    const int sampleStride = parser.get<int>("sample_stride");
+    const int maxFrames = parser.get<int>("max_frames");
+
+    std::transform(outputFormat.begin(), outputFormat.end(), outputFormat.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    normalizedType.erase(std::remove_if(normalizedType.begin(), normalizedType.end(),
-                                        [](unsigned char c) { return c == '-' || c == '_' || std::isspace(c) != 0; }),
-                         normalizedType.end());
 
     if (normalizedType == "owlv2" || normalizedType == "owlvit") {
         const std::string textPrompts = parser.get<std::string>("text_prompts");
@@ -161,5 +209,38 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser& parser) {
             LOG(ERROR) << "Tokenizer merges file " << tokenizerMerges << " doesn't exist";
             std::exit(1);
         }
+    }
+
+    if (normalizedType == "groundingdino") {
+        const std::string textPrompts = parser.get<std::string>("text_prompts");
+        const std::string bertVocab = parser.get<std::string>("bert_tokenizer_vocab");
+
+        if (textPrompts.empty()) {
+            LOG(ERROR) << "Grounding DINO requires --text_prompts";
+            std::exit(1);
+        }
+        if (bertVocab.empty()) {
+            LOG(ERROR) << "Grounding DINO requires --bert_tokenizer_vocab";
+            std::exit(1);
+        }
+        if (!isFile(bertVocab)) {
+            LOG(ERROR) << "BERT tokenizer vocab file " << bertVocab << " doesn't exist";
+            std::exit(1);
+        }
+    }
+
+    if (!outputFormat.empty() && outputFormat != "text" && outputFormat != "json") {
+        LOG(ERROR) << "--output_format must be either 'text' or 'json'";
+        std::exit(1);
+    }
+
+    if (sampleStride < 0) {
+        LOG(ERROR) << "--sample_stride must be >= 0";
+        std::exit(1);
+    }
+
+    if (maxFrames < 0) {
+        LOG(ERROR) << "--max_frames must be >= 0";
+        std::exit(1);
     }
 }

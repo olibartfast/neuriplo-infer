@@ -31,6 +31,10 @@ api_surface:
     - weights
     - labels
     - text_prompts
+    - prompt
+    - output_format
+    - sample_stride
+    - max_frames
     - tokenizer_vocab
     - tokenizer_merges
     - min_confidence
