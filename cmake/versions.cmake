@@ -139,10 +139,11 @@ _resolve_sibling_ref(VISION_CORE_VERSION
 
 if(NOT (NEURIPLO_VERSION STREQUAL VIDEOCAPTURE_VERSION AND
         NEURIPLO_VERSION STREQUAL VISION_CORE_VERSION))
-    message(WARNING
-        "Sibling refs differ: neuriplo=${NEURIPLO_VERSION}, "
-        "videocapture=${VIDEOCAPTURE_VERSION}, vision-core=${VISION_CORE_VERSION}. "
-        "This is allowed for cross-branch testing but unusual for a release build.")
+    # Siblings version independently -- videocapture in particular may lag
+    # vision-core / neuriplo. Differing pins are expected, not an error.
+    message(STATUS
+        "Sibling refs differ (independent versioning): neuriplo=${NEURIPLO_VERSION}, "
+        "videocapture=${VIDEOCAPTURE_VERSION}, vision-core=${VISION_CORE_VERSION}.")
 endif()
 
 set(OPENCV_MIN_VERSION "${OPENCV_MIN_VERSION}" CACHE STRING "Minimum OpenCV version")

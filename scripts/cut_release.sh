@@ -6,14 +6,21 @@
 #
 # What this does:
 #   1. Validates the version is a clean semver.
-#   2. Confirms vision-core, neuriplo, and videocapture have matching tags.
+#   2. Detects each sibling's current release tag (vision-core, neuriplo,
+#      videocapture) from its remote -- the latest vX.Y.Z tag it has.
 #   3. Writes VERSION = <version>.
 #   4. Replaces NEURIPLO_VERSION / VIDEOCAPTURE_VERSION / VISION_CORE_VERSION
-#      in versions.env with v<version>.
+#      in versions.env with each sibling's detected release tag.
 #   5. Stages VERSION and versions.env. Does NOT commit, tag, or push.
 #
-# After this script, you still need to: update CHANGELOG.md, commit, open the
-# release PR to master, and tag after merge.
+# Siblings version independently: vision-core and neuriplo usually move with
+# vision-inference, but videocapture may lag (e.g. stay at v0.2.0). Each pin is
+# whatever release tag that sibling currently has -- they need NOT be equal.
+# The only hard rule, enforced by validate_release_pins.sh, is that every pin
+# is a concrete vX.Y.Z tag, never a branch like 'master' or 'develop'.
+#
+# After this script, you still need to: update CHANGELOG.md, commit, merge the
+# release branch to master, and tag.
 
 set -euo pipefail
 
@@ -39,15 +46,32 @@ if [ ! -f versions.env ] || [ ! -f VERSION ]; then
   exit 1
 fi
 
-echo "==> Verifying sibling tags exist on remote..."
+# Print the latest vX.Y.Z release tag a sibling repo has on its remote.
+latest_remote_tag() {
+  local repo="$1"
+  git ls-remote --tags --refs "https://github.com/olibartfast/${repo}.git" 2>/dev/null \
+    | sed 's#.*refs/tags/##' \
+    | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+    | sort -V \
+    | tail -n1
+}
+
+echo "==> Detecting sibling release tags from their remotes..."
 fail=0
-for repo in vision-core neuriplo videocapture; do
-  if git ls-remote --tags "https://github.com/olibartfast/${repo}.git" "refs/tags/${TAG}" 2>/dev/null \
-       | grep -q "refs/tags/${TAG}$"; then
-    echo "  ok ${repo}@${TAG}"
-  else
-    echo "  missing ${repo}@${TAG} -- tag the matching sibling commit first" >&2
+NEURIPLO_PIN="$(latest_remote_tag neuriplo)"
+VIDEOCAPTURE_PIN="$(latest_remote_tag videocapture)"
+VISION_CORE_PIN="$(latest_remote_tag vision-core)"
+
+for entry in "neuriplo=${NEURIPLO_PIN}" \
+             "videocapture=${VIDEOCAPTURE_PIN}" \
+             "vision-core=${VISION_CORE_PIN}"; do
+  repo="${entry%%=*}"
+  pin="${entry#*=}"
+  if [ -z "${pin}" ]; then
+    echo "  missing ${repo} -- it has no vX.Y.Z release tag; tag it first" >&2
     fail=1
+  else
+    echo "  ${repo} -> ${pin}"
   fi
 done
 [ "${fail}" -eq 0 ] || exit 1
@@ -68,10 +92,12 @@ rm -f versions.env.tmp
 
 cat >> versions.env <<EOF
 
-# Sibling repository refs pinned for ${TAG} release.
-NEURIPLO_VERSION=${TAG}
-VIDEOCAPTURE_VERSION=${TAG}
-VISION_CORE_VERSION=${TAG}
+# Sibling repository refs, each pinned to that sibling's current release tag
+# so a checkout of the ${TAG} tag rebuilds against the exact same sibling code.
+# Siblings version independently -- these need not be equal.
+NEURIPLO_VERSION=${NEURIPLO_PIN}
+VIDEOCAPTURE_VERSION=${VIDEOCAPTURE_PIN}
+VISION_CORE_VERSION=${VISION_CORE_PIN}
 EOF
 
 echo "==> Staging changes..."
@@ -81,8 +107,8 @@ echo ""
 echo "==> Done. Next steps:"
 echo "  1. Update CHANGELOG.md for ${TAG}."
 echo "  2. git commit -m 'release: ${TAG}'"
-echo "  3. Push the commit and open a PR to master."
-echo "  4. After merge: git tag ${TAG} && git push origin ${TAG}"
+echo "  3. Merge the release branch to master and tag ${TAG}."
+echo "  4. git push origin master ${TAG}"
 echo ""
 echo "Current versions.env:"
 cat versions.env
