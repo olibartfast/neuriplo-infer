@@ -1,0 +1,29 @@
+name: Release Guard
+
+# Runs when a vision-inference release tag is pushed. Verifies that
+# versions.env at the tag pins all three sibling repos to the same tag
+# and that each sibling has that tag on its remote. This makes the tag
+# checkout reproducible: future builds at this tag will fetch fixed
+# sibling code rather than sibling master.
+#
+# Note: GitHub does not run workflows *before* a tag is pushed, so a
+# failing run here does not prevent the bad tag from existing. To make
+# this enforcement hard, configure a tag protection rule that requires
+# this check to pass before the tag is considered released.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  validate-sibling-pins:
+    name: Validate sibling pins
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate versions.env pins and sibling tags
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          bash scripts/validate_release_pins.sh "${tag}"

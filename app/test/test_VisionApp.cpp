@@ -51,3 +51,22 @@ TEST(VisionAppTaskConfig, OpenVocabFieldsRoundtrip) {
     EXPECT_EQ(config.tokenizerVocabPath, "vocab.json");
     EXPECT_EQ(config.tokenizerMergesPath, "merges.txt");
 }
+
+TEST(VisionAppTaskConfig, ExtraParamsRoundtrip) {
+    AppConfig config;
+    config.taskExtraParams = {
+        {"prompt", "Describe the image"},
+        {"output_format", "json"},
+        {"sample_stride", "4"},
+        {"max_frames", "8"}
+    };
+
+    vision_core::TaskConfig task_config;
+    task_config.extra_params = config.taskExtraParams;
+
+    ASSERT_EQ(task_config.extra_params.size(), 4u);
+    EXPECT_EQ(task_config.extra_params.at("prompt"), "Describe the image");
+    EXPECT_EQ(task_config.extra_params.at("output_format"), "json");
+    EXPECT_EQ(task_config.extra_params.at("sample_stride"), "4");
+    EXPECT_EQ(task_config.extra_params.at("max_frames"), "8");
+}

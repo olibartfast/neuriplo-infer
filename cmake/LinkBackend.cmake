@@ -15,6 +15,25 @@ elseif(DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW" )
     target_include_directories(${PROJECT_NAME} PRIVATE ${neuriplo_SOURCE_DIR}/backends/libtensorflow/src)
 elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")
     target_include_directories(${PROJECT_NAME} PRIVATE ${neuriplo_SOURCE_DIR}/backends/openvino/src)
+elseif(DEFAULT_BACKEND STREQUAL "LLAMACPP")
+    target_include_directories(${PROJECT_NAME} PRIVATE ${neuriplo_SOURCE_DIR}/backends/llamacpp/src)
+    # libllama.so → libggml-base.so.0/libggml.so.0 are transitive SONAME deps; the final
+    # executable must carry rpath-link so ld resolves them at link time, and rpath so the
+    # dynamic loader finds them at run time.
+    target_link_options(${PROJECT_NAME} PRIVATE
+        "-Wl,-rpath-link,${LLAMACPP_DIR}/lib"
+        "-Wl,-rpath,${LLAMACPP_DIR}/lib")
+    # Link ggml/llama/mtmd libs directly so undefined refs are satisfied.
+    find_library(VI_GGML_LIB      NAMES ggml      PATHS ${LLAMACPP_DIR}/lib NO_DEFAULT_PATH)
+    find_library(VI_GGML_BASE_LIB NAMES ggml-base PATHS ${LLAMACPP_DIR}/lib NO_DEFAULT_PATH)
+    find_library(VI_GGML_CPU_LIB  NAMES ggml-cpu  PATHS ${LLAMACPP_DIR}/lib NO_DEFAULT_PATH)
+    find_library(VI_LLAMA_LIB     NAMES llama      PATHS ${LLAMACPP_DIR}/lib NO_DEFAULT_PATH)
+    find_library(VI_MTMD_LIB      NAMES mtmd       PATHS ${LLAMACPP_DIR}/lib NO_DEFAULT_PATH)
+    foreach(_lib VI_LLAMA_LIB VI_GGML_LIB VI_GGML_BASE_LIB VI_GGML_CPU_LIB VI_MTMD_LIB)
+        if(${_lib})
+            target_link_libraries(${PROJECT_NAME} PRIVATE "${${_lib}}")
+        endif()
+    endforeach()
 endif()
 
 # Note: Actual inference backend libraries (libonnxruntime.so, libnvinfer.so, etc.)

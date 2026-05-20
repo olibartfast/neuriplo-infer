@@ -5,6 +5,7 @@ Do not edit manually; run `python scripts/sync_supported_model_types.py`.
 
 Source: [https://github.com/olibartfast/vision-core](https://github.com/olibartfast/vision-core)
 
+<!-- TASKFACTORY_MODEL_LIST:START -->
 The TaskFactory supports the following model type strings:
 
 **Object Detection:**
@@ -47,7 +48,7 @@ The TaskFactory supports the following model type strings:
 **Open-Vocabulary Detection:**
 - `"owlv2"` - OWLv2 open-vocabulary detection
 - `"owlvit"` - OWL-ViT compatible open-vocabulary detection
-- `"openvocabowl"` - Generic Open Vocabulary OWL alias
+- `"groundingdino"` - Grounding DINO text-conditioned detection
 
 Open-vocabulary models use text prompts supplied at runtime through `TaskConfig::text_prompts`. Tokenizer assets can be passed either as file paths (`tokenizer_vocab_path`, `tokenizer_merges_path`) or preloaded text blobs (`tokenizer_vocab_json`, `tokenizer_merges_text`).
 
@@ -57,4 +58,19 @@ The expected ONNX contract is:
 
 Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
 
-For export details, see [export/open_vocab_detection/OWLv2.md](export/open_vocab_detection/OWLv2.md).
+For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/vision-core/blob/master/export/open_vocab_detection/OWLv2.md).
+
+**Image Understanding (VLM):**
+- `"gemma4"`, `"imageunderstanding"` - Vision-language model image captioning / Q&A via llama.cpp backend
+
+Input contract: `preprocess()` returns two tensors — `[0]` UTF-8 prompt bytes, `[1]` raw RGB pixels with an 8-byte header `[uint32 width LE][uint32 height LE][H×W×3 bytes]`. When no image is provided only tensor `[0]` is returned (text-only mode). Output is a UTF-8 string returned as float-encoded bytes (one `float` per byte value).
+
+Requires the llama.cpp `LLAMACPP` backend with an mmproj (vision projector) GGUF.
+
+For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/vision-core/blob/master/export/image_understanding/ImageUnderstanding.md).
+
+**Gaussian Splatting:**
+- `"lgm"`, `"lgm-mini"` - LGM (Large Gaussian Model)
+- `"grm"` - GRM
+- `"gaussiansplatting"`, any string containing `"splat"` - generic alias
+<!-- TASKFACTORY_MODEL_LIST:END -->

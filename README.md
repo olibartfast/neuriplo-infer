@@ -8,7 +8,7 @@ C++ application for computer vision inference, supporting multiple vision tasks 
 > 🚧 Status: Under Development — expect frequent updates.
 ## Key Features
 
-- **Multiple Computer Vision Tasks**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation)
+- **Multiple Computer Vision Tasks**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
@@ -152,6 +152,10 @@ ctest --test-dir build-test --output-on-failure
   --weights=<model_weights> \
   [--labels=<labels_file>] \
   [--text_prompts='<prompt_a;prompt_b;...>'] \
+  [--prompt='<freeform_prompt>'] \
+  [--output_format=<text|json>] \
+  [--sample_stride=<n>] \
+  [--max_frames=<n>] \
   [--tokenizer_vocab=<vocab_json_path>] \
   [--tokenizer_merges=<merges_txt_path>] \
   [--min_confidence=<threshold>] \
@@ -169,6 +173,7 @@ ctest --test-dir build-test --output-on-failure
 
 - `--type=<model_type>`: Specifies the type of vision model to use. Supported categories:
   <!-- SUPPORTED_MODEL_TYPES:START -->
+<!-- TASKFACTORY_MODEL_LIST:START -->
 The TaskFactory supports the following model type strings:
 
 **Object Detection:**
@@ -211,7 +216,7 @@ The TaskFactory supports the following model type strings:
 **Open-Vocabulary Detection:**
 - `"owlv2"` - OWLv2 open-vocabulary detection
 - `"owlvit"` - OWL-ViT compatible open-vocabulary detection
-- `"openvocabowl"` - Generic Open Vocabulary OWL alias
+- `"groundingdino"` - Grounding DINO text-conditioned detection
 
 Open-vocabulary models use text prompts supplied at runtime through `TaskConfig::text_prompts`. Tokenizer assets can be passed either as file paths (`tokenizer_vocab_path`, `tokenizer_merges_path`) or preloaded text blobs (`tokenizer_vocab_json`, `tokenizer_merges_text`).
 
@@ -221,7 +226,22 @@ The expected ONNX contract is:
 
 Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
 
-For export details, see [export/open_vocab_detection/OWLv2.md](export/open_vocab_detection/OWLv2.md).
+For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/vision-core/blob/master/export/open_vocab_detection/OWLv2.md).
+
+**Image Understanding (VLM):**
+- `"gemma4"`, `"imageunderstanding"` - Vision-language model image captioning / Q&A via llama.cpp backend
+
+Input contract: `preprocess()` returns two tensors — `[0]` UTF-8 prompt bytes, `[1]` raw RGB pixels with an 8-byte header `[uint32 width LE][uint32 height LE][H×W×3 bytes]`. When no image is provided only tensor `[0]` is returned (text-only mode). Output is a UTF-8 string returned as float-encoded bytes (one `float` per byte value).
+
+Requires the llama.cpp `LLAMACPP` backend with an mmproj (vision projector) GGUF.
+
+For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/vision-core/blob/master/export/image_understanding/ImageUnderstanding.md).
+
+**Gaussian Splatting:**
+- `"lgm"`, `"lgm-mini"` - LGM (Large Gaussian Model)
+- `"grm"` - GRM
+- `"gaussiansplatting"`, any string containing `"splat"` - generic alias
+<!-- TASKFACTORY_MODEL_LIST:END -->
 
 Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 <!-- SUPPORTED_MODEL_TYPES:END -->
@@ -237,6 +257,14 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 - `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights.
 
 - `--text_prompts='<prompt_a;prompt_b;...>'`: Required for open-vocabulary detection with OWLv2. Prompts are semicolon-separated and passed at runtime.
+
+- `--prompt='<freeform_prompt>'`: Optional freeform task prompt passed through `TaskConfig::extra_params["prompt"]`. This is intended for upcoming multimodal understanding models.
+
+- `--output_format=<text|json>`: Optional output hint passed through `TaskConfig::extra_params["output_format"]`. Use `json` for parseable text-first multimodal responses.
+
+- `--sample_stride=<n>`: Optional uniform frame-sampling stride for future multimodal video tasks. Passed through `TaskConfig::extra_params["sample_stride"]`.
+
+- `--max_frames=<n>`: Optional cap on sampled frames for future multimodal video tasks. Passed through `TaskConfig::extra_params["max_frames"]`.
 
 - `--tokenizer_vocab=<path/to/vocab.json>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `vision-core`.
 

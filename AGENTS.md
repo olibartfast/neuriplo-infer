@@ -9,7 +9,7 @@
 - It consumes backend orchestration and runtime compatibility from `neuriplo`.
 - It consumes source and video backend behavior from `videocapture`.
 
-A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries. It maintains its own ops control plane independently — vision-inference does not depend on it.
+A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries. Another sibling, [tritonic](https://github.com/olibartfast/tritonic), is a Triton Inference Server client for CV tasks that also consumes vision-core. Both maintain their own ops control planes independently — vision-inference does not depend on them.
 
 Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
 
@@ -20,6 +20,11 @@ Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency e
 - All normal feature, fix, refactor, docs, and chore work should land through pull requests into `develop`.
 - Pull requests into `master` are release PRs only and should be treated as release-safety checks.
 - Before creating a release, update both `VERSION` and `CHANGELOG.md`.
+- Before tagging a release, pin sibling refs in `versions.env` for reproducibility.
+  - Tag the matching commit in each sibling repo (`vision-core`, `neuriplo`, `videocapture`) with the same tag name (e.g. `v0.3.0`) first.
+  - Then run `scripts/cut_release.sh <version>` (e.g. `0.3.0`) to bump `VERSION` and rewrite the `NEURIPLO_VERSION` / `VIDEOCAPTURE_VERSION` / `VISION_CORE_VERSION` pins in `versions.env`. The script refuses to proceed if any sibling is missing the matching tag.
+  - `scripts/validate_release_pins.sh <tag>` is the same check used by the pre-push hook and the `release-guard.yml` CI workflow; run it manually if you want to sanity-check before pushing.
+  - Without these pins, checking out an old vision-inference tag fetches sibling `master` at fetch time, which keeps moving — builds drift.
 - After finishing a release, delete any temporary branches created ad hoc for that release.
 - Do not suggest switching this repository to a `main`-centric trunk workflow.
 
@@ -89,6 +94,29 @@ Use the canonical repo-local commands from `ops/repo-meta/vision-inference.yaml`
   - `ctest --test-dir build-test --output-on-failure`
 
 Use the benchmark smoke command from `ops/repo-meta/vision-inference.yaml` only when the required weights are available.
+
+## Documentation checklist when wiring a new task type
+
+When a new task type is added end-to-end (vision-core → neuriplo → vision-inference), update **all** of the following before closing the work:
+
+**vision-core:**
+1. `## Features` bullet list in `README.md` — one line for the new task.
+2. `<!-- TASKFACTORY_MODEL_LIST:START/END -->` block in `README.md` — type strings, contract, backend requirements.
+3. `export/<task_domain>/` directory — setup/download guide; update `export/README.md` tree and reference links (use absolute GitHub URLs).
+
+**vision-inference:**
+4. `## Key Features` bullet in `README.md` — update the task list inline (not synced from vision-core).
+5. Run `python3 scripts/sync_supported_model_types.py --vision-core-readme <path>` and commit the updated `README.md` and `docs/generated/supported-model-types.md`.
+
+Missing any of these makes the task invisible to users reading the top-level READMEs.
+
+---
+
+## Skipping CI for docs-only commits
+
+CI workflows have `paths-ignore` for `**.md` and `docs/**` — pure documentation pushes skip CI automatically.
+
+For mixed commits (docs + code) where CI is still unnecessary, add `[skip ci]` to the commit message subject line.
 
 ## Operational constraints
 

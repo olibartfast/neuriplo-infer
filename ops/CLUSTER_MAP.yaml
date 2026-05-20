@@ -25,6 +25,7 @@ repos:
       - result_types
     consumed_by:
       - vision-inference
+      - tritonic
     automation_scope:
       - ci-triage
       - api-migration-source
@@ -104,6 +105,13 @@ dependency_edges:
       - source semantics
       - backend priority
       - stream reliability
+  - from: tritonic
+    to: vision-core
+    type: api
+    critical_contracts:
+      - task_factory model type strings
+      - result variant semantics
+      - tensor shape and dtype expectations
 
 validation_order:
   - repo_local
