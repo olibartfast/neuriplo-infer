@@ -181,7 +181,7 @@ The TaskFactory supports the following model type strings:
 - `"yolo"`, `"yolov7e2e"`, `"yolov10"`, `"yolo26"`, `"yolov4"` - YOLO-based variants
 - `"yolonas"` - YOLO-NAS
 - `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
-- `"rtdetrul"` - RT-DETR (Ultralytics implementation)
+- `"rtdetrul"`, `"rtdetrultralytics"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
 
 **Instance Segmentation:**
@@ -194,6 +194,8 @@ The TaskFactory supports the following model type strings:
 - `"torchvision-classifier"` - Torchvision models (ResNet, EfficientNet, etc.)
 - `"tensorflow-classifier"` - TensorFlow/Keras models
 - `"vit-classifier"` - Vision Transformers
+
+Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflow` also routes to classification.
 
 **Video Classification:**
 - `"videomae"` - VideoMAE
@@ -229,7 +231,7 @@ Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`,
 For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/vision-core/blob/master/export/open_vocab_detection/OWLv2.md).
 
 **Image Understanding (VLM):**
-- `"gemma4"`, `"imageunderstanding"` - Vision-language model image captioning / Q&A via llama.cpp backend
+- `"gemma4"`, `"gemma"`, `"llama"`, `"llamacpp"`, `"imageunderstanding"` - Vision-language model image captioning / Q&A via llama.cpp backend
 
 Input contract: `preprocess()` returns two tensors — `[0]` UTF-8 prompt bytes, `[1]` raw RGB pixels with an 8-byte header `[uint32 width LE][uint32 height LE][H×W×3 bytes]`. When no image is provided only tensor `[0]` is returned (text-only mode). Output is a UTF-8 string returned as float-encoded bytes (one `float` per byte value).
 

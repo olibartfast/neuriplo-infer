@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Pinned `vision-core` to `v0.3.1` in `versions.env` (README ↔ TaskFactory contract fixes and test hardening; no API change). `neuriplo` and `videocapture` pins unchanged.
+- Re-synced `README.md` and `docs/generated/supported-model-types.md` from vision-core v0.3.1's model-type block
 
 ## [0.3.0] - 2026-05-21
 
