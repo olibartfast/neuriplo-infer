@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-05-21
+
+### Changed
+- Pinned `vision-core` to `v0.3.1` in `versions.env` (README ↔ TaskFactory contract fixes and test hardening; no API change). `neuriplo` and `videocapture` pins unchanged.
+
 ## [0.3.0] - 2026-05-21
 
 ### Added
@@ -86,7 +91,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via vision-core)
 
-[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/olibartfast/vision-inference/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/olibartfast/vision-inference/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/olibartfast/vision-inference/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/olibartfast/vision-inference/compare/v0.2.1...v0.2.2
