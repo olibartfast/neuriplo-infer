@@ -463,8 +463,8 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 - [RT-DETR Deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
 
  ## References
- - https://paperswithcode.com/sota/real-time-object-detection-on-coco (No more available)
- - https://leaderboard.roboflow.com/
+ - https://paperswithcode.co/tasks
+ - https://leaderboard.roboflow.com
 
 ## Support
 
