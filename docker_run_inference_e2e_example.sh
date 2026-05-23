@@ -6,6 +6,7 @@
 #   - owlv2                 Open-vocabulary detection
 #   - torchvision_classifier Classification
 #   - yoloseg               Instance segmentation
+#   - yolov8_executorch     Object detection (YOLOv8n, ExecuTorch backend)
 #   - raft                  Optical flow
 #   - vitpose               Pose estimation
 #   - depth_anything_v2     Depth estimation
@@ -15,6 +16,7 @@
 # Typical usage:
 #   bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 #   bash docker_run_inference_e2e_example.sh --preset rtdetrv4
+#   bash docker_run_inference_e2e_example.sh --preset yolov8_executorch
 #   bash docker_run_inference_e2e_example.sh --preset gemma4
 #   bash docker_run_inference_e2e_example.sh --preset gemma4 --text-prompts "Describe the dog in the image."
 
@@ -57,6 +59,7 @@ Usage:
 
 Options:
   --preset <name>            Task preset to run. Default: rtdetrv4
+                             Use --list-presets to see all available presets.
   --backend <name>           Runtime backend: onnxruntime or tensorrt
   --vision-core-dir <path>   Path to a vision-core checkout with export tooling
   --weights-dir <path>       Export/model output directory. Default: ./models/e2e
@@ -80,6 +83,7 @@ rtdetrv4
 owlv2
 torchvision_classifier
 yoloseg
+yolov8_executorch
 raft
 vitpose
 depth_anything_v2
@@ -296,6 +300,37 @@ case "$PRESET" in
         )
         RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5" "--mask_threshold=0.5")
         ;;
+    yolov8_executorch)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="executorch"
+        fi
+        MODEL_TYPE="yolov8"
+        MODEL_BASENAME="yolov8n"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        # Export: ultralytics + executorch Python package; no vision-core checkout required.
+        # The ultralytics YOLO() call downloads yolov8n.pt from Ultralytics' servers on first run.
+        EXECUTORCH_VENV="${ROOT_DIR}/environments/yolo-executorch-export"
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${EXECUTORCH_VENV}\""
+            "source \"${EXECUTORCH_VENV}/bin/activate\" && pip install --quiet --upgrade pip && pip install --quiet ultralytics executorch && mkdir -p \"${WEIGHTS_DIR}\" && python -c \"
+from ultralytics import YOLO
+import shutil, pathlib
+m = YOLO('${MODEL_BASENAME}.pt')
+out = pathlib.Path(m.export(format='executorch'))
+# ultralytics creates a directory <name>_executorch_model/ containing model.pte
+pte_candidate = out / 'model.pte'
+src = pte_candidate if pte_candidate.exists() else out
+dest = pathlib.Path('${WEIGHTS_DIR}/${MODEL_BASENAME}.pte')
+shutil.move(str(src), str(dest))
+print('Exported to', dest)
+\""
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
+        ;;
     raft)
         if [[ "$BACKEND_SET" == false ]]; then
             BACKEND="onnxruntime"
@@ -399,6 +434,10 @@ case "$BACKEND" in
         MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.gguf"
         MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.gguf"
         ;;
+    executorch)
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.pte"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.pte"
+        ;;
     *)
         echo "Unsupported backend: $BACKEND" >&2
         exit 1
@@ -407,8 +446,8 @@ esac
 
 ensure_dir "$WEIGHTS_DIR"
 
-# gemma4 downloads its model directly — no vision-core export tooling needed.
-if [[ "$PRESET" != "gemma4" ]]; then
+# These presets handle export without vision-core tooling.
+if [[ "$PRESET" != "gemma4" && "$PRESET" != "yolov8_executorch" ]]; then
     ensure_vision_core
 fi
 

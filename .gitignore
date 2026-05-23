@@ -8,3 +8,8 @@ logs
 3rdparty/
 data/output/
 **/__pycache__/**
+
+# Local export/build artifacts
+environments/
+models/
+yolov8n.pt
