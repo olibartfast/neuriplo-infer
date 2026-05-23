@@ -505,7 +505,7 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  --backend <backend>        Specify the inference backend to setup"
-    echo "                             Supported: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, all"
+    echo "                             Supported: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, executorch, all"
     echo "                             Default: opencv_dnn (no setup required)"
     echo "  --compute-platform <platform>  For LibTorch: cpu, gpu/cuda, cu118, cu121, rocm6.0"
     echo "                             Default: cpu"
@@ -601,16 +601,24 @@ main() {
         tensorflow)
             setup_tensorflow
             ;;
+        executorch)
+            local script_dir_here
+            script_dir_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+            bash "${script_dir_here}/setup_executorch.sh"
+            ;;
         all)
             setup_onnx_runtime
             setup_tensorrt
             setup_libtorch
             setup_openvino
             setup_tensorflow
+            local script_dir_here
+            script_dir_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+            bash "${script_dir_here}/setup_executorch.sh"
             ;;
         *)
             print_error "Unknown backend: $backend"
-            print_status "Supported backends: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, all"
+            print_status "Supported backends: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, executorch, all"
             exit 1
             ;;
     esac

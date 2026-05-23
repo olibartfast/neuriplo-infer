@@ -34,6 +34,10 @@ elseif(DEFAULT_BACKEND STREQUAL "LLAMACPP")
             target_link_libraries(${PROJECT_NAME} PRIVATE "${${_lib}}")
         endif()
     endforeach()
+elseif(DEFAULT_BACKEND STREQUAL "EXECUTORCH")
+    # ExecuTorch static libs are linked PRIVATE into libneuriplo.so by neuriplo's cmake,
+    # so no additional link steps are needed here beyond the include path.
+    target_include_directories(${PROJECT_NAME} PRIVATE ${neuriplo_SOURCE_DIR}/backends/executorch/src)
 endif()
 
 # Note: Actual inference backend libraries (libonnxruntime.so, libnvinfer.so, etc.)
