@@ -15,6 +15,8 @@ elseif(DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW" )
     target_include_directories(${PROJECT_NAME} PRIVATE ${neuriplo_SOURCE_DIR}/backends/libtensorflow/src)
 elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")
     target_include_directories(${PROJECT_NAME} PRIVATE ${neuriplo_SOURCE_DIR}/backends/openvino/src)
+elseif(DEFAULT_BACKEND STREQUAL "LITERT")
+    target_include_directories(${PROJECT_NAME} PRIVATE ${neuriplo_SOURCE_DIR}/backends/litert/src)
 elseif(DEFAULT_BACKEND STREQUAL "LLAMACPP")
     target_include_directories(${PROJECT_NAME} PRIVATE ${neuriplo_SOURCE_DIR}/backends/llamacpp/src)
     # libllama.so → libggml-base.so.0/libggml.so.0 are transitive SONAME deps; the final
@@ -43,4 +45,3 @@ endif()
 # Note: Actual inference backend libraries (libonnxruntime.so, libnvinfer.so, etc.)
 # are linked by the neuriplo library, not this project.
 # This project only includes the backend-specific source directories.
-
