@@ -1,0 +1,65 @@
+# docker build --rm -t vision-inference:litert -f docker/Dockerfile.litert --build-arg NEURIPLO_VERSION=8cf93e6 .
+
+ARG UBUNTU_VERSION=24.04
+FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    cmake \
+    build-essential \
+    curl \
+    unzip \
+    libopencv-dev \
+    libgoogle-glog-dev \
+    git \
+    wget \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY VERSION /tmp/vision-inference.VERSION
+
+ARG NEURIPLO_VERSION
+RUN dependency_ref="${NEURIPLO_VERSION:-develop}" && \
+    if [ -z "${NEURIPLO_VERSION:-}" ] && grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/vision-inference.VERSION; then dependency_ref=master; fi && \
+    wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
+
+FROM common_dependencies AS backend_dependencies
+
+ENV HOME=/root
+ARG BACKEND=LITERT
+ENV LITERT_DIR=/root/dependencies/litert
+ENV LD_LIBRARY_PATH=${LITERT_DIR}/lib
+
+FROM backend_dependencies AS builder
+
+ARG BACKEND=LITERT
+ARG NEURIPLO_VERSION
+
+WORKDIR /app
+COPY . .
+
+RUN cp /tmp/versions.env /app/versions.neuriplo.env && \
+    ./scripts/setup_dependencies.sh --backend litert
+
+RUN cmake -Bbuild -H. \
+    -DDEFAULT_BACKEND=${BACKEND} \
+    ${NEURIPLO_VERSION:+-DNEURIPLO_VERSION="${NEURIPLO_VERSION}"} \
+    -DLITERT_DIR=${LITERT_DIR} \
+    -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DBUILD_TESTS=OFF && \
+    cmake --build build --config Release
+
+FROM backend_dependencies AS final
+
+WORKDIR /app
+
+COPY --from=builder /app/build/app/vision-inference /app/vision-inference
+COPY --from=builder /root/dependencies/litert /root/dependencies/litert
+COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
+COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
+
+ENV LD_LIBRARY_PATH=/app:${LITERT_DIR}/lib
+
+ENTRYPOINT ["./vision-inference"]
