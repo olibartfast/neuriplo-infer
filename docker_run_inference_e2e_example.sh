@@ -7,6 +7,7 @@
 #   - torchvision_classifier Classification
 #   - yoloseg               Instance segmentation
 #   - yolov8_executorch     Object detection (YOLOv8n, ExecuTorch backend)
+#   - yolo26s_tflite        Object detection (YOLO26s, LiteRT backend)
 #   - raft                  Optical flow
 #   - vitpose               Pose estimation
 #   - depth_anything_v2     Depth estimation
@@ -17,6 +18,7 @@
 #   bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 #   bash docker_run_inference_e2e_example.sh --preset rtdetrv4
 #   bash docker_run_inference_e2e_example.sh --preset yolov8_executorch
+#   bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
 #   bash docker_run_inference_e2e_example.sh --preset gemma4
 #   bash docker_run_inference_e2e_example.sh --preset gemma4 --text-prompts "Describe the dog in the image."
 
@@ -60,7 +62,7 @@ Usage:
 Options:
   --preset <name>            Task preset to run. Default: rtdetrv4
                              Use --list-presets to see all available presets.
-  --backend <name>           Runtime backend: onnxruntime or tensorrt
+  --backend <name>           Runtime backend: onnxruntime, tensorrt, litert, executorch, or llamacpp
   --vision-core-dir <path>   Path to a vision-core checkout with export tooling
   --weights-dir <path>       Export/model output directory. Default: ./models/e2e
   --data-dir <path>          Host data directory to mount. Default: ./data
@@ -84,6 +86,7 @@ owlv2
 torchvision_classifier
 yoloseg
 yolov8_executorch
+yolo26s_tflite
 raft
 vitpose
 depth_anything_v2
@@ -331,6 +334,41 @@ print('Exported to', dest)
         )
         RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
         ;;
+    yolo26s_tflite)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="litert"
+        fi
+        MODEL_TYPE="yolo26"
+        MODEL_BASENAME="yolo26s"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        # Export: ultralytics TFLite export; no vision-core checkout required.
+        # The ultralytics YOLO() call downloads yolo26s.pt from Ultralytics' servers on first run.
+        TFLITE_VENV="${ROOT_DIR}/environments/yolo-tflite-export"
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${TFLITE_VENV}\""
+            "source \"${TFLITE_VENV}/bin/activate\" && pip install --quiet --upgrade pip && pip install --quiet ultralytics tensorflow && mkdir -p \"${WEIGHTS_DIR}\" && python -c \"
+from ultralytics import YOLO
+import shutil, pathlib
+m = YOLO('${MODEL_BASENAME}.pt')
+out = pathlib.Path(m.export(format='tflite'))
+if out.is_dir():
+    candidates = sorted(out.glob('*.tflite'))
+    if not candidates:
+        raise FileNotFoundError(f'No .tflite artifact found in {out}')
+    src = candidates[0]
+else:
+    src = out
+dest = pathlib.Path('${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite')
+shutil.move(str(src), str(dest))
+print('Exported to', dest)
+\""
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
+        ;;
     raft)
         if [[ "$BACKEND_SET" == false ]]; then
             BACKEND="onnxruntime"
@@ -438,6 +476,10 @@ case "$BACKEND" in
         MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.pte"
         MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.pte"
         ;;
+    litert)
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.tflite"
+        ;;
     *)
         echo "Unsupported backend: $BACKEND" >&2
         exit 1
@@ -447,7 +489,7 @@ esac
 ensure_dir "$WEIGHTS_DIR"
 
 # These presets handle export without vision-core tooling.
-if [[ "$PRESET" != "gemma4" && "$PRESET" != "yolov8_executorch" ]]; then
+if [[ "$PRESET" != "gemma4" && "$PRESET" != "yolov8_executorch" && "$PRESET" != "yolo26s_tflite" ]]; then
     ensure_vision_core
 fi
 

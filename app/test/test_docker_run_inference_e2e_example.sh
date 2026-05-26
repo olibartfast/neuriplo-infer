@@ -32,6 +32,23 @@ grep -F -- "--tokenizer_vocab=/weights/vocab.json" "${OUTPUT_FILE}"
 grep -F -- "--tokenizer_merges=/weights/merges.txt" "${OUTPUT_FILE}"
 grep -F -- "vision-inference:test" "${OUTPUT_FILE}"
 
+# -- yolo26s_tflite dry-run ---------------------------------------------------
+OUTPUT_FILE="${TMP_DIR}/yolo26s_tflite_dry_run.txt"
+
+bash "${SCRIPT_PATH}" \
+    --preset yolo26s_tflite \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --labels-dir "${TMP_DIR}/labels" \
+    --docker-image vision-inference:litert \
+    --dry-run > "${OUTPUT_FILE}"
+
+grep -F -- "YOLO('yolo26s.pt')" "${OUTPUT_FILE}"
+grep -F -- "format='tflite'" "${OUTPUT_FILE}"
+grep -F -- "--type=yolo26" "${OUTPUT_FILE}"
+grep -F -- "--weights=/weights/yolo26s.tflite" "${OUTPUT_FILE}"
+grep -F -- "vision-inference:litert" "${OUTPUT_FILE}"
+
 # ── gemma4 dry-run ────────────────────────────────────────────────────────────
 OUTPUT_FILE="${TMP_DIR}/gemma4_dry_run.txt"
 

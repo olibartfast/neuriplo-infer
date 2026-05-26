@@ -36,6 +36,7 @@ jobs:
           - torchvision_classifier
           - yoloseg
           - yolov8_executorch
+          - yolo26s_tflite
           - raft
           - vitpose
           - depth_anything_v2
@@ -65,4 +66,3 @@ jobs:
           grep -F "=== Step 1: Exporting preset '${{ matrix.preset }}' ===" e2e-dry-run.log
           grep -F "=== Step 3: Running inference ===" e2e-dry-run.log
           grep -F "=== Workflow completed for preset '${{ matrix.preset }}' ===" e2e-dry-run.log
-
