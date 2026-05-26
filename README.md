@@ -409,6 +409,16 @@ Preview a workflow without executing it:
 bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 ```
 
+YOLO26s also has a dedicated TFLite preset that exports with Ultralytics and runs through the LiteRT backend without requiring a `vision-core` checkout:
+
+```bash
+docker build --rm -t vision-inference:litert \
+    -f docker/Dockerfile.litert \
+    --build-arg NEURIPLO_VERSION=8cf93e6 .
+
+bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
+```
+
 ### Full OWLv2 End-to-End Run
 
 OWLv2 uses the `onnxruntime` backend by default in the generic e2e script.

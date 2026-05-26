@@ -31,9 +31,13 @@ elseif (DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW")
 elseif (DEFAULT_BACKEND STREQUAL "OPENVINO")
     message(STATUS "Using OpenVINO backend (managed by neuriplo)")
     add_compile_definitions(USE_OPENVINO)
+
+elseif (DEFAULT_BACKEND STREQUAL "LITERT")
+    message(STATUS "Using LiteRT backend (managed by neuriplo)")
+    add_compile_definitions(USE_LITERT)
     
 else()
-    message(FATAL_ERROR "Unknown backend: ${DEFAULT_BACKEND}. Supported backends: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
+    message(FATAL_ERROR "Unknown backend: ${DEFAULT_BACKEND}. Supported backends: OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, LITERT")
 endif()
 
 # Note: Inference backend version management and path configuration
