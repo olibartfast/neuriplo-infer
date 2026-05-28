@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-05-28
+
+### Changed
+- Pinned `neuriplo` to `v0.4.0` (LiteRT NCHW→NHWC transpose fix, new LiteRT
+  backend) and `vision-core` to `v0.3.2` (YOLO26 normalized coordinate scaling
+  fix). `videocapture` pin unchanged at `v0.2.0`.
+
 ## [0.3.1] - 2026-05-21
 
 ### Changed
