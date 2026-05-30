@@ -419,6 +419,22 @@ docker build --rm -t vision-inference:litert \
 bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
 ```
 
+EdgeCrafter exposes three ONNX Runtime presets covering its detection, instance
+segmentation, and pose estimation tasks. Each preset is self-contained: it clones the
+upstream [EdgeCrafter](https://github.com/Intellindust-AI-Lab/EdgeCrafter) repo, downloads
+the matching checkpoint, and runs the upstream `export_onnx.py`, so no `vision-core`
+checkout is required. The exported graphs take two inputs (`images` and
+`orig_target_sizes`), so the runtime passes `--input_sizes=3,640,640;2`:
+
+```bash
+docker build --rm -t vision-inference:onnxruntime \
+    -f docker/Dockerfile.onnxruntime .
+
+bash docker_run_inference_e2e_example.sh --preset edgecrafter_det
+bash docker_run_inference_e2e_example.sh --preset edgecrafter_seg
+bash docker_run_inference_e2e_example.sh --preset edgecrafter_pose
+```
+
 ### Full OWLv2 End-to-End Run
 
 OWLv2 uses the `onnxruntime` backend by default in the generic e2e script.

@@ -10,6 +10,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 mkdir -p "${TMP_DIR}/data" "${TMP_DIR}/labels" "${TMP_DIR}/weights"
 touch "${TMP_DIR}/data/dog.jpg"
+touch "${TMP_DIR}/data/person.jpg"
 touch "${TMP_DIR}/labels/coco.names"
 
 # ── owlv2 dry-run ─────────────────────────────────────────────────────────────
@@ -48,6 +49,58 @@ grep -F -- "format='tflite'" "${OUTPUT_FILE}"
 grep -F -- "--type=yolo26" "${OUTPUT_FILE}"
 grep -F -- "--weights=/weights/yolo26s.tflite" "${OUTPUT_FILE}"
 grep -F -- "vision-inference:litert" "${OUTPUT_FILE}"
+
+# ── edgecrafter_det dry-run ───────────────────────────────────────────────────
+OUTPUT_FILE="${TMP_DIR}/edgecrafter_det_dry_run.txt"
+
+bash "${SCRIPT_PATH}" \
+    --preset edgecrafter_det \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --labels-dir "${TMP_DIR}/labels" \
+    --docker-image vision-inference:onnxruntime \
+    --dry-run > "${OUTPUT_FILE}"
+
+grep -F -- "Intellindust-AI-Lab/EdgeCrafter" "${OUTPUT_FILE}"
+grep -F -- "tools/deployment/export_onnx.py" "${OUTPUT_FILE}"
+grep -F -- "configs/ecdet/ecdet_s.yml" "${OUTPUT_FILE}"
+grep -F -- "--type=ecdet" "${OUTPUT_FILE}"
+grep -F -- "--weights=/weights/ecdet_s.onnx" "${OUTPUT_FILE}"
+grep -F -- "--input_sizes=3\\,640\\,640\\;2" "${OUTPUT_FILE}"
+grep -F -- "vision-inference:onnxruntime" "${OUTPUT_FILE}"
+
+# ── edgecrafter_seg dry-run ───────────────────────────────────────────────────
+OUTPUT_FILE="${TMP_DIR}/edgecrafter_seg_dry_run.txt"
+
+bash "${SCRIPT_PATH}" \
+    --preset edgecrafter_seg \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --labels-dir "${TMP_DIR}/labels" \
+    --docker-image vision-inference:onnxruntime \
+    --dry-run > "${OUTPUT_FILE}"
+
+grep -F -- "configs/ecseg/ecseg_s.yml" "${OUTPUT_FILE}"
+grep -F -- "--type=ecseg" "${OUTPUT_FILE}"
+grep -F -- "--weights=/weights/ecseg_s.onnx" "${OUTPUT_FILE}"
+grep -F -- "--mask_threshold=0.5" "${OUTPUT_FILE}"
+grep -F -- "--input_sizes=3\\,640\\,640\\;2" "${OUTPUT_FILE}"
+
+# ── edgecrafter_pose dry-run ──────────────────────────────────────────────────
+OUTPUT_FILE="${TMP_DIR}/edgecrafter_pose_dry_run.txt"
+
+bash "${SCRIPT_PATH}" \
+    --preset edgecrafter_pose \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --docker-image vision-inference:onnxruntime \
+    --dry-run > "${OUTPUT_FILE}"
+
+grep -F -- "configs/ecpose/ecpose_s_coco.yml" "${OUTPUT_FILE}"
+grep -F -- "--type=ecpose" "${OUTPUT_FILE}"
+grep -F -- "--weights=/weights/ecpose_s.onnx" "${OUTPUT_FILE}"
+grep -F -- "--source=/app/data/person.jpg" "${OUTPUT_FILE}"
+grep -F -- "--input_sizes=3\\,640\\,640\\;2" "${OUTPUT_FILE}"
 
 # ── gemma4 dry-run ────────────────────────────────────────────────────────────
 OUTPUT_FILE="${TMP_DIR}/gemma4_dry_run.txt"
