@@ -11,6 +11,9 @@
 #   - edgecrafter_det       Object detection (EdgeCrafter ecdet_s, ONNX Runtime)
 #   - edgecrafter_seg       Instance segmentation (EdgeCrafter ecseg_s, ONNX Runtime)
 #   - edgecrafter_pose      Pose estimation (EdgeCrafter ecpose_s, ONNX Runtime)
+#       NOTE: the edgecrafter_* presets require a vision-inference image built
+#       against a vision-core ref that includes EdgeCrafter task support.
+#       Pinned releases before that point return "Unrecognized model type".
 #   - raft                  Optical flow
 #   - vitpose               Pose estimation
 #   - depth_anything_v2     Depth estimation
