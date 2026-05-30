@@ -8,6 +8,9 @@
 #   - yoloseg               Instance segmentation
 #   - yolov8_executorch     Object detection (YOLOv8n, ExecuTorch backend)
 #   - yolo26s_tflite        Object detection (YOLO26s, LiteRT backend)
+#   - edgecrafter_det       Object detection (EdgeCrafter ecdet_s, ONNX Runtime)
+#   - edgecrafter_seg       Instance segmentation (EdgeCrafter ecseg_s, ONNX Runtime)
+#   - edgecrafter_pose      Pose estimation (EdgeCrafter ecpose_s, ONNX Runtime)
 #   - raft                  Optical flow
 #   - vitpose               Pose estimation
 #   - depth_anything_v2     Depth estimation
@@ -87,6 +90,9 @@ torchvision_classifier
 yoloseg
 yolov8_executorch
 yolo26s_tflite
+edgecrafter_det
+edgecrafter_seg
+edgecrafter_pose
 raft
 vitpose
 depth_anything_v2
@@ -369,6 +375,59 @@ print('Exported to', dest)
         )
         RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
         ;;
+    edgecrafter_det|edgecrafter_seg|edgecrafter_pose)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        # EdgeCrafter exports two inputs: images [1,3,640,640] + orig_target_sizes int64 [1,2].
+        # The ONNX graph performs top-k selection and rescales boxes/keypoints to the
+        # original image size internally, so the runtime only supplies --input_sizes.
+        EDGECRAFTER_REPO_DIR="${ROOT_DIR}/3rdparty/repositories/pytorch/EdgeCrafter"
+        EDGECRAFTER_VENV="${ROOT_DIR}/environments/edgecrafter-export"
+        INPUT_SIZES="3,640,640;2"
+        EXTRA_REQUIREMENTS=()
+        case "$PRESET" in
+            edgecrafter_det)
+                MODEL_TYPE="ecdet"
+                MODEL_BASENAME="ecdet_s"
+                EC_TASK_DIR="ecdetseg"
+                EC_CONFIG="configs/ecdet/ecdet_s.yml"
+                SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+                LABELS_IN_CONTAINER="/labels/coco.names"
+                HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+                RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5")
+                ;;
+            edgecrafter_seg)
+                MODEL_TYPE="ecseg"
+                MODEL_BASENAME="ecseg_s"
+                EC_TASK_DIR="ecdetseg"
+                EC_CONFIG="configs/ecseg/ecseg_s.yml"
+                SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+                LABELS_IN_CONTAINER="/labels/coco.names"
+                HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+                RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5" "--mask_threshold=0.5")
+                ;;
+            edgecrafter_pose)
+                MODEL_TYPE="ecpose"
+                MODEL_BASENAME="ecpose_s"
+                EC_TASK_DIR="ecpose"
+                EC_CONFIG="configs/ecpose/ecpose_s_coco.yml"
+                SOURCE_IN_CONTAINER="/app/data/person.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/person.jpg"
+                RUNTIME_EXTRA_ARGS=("--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5")
+                ;;
+        esac
+        # Self-contained export mirroring vision-core/export/<task>/edgecrafter/README.md:
+        # clone EdgeCrafter, install the task requirements, download the checkpoint, run
+        # the upstream export_onnx.py. The ONNX is written next to the checkpoint path.
+        EXPORT_COMMANDS=(
+            "if [[ ! -d \"${EDGECRAFTER_REPO_DIR}/.git\" ]]; then git clone --depth 1 https://github.com/Intellindust-AI-Lab/EdgeCrafter \"${EDGECRAFTER_REPO_DIR}\"; fi"
+            "${PYTHON_BIN} -m venv \"${EDGECRAFTER_VENV}\""
+            "source \"${EDGECRAFTER_VENV}/bin/activate\" && pip install --upgrade pip && pip install -r \"${EDGECRAFTER_REPO_DIR}/${EC_TASK_DIR}/requirements.txt\" onnx onnxsim onnxscript && if [[ ! -f \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" ]]; then curl -L --fail --retry 3 -o \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" \"https://github.com/capsule2077/edgecrafter/releases/download/edgecrafterv1/${MODEL_BASENAME}.pth\"; fi && cd \"${EDGECRAFTER_REPO_DIR}/${EC_TASK_DIR}\" && python tools/deployment/export_onnx.py -c \"${EC_CONFIG}\" -r \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" --check --simplify"
+        )
+        ;;
     raft)
         if [[ "$BACKEND_SET" == false ]]; then
             BACKEND="onnxruntime"
@@ -489,9 +548,13 @@ esac
 ensure_dir "$WEIGHTS_DIR"
 
 # These presets handle export without vision-core tooling.
-if [[ "$PRESET" != "gemma4" && "$PRESET" != "yolov8_executorch" && "$PRESET" != "yolo26s_tflite" ]]; then
-    ensure_vision_core
-fi
+case "$PRESET" in
+    gemma4|yolov8_executorch|yolo26s_tflite|edgecrafter_det|edgecrafter_seg|edgecrafter_pose)
+        ;;
+    *)
+        ensure_vision_core
+        ;;
+esac
 
 if [[ "$PRESET" == "owlv2" ]]; then
     ensure_file "$TOKENIZER_VOCAB_HOST"

@@ -18,7 +18,9 @@ vision_core::TaskType VisionApp::getTaskType(const std::string& model_type) {
   if (normalized == "raft") {
     return vision_core::TaskType::OpticalFlow;
   }
-  if (normalized == "vitpose") {
+  // Pose estimation: vitpose plus yolo*pose* and EdgeCrafter ecpose*/edgecrafter*pose*,
+  // mirroring vision_core::TaskFactory routing.
+  if (normalized == "vitpose" || normalized.find("pose") != std::string::npos) {
     return vision_core::TaskType::PoseEstimation;
   }
   if (normalized.find("depthanythingv2") != std::string::npos) {
