@@ -1,0 +1,45 @@
+---
+description: Required steps when wiring a new vision-core task/model into vision-inference (doc sync + task routing)
+alwaysApply: true
+---
+
+# New task / model wiring checklist
+
+When a new vision-core task type or model family is added (e.g. EdgeCrafter
+`ecdet`/`ecseg`/`ecpose`), these steps are easy to forget. Do them before
+finishing:
+
+## 1. Sync supported-model-types docs (automatic — do not hand-edit)
+
+`README.md` (between `<!-- SUPPORTED_MODEL_TYPES:START/END -->`) and
+`docs/generated/supported-model-types.md` are generated from the vision-core
+README. Never edit the marker block by hand. Instead run:
+
+```bash
+python3 scripts/sync_supported_model_types.py \
+  --vision-core-readme /path/to/vision-core/README.md   # or build/_deps/vision-core-src/README.md
+```
+
+Verify with `--check` (this is exactly what `ci.yml` enforces — a stale block
+fails CI):
+
+```bash
+python3 scripts/sync_supported_model_types.py --vision-core-readme <path> --check
+```
+
+## 2. Keep task routing aligned with vision-core TaskFactory
+
+`VisionApp::getTaskType` (`app/src/VisionAppTaskRouting.cpp`) must map every new
+type string to the same `TaskType` that `vision_core::TaskFactory` builds.
+Prefer substring rules that mirror the factory (e.g. `find("pose")`,
+`find("seg")`) so model-family prefixes like `ecpose`/`yolo*pose` route to
+`PoseEstimation`, not the `Detection` default.
+
+## 3. Wire + advertise any new e2e preset
+
+If you add a preset to `docker_run_inference_e2e_example.sh`, also add it to
+`list_presets`, the `e2e-example-emulation.yml` CI matrix, and a dry-run block
+in `app/test/test_docker_run_inference_e2e_example.sh`.
+
+See `AGENTS.md` ("Documentation checklist when wiring a new task type") for the
+full cross-repo checklist.

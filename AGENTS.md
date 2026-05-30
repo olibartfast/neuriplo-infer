@@ -13,6 +13,22 @@ A sibling application repo, [vision-tracking](https://github.com/olibartfast/vis
 
 Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
 
+## Do-not-skip automated steps
+
+Every agent taking ownership of this repo must know these easily-missed steps
+(see the full checklist under "Documentation checklist when wiring a new task
+type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
+
+1. **Supported-model-types docs are generated, not hand-written.** The
+   `<!-- SUPPORTED_MODEL_TYPES -->` block in `README.md` and
+   `docs/generated/supported-model-types.md` come from the vision-core README via
+   `python3 scripts/sync_supported_model_types.py [--vision-core-readme <path>]`.
+   `ci.yml` runs it with `--check`; a stale block fails CI. Run it (not a manual
+   edit) whenever vision-core adds/changes a task or model type.
+2. **App task routing must match vision-core.** `VisionApp::getTaskType`
+   (`app/src/VisionAppTaskRouting.cpp`) must map each type string to the same
+   `TaskType` that `vision_core::TaskFactory` builds.
+
 ## Repository workflow
 
 - `develop` is the protected integration branch.

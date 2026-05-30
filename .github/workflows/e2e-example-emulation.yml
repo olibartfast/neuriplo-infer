@@ -37,6 +37,9 @@ jobs:
           - yoloseg
           - yolov8_executorch
           - yolo26s_tflite
+          - edgecrafter_det
+          - edgecrafter_seg
+          - edgecrafter_pose
           - raft
           - vitpose
           - depth_anything_v2
