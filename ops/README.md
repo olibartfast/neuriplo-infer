@@ -19,10 +19,10 @@ remains the integration branch and `master` remains release-only.
 
 Current source of truth:
 
-- `../vision-platform/ops/CLUSTER_MAP.yaml`: cluster topology, ownership, and validation order
-- `../vision-platform/ops/policies.yaml`: allowed and forbidden automated change classes
-- `../vision-platform/ops/repo-meta/*.yaml`: repo-specific entrypoints, public surfaces, and constraints
-- `../vision-platform/ops/runbooks/`: execution guides for high-value maintenance flows
-- `../vision-platform/ops/PR_EVIDENCE_TEMPLATE.md`: standard evidence block for agent-generated PRs
+- `vision-platform/ops/CLUSTER_MAP.yaml`: cluster topology, ownership, and validation order
+- `vision-platform/ops/policies.yaml`: allowed and forbidden automated change classes
+- `vision-platform/ops/repo-meta/*.yaml`: repo-specific entrypoints, public surfaces, and constraints
+- `vision-platform/ops/runbooks/`: execution guides for high-value maintenance flows
+- `vision-platform/ops/PR_EVIDENCE_TEMPLATE.md`: standard evidence block for agent-generated PRs
 
 The local files in this directory should not be extended. They can be removed after downstream automation has switched to `vision-platform/ops`.
