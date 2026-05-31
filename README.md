@@ -44,27 +44,14 @@ This project automatically fetches:
 
 ## Agentic Operations
 
-This repository includes an agent-operable maintenance layer under `ops/`.
+Cross-repository control-plane docs now live in `vision-platform/ops`. The local `ops/` directory is retained only as a compatibility pointer for older workflows.
 
-- `ops/README.md` defines the control-plane intent for the repo cluster.
-- `ops/CLUSTER_MAP.yaml` declares repo ownership, dependency edges, validation order, and agent roles.
-- `ops/repo-meta/vision-inference.yaml` provides repo-local entrypoints for configure, build, test, and benchmark flows.
-- `ops/policies.yaml` defines which automated change classes are allowed and which changes require human review.
-- `ops/runbooks/` encodes repeatable maintenance workflows such as CI triage and cross-repo API migration.
-
-The intended maintenance loop is:
-
-1. Observe the failure, request, or contract change.
-2. Diagnose ownership and allowed change scope from `ops/`.
-3. Act with the smallest reviewable repo-local change.
-4. Verify repo-local and downstream impact in the declared validation order.
-
-This makes the repository not just buildable by humans, but operable by coding agents working within explicit ownership, validation, and release-safety constraints.
+Use `vision-platform/ops/repo-meta/vision-inference.yaml` for canonical configure, build, test, and benchmark entrypoints during cross-repo maintenance. Keep app-local implementation, CLI, and build details in this repository.
 
 
 ## Setup
 For the selected inference backends, set up the required dependencies first.
-Canonical repo-local configure/build/test commands live in [`ops/repo-meta/vision-inference.yaml`](ops/repo-meta/vision-inference.yaml).
+Canonical cross-repo maintenance commands live in `vision-platform/ops/repo-meta/vision-inference.yaml`.
 
 - **ONNX Runtime**:
   ```bash
@@ -139,6 +126,16 @@ cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCM
 cmake --build build-test
 ctest --test-dir build-test --output-on-failure
 ```
+
+## End-to-End Examples
+
+The runnable local Docker E2E script remains app-owned:
+
+```bash
+bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
+```
+
+Platform-level scenario ownership, compatibility sets, and cross-repo validation expectations live in `vision-platform/examples/e2e-local-inference/README.md`.
 
 ## App Usage
 
@@ -359,8 +356,8 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 ## Documentation Map
 
 - [`AGENTS.md`](AGENTS.md): canonical workflow, review focus, and repo-local entrypoints for agents and maintainers
-- [`ops/CLUSTER_MAP.yaml`](ops/CLUSTER_MAP.yaml): cluster ownership, dependency edges, and validation order
-- [`ops/repo-meta/vision-inference.yaml`](ops/repo-meta/vision-inference.yaml): canonical configure/build/test commands and public surface
+- `vision-platform/ops/CLUSTER_MAP.yaml`: cluster ownership, dependency edges, and validation order
+- `vision-platform/ops/repo-meta/vision-inference.yaml`: canonical configure/build/test commands and public surface
 - [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated upstream model-type inventory from `vision-core`
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and canonical sources of truth
 - [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version-source guidance
