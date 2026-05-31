@@ -1,7 +1,9 @@
 # Agentic Maintenance Control Plane
 
-This directory defines the first concrete control-plane assets for maintaining the
-`vision-core`, `vision-inference`, `neuriplo`, and `videocapture` repo cluster.
+> Canonical home: `vision-platform/ops`. This directory is retained as a compatibility pointer for older workflows that still look inside `vision-inference`. Cross-repository control-plane changes should be made in `vision-platform`, not here.
+
+Historically, this directory defined control-plane assets for maintaining the
+vision repo cluster while `vision-inference` acted as the practical integration point.
 
 The design is intentionally constrained:
 
@@ -15,10 +17,12 @@ These files are meant to be consumed by agent runners, CI automation, or humans
 reviewing agent-generated changes. They are not merge authority; `develop`
 remains the integration branch and `master` remains release-only.
 
-Contents:
+Current source of truth:
 
-- `CLUSTER_MAP.yaml`: cluster topology, ownership, and validation order
-- `policies.yaml`: allowed and forbidden automated change classes
-- `repo-meta/*.yaml`: repo-specific entrypoints, public surfaces, and constraints
-- `runbooks/`: execution guides for high-value maintenance flows
-- `PR_EVIDENCE_TEMPLATE.md`: standard evidence block for agent-generated PRs
+- `../vision-platform/ops/CLUSTER_MAP.yaml`: cluster topology, ownership, and validation order
+- `../vision-platform/ops/policies.yaml`: allowed and forbidden automated change classes
+- `../vision-platform/ops/repo-meta/*.yaml`: repo-specific entrypoints, public surfaces, and constraints
+- `../vision-platform/ops/runbooks/`: execution guides for high-value maintenance flows
+- `../vision-platform/ops/PR_EVIDENCE_TEMPLATE.md`: standard evidence block for agent-generated PRs
+
+The local files in this directory should not be extended. They can be removed after downstream automation has switched to `vision-platform/ops`.
