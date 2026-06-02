@@ -38,7 +38,7 @@ External owners:
 - How the local app fetches and wires sibling repositories at build time.
 - Top-level setup scripts that help users install backend dependencies locally.
 - CLI-facing configuration for selecting tasks, sources, weights, labels,
-  prompts, output format, batching, warmup, and benchmarking.
+  prompts, output format, batching, warmup, benchmarking, and metadata export.
 
 ## What This Repo Does Not Own
 

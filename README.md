@@ -163,6 +163,8 @@ Platform-level scenario ownership, compatibility sets, and cross-repo validation
   [--use-gpu] \
   [--warmup] \
   [--benchmark] \
+  [--export_metadata] \
+  [--no_gif] \
   [--iterations=<number>]
 ```
 
@@ -171,7 +173,7 @@ Platform-level scenario ownership, compatibility sets, and cross-repo validation
 - `--type=<model_type>`: Specifies the type of vision model to use. Supported categories:
   <!-- SUPPORTED_MODEL_TYPES:START -->
 <!-- TASKFACTORY_MODEL_LIST:START -->
-The TaskFactory supports the following model type strings:
+The TaskFactory supports the following model type strings. Matching normalizes strings by lowercasing and stripping whitespace, hyphens, and underscores, so `YOLO-V8`, `yolo_v8`, and ` yolo v8 ` route identically. Specific segmentation and pose aliases are checked before generic detection aliases.
 
 **Object Detection:**
 
@@ -180,9 +182,12 @@ The TaskFactory supports the following model type strings:
 - `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
 - `"rtdetrul"`, `"rtdetrultralytics"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
+- `"ecdet"` - EdgeCrafter detection (any string starting with `ecdet`)
+- `"edgecrafter"`, `"edgecrafter-det"` - EdgeCrafter detection unless the normalized string contains `seg` or `pose`
 
 **Instance Segmentation:**
-- `"yoloseg"` - YOLOv5/YOLOv8/YOLO11
+- `"ecseg"` - EdgeCrafter segmentation (any string starting with `ecseg` or `edgecrafter` and containing `seg`)
+- `"yoloseg"`, `"yolo-seg"`, `"yolov8-seg"` - YOLOv5/YOLOv8/YOLO11-style segmentation
 - `"yolov10seg"`- YOLOv10
 - `"yolo26seg"` - YOLO26
 - `"rfdetrseg"` - RF-DETR
@@ -208,6 +213,7 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
 - `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
 - `"vitpose"` - ViTPose (top-down, heatmap-based)
+- `"ecpose"` - EdgeCrafter pose estimation (any string starting with `ecpose`, or `edgecrafter` and containing `pose`)
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
@@ -240,16 +246,25 @@ For model download and setup details, see [export/image_understanding/ImageUnder
 - `"lgm"`, `"lgm-mini"` - LGM (Large Gaussian Model)
 - `"grm"` - GRM
 - `"gaussiansplatting"`, any string containing `"splat"` - generic alias
+
+
+EdgeCrafter export and tensor contract details live in the task-specific docs:
+
+- [EdgeCrafter Detection](https://github.com/olibartfast/vision-core/blob/master/export/detection/edgecrafter/README.md)
+- [EdgeCrafter Segmentation](https://github.com/olibartfast/vision-core/blob/master/export/segmentation/edgecrafter/README.md)
+- [EdgeCrafter Pose Estimation](https://github.com/olibartfast/vision-core/blob/master/export/pose_estimation/edgecrafter/README.md)
+
 <!-- TASKFACTORY_MODEL_LIST:END -->
 
 Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 <!-- SUPPORTED_MODEL_TYPES:END -->
   App-specific routing and validation in `vision-inference` still define the end-to-end supported subset for this repo.
 
-- `--source=<input_source>`: Defines the input source for the object detection. It can be:
+- `--source=<input_source>`: Defines the input source for inference. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
   - A path to a video file, e.g., `path/to/video.format`
   - A path to an image file, e.g., `path/to/image.format`
+  This can be omitted for text-only image-understanding tasks and for `--export_metadata`.
 
 - `--labels=<path/to/labels/file>`: Optional for fixed-label models. Specifies the path to the file containing the class labels. This file should list the labels used by the model, with each label on a new line.
 
@@ -289,6 +304,10 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 - `[--warmup]`: Enables GPU warmup. Warming up the GPU before performing actual inference can help achieve more consistent and optimized performance. This parameter is relevant only if the inference is being performed on an image source. Default is `false`.
 
 - `[--benchmark]`: Enables benchmarking mode. In this mode, the application will run multiple iterations of inference to measure and report the average inference time. This is useful for evaluating the performance of the model and the inference setup. This parameter is relevant only if the inference is being performed on an image source. Default is `false`.
+
+- `[--export_metadata]`: Initializes the selected backend and task, prints model type, routed task type, input layers, and output layers, then exits without running inference. This still requires `--weights`, but does not require `--source`.
+
+- `[--no_gif]`: Accepted output flag reserved for workflows that emit GIFs. Current image and video inference paths do not generate GIF output. Default is `false`.
 
 - `[--iterations=<number>]`: Specifies the number of iterations for benchmarking. The default value is `10`.
 
@@ -349,6 +368,12 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   --tokenizer_vocab=models/owlv2/vocab.json \
   --tokenizer_merges=models/owlv2/merges.txt \
   --min_confidence=0.2
+
+# Model metadata inspection without an input source
+./vision-inference \
+  --type=yolo \
+  --weights=models/yolov8s.onnx \
+  --export_metadata
 ```
 
 *Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
@@ -362,6 +387,7 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and canonical sources of truth
 - [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version-source guidance
 - [`docs/Versioning.md`](docs/Versioning.md): release/version workflow for `VERSION` and `CHANGELOG.md`
+- [`scripts/check_code_quality.sh`](scripts/check_code_quality.sh): optional local format, static-analysis, ASan/UBSan, and TSan check helper
 
 ## Docker Deployment
 
