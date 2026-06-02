@@ -42,3 +42,20 @@ reflects the upstream `vision-core` TaskFactory inventory.
 
 That list is broader than the guarantees made by this application repo. End-to-end behavior
 still depends on the app's own CLI validation, task routing, rendering, and test coverage.
+
+## Runtime Flow
+
+The app runtime is split by responsibility:
+
+- `CommandLineParser`: parses CLI flags and validates app-owned input paths and task-specific assets.
+- `VisionApp`: sets up logging, builds an `InferencePipeline`, and selects a CLI command.
+- `InferencePipelineBuilder`: wires labels, backend engine, model metadata, `vision-core` task config, task instance, and result renderer.
+- `CLICommands`: owns executable workflows such as normal inference, warmup, benchmarking, image-understanding dispatch, and metadata export.
+- `ResultRenderer`: renders `vision-core::Result` variants for each routed `TaskType`.
+- `TaskRouting`: maps app model-type strings to `vision_core::TaskType` and must stay aligned with `vision_core::TaskFactory`.
+
+`--export_metadata` follows the same backend and task setup path as inference, then prints model type, routed task type, input layers, and output layers before exiting. It intentionally does not require a source.
+
+## Local Quality Checks
+
+Repo-local validation remains the canonical CMake test flow from ops metadata. For deeper local checks, [`scripts/check_code_quality.sh`](../scripts/check_code_quality.sh) runs format checking, `cppcheck`, an AddressSanitizer/UndefinedBehaviorSanitizer test build, and a ThreadSanitizer test build when those tools are installed.

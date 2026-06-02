@@ -134,7 +134,7 @@ docker run --rm \
 ## How It Works
 
 1. **CLI layer** (`CommandLineParser`) parses `--mmproj` into `AppConfig.mmprojectPath`.
-2. **VisionApp** concatenates the projector path into the engine weights string:
+2. **Pipeline wiring** (`InferencePipelineBuilder`) concatenates the projector path into the engine weights string:
    `model.gguf|mmproj=/path/to/mmproj.gguf`
 3. **LlamaCppInfer** constructor splits on `|mmproj=`, loads the language model, then
    calls `mtmd_init_from_file()` with the projector path.
@@ -149,7 +149,7 @@ docker run --rm \
    - `mtmd_tokenize()` merges text tokens and image embeddings
    - `mtmd_helper_eval_chunks()` evaluates the combined sequence
    - `autoregressiveGenerate()` samples tokens until EOG or 512-token limit
-7. **Response** is returned as a UTF-8 string via `processResults()`.
+7. **Response** is returned as a UTF-8 string and printed by `ResultRenderer`.
 
 ---
 
