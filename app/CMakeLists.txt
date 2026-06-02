@@ -16,13 +16,16 @@ message(STATUS "CMAKE_CURRENT_SOURCE_DIR:  ${CMAKE_CURRENT_SOURCE_DIR}")
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionApp.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionAppProcessing.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionAppRendering.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ResultRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionAppTaskRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
 )
 add_executable(${PROJECT_NAME} ${SOURCES})
+include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
+enable_target_sanitizers(${PROJECT_NAME})
 
 
 # Set include directories

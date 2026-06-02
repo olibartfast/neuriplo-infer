@@ -105,3 +105,19 @@ TEST(ParseCommandLineArguments, MultimodalExtraParams) {
     EXPECT_EQ(config.taskExtraParams.at("sample_stride"), "4");
     EXPECT_EQ(config.taskExtraParams.at("max_frames"), "12");
 }
+
+TEST(ParseCommandLineArguments, ExportMetadataFlag) {
+    const char* argv[] = {
+        "program",
+        "--type=yolov5",
+        "--weights=model.weights",
+        "--export_metadata"
+    };
+    int argc = sizeof(argv) / sizeof(argv[0]);
+    touchFile("model.weights");
+
+    AppConfig config = CommandLineParser::parseCommandLineArguments(argc, const_cast<char**>(argv));
+
+    EXPECT_TRUE(config.export_metadata);
+    EXPECT_TRUE(config.sources.empty());
+}

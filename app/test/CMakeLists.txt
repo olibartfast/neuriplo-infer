@@ -13,11 +13,14 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_SOURCE_DIR}/app/src/utils.cpp 
     ${CMAKE_SOURCE_DIR}/app/src/CommandLineParser.cpp
     ${CMAKE_SOURCE_DIR}/app/src/VisionApp.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/VisionAppProcessing.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/VisionAppRendering.cpp
+    ${CMAKE_SOURCE_DIR}/app/src/InferencePipeline.cpp
+    ${CMAKE_SOURCE_DIR}/app/src/CLICommands.cpp
+    ${CMAKE_SOURCE_DIR}/app/src/ResultRenderer.cpp
     ${CMAKE_SOURCE_DIR}/app/src/VisionAppTaskRouting.cpp
 )
 
+include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
+enable_target_sanitizers(${PROJECT_NAME_TEST})
 
 target_include_directories(${PROJECT_NAME_TEST} 
     PRIVATE ${CMAKE_SOURCE_DIR}/common 
