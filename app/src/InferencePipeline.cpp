@@ -141,15 +141,6 @@ InferencePipelineBuilder::source(const std::vector<std::string> &sources) {
   return *this;
 }
 
-InferencePipelineBuilder &InferencePipelineBuilder::backend() { return *this; }
-
-InferencePipelineBuilder &InferencePipelineBuilder::task() { return *this; }
-
-InferencePipelineBuilder &
-InferencePipelineBuilder::precision(const std::string & /*precision*/) {
-  return *this;
-}
-
 InferencePipelineBuilder &InferencePipelineBuilder::batch(int batch_size) {
   config_.batch_size = batch_size;
   return *this;
@@ -161,56 +152,68 @@ InferencePipelineBuilder::renderer(std::unique_ptr<ResultRenderer> renderer) {
   return *this;
 }
 
+void InferencePipelineBuilder::logPipelineConfig() const {
+  LOG(INFO) << "Sources: ";
+  for (const auto &src : config_.sources) {
+    LOG(INFO) << " " << src;
+  }
+  LOG(INFO) << "Weights " << config_.weights;
+  LOG(INFO) << "Labels file " << config_.labelsPath;
+  LOG(INFO) << "Detector type " << config_.detectorType;
+  if (!config_.textPrompts.empty()) {
+    LOG(INFO) << "Open-vocab prompts count " << config_.textPrompts.size();
+  }
+  if (!config_.taskExtraParams.empty()) {
+    LOG(INFO) << "Task extra params count " << config_.taskExtraParams.size();
+  }
+}
+
+void InferencePipelineBuilder::loadLabels(InferencePipeline &pipeline) const {
+  if (!config_.labelsPath.empty()) {
+    pipeline.classes = readLabelNames(config_.labelsPath);
+  }
+}
+
+void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
+  LOG(INFO) << "CPU info " << getCPUInfo();
+  LOG(INFO) << "GPU info: " << getGPUModel();
+  const auto use_gpu = config_.use_gpu && hasNvidiaGPU();
+  pipeline.engine =
+      setup_inference_engine(buildEngineWeights(config_), use_gpu,
+                             config_.batch_size, config_.input_sizes);
+  if (!pipeline.engine) {
+    throw std::runtime_error("Can't setup an inference engine for " +
+                             config_.weights);
+  }
+}
+
+void InferencePipelineBuilder::setupTask(InferencePipeline &pipeline) const {
+  pipeline.inference_metadata = pipeline.engine->get_inference_metadata();
+  pipeline.model_info = buildModelInfo(pipeline.inference_metadata, config_);
+  pipeline.task_type = getTaskTypeForModel(config_.detectorType);
+
+  LOG(INFO) << "Using vision-core model type: " << config_.detectorType;
+  pipeline.task = vision_core::TaskFactory::createTaskInstance(
+      config_.detectorType, pipeline.model_info, buildTaskConfig(config_));
+  if (!pipeline.task) {
+    throw std::runtime_error("Can't setup a task for " + config_.detectorType);
+  }
+}
+
+void InferencePipelineBuilder::setupPresentation(InferencePipeline &pipeline) {
+  pipeline.renderer = renderer_ ? std::move(renderer_)
+                                : std::make_unique<DefaultResultRenderer>();
+}
+
 InferencePipeline InferencePipelineBuilder::build() {
   InferencePipeline pipeline;
   pipeline.config = config_;
 
-  LOG(INFO) << "Sources: ";
-  for (const auto &src : pipeline.config.sources) {
-    LOG(INFO) << " " << src;
-  }
-  LOG(INFO) << "Weights " << pipeline.config.weights;
-  LOG(INFO) << "Labels file " << pipeline.config.labelsPath;
-  LOG(INFO) << "Detector type " << pipeline.config.detectorType;
-  if (!pipeline.config.textPrompts.empty()) {
-    LOG(INFO) << "Open-vocab prompts count "
-              << pipeline.config.textPrompts.size();
-  }
-  if (!pipeline.config.taskExtraParams.empty()) {
-    LOG(INFO) << "Task extra params count "
-              << pipeline.config.taskExtraParams.size();
-  }
+  logPipelineConfig();
+  loadLabels(pipeline);
+  setupBackend(pipeline);
+  setupTask(pipeline);
+  setupPresentation(pipeline);
 
-  if (!pipeline.config.labelsPath.empty()) {
-    pipeline.classes = readLabelNames(pipeline.config.labelsPath);
-  }
-
-  LOG(INFO) << "CPU info " << getCPUInfo();
-  LOG(INFO) << "GPU info: " << getGPUModel();
-  const auto use_gpu = pipeline.config.use_gpu && hasNvidiaGPU();
-  pipeline.engine = setup_inference_engine(buildEngineWeights(pipeline.config),
-                                           use_gpu, pipeline.config.batch_size,
-                                           pipeline.config.input_sizes);
-  if (!pipeline.engine) {
-    throw std::runtime_error("Can't setup an inference engine for " +
-                             pipeline.config.weights);
-  }
-
-  pipeline.inference_metadata = pipeline.engine->get_inference_metadata();
-  pipeline.model_info =
-      buildModelInfo(pipeline.inference_metadata, pipeline.config);
-  pipeline.task_type = getTaskTypeForModel(pipeline.config.detectorType);
-
-  LOG(INFO) << "Using vision-core model type: " << pipeline.config.detectorType;
-  pipeline.task = vision_core::TaskFactory::createTaskInstance(
-      pipeline.config.detectorType, pipeline.model_info,
-      buildTaskConfig(pipeline.config));
-  if (!pipeline.task) {
-    throw std::runtime_error("Can't setup a task for " +
-                             pipeline.config.detectorType);
-  }
-
-  pipeline.renderer = renderer_ ? std::move(renderer_)
-                                : std::make_unique<DefaultResultRenderer>();
   return pipeline;
 }

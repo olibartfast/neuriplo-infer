@@ -14,9 +14,6 @@ int VisionApp::run() {
   try {
     auto pipeline = InferencePipelineBuilder(config)
                         .source(config.sources)
-                        .backend()
-                        .task()
-                        .precision()
                         .batch(config.batch_size)
                         .renderer(std::make_unique<DefaultResultRenderer>())
                         .build();

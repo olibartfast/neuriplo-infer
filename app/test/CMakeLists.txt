@@ -10,6 +10,7 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_VisionApp.cpp    
+    ${CMAKE_CURRENT_LIST_DIR}/test_InferencePipelineBuilder.cpp
     ${CMAKE_SOURCE_DIR}/app/src/utils.cpp 
     ${CMAKE_SOURCE_DIR}/app/src/CommandLineParser.cpp
     ${CMAKE_SOURCE_DIR}/app/src/VisionApp.cpp
