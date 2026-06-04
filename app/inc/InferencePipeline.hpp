@@ -31,9 +31,6 @@ public:
   explicit InferencePipelineBuilder(const AppConfig &config);
 
   InferencePipelineBuilder &source(const std::vector<std::string> &sources);
-  InferencePipelineBuilder &backend();
-  InferencePipelineBuilder &task();
-  InferencePipelineBuilder &precision(const std::string &precision = "");
   InferencePipelineBuilder &batch(int batch_size);
   InferencePipelineBuilder &renderer(std::unique_ptr<ResultRenderer> renderer);
 
@@ -42,4 +39,11 @@ public:
 private:
   AppConfig config_;
   std::unique_ptr<ResultRenderer> renderer_;
+
+  // Staged helpers for auditable pipeline construction
+  void logPipelineConfig() const;
+  void loadLabels(InferencePipeline &pipeline) const;
+  void setupBackend(InferencePipeline &pipeline) const;
+  void setupTask(InferencePipeline &pipeline) const;
+  void setupPresentation(InferencePipeline &pipeline);
 };
