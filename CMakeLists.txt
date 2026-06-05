@@ -70,6 +70,27 @@ FetchContent_Declare(
 # Disable neuriplo's tests so it doesn't require GTest
 set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(neuriplo VideoCapture vision-core)
+
+FetchContent_Declare(
+    nlohmann_json
+    URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
+option(VISION_INFERENCE_ENABLE_GRPC "Build gRPC KServe client" ON)
+if(VISION_INFERENCE_ENABLE_GRPC)
+    find_package(Protobuf QUIET)
+    find_package(gRPC CONFIG QUIET)
+    if(Protobuf_FOUND AND gRPC_FOUND)
+        message(STATUS "gRPC KServe client enabled")
+        set(VISION_INFERENCE_WITH_GRPC TRUE)
+    else()
+        message(WARNING "gRPC not found, KServe client will use HTTP fallback")
+        set(VISION_INFERENCE_WITH_GRPC FALSE)
+    endif()
+endif()
+
 message(STATUS "vision-core_SOURCE_DIR: ${vision-core_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")

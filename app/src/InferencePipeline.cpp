@@ -1,5 +1,9 @@
 #include "InferencePipeline.hpp"
 
+#ifdef VISION_INFERENCE_WITH_GRPC
+#include "KserveGrpcClient.hpp"
+#endif
+#include "KserveClient.hpp"
 #include "utils.hpp"
 #include "vision-core/core/task_config.hpp"
 #include "vision-core/core/task_factory.hpp"
@@ -177,6 +181,27 @@ void InferencePipelineBuilder::loadLabels(InferencePipeline &pipeline) const {
 void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
   LOG(INFO) << "CPU info " << getCPUInfo();
   LOG(INFO) << "GPU info: " << getGPUModel();
+
+  if (!config_.kserve_endpoint.empty()) {
+    LOG(INFO) << "KServe endpoint: " << config_.kserve_endpoint
+              << " transport: " << config_.kserve_transport;
+    LOG(INFO) << "KServe model: " << config_.kserve_model_name
+              << " version: " << config_.kserve_model_version;
+
+#ifdef VISION_INFERENCE_WITH_GRPC
+    if (config_.kserve_transport == "grpc") {
+      pipeline.engine = std::make_unique<grpc_client::KserveGrpcClient>(
+          config_.kserve_endpoint, config_.kserve_model_name,
+          config_.kserve_model_version, config_.kserve_timeout_ms);
+      return;
+    }
+#endif
+    pipeline.engine = std::make_unique<KserveClient>(
+        config_.kserve_endpoint, config_.kserve_model_name,
+        config_.kserve_model_version, config_.kserve_timeout_ms);
+    return;
+  }
+
   const auto use_gpu = config_.use_gpu && hasNvidiaGPU();
   pipeline.engine =
       setup_inference_engine(buildEngineWeights(config_), use_gpu,
