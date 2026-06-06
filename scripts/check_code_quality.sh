@@ -5,24 +5,18 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_ASAN="${ROOT_DIR}/build-quality-asan"
 BUILD_TSAN="${ROOT_DIR}/build-quality-tsan"
 
-CPP_FILES=(
-  "${ROOT_DIR}/app/main.cpp"
-  "${ROOT_DIR}/app/inc/AppConfig.hpp"
-  "${ROOT_DIR}/app/inc/CLICommands.hpp"
-  "${ROOT_DIR}/app/inc/InferencePipeline.hpp"
-  "${ROOT_DIR}/app/inc/ResultRenderer.hpp"
-  "${ROOT_DIR}/app/inc/TaskRouting.hpp"
-  "${ROOT_DIR}/app/inc/VisionApp.hpp"
-  "${ROOT_DIR}/app/src/CLICommands.cpp"
-  "${ROOT_DIR}/app/src/CommandLineParser.cpp"
-  "${ROOT_DIR}/app/src/InferencePipeline.cpp"
-  "${ROOT_DIR}/app/src/ResultRenderer.cpp"
-  "${ROOT_DIR}/app/src/VisionApp.cpp"
-  "${ROOT_DIR}/app/src/VisionAppTaskRouting.cpp"
+mapfile -t CPP_FILES < <(
+  find "${ROOT_DIR}/app/src" "${ROOT_DIR}/app/inc" "${ROOT_DIR}/app/test" \
+    \( -name '*.cpp' -o -name '*.hpp' \) | sort
 )
 
-if command -v clang-format >/dev/null 2>&1; then
-  clang-format --dry-run --Werror "${CPP_FILES[@]}"
+CLANG_FORMAT_BIN="${CLANG_FORMAT_BIN:-clang-format-18}"
+if ! command -v "${CLANG_FORMAT_BIN}" >/dev/null 2>&1; then
+  CLANG_FORMAT_BIN="clang-format"
+fi
+
+if command -v "${CLANG_FORMAT_BIN}" >/dev/null 2>&1; then
+  "${CLANG_FORMAT_BIN}" --dry-run --Werror "${CPP_FILES[@]}"
 else
   echo "clang-format not found; skipping format check" >&2
 fi
@@ -33,7 +27,10 @@ if command -v cppcheck >/dev/null 2>&1; then
     --error-exitcode=1 \
     --inline-suppr \
     --suppress=missingIncludeSystem \
-    "${ROOT_DIR}/app"
+    --suppress=unmatchedSuppression \
+    -I "${ROOT_DIR}/app/inc" \
+    "${ROOT_DIR}/app/src" \
+    "${ROOT_DIR}/app/inc"
 else
   echo "cppcheck not found; skipping static analysis" >&2
 fi

@@ -1,6 +1,7 @@
 #include "CLICommands.hpp"
 
 #include "VideoCaptureFactory.hpp"
+#include "vision-core/core/opencv_interop.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -115,7 +116,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
             .count();
-    double fps = 1000.0 / duration;
+    double fps = 1000.0 / static_cast<double>(duration);
     std::string fpsText = "FPS: " + std::to_string(fps);
     cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1,
                 cv::Scalar(0, 255, 0), 2);
@@ -123,7 +124,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     pipeline.renderResults(results, frame);
 
     cv::imshow("opencv feed", frame);
-    char key = cv::waitKey(1);
+    const int key = cv::waitKey(1);
     if (key == 27 || key == 'q') {
       LOG(INFO) << "Exit requested";
       break;
@@ -148,7 +149,7 @@ void processVideoClassification(InferencePipeline &pipeline,
 
   cv::Mat frame;
   std::vector<cv::Mat> frameBuffer;
-  frameBuffer.reserve(requiredFrames);
+  frameBuffer.reserve(static_cast<size_t>(requiredFrames));
 
   while (videoInterface->readFrame(frame)) {
     frameBuffer.push_back(frame.clone());
@@ -165,7 +166,7 @@ void processVideoClassification(InferencePipeline &pipeline,
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
               .count();
-      double fps = 1000.0 / duration;
+      double fps = 1000.0 / static_cast<double>(duration);
       std::string fpsText = "FPS: " + std::to_string(fps);
 
       cv::Mat displayFrame = frameBuffer.back().clone();
@@ -178,7 +179,7 @@ void processVideoClassification(InferencePipeline &pipeline,
       frameBuffer.erase(frameBuffer.begin());
     }
 
-    char key = cv::waitKey(1);
+    const int key = cv::waitKey(1);
     if (key == 27 || key == 'q') {
       LOG(INFO) << "Exit requested";
       break;
@@ -229,7 +230,7 @@ void processOpticalFlow(InferencePipeline &pipeline) {
       if (std::holds_alternative<vision_core::OpticalFlow>(prediction)) {
         vision_core::OpticalFlow flow =
             std::get<vision_core::OpticalFlow>(prediction);
-        flow.flow.copyTo(image);
+        vision_core::toCvMat(flow.flow).copyTo(image);
       }
     }
 
@@ -358,9 +359,10 @@ int BenchmarkCommand::execute(InferencePipeline &pipeline) {
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
             .count();
     LOG(INFO) << "Iteration " << i << ": " << duration << "ms";
-    total_time += duration;
+    total_time += static_cast<double>(duration);
   }
-  double average_time = total_time / pipeline.config.benchmark_iterations;
+  double average_time =
+      total_time / static_cast<double>(pipeline.config.benchmark_iterations);
   LOG(INFO) << "Average inference time over "
             << pipeline.config.benchmark_iterations
             << " iterations: " << average_time << "ms";
