@@ -102,8 +102,7 @@ set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 # Prefer a sibling checkout during local cross-repo development.
 set(_NEURIPLO_TASKS_SIBLING "")
 foreach(_candidate IN ITEMS
-    "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo-tasks"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../vision-core")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo-tasks")
     if(EXISTS "${_candidate}/CMakeLists.txt")
         set(_NEURIPLO_TASKS_SIBLING "${_candidate}")
         break()
