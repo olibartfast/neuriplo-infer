@@ -10,8 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Renamed repository identity per ADR 0004: CMake project and executable
   `neuriplo-infer`, static library `neuriplo-infer-app`, sibling pin
   `NEURIPLO_TASKS_VERSION`, and consumer updates for `neuriplo-tasks`
-  includes/namespaces/link targets. Legacy `vision-core` sibling checkout,
-  GitHub tag, and `--vision-core-readme` paths remain as one-release shims.
+  includes/namespaces/link targets. FetchContent tracks
+  `feature/neuriplo-tasks` on the not-yet-renamed GitHub repo until ADR 0004
+  repo rename lands.
 
 ## [0.3.2] - 2026-05-28
 

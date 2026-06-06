@@ -74,9 +74,12 @@ message(STATUS "✓ glog found")
 
 include(FetchContent)
 
+# neuriplo-tasks GitHub repo is still named vision-core until ADR 0004 repo rename.
+set(NEURIPLO_TASKS_GIT_REPOSITORY "https://github.com/olibartfast/vision-core.git")
+
 FetchContent_Declare(
     neuriplo-tasks
-    GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
+    GIT_REPOSITORY ${NEURIPLO_TASKS_GIT_REPOSITORY}
     GIT_TAG        ${NEURIPLO_TASKS_VERSION}
 )
 
@@ -98,11 +101,16 @@ set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 # Prefer a sibling checkout during local cross-repo development.
-set(_NEURIPLO_TASKS_SIBLING "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo-tasks")
-if(NOT EXISTS "${_NEURIPLO_TASKS_SIBLING}/CMakeLists.txt")
-    set(_NEURIPLO_TASKS_SIBLING "${CMAKE_CURRENT_SOURCE_DIR}/../vision-core")
-endif()
-if(EXISTS "${_NEURIPLO_TASKS_SIBLING}/CMakeLists.txt")
+set(_NEURIPLO_TASKS_SIBLING "")
+foreach(_candidate IN ITEMS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo-tasks"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../vision-core")
+    if(EXISTS "${_candidate}/CMakeLists.txt")
+        set(_NEURIPLO_TASKS_SIBLING "${_candidate}")
+        break()
+    endif()
+endforeach()
+if(NOT _NEURIPLO_TASKS_SIBLING STREQUAL "")
     set(FETCHCONTENT_SOURCE_DIR_NEURIPLO-TASKS "${_NEURIPLO_TASKS_SIBLING}" CACHE PATH "" FORCE)
 endif()
 
