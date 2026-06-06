@@ -39,7 +39,7 @@ owned_paths:
   - Readme.md
 
 consumers:
-  - vision-inference
+  - neuriplo-infer
 
 automation_rules:
   allowed_change_classes:

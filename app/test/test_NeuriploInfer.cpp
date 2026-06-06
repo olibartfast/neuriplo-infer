@@ -1,18 +1,18 @@
 #include "AppConfig.hpp"
-#include "vision-core/core/task_config.hpp"
+#include "neuriplo/tasks/core/task_config.hpp"
 #include <gtest/gtest.h>
 
 // Verify that AppConfig threshold fields map correctly to
-// vision_core::TaskConfig. This mirrors the mapping done in
-// VisionApp::VisionApp().
+// neuriplo_tasks::TaskConfig. This mirrors the mapping done in
+// InferencePipelineBuilder task config mapping.
 
-TEST(VisionAppTaskConfig, ThresholdMapping) {
+TEST(NeuriploInferTaskConfig, ThresholdMapping) {
   AppConfig config;
   config.confidenceThreshold = 0.3f;
   config.nmsThreshold = 0.6f;
   config.maskThreshold = 0.7f;
 
-  vision_core::TaskConfig task_config;
+  neuriplo_tasks::TaskConfig task_config;
   task_config.confidence_threshold = config.confidenceThreshold;
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
@@ -22,12 +22,12 @@ TEST(VisionAppTaskConfig, ThresholdMapping) {
   EXPECT_FLOAT_EQ(task_config.mask_threshold, 0.7f);
 }
 
-TEST(VisionAppTaskConfig, DefaultThresholdsRoundtrip) {
+TEST(NeuriploInferTaskConfig, DefaultThresholdsRoundtrip) {
   AppConfig config;
   config.confidenceThreshold = 0.25f;
   // nmsThreshold and maskThreshold use in-class defaults
 
-  vision_core::TaskConfig task_config;
+  neuriplo_tasks::TaskConfig task_config;
   task_config.confidence_threshold = config.confidenceThreshold;
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
@@ -37,13 +37,13 @@ TEST(VisionAppTaskConfig, DefaultThresholdsRoundtrip) {
   EXPECT_FLOAT_EQ(task_config.mask_threshold, 0.50f);
 }
 
-TEST(VisionAppTaskConfig, OpenVocabFieldsRoundtrip) {
+TEST(NeuriploInferTaskConfig, OpenVocabFieldsRoundtrip) {
   AppConfig config;
   config.textPrompts = {"cat", "dog"};
   config.tokenizerVocabPath = "vocab.json";
   config.tokenizerMergesPath = "merges.txt";
 
-  vision_core::TaskConfig task_config;
+  neuriplo_tasks::TaskConfig task_config;
   task_config.text_prompts = config.textPrompts;
 
   EXPECT_EQ(task_config.text_prompts.size(), 2u);
@@ -53,14 +53,14 @@ TEST(VisionAppTaskConfig, OpenVocabFieldsRoundtrip) {
   EXPECT_EQ(config.tokenizerMergesPath, "merges.txt");
 }
 
-TEST(VisionAppTaskConfig, ExtraParamsRoundtrip) {
+TEST(NeuriploInferTaskConfig, ExtraParamsRoundtrip) {
   AppConfig config;
   config.taskExtraParams = {{"prompt", "Describe the image"},
                             {"output_format", "json"},
                             {"sample_stride", "4"},
                             {"max_frames", "8"}};
 
-  vision_core::TaskConfig task_config;
+  neuriplo_tasks::TaskConfig task_config;
   task_config.extra_params = config.taskExtraParams;
 
   ASSERT_EQ(task_config.extra_params.size(), 4u);

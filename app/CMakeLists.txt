@@ -1,16 +1,19 @@
 set(APP_LIB_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionApp.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ResultRenderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionAppTaskRouting.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInferTaskRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
 )
 
-add_library(vision-inference-app STATIC ${APP_LIB_SOURCES})
+set(NEURIPLO_INFER_LIBRARY neuriplo-infer)
+set(NEURIPLO_INFER_EXECUTABLE neuriplo-infer-cli)
 
-target_include_directories(vision-inference-app PUBLIC
+add_library(${NEURIPLO_INFER_LIBRARY} STATIC ${APP_LIB_SOURCES})
+
+target_include_directories(${NEURIPLO_INFER_LIBRARY} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${VideoCapture_SOURCE_DIR}/include
@@ -21,35 +24,37 @@ target_include_directories(vision-inference-app PUBLIC
     ${GLOG_INCLUDE_DIRS}
 )
 
-target_link_libraries(vision-inference-app PUBLIC
+target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC
     glog::glog
     ${OpenCV_LIBS}
     neuriplo
     VideoCapture
-    vision-core
+    neuriplo-tasks
 )
 
 if(MSVC)
-    target_compile_options(vision-inference-app PRIVATE /W4)
+    target_compile_options(${NEURIPLO_INFER_LIBRARY} PRIVATE /W4)
 else()
-    target_compile_options(vision-inference-app PRIVATE ${PROJECT_WARNING_FLAGS})
+    target_compile_options(${NEURIPLO_INFER_LIBRARY} PRIVATE ${PROJECT_WARNING_FLAGS})
 endif()
 
-add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
-include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
-enable_target_sanitizers(${PROJECT_NAME})
+add_executable(${NEURIPLO_INFER_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+set_target_properties(${NEURIPLO_INFER_EXECUTABLE} PROPERTIES OUTPUT_NAME neuriplo-infer)
 
-target_include_directories(${PROJECT_NAME} PRIVATE
+include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
+enable_target_sanitizers(${NEURIPLO_INFER_EXECUTABLE})
+
+target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE vision-inference-app)
+target_link_libraries(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${NEURIPLO_INFER_LIBRARY})
 
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+    target_compile_options(${NEURIPLO_INFER_EXECUTABLE} PRIVATE /W4)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
+    target_compile_options(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${PROJECT_WARNING_FLAGS})
 endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/LinkBackend.cmake)

@@ -35,7 +35,7 @@ std::string getSourcesPath() { return findFileUpwards("data/dog.jpg"); }
 // A simple fake renderer to test custom renderer wiring
 class FakeRenderer : public ResultRenderer {
 public:
-  void render(const std::vector<vision_core::Result> & /*results*/,
+  void render(const std::vector<neuriplo_tasks::Result> & /*results*/,
               cv::Mat & /*image*/, const RenderContext & /*context*/) override {
     rendered_called = true;
   }
@@ -87,7 +87,7 @@ TEST(InferencePipelineBuilderTest, BuildSuccessWithValidYoloModel) {
     InferencePipeline pipeline = builder.build();
     EXPECT_EQ(pipeline.config.detectorType, "yolo26");
     EXPECT_EQ(pipeline.config.weights, getWeightsPath());
-    EXPECT_EQ(pipeline.task_type, vision_core::TaskType::Detection);
+    EXPECT_EQ(pipeline.task_type, neuriplo_tasks::TaskType::Detection);
     EXPECT_NE(pipeline.engine, nullptr);
     EXPECT_NE(pipeline.task, nullptr);
     EXPECT_NE(pipeline.renderer, nullptr);
