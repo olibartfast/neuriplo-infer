@@ -90,19 +90,32 @@ void renderInstanceSegmentationResults(
   forEachResultOfType<vision_core::InstanceSegmentation>(
       results, [&](const auto &segmentation) {
         cv::rectangle(image, segmentation.bbox, cv::Scalar(255, 0, 0), 3);
-        draw_label(image, classes[static_cast<int>(segmentation.class_id)],
-                   segmentation.class_confidence, segmentation.bbox.x,
-                   segmentation.bbox.y);
+        std::string label =
+            std::to_string(static_cast<int>(segmentation.class_id));
+        if (segmentation.class_id >= 0 &&
+            segmentation.class_id < classes.size()) {
+          label = classes[static_cast<int>(segmentation.class_id)];
+        }
+        draw_label(image, label, segmentation.class_confidence,
+                   segmentation.bbox.x, segmentation.bbox.y);
 
         if (!segmentation.mask.empty()) {
-          cv::Mat mask = cv::Mat(
-              segmentation.mask_height, segmentation.mask_width, CV_8UC1,
-              const_cast<uint8_t *>(segmentation.mask_data.data()));
+          cv::Mat mask = segmentation.mask;
+          cv::Mat maskForRender;
+          if (mask.size() != image.size()) {
+            cv::resize(mask, maskForRender, image.size(), 0, 0,
+                       cv::INTER_NEAREST);
+          } else {
+            maskForRender = mask;
+          }
+          if (maskForRender.type() != CV_8UC1) {
+            maskForRender.convertTo(maskForRender, CV_8UC1);
+          }
 
           cv::Mat colorMask = cv::Mat::zeros(image.size(), CV_8UC3);
           cv::Scalar color = cv::Scalar(std::rand() & 255, std::rand() & 255,
                                         std::rand() & 255);
-          colorMask.setTo(color, mask);
+          colorMask.setTo(color, maskForRender);
 
           cv::addWeighted(image, 1, colorMask, 0.7, 0, image);
         }

@@ -5,6 +5,13 @@ Do not edit manually; run `python scripts/sync_supported_model_types.py`.
 
 Source: [https://github.com/olibartfast/vision-core](https://github.com/olibartfast/vision-core)
 
+`TaskFactory` routes model type strings through a **built-in, compile-time**
+registration table in `src/core/task_factory.cpp`. New built-in tasks require
+editing that table and the README list below. **Third-party or runtime task
+plugins are not supported**; if plugin extension becomes a product goal, add a
+separate explicit extension registry rather than growing the internal table
+indefinitely.
+
 <!-- TASKFACTORY_MODEL_LIST:START -->
 The TaskFactory supports the following model type strings. Matching normalizes strings by lowercasing and stripping whitespace, hyphens, and underscores, so `YOLO-V8`, `yolo_v8`, and ` yolo v8 ` route identically. Specific segmentation and pose aliases are checked before generic detection aliases.
 
