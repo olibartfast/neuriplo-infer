@@ -12,47 +12,47 @@ bool contains(const std::string &value, const std::string &needle) {
 }
 } // namespace
 
-vision_core::TaskType getTaskTypeForModel(const std::string &model_type) {
+neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
   std::string normalized = normalizeModelType(model_type);
 
   // Video classification models (temporal, multi-frame)
   if (normalized == "timesformer" || normalized == "videomae" ||
       normalized == "vivit") {
-    return vision_core::TaskType::VideoClassification;
+    return neuriplo_tasks::TaskType::VideoClassification;
   }
   // Single-frame classification models
   if (normalized == "torchvisionclassifier" ||
       normalized == "tensorflowclassifier" || normalized == "vitclassifier" ||
       startsWith(normalized, "resnet") || contains(normalized, "tensorflow")) {
-    return vision_core::TaskType::Classification;
+    return neuriplo_tasks::TaskType::Classification;
   }
   if (contains(normalized, "seg") || normalized == "yoloseg") {
-    return vision_core::TaskType::InstanceSegmentation;
+    return neuriplo_tasks::TaskType::InstanceSegmentation;
   }
   if (normalized == "raft") {
-    return vision_core::TaskType::OpticalFlow;
+    return neuriplo_tasks::TaskType::OpticalFlow;
   }
   // Pose estimation: vitpose plus yolo*pose* and EdgeCrafter
-  // ecpose*/edgecrafter*pose*, mirroring vision_core::TaskFactory routing.
+  // ecpose*/edgecrafter*pose*, mirroring neuriplo_tasks::TaskFactory routing.
   if (normalized == "vitpose" || contains(normalized, "pose")) {
-    return vision_core::TaskType::PoseEstimation;
+    return neuriplo_tasks::TaskType::PoseEstimation;
   }
   if (contains(normalized, "depthanythingv2")) {
-    return vision_core::TaskType::DepthEstimation;
+    return neuriplo_tasks::TaskType::DepthEstimation;
   }
   if (normalized == "lgm" || normalized == "grm" ||
       normalized == "gaussiansplatting" || normalized == "lgmmini" ||
       contains(normalized, "splat")) {
-    return vision_core::TaskType::GaussianSplatting;
+    return neuriplo_tasks::TaskType::GaussianSplatting;
   }
   if (normalized == "owlv2" || normalized == "owlvit" ||
       normalized == "groundingdino") {
-    return vision_core::TaskType::OpenVocabDetection;
+    return neuriplo_tasks::TaskType::OpenVocabDetection;
   }
   if (normalized == "gemma4" || normalized == "gemma" ||
       normalized == "llama" || normalized == "llamacpp" ||
       normalized == "imageunderstanding") {
-    return vision_core::TaskType::ImageUnderstanding;
+    return neuriplo_tasks::TaskType::ImageUnderstanding;
   }
-  return vision_core::TaskType::Detection; // Default for YOLO, RTDETR, etc.
+  return neuriplo_tasks::TaskType::Detection; // Default for YOLO, RTDETR, etc.
 }

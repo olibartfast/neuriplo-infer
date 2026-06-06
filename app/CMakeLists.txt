@@ -8,9 +8,9 @@ set(APP_LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
 )
 
-add_library(vision-inference-app STATIC ${APP_LIB_SOURCES})
+add_library(neuriplo-infer-app STATIC ${APP_LIB_SOURCES})
 
-target_include_directories(vision-inference-app PUBLIC
+target_include_directories(neuriplo-infer-app PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${VideoCapture_SOURCE_DIR}/include
@@ -21,18 +21,18 @@ target_include_directories(vision-inference-app PUBLIC
     ${GLOG_INCLUDE_DIRS}
 )
 
-target_link_libraries(vision-inference-app PUBLIC
+target_link_libraries(neuriplo-infer-app PUBLIC
     glog::glog
     ${OpenCV_LIBS}
     neuriplo
     VideoCapture
-    vision-core
+    neuriplo-tasks
 )
 
 if(MSVC)
-    target_compile_options(vision-inference-app PRIVATE /W4)
+    target_compile_options(neuriplo-infer-app PRIVATE /W4)
 else()
-    target_compile_options(vision-inference-app PRIVATE ${PROJECT_WARNING_FLAGS})
+    target_compile_options(neuriplo-infer-app PRIVATE ${PROJECT_WARNING_FLAGS})
 endif()
 
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
@@ -44,7 +44,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE vision-inference-app)
+target_link_libraries(${PROJECT_NAME} PRIVATE neuriplo-infer-app)
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4)

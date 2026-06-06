@@ -1,9 +1,9 @@
 #include "AppConfig.hpp"
-#include "vision-core/core/task_config.hpp"
+#include "neuriplo/tasks/core/task_config.hpp"
 #include <gtest/gtest.h>
 
 // Verify that AppConfig threshold fields map correctly to
-// vision_core::TaskConfig. This mirrors the mapping done in
+// neuriplo_tasks::TaskConfig. This mirrors the mapping done in
 // VisionApp::VisionApp().
 
 TEST(VisionAppTaskConfig, ThresholdMapping) {
@@ -12,7 +12,7 @@ TEST(VisionAppTaskConfig, ThresholdMapping) {
   config.nmsThreshold = 0.6f;
   config.maskThreshold = 0.7f;
 
-  vision_core::TaskConfig task_config;
+  neuriplo_tasks::TaskConfig task_config;
   task_config.confidence_threshold = config.confidenceThreshold;
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
@@ -27,7 +27,7 @@ TEST(VisionAppTaskConfig, DefaultThresholdsRoundtrip) {
   config.confidenceThreshold = 0.25f;
   // nmsThreshold and maskThreshold use in-class defaults
 
-  vision_core::TaskConfig task_config;
+  neuriplo_tasks::TaskConfig task_config;
   task_config.confidence_threshold = config.confidenceThreshold;
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
@@ -43,7 +43,7 @@ TEST(VisionAppTaskConfig, OpenVocabFieldsRoundtrip) {
   config.tokenizerVocabPath = "vocab.json";
   config.tokenizerMergesPath = "merges.txt";
 
-  vision_core::TaskConfig task_config;
+  neuriplo_tasks::TaskConfig task_config;
   task_config.text_prompts = config.textPrompts;
 
   EXPECT_EQ(task_config.text_prompts.size(), 2u);
@@ -60,7 +60,7 @@ TEST(VisionAppTaskConfig, ExtraParamsRoundtrip) {
                             {"sample_stride", "4"},
                             {"max_frames", "8"}};
 
-  vision_core::TaskConfig task_config;
+  neuriplo_tasks::TaskConfig task_config;
   task_config.extra_params = config.taskExtraParams;
 
   ASSERT_EQ(task_config.extra_params.size(), 4u);

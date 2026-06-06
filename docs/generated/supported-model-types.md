@@ -1,9 +1,9 @@
 # Supported Model Types
 
-Auto-generated from `vision-core` TaskFactory documentation.
+Auto-generated from `neuriplo-tasks` TaskFactory documentation.
 Do not edit manually; run `python scripts/sync_supported_model_types.py`.
 
-Source: [https://github.com/olibartfast/vision-core](https://github.com/olibartfast/vision-core)
+Source: [https://github.com/olibartfast/neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks)
 
 `TaskFactory` routes model type strings through a **built-in, compile-time**
 registration table in `src/core/task_factory.cpp`. New built-in tasks require
@@ -71,7 +71,7 @@ The expected ONNX contract is:
 
 Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
 
-For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/vision-core/blob/master/export/open_vocab_detection/OWLv2.md).
+For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/open_vocab_detection/OWLv2.md).
 
 **Image Understanding (VLM):**
 - `"gemma4"`, `"gemma"`, `"llama"`, `"llamacpp"`, `"imageunderstanding"` - Vision-language model image captioning / Q&A via llama.cpp backend
@@ -80,7 +80,7 @@ Input contract: `preprocess()` returns two tensors — `[0]` UTF-8 prompt bytes,
 
 Requires the llama.cpp `LLAMACPP` backend with an mmproj (vision projector) GGUF.
 
-For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/vision-core/blob/master/export/image_understanding/ImageUnderstanding.md).
+For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/image_understanding/ImageUnderstanding.md).
 
 **Gaussian Splatting:**
 - `"lgm"`, `"lgm-mini"` - LGM (Large Gaussian Model)
@@ -90,8 +90,8 @@ For model download and setup details, see [export/image_understanding/ImageUnder
 
 EdgeCrafter export and tensor contract details live in the task-specific docs:
 
-- [EdgeCrafter Detection](https://github.com/olibartfast/vision-core/blob/master/export/detection/edgecrafter/README.md)
-- [EdgeCrafter Segmentation](https://github.com/olibartfast/vision-core/blob/master/export/segmentation/edgecrafter/README.md)
-- [EdgeCrafter Pose Estimation](https://github.com/olibartfast/vision-core/blob/master/export/pose_estimation/edgecrafter/README.md)
+- [EdgeCrafter Detection](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md)
+- [EdgeCrafter Segmentation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md)
+- [EdgeCrafter Pose Estimation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md)
 
 <!-- TASKFACTORY_MODEL_LIST:END -->

@@ -21,7 +21,7 @@ target_include_directories(${PROJECT_NAME_TEST}
     ${OpenCV_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/app/inc 
     ${CMAKE_SOURCE_DIR}/app/src 
-    ${vision-core_SOURCE_DIR}/include
+    ${neuriplo-tasks_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/src
     ${neuriplo_SOURCE_DIR}/backends/src
@@ -57,7 +57,7 @@ endif()
 target_link_libraries(${PROJECT_NAME_TEST} PUBLIC
     gtest
     gtest_main
-    vision-inference-app
+    neuriplo-infer-app
 )
 
 # Discover and run tests
@@ -65,5 +65,5 @@ gtest_discover_tests(${PROJECT_NAME_TEST})
 
 add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run
-    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR} ${vision-core_SOURCE_DIR}
+    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR} ${neuriplo-tasks_SOURCE_DIR}
 )

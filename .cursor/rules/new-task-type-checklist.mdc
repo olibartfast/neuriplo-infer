@@ -1,36 +1,36 @@
 ---
-description: Required steps when wiring a new vision-core task/model into vision-inference (doc sync + task routing)
+description: Required steps when wiring a new neuriplo-tasks task/model into neuriplo-infer (doc sync + task routing)
 alwaysApply: true
 ---
 
 # New task / model wiring checklist
 
-When a new vision-core task type or model family is added (e.g. EdgeCrafter
+When a new neuriplo-tasks task type or model family is added (e.g. EdgeCrafter
 `ecdet`/`ecseg`/`ecpose`), these steps are easy to forget. Do them before
 finishing:
 
 ## 1. Sync supported-model-types docs (automatic — do not hand-edit)
 
 `README.md` (between `<!-- SUPPORTED_MODEL_TYPES:START/END -->`) and
-`docs/generated/supported-model-types.md` are generated from the vision-core
+`docs/generated/supported-model-types.md` are generated from the neuriplo-tasks
 README. Never edit the marker block by hand. Instead run:
 
 ```bash
 python3 scripts/sync_supported_model_types.py \
-  --vision-core-readme /path/to/vision-core/README.md   # or build/_deps/vision-core-src/README.md
+  --neuriplo-tasks-readme /path/to/neuriplo-tasks/README.md   # or build/_deps/neuriplo-tasks-src/README.md
 ```
 
 Verify with `--check` (this is exactly what `ci.yml` enforces — a stale block
 fails CI):
 
 ```bash
-python3 scripts/sync_supported_model_types.py --vision-core-readme <path> --check
+python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path> --check
 ```
 
-## 2. Keep task routing aligned with vision-core TaskFactory
+## 2. Keep task routing aligned with neuriplo-tasks TaskFactory
 
 `VisionApp::getTaskType` (`app/src/VisionAppTaskRouting.cpp`) must map every new
-type string to the same `TaskType` that `vision_core::TaskFactory` builds.
+type string to the same `TaskType` that `neuriplo_tasks::TaskFactory` builds.
 Prefer substring rules that mirror the factory (e.g. `find("pose")`,
 `find("seg")`) so model-family prefixes like `ecpose`/`yolo*pose` route to
 `PoseEstimation`, not the `Detection` default.

@@ -1,4 +1,4 @@
-# docker build --rm -t vision-inference:litert -f docker/Dockerfile.litert --build-arg NEURIPLO_VERSION=8cf93e6 .
+# docker build --rm -t neuriplo-infer:litert -f docker/Dockerfile.litert --build-arg NEURIPLO_VERSION=8cf93e6 .
 
 ARG UBUNTU_VERSION=24.04
 FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
@@ -19,11 +19,11 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-COPY VERSION /tmp/vision-inference.VERSION
+COPY VERSION /tmp/neuriplo-infer.VERSION
 
 ARG NEURIPLO_VERSION
 RUN dependency_ref="${NEURIPLO_VERSION:-develop}" && \
-    if [ -z "${NEURIPLO_VERSION:-}" ] && grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/vision-inference.VERSION; then dependency_ref=master; fi && \
+    if [ -z "${NEURIPLO_VERSION:-}" ] && grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi && \
     wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
 FROM common_dependencies AS backend_dependencies
@@ -55,11 +55,11 @@ FROM backend_dependencies AS final
 
 WORKDIR /app
 
-COPY --from=builder /app/build/app/vision-inference /app/vision-inference
+COPY --from=builder /app/build/app/neuriplo-infer /app/neuriplo-infer
 COPY --from=builder /root/dependencies/litert /root/dependencies/litert
 COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
 ENV LD_LIBRARY_PATH=/app:${LITERT_DIR}/lib
 
-ENTRYPOINT ["./vision-inference"]
+ENTRYPOINT ["./neuriplo-infer"]

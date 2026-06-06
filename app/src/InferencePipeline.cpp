@@ -1,8 +1,8 @@
 #include "InferencePipeline.hpp"
 
 #include "utils.hpp"
-#include "vision-core/core/task_config.hpp"
-#include "vision-core/core/task_factory.hpp"
+#include "neuriplo/tasks/core/task_config.hpp"
+#include "neuriplo/tasks/core/task_factory.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -20,7 +20,7 @@ std::string buildEngineWeights(const AppConfig &config) {
   return engine_weights;
 }
 
-void setInputFormat(vision_core::ModelInfo &model_info) {
+void setInputFormat(neuriplo_tasks::ModelInfo &model_info) {
   if (model_info.input_formats.empty() || model_info.input_shapes.empty() ||
       model_info.input_shapes[0].empty()) {
     return;
@@ -47,10 +47,10 @@ void setInputFormat(vision_core::ModelInfo &model_info) {
   }
 }
 
-vision_core::ModelInfo
+neuriplo_tasks::ModelInfo
 buildModelInfo(const InferenceMetadata &inference_metadata,
                const AppConfig &config) {
-  vision_core::ModelInfo model_info;
+  neuriplo_tasks::ModelInfo model_info;
   for (size_t i = 0; i < inference_metadata.getInputs().size(); i++) {
     const auto &input = inference_metadata.getInputs()[i];
     std::vector<int64_t> shape;
@@ -93,8 +93,8 @@ std::string readFile(const std::string &path, const std::string &label) {
   return buffer.str();
 }
 
-vision_core::TaskConfig buildTaskConfig(const AppConfig &config) {
-  vision_core::TaskConfig task_config;
+neuriplo_tasks::TaskConfig buildTaskConfig(const AppConfig &config) {
+  neuriplo_tasks::TaskConfig task_config;
   task_config.confidence_threshold = config.confidenceThreshold;
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
@@ -127,7 +127,7 @@ int InferencePipeline::getRequiredFrameCount() const {
 }
 
 void InferencePipeline::renderResults(
-    const std::vector<vision_core::Result> &results, cv::Mat &image) {
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
   RenderContext context{task_type, classes, config.confidenceThreshold};
   renderer->render(results, image, context);
 }
@@ -192,8 +192,8 @@ void InferencePipelineBuilder::setupTask(InferencePipeline &pipeline) const {
   pipeline.model_info = buildModelInfo(pipeline.inference_metadata, config_);
   pipeline.task_type = getTaskTypeForModel(config_.detectorType);
 
-  LOG(INFO) << "Using vision-core model type: " << config_.detectorType;
-  pipeline.task = vision_core::TaskFactory::createTaskInstance(
+  LOG(INFO) << "Using neuriplo-tasks model type: " << config_.detectorType;
+  pipeline.task = neuriplo_tasks::TaskFactory::createTaskInstance(
       config_.detectorType, pipeline.model_info, buildTaskConfig(config_));
   if (!pipeline.task) {
     throw std::runtime_error("Can't setup a task for " + config_.detectorType);

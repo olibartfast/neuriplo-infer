@@ -1,17 +1,17 @@
 #include "VisionApp.hpp"
 
-#include "vision-core/core/opencv_interop.hpp"
+#include "neuriplo/tasks/core/opencv_interop.hpp"
 
 #include <chrono>
 #include <filesystem>
 
 namespace {
 
-// Helper to convert raw outputs and shapes to vision_core::Tensor objects
+// Helper to convert raw outputs and shapes to neuriplo_tasks::Tensor objects
 template <typename T1, typename T2>
-std::vector<vision_core::Tensor> convertToTensors(const T1 &outputs,
+std::vector<neuriplo_tasks::Tensor> convertToTensors(const T1 &outputs,
                                                   const T2 &shapes) {
-  std::vector<vision_core::Tensor> tensors;
+  std::vector<neuriplo_tasks::Tensor> tensors;
   tensors.reserve(outputs.size());
   for (size_t i = 0; i < outputs.size(); ++i) {
     tensors.emplace_back(outputs[i], shapes[i]);
@@ -24,7 +24,7 @@ std::vector<vision_core::Tensor> convertToTensors(const T1 &outputs,
 void VisionApp::warmup_gpu(const cv::Mat &image) {
   try {
     for (int i = 0; i < 5; ++i) { // Warmup for 5 iterations
-      // Use vision-core preprocessing
+      // Use neuriplo-tasks preprocessing
       const auto preprocessed = task->preprocess({image});
 
       // Pass preprocessed data directly to engine
@@ -47,7 +47,7 @@ void VisionApp::benchmark(const cv::Mat &image) {
     for (int i = 0; i < config.benchmark_iterations; ++i) {
       auto start = std::chrono::steady_clock::now();
 
-      // Use vision-core preprocessing
+      // Use neuriplo-tasks preprocessing
       const auto preprocessed = task->preprocess({image});
 
       // Pass preprocessed data directly to engine
@@ -93,7 +93,7 @@ void VisionApp::processImage(const std::string &source) {
     LOG(INFO) << "Image dimensions: " << image.rows << "x" << image.cols << "x"
               << image.channels();
 
-    // Use vision-core preprocessing
+    // Use neuriplo-tasks preprocessing
     const auto preprocessed = task->preprocess({image});
 
     // Pass preprocessed data directly to engine
@@ -112,7 +112,7 @@ void VisionApp::processImage(const std::string &source) {
     std::filesystem::create_directories("data/output");
     std::string processed_path = "data/output/processed.png";
     if (!cv::imwrite(processed_path, image)) {
-      const std::string fallback_path = "/tmp/vision-inference-processed.png";
+      const std::string fallback_path = "/tmp/neuriplo-infer-processed.png";
       if (!cv::imwrite(fallback_path, image)) {
         LOG(ERROR) << "Failed to save output image to both " << processed_path
                    << " and " << fallback_path;
@@ -146,7 +146,7 @@ void VisionApp::processVideo(const std::string &source) {
     while (videoInterface->readFrame(frame)) {
       auto start = std::chrono::steady_clock::now();
 
-      // Use vision-core preprocessing
+      // Use neuriplo-tasks preprocessing
       const auto preprocessed = task->preprocess({frame});
 
       // Pass preprocessed data directly to engine
@@ -215,7 +215,7 @@ void VisionApp::processVideoClassification(const std::string &source) {
       if (static_cast<int>(frameBuffer.size()) >= requiredFrames) {
         auto start = std::chrono::steady_clock::now();
 
-        // Use vision-core preprocessing with accumulated frames
+        // Use neuriplo-tasks preprocessing with accumulated frames
         const auto preprocessed = task->preprocess(frameBuffer);
 
         // Pass preprocessed data directly to engine
@@ -285,14 +285,14 @@ void VisionApp::processOpticalFlow() {
 
     auto start = std::chrono::steady_clock::now();
 
-    // Use vision-core preprocessing
+    // Use neuriplo-tasks preprocessing
     const auto preprocessed = task->preprocess(images);
 
     // Run inference with multiple input tensors directly from preprocessed data
     auto [infer_results, infer_shapes] =
         engine->get_infer_results(preprocessed);
 
-    // Use vision-core postprocessing
+    // Use neuriplo-tasks postprocessing
     auto tensors = convertToTensors(infer_results, infer_shapes);
     auto predictions =
         task->postprocess(cv::Size(images[0].cols, images[0].rows), tensors);
@@ -307,10 +307,10 @@ void VisionApp::processOpticalFlow() {
     // Visualization for optical flow
     cv::Mat &image = images[0];
     for (const auto &prediction : predictions) {
-      if (std::holds_alternative<vision_core::OpticalFlow>(prediction)) {
-        vision_core::OpticalFlow flow =
-            std::get<vision_core::OpticalFlow>(prediction);
-        vision_core::toCvMat(flow.flow).copyTo(image);
+      if (std::holds_alternative<neuriplo_tasks::OpticalFlow>(prediction)) {
+        neuriplo_tasks::OpticalFlow flow =
+            std::get<neuriplo_tasks::OpticalFlow>(prediction);
+        neuriplo_tasks::toCvMat(flow.flow).copyTo(image);
       }
     }
 

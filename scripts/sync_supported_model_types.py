@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Sync supported model/task types from vision-core README into this repo docs.
+"""Sync supported model/task types from neuriplo-tasks README into this repo docs.
 
-Single source of truth: the vision-core README.  This script propagates the
+Single source of truth: the neuriplo-tasks README.  This script propagates the
 model-type list into every file that embeds it, using HTML marker comments.
 
 Targets updated:
@@ -10,7 +10,7 @@ Targets updated:
 
 Usage:
   python scripts/sync_supported_model_types.py
-  python scripts/sync_supported_model_types.py --vision-core-readme /path/to/vision-core/README.md
+  python scripts/sync_supported_model_types.py --neuriplo-tasks-readme /path/to/neuriplo-tasks/README.md
   python scripts/sync_supported_model_types.py --check   # dry-run, exit 1 if any file would change
 """
 
@@ -38,19 +38,19 @@ MARKERS: dict[str, tuple[str, str]] = {
 # Extraction
 # ---------------------------------------------------------------------------
 
-def extract_supported_block(vision_core_readme: str) -> str:
+def extract_supported_block(tasks_readme: str) -> str:
     """Return the markdown block under '### Supported Model Types (TaskFactory)'."""
     heading = "### Supported Model Types (TaskFactory)"
-    start = vision_core_readme.find(heading)
+    start = tasks_readme.find(heading)
     if start == -1:
         raise ValueError(f"Could not find heading: {heading}")
 
-    after_heading = vision_core_readme.find("\n", start)
+    after_heading = tasks_readme.find("\n", start)
     if after_heading == -1:
         raise ValueError("Malformed README content after heading")
     after_heading += 1
 
-    rest = vision_core_readme[after_heading:]
+    rest = tasks_readme[after_heading:]
     match = re.search(r"^##\s+", rest, flags=re.MULTILINE)
     if not match:
         raise ValueError("Could not find next H2 section after supported model types block")
@@ -106,17 +106,25 @@ def write_or_check(path: Path, new_content: str, *, check: bool) -> bool:
 # Entrypoint
 # ---------------------------------------------------------------------------
 
-def default_vision_core_readme(repo_root: Path) -> Path:
-    return repo_root / "build" / "_deps" / "vision-core-src" / "README.md"
+def default_neuriplo_tasks_readme(repo_root: Path) -> Path:
+    return repo_root / "build" / "_deps" / "neuriplo-tasks-src" / "README.md"
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Sync supported model types from vision-core README")
+    parser = argparse.ArgumentParser(
+        description="Sync supported model types from neuriplo-tasks README"
+    )
+    parser.add_argument(
+        "--neuriplo-tasks-readme",
+        type=Path,
+        default=None,
+        help="Path to neuriplo-tasks README.md (default: build/_deps/neuriplo-tasks-src/README.md)",
+    )
     parser.add_argument(
         "--vision-core-readme",
         type=Path,
         default=None,
-        help="Path to vision-core README.md (default: build/_deps/vision-core-src/README.md)",
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--check",
@@ -126,7 +134,11 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[1]
-    source_path = args.vision_core_readme or default_vision_core_readme(repo_root)
+    source_path = (
+        args.neuriplo_tasks_readme
+        or args.vision_core_readme
+        or default_neuriplo_tasks_readme(repo_root)
+    )
 
     if not source_path.exists():
         print(f"error: source README not found: {source_path}", file=sys.stderr)
@@ -137,17 +149,17 @@ def main() -> int:
     type_strings = extract_type_strings(block)
 
     if not type_strings:
-        print("error: no type strings extracted from vision-core README", file=sys.stderr)
+        print("error: no type strings extracted from neuriplo-tasks README", file=sys.stderr)
         return 1
 
     changed_files: list[str] = []
 
     # --- 1. docs/generated/supported-model-types.md (full rewrite) ----------
     generated_path = repo_root / "docs" / "generated" / "supported-model-types.md"
-    source_label = "https://github.com/olibartfast/vision-core"
+    source_label = "https://github.com/olibartfast/neuriplo-tasks"
     generated_doc = (
         "# Supported Model Types\n\n"
-        "Auto-generated from `vision-core` TaskFactory documentation.\n"
+        "Auto-generated from `neuriplo-tasks` TaskFactory documentation.\n"
         "Do not edit manually; run `python scripts/sync_supported_model_types.py`.\n\n"
         f"Source: [{source_label}]({source_label})\n\n"
         f"{block}\n"
