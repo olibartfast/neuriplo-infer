@@ -1,4 +1,4 @@
-#include "NeuriploInferApp.hpp"
+#include "NeuriploInfer.hpp"
 
 #include "CLICommands.hpp"
 #include "InferencePipeline.hpp"
@@ -6,11 +6,11 @@
 #include <filesystem>
 #include <stdexcept>
 
-NeuriploInferApp::NeuriploInferApp(const AppConfig &app_config) : config(app_config) {
+NeuriploInfer::NeuriploInfer(const AppConfig &app_config) : config(app_config) {
   setupLogging();
 }
 
-int NeuriploInferApp::run() {
+int NeuriploInfer::run() {
   try {
     auto pipeline = InferencePipelineBuilder(config)
                         .source(config.sources)
@@ -31,7 +31,7 @@ int NeuriploInferApp::run() {
   }
 }
 
-void NeuriploInferApp::setupLogging(const std::string &log_folder) {
+void NeuriploInfer::setupLogging(const std::string &log_folder) {
   try {
     if (!std::filesystem::exists(log_folder)) {
       std::filesystem::create_directory(log_folder);

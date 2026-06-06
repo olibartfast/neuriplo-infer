@@ -1,9 +1,9 @@
 #include "CommandLineParser.hpp"
-#include "NeuriploInferApp.hpp"
+#include "NeuriploInfer.hpp"
 int main(int argc, char *argv[]) {
   try {
     AppConfig config = CommandLineParser::parseCommandLineArguments(argc, argv);
-    NeuriploInferApp app(config);
+    NeuriploInfer app(config);
     return app.run();
   } catch (const std::exception &e) {
     LOG(ERROR) << "Error: " << e.what();

@@ -47,7 +47,7 @@ api_surface:
     - benchmark
     - iterations
   public_components:
-    - NeuriploInferApp
+    - NeuriploInfer
     - CommandLineParser
     - AppConfig
 
