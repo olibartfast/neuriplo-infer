@@ -47,7 +47,7 @@ function(get_current_branch_name OUTPUT_VAR)
         if(NOT GIT_RESULT EQUAL 0)
             string(STRIP "${GIT_ERROR}" GIT_ERROR)
             message(FATAL_ERROR
-                "Failed to determine the current vision-inference branch with "
+                "Failed to determine the current neuriplo-infer branch with "
                 "'git rev-parse --abbrev-ref HEAD': ${GIT_ERROR}")
         endif()
 
@@ -93,7 +93,7 @@ endfunction()
 # the cache entries set via -D in this scope.
 set(_OVERRIDE_NEURIPLO_VERSION "${NEURIPLO_VERSION}")
 set(_OVERRIDE_VIDEOCAPTURE_VERSION "${VIDEOCAPTURE_VERSION}")
-set(_OVERRIDE_VISION_CORE_VERSION "${VISION_CORE_VERSION}")
+set(_OVERRIDE_NEURIPLO_TASKS_VERSION "${NEURIPLO_TASKS_VERSION}")
 
 read_versions_from_env()
 
@@ -101,7 +101,7 @@ read_versions_from_env()
 # them from the derived shared ref below.
 set(_ENV_NEURIPLO_VERSION "${NEURIPLO_VERSION}")
 set(_ENV_VIDEOCAPTURE_VERSION "${VIDEOCAPTURE_VERSION}")
-set(_ENV_VISION_CORE_VERSION "${VISION_CORE_VERSION}")
+set(_ENV_NEURIPLO_TASKS_VERSION "${NEURIPLO_TASKS_VERSION}")
 
 determine_shared_dependency_ref(SHARED_DEPENDENCY_REF)
 
@@ -133,17 +133,17 @@ _resolve_sibling_ref(NEURIPLO_VERSION
 _resolve_sibling_ref(VIDEOCAPTURE_VERSION
     "${_OVERRIDE_VIDEOCAPTURE_VERSION}" "${_ENV_VIDEOCAPTURE_VERSION}"
     "${SHARED_DEPENDENCY_REF}" VIDEOCAPTURE_VERSION_SOURCE)
-_resolve_sibling_ref(VISION_CORE_VERSION
-    "${_OVERRIDE_VISION_CORE_VERSION}" "${_ENV_VISION_CORE_VERSION}"
-    "${SHARED_DEPENDENCY_REF}" VISION_CORE_VERSION_SOURCE)
+_resolve_sibling_ref(NEURIPLO_TASKS_VERSION
+    "${_OVERRIDE_NEURIPLO_TASKS_VERSION}" "${_ENV_NEURIPLO_TASKS_VERSION}"
+    "${SHARED_DEPENDENCY_REF}" NEURIPLO_TASKS_VERSION_SOURCE)
 
 if(NOT (NEURIPLO_VERSION STREQUAL VIDEOCAPTURE_VERSION AND
-        NEURIPLO_VERSION STREQUAL VISION_CORE_VERSION))
+        NEURIPLO_VERSION STREQUAL NEURIPLO_TASKS_VERSION))
     # Siblings version independently -- videocapture in particular may lag
-    # vision-core / neuriplo. Differing pins are expected, not an error.
+    # neuriplo-tasks / neuriplo. Differing pins are expected, not an error.
     message(STATUS
         "Sibling refs differ (independent versioning): neuriplo=${NEURIPLO_VERSION}, "
-        "videocapture=${VIDEOCAPTURE_VERSION}, vision-core=${VISION_CORE_VERSION}.")
+        "videocapture=${VIDEOCAPTURE_VERSION}, neuriplo-tasks=${NEURIPLO_TASKS_VERSION}.")
 endif()
 
 set(OPENCV_MIN_VERSION "${OPENCV_MIN_VERSION}" CACHE STRING "Minimum OpenCV version")
@@ -154,7 +154,7 @@ message(STATUS "=== Project Dependency Versions ===")
 message(STATUS "shared dependency ref (fallback): ${SHARED_DEPENDENCY_REF}")
 message(STATUS "neuriplo: ${NEURIPLO_VERSION} [source: ${NEURIPLO_VERSION_SOURCE}]")
 message(STATUS "VideoCapture: ${VIDEOCAPTURE_VERSION} [source: ${VIDEOCAPTURE_VERSION_SOURCE}]")
-message(STATUS "vision-core: ${VISION_CORE_VERSION} [source: ${VISION_CORE_VERSION_SOURCE}]")
+message(STATUS "neuriplo-tasks: ${NEURIPLO_TASKS_VERSION} [source: ${NEURIPLO_TASKS_VERSION_SOURCE}]")
 message(STATUS "OpenCV Min: ${OPENCV_MIN_VERSION}")
 message(STATUS "glog Min: ${GLOG_MIN_VERSION}")
 message(STATUS "CMake Min: ${CMAKE_MIN_VERSION}")

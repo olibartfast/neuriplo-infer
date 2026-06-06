@@ -13,7 +13,7 @@ This project uses two files to track releases:
 
 Contains a single line like `0.3.0` — a plain `MAJOR.MINOR.PATCH` semver, no suffix.
 
-- CMake reads this file at configure time to set `project(vision-inference VERSION X.Y.Z)`.
+- CMake reads this file at configure time to set `project(neuriplo-infer VERSION X.Y.Z)`.
 - After a release, `master` and `develop` carry the **same** `VERSION` (see Release workflow). It is bumped on the next release branch, never directly on `develop`.
 - Follows [Semantic Versioning](https://semver.org/).
 
@@ -43,7 +43,7 @@ When merging a PR into `develop`, add a line under `[Unreleased]` in the appropr
 
 ## Release workflow
 
-This project follows a [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) model. After a release, `master` and `develop` point at the **same** tagged commit; `develop` then moves ahead again as features land. The sibling repos (`vision-core`, `neuriplo`, `videocapture`) follow the same scheme and must be released first.
+This project follows a [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) model. After a release, `master` and `develop` point at the **same** tagged commit; `develop` then moves ahead again as features land. The sibling repos (`neuriplo-tasks`, `neuriplo`, `videocapture`) follow the same scheme and must be released first.
 
 1. **Create a release branch** from `develop`:
    ```
@@ -55,7 +55,7 @@ This project follows a [Gitflow](https://www.atlassian.com/git/tutorials/compari
    ```
    scripts/cut_release.sh 0.3.0
    ```
-   This sets `VERSION` to `0.3.0` and rewrites `versions.env`, pinning `neuriplo`, `vision-core`, and `videocapture` each to its **own current release tag**. Siblings version independently — videocapture may stay at an older tag while the others advance. Every pin must be a concrete `vX.Y.Z` tag, never a branch like `master`/`develop`. `scripts/validate_release_pins.sh` enforces this, as do the `pre-push` hook and the `release-guard` workflow. Tag the sibling repos *before* cutting the vision-inference release so their tags exist on the remote.
+   This sets `VERSION` to `0.3.0` and rewrites `versions.env`, pinning `neuriplo`, `neuriplo-tasks`, and `videocapture` each to its **own current release tag**. Siblings version independently — videocapture may stay at an older tag while the others advance. Every pin must be a concrete `vX.Y.Z` tag, never a branch like `master`/`develop`. `scripts/validate_release_pins.sh` enforces this, as do the `pre-push` hook and the `release-guard` workflow. Tag the sibling repos *before* cutting the neuriplo-infer release so their tags exist on the remote.
 
 3. **Update CHANGELOG.md** — rename `[Unreleased]` to the new version with today's date, add a fresh empty `[Unreleased]`, and update the comparison links at the bottom.
 

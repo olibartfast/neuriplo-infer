@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Prepare a vision-inference release with correctly pinned sibling refs.
+# Prepare a neuriplo-infer release with correctly pinned sibling refs.
 #
 # Usage: scripts/cut_release.sh <version>
 # Example: scripts/cut_release.sh 0.3.0
 #
 # What this does:
 #   1. Validates the version is a clean semver.
-#   2. Detects each sibling's current release tag (vision-core, neuriplo,
+#   2. Detects each sibling's current release tag (neuriplo-tasks, neuriplo,
 #      videocapture) from its remote -- the latest vX.Y.Z tag it has.
 #   3. Writes VERSION = <version>.
-#   4. Replaces NEURIPLO_VERSION / VIDEOCAPTURE_VERSION / VISION_CORE_VERSION
+#   4. Replaces NEURIPLO_VERSION / VIDEOCAPTURE_VERSION / NEURIPLO_TASKS_VERSION
 #      in versions.env with each sibling's detected release tag.
 #   5. Stages VERSION and versions.env. Does NOT commit, tag, or push.
 #
-# Siblings version independently: vision-core and neuriplo usually move with
-# vision-inference, but videocapture may lag (e.g. stay at v0.2.0). Each pin is
+# Siblings version independently: neuriplo-tasks and neuriplo usually move with
+# neuriplo-infer, but videocapture may lag (e.g. stay at v0.2.0). Each pin is
 # whatever release tag that sibling currently has -- they need NOT be equal.
 # The only hard rule, enforced by validate_release_pins.sh, is that every pin
 # is a concrete vX.Y.Z tag, never a branch like 'master' or 'develop'.
@@ -42,7 +42,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
 
 if [ ! -f versions.env ] || [ ! -f VERSION ]; then
-  echo "Error: must run from a vision-inference checkout (VERSION + versions.env missing)" >&2
+  echo "Error: must run from a neuriplo-infer checkout (VERSION + versions.env missing)" >&2
   exit 1
 fi
 
@@ -60,11 +60,14 @@ echo "==> Detecting sibling release tags from their remotes..."
 fail=0
 NEURIPLO_PIN="$(latest_remote_tag neuriplo)"
 VIDEOCAPTURE_PIN="$(latest_remote_tag videocapture)"
-VISION_CORE_PIN="$(latest_remote_tag vision-core)"
+NEURIPLO_TASKS_PIN="$(latest_remote_tag neuriplo-tasks)"
+if [ -z "${NEURIPLO_TASKS_PIN}" ]; then
+  NEURIPLO_TASKS_PIN="$(latest_remote_tag vision-core)"
+fi
 
 for entry in "neuriplo=${NEURIPLO_PIN}" \
              "videocapture=${VIDEOCAPTURE_PIN}" \
-             "vision-core=${VISION_CORE_PIN}"; do
+             "neuriplo-tasks=${NEURIPLO_TASKS_PIN}"; do
   repo="${entry%%=*}"
   pin="${entry#*=}"
   if [ -z "${pin}" ]; then
@@ -82,7 +85,7 @@ printf '%s\n' "${VERSION_NUM}" > VERSION
 echo "==> Updating versions.env pins..."
 # Remove any existing pin lines (commented or active) for the three sibling vars.
 awk -v IGNORECASE=0 '
-  /^[[:space:]]*#?[[:space:]]*(NEURIPLO|VIDEOCAPTURE|VISION_CORE)_VERSION=/ { next }
+  /^[[:space:]]*#?[[:space:]]*(NEURIPLO|VIDEOCAPTURE|NEURIPLO_TASKS)_VERSION=/ { next }
   { print }
 ' versions.env > versions.env.tmp
 # Strip trailing blank lines.
@@ -97,7 +100,7 @@ cat >> versions.env <<EOF
 # Siblings version independently -- these need not be equal.
 NEURIPLO_VERSION=${NEURIPLO_PIN}
 VIDEOCAPTURE_VERSION=${VIDEOCAPTURE_PIN}
-VISION_CORE_VERSION=${VISION_CORE_PIN}
+NEURIPLO_TASKS_VERSION=${NEURIPLO_TASKS_PIN}
 EOF
 
 echo "==> Staging changes..."

@@ -1,16 +1,16 @@
 # Agentic Maintenance Control Plane
 
-> Canonical home: `vision-platform/ops`. This directory is retained as a compatibility pointer for older workflows that still look inside `vision-inference`. Cross-repository control-plane changes should be made in `vision-platform`, not here.
+> Canonical home: `vision-platform/ops`. This directory is retained as a compatibility pointer for older workflows that still look inside `neuriplo-infer`. Cross-repository control-plane changes should be made in `vision-platform`, not here.
 
 Historically, this directory defined control-plane assets for maintaining the
-vision repo cluster while `vision-inference` acted as the practical integration point.
+vision repo cluster while `neuriplo-infer` acted as the practical integration point.
 
 The design is intentionally constrained:
 
-- `vision-core` owns task contracts, pre/postprocessing, and result types.
+- `neuriplo-tasks` owns task contracts, pre/postprocessing, and result types.
 - `neuriplo` owns backend orchestration, backend adapters, and runtime/version compatibility.
 - `videocapture` owns source handling and video backend behavior.
-- `vision-inference` owns the application layer, CLI, config, visualization, and
+- `neuriplo-infer` owns the application layer, CLI, config, visualization, and
   end-to-end integration flow.
 
 These files are meant to be consumed by agent runners, CI automation, or humans
