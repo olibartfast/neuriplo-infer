@@ -40,7 +40,7 @@ jobs:
         run: |
           cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=OPENCV_DNN \
-            -DNEURIPLO_TASKS_VERSION=develop \
+            -DNEURIPLO_TASKS_VERSION=feature/neuriplo-tasks \
             -DENABLE_APP_TESTS=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
