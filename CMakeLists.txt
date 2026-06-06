@@ -74,8 +74,7 @@ message(STATUS "✓ glog found")
 
 include(FetchContent)
 
-# neuriplo-tasks GitHub repo is still named vision-core until ADR 0004 repo rename.
-set(NEURIPLO_TASKS_GIT_REPOSITORY "https://github.com/olibartfast/vision-core.git")
+set(NEURIPLO_TASKS_GIT_REPOSITORY "https://github.com/olibartfast/neuriplo-tasks.git")
 
 FetchContent_Declare(
     neuriplo-tasks
