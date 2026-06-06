@@ -5,8 +5,8 @@ app configuration, runtime wiring, visualization, and end-to-end execution flow.
 
 ## Canonical Sources
 
-- `vision-platform/ops/CLUSTER_MAP.yaml`: cross-repo roles, dependency edges, validation order
-- `vision-platform/ops/repo-meta/neuriplo-infer.yaml`: repo-local entrypoints, public surface, constraints
+- `neuriplo-platform/ops/CLUSTER_MAP.yaml`: cross-repo roles, dependency edges, validation order
+- `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`: repo-local entrypoints, public surface, constraints
 - [`CMakeLists.txt`](../CMakeLists.txt): actual build requirements, backend options, and fetched dependencies
 - [`cmake/versions.cmake`](../cmake/versions.cmake): dependency-ref derivation and version-loading behavior
 - [`docs/generated/supported-model-types.md`](generated/supported-model-types.md): generated upstream TaskFactory model-type inventory
@@ -18,7 +18,7 @@ app configuration, runtime wiring, visualization, and end-to-end execution flow.
 - `neuriplo`: backend abstractions, backend adapters, runtime compatibility, backend dependency versions
 - `videocapture`: source semantics, file/stream/camera handling, video backend priority and behavior
 
-Treat `vision-platform/ops/CLUSTER_MAP.yaml` as the source of truth for cross-repo boundaries.
+Treat `neuriplo-platform/ops/CLUSTER_MAP.yaml` as the source of truth for cross-repo boundaries.
 
 ## What This Repo Intentionally Does Not Own
 

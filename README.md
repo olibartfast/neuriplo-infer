@@ -44,14 +44,14 @@ This project automatically fetches:
 
 ## Agentic Operations
 
-Cross-repository control-plane docs now live in `vision-platform/ops`. The local `ops/` directory is retained only as a compatibility pointer for older workflows.
+Cross-repository control-plane docs now live in `neuriplo-platform/ops`. The local `ops/` directory is retained only as a compatibility pointer for older workflows.
 
-Use `vision-platform/ops/repo-meta/neuriplo-infer.yaml` for canonical configure, build, test, and benchmark entrypoints during cross-repo maintenance. Keep app-local implementation, CLI, and build details in this repository.
+Use `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml` for canonical configure, build, test, and benchmark entrypoints during cross-repo maintenance. Keep app-local implementation, CLI, and build details in this repository.
 
 
 ## Setup
 For the selected inference backends, set up the required dependencies first.
-Canonical cross-repo maintenance commands live in `vision-platform/ops/repo-meta/neuriplo-infer.yaml`.
+Canonical cross-repo maintenance commands live in `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`.
 
 - **ONNX Runtime**:
   ```bash
@@ -135,7 +135,7 @@ The runnable local Docker E2E script remains app-owned:
 bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 ```
 
-Platform-level scenario ownership, compatibility sets, and cross-repo validation expectations live in `vision-platform/examples/e2e-local-inference/README.md`.
+Platform-level scenario ownership, compatibility sets, and cross-repo validation expectations live in `neuriplo-platform/examples/e2e-local-inference/README.md`.
 
 ## App Usage
 
@@ -388,8 +388,8 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 ## Documentation Map
 
 - [`AGENTS.md`](AGENTS.md): canonical workflow, review focus, and repo-local entrypoints for agents and maintainers
-- `vision-platform/ops/CLUSTER_MAP.yaml`: cluster ownership, dependency edges, and validation order
-- `vision-platform/ops/repo-meta/neuriplo-infer.yaml`: canonical configure/build/test commands and public surface
+- `neuriplo-platform/ops/CLUSTER_MAP.yaml`: cluster ownership, dependency edges, and validation order
+- `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`: canonical configure/build/test commands and public surface
 - [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated upstream model-type inventory from `neuriplo-tasks`
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and canonical sources of truth
 - [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version-source guidance
@@ -507,7 +507,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 - [Detector Architectures Guide](docs/DetectorArchitectures.md)
 - [Supported Model Types](docs/generated/supported-model-types.md)
 - [Model Export Guide](docs/ExportInstructions.md)
-- [Vision-Core Export Tools](https://github.com/olibartfast/neuriplo-tasks/tree/main/export) - Comprehensive export utilities for all supported models
+- [neuriplo-tasks Export Tools](https://github.com/olibartfast/neuriplo-tasks/tree/main/export) - Comprehensive export utilities for all supported models
 
 ## ⚠️ Known Limitations
 - Windows builds not currently supported
