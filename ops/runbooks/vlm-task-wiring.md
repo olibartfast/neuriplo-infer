@@ -11,7 +11,7 @@ Reference implementation: **Gemma4 ImageUnderstanding** (commit `c55daf3` and pr
 ## Stack Overview
 
 ```
-neuriplo-infer   (application layer — CLI, routing, VisionApp)
+neuriplo-infer   (application layer — CLI, routing, NeuriploInferApp)
       │
       ▼
   neuriplo          (backend orchestration — InferenceInterface, LlamaCppInfer)
@@ -195,7 +195,7 @@ endforeach()
 
 ---
 
-## 3. neuriplo-infer: Plumb CLI → VisionApp → Task
+## 3. neuriplo-infer: Plumb CLI → NeuriploInferApp → Task
 
 ### 3a. AppConfig
 
@@ -223,7 +223,7 @@ if (!mmproj.empty() && !isFile(mmproj)) {
 }
 ```
 
-### 3c. VisionApp constructor
+### 3c. NeuriploInferApp constructor
 
 Embed the projector path before calling `setup_inference_engine`:
 
@@ -235,7 +235,7 @@ if (!config.mmprojectPath.empty()) {
 engine = setup_inference_engine(engine_weights, use_gpu, config.batch_size, config.input_sizes);
 ```
 
-### 3d. VisionApp::run() routing
+### 3d. NeuriploInferApp::run() routing
 
 Add the `ImageUnderstanding` early-return before the image/video dispatch:
 
@@ -287,7 +287,7 @@ if (source.empty() && !is_text_task) {
 - [ ] neuriplo: `libmtmd` linked in `cmake/LinkBackend.cmake`
 - [ ] neuriplo-infer: `AppConfig.mmprojectPath` field
 - [ ] neuriplo-infer: `--mmproj` CLI flag + validation
-- [ ] neuriplo-infer: `engine_weights += "|mmproj=..."` in VisionApp constructor
+- [ ] neuriplo-infer: `engine_weights += "|mmproj=..."` in NeuriploInferApp constructor
 - [ ] neuriplo-infer: `processImageUnderstanding()` loads image from sources
 - [ ] neuriplo-infer: `validateArguments` allows empty source for text-only task types
 - [ ] neuriplo-infer: `getTaskType()` / `normalizeModelType()` maps new name variants
@@ -303,7 +303,7 @@ if (source.empty() && !is_text_task) {
 | `neuriplo/backends/llamacpp/src/LlamaCppInfer.hpp` | `ctx_mtmd_` member, method declarations |
 | `neuriplo-infer/app/inc/AppConfig.hpp` | `mmprojectPath` field |
 | `neuriplo-infer/app/src/CommandLineParser.cpp` | `--mmproj` flag and validation |
-| `neuriplo-infer/app/src/VisionApp.cpp` | Path embedding and task setup |
-| `neuriplo-infer/app/src/VisionAppProcessing.cpp` | `processImageUnderstanding()` |
+| `neuriplo-infer/app/src/NeuriploInferApp.cpp` | Path embedding and task setup |
+| `neuriplo-infer/app/src/NeuriploInferProcessing.cpp` | `processImageUnderstanding()` |
 | `neuriplo-infer/cmake/LinkBackend.cmake` | `libmtmd` linkage |
 | `neuriplo-infer/docker/Dockerfile.llamacpp` | Multi-stage build with mtmd |

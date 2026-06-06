@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- Renamed application entry class `VisionApp` to `NeuriploInferApp` and aligned
+  related source/test filenames with the `NeuriploInfer*` prefix.
 - Renamed repository identity per ADR 0004: CMake project and executable
   `neuriplo-infer`, static library `neuriplo-infer-app`, sibling pin
   `NEURIPLO_TASKS_VERSION`, and consumer updates for `neuriplo-tasks`

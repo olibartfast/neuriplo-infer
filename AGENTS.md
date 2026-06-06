@@ -25,8 +25,8 @@ type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
    `python3 scripts/sync_supported_model_types.py [--neuriplo-tasks-readme <path>]`.
    `ci.yml` runs it with `--check`; a stale block fails CI. Run it (not a manual
    edit) whenever neuriplo-tasks adds/changes a task or model type.
-2. **App task routing must match neuriplo-tasks.** `VisionApp::getTaskType`
-   (`app/src/VisionAppTaskRouting.cpp`) must map each type string to the same
+2. **App task routing must match neuriplo-tasks.** `getTaskTypeForModel`
+   (`app/src/NeuriploInferTaskRouting.cpp`) must map each type string to the same
    `TaskType` that `neuriplo_tasks::TaskFactory` builds.
 
 ## Repository workflow

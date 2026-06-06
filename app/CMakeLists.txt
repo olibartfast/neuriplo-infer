@@ -1,9 +1,9 @@
 set(APP_LIB_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionApp.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInferApp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ResultRenderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionAppTaskRouting.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInferTaskRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
 )
