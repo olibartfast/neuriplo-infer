@@ -57,7 +57,7 @@ endif()
 target_link_libraries(${PROJECT_NAME_TEST} PUBLIC
     gtest
     gtest_main
-    neuriplo-infer-app
+    neuriplo-infer
 )
 
 # Discover and run tests
