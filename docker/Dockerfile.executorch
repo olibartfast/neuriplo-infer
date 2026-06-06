@@ -1,9 +1,9 @@
-# docker build --rm -t vision-inference:executorch -f docker/Dockerfile.executorch .
+# docker build --rm -t neuriplo-infer:executorch -f docker/Dockerfile.executorch .
 # docker run --rm \
 #   -v $(pwd)/models/e2e:/weights \
 #   -v $(pwd)/data:/app/data \
 #   -v $(pwd)/labels:/labels \
-#   vision-inference:executorch \
+#   neuriplo-infer:executorch \
 #   --type=yolov8 --weights=/weights/yolov8n.pte \
 #   --source=/app/data/dog.jpg --labels=/labels/coco.names
 #
@@ -99,7 +99,7 @@ RUN . /tmp/executorch-venv/bin/activate && \
 RUN test -f "${EXECUTORCH_DIR}/include/executorch/runtime/core/error.h" && \
     test -f "${EXECUTORCH_DIR}/lib/libexecutorch.a"
 
-# ── Stage 3: build vision-inference with EXECUTORCH backend ──────────────────
+# ── Stage 3: build neuriplo-infer with EXECUTORCH backend ──────────────────
 FROM executorch_build AS builder
 
 WORKDIR /src
@@ -116,12 +116,12 @@ FROM base_deps AS final
 
 # ExecuTorch static libs are baked into libneuriplo.so at build time,
 # so the runtime image only needs the shared libraries.
-COPY --from=builder /src/build/app/vision-inference      /usr/local/bin/vision-inference
+COPY --from=builder /src/build/app/neuriplo-infer      /usr/local/bin/neuriplo-infer
 COPY --from=builder /src/build/_deps/neuriplo-build/libneuriplo.so      /usr/local/lib/
 COPY --from=builder /src/build/_deps/videocapture-build/libVideoCapture.so /usr/local/lib/
 
 RUN ldconfig && \
     mkdir -p /app/data /weights /labels
 
-ENTRYPOINT ["vision-inference"]
+ENTRYPOINT ["neuriplo-infer"]
 CMD ["--help"]

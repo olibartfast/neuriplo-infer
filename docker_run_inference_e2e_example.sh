@@ -1,13 +1,19 @@
 #!/bin/bash
 # Generic end-to-end workflow: export -> optional TensorRT conversion -> inference.
 #
-# Presets cover the task families currently supported by vision-inference:
+# Presets cover the task families currently supported by neuriplo-infer:
 #   - rtdetrv4              Object detection
 #   - owlv2                 Open-vocabulary detection
 #   - torchvision_classifier Classification
 #   - yoloseg               Instance segmentation
 #   - yolov8_executorch     Object detection (YOLOv8n, ExecuTorch backend)
 #   - yolo26s_tflite        Object detection (YOLO26s, LiteRT backend)
+#   - edgecrafter_det       Object detection (EdgeCrafter ecdet_s, ONNX Runtime)
+#   - edgecrafter_seg       Instance segmentation (EdgeCrafter ecseg_s, ONNX Runtime)
+#   - edgecrafter_pose      Pose estimation (EdgeCrafter ecpose_s, ONNX Runtime)
+#       NOTE: the edgecrafter_* presets require a neuriplo-infer image built
+#       against a neuriplo-tasks ref that includes EdgeCrafter task support.
+#       Pinned releases before that point return "Unrecognized model type".
 #   - raft                  Optical flow
 #   - vitpose               Pose estimation
 #   - depth_anything_v2     Depth estimation
@@ -34,7 +40,7 @@ DRY_RUN=false
 SKIP_EXPORT=false
 SKIP_CONVERT=false
 SKIP_INFER=false
-VISION_CORE_DIR="${VISION_CORE_DIR:-}"
+NEURIPLO_TASKS_DIR="${NEURIPLO_TASKS_DIR:-}"
 WEIGHTS_DIR="${ROOT_DIR}/models/e2e"
 DATA_DIR="${ROOT_DIR}/data"
 LABELS_DIR="${ROOT_DIR}/labels"
@@ -54,7 +60,7 @@ fi
 
 show_help() {
     cat <<'EOF'
-Generic docker end-to-end workflow for vision-inference examples.
+Generic docker end-to-end workflow for neuriplo-infer examples.
 
 Usage:
   bash docker_run_inference_e2e_example.sh [options]
@@ -63,11 +69,11 @@ Options:
   --preset <name>            Task preset to run. Default: rtdetrv4
                              Use --list-presets to see all available presets.
   --backend <name>           Runtime backend: onnxruntime, tensorrt, litert, executorch, or llamacpp
-  --vision-core-dir <path>   Path to a vision-core checkout with export tooling
+  --neuriplo-tasks-dir <path>   Path to a neuriplo-tasks checkout with export tooling
   --weights-dir <path>       Export/model output directory. Default: ./models/e2e
   --data-dir <path>          Host data directory to mount. Default: ./data
   --labels-dir <path>        Host labels directory to mount. Default: ./labels
-  --docker-image <name>      vision-inference image override
+  --docker-image <name>      neuriplo-infer image override
   --text-prompts <value>     Open-vocab prompts for owlv2. Default: cat;dog;bus
   --prompt <value>           Freeform text prompt for gemma4. Default: "Describe what you see in this image."
   --dry-run                  Print commands without executing them
@@ -87,6 +93,9 @@ torchvision_classifier
 yoloseg
 yolov8_executorch
 yolo26s_tflite
+edgecrafter_det
+edgecrafter_seg
+edgecrafter_pose
 raft
 vitpose
 depth_anything_v2
@@ -140,13 +149,13 @@ ensure_files() {
     done
 }
 
-ensure_vision_core() {
-    if [[ -z "$VISION_CORE_DIR" ]]; then
-        echo "vision-core checkout path is required. Pass --vision-core-dir or set VISION_CORE_DIR." >&2
+ensure_neuriplo_tasks() {
+    if [[ -z "$NEURIPLO_TASKS_DIR" ]]; then
+        echo "neuriplo-tasks checkout path is required. Pass --neuriplo-tasks-dir or set NEURIPLO_TASKS_DIR." >&2
         exit 1
     fi
-    if [[ "$DRY_RUN" == false && ! -d "$VISION_CORE_DIR" ]]; then
-        echo "vision-core checkout not found: $VISION_CORE_DIR" >&2
+    if [[ "$DRY_RUN" == false && ! -d "$NEURIPLO_TASKS_DIR" ]]; then
+        echo "neuriplo-tasks checkout not found: $NEURIPLO_TASKS_DIR" >&2
         exit 1
     fi
 }
@@ -166,8 +175,8 @@ while [[ $# -gt 0 ]]; do
             BACKEND_SET=true
             shift 2
             ;;
-        --vision-core-dir)
-            VISION_CORE_DIR="$2"
+        --neuriplo-tasks-dir)
+            NEURIPLO_TASKS_DIR="$2"
             shift 2
             ;;
         --weights-dir)
@@ -246,8 +255,8 @@ case "$PRESET" in
         RTDETR_REPO_DIR="${ROOT_DIR}/3rdparty/repositories/pytorch/RT-DETRv4"
         RTDETR_CONFIG="${RTDETR_REPO_DIR}/configs/rtv4/rtv4_hgnetv2_s_coco.yml"
         EXPORT_COMMANDS=(
-            "if [[ ! -d \"${VISION_CORE_DIR}/environments/${EXPORT_VENV_NAME}\" ]]; then bash \"${VISION_CORE_DIR}/export/detection/rtdetr/setup_env.sh\" --env-name \"${EXPORT_VENV_NAME}\" --output-dir \"${VISION_CORE_DIR}/environments\"; fi"
-            "source \"${VISION_CORE_DIR}/environments/${EXPORT_VENV_NAME}/bin/activate\" && if [[ ! -d \"${RTDETR_REPO_DIR}\" ]]; then bash \"${VISION_CORE_DIR}/export/detection/rtdetr/clone_repo.sh\" --version v4 --output-dir \"${ROOT_DIR}/3rdparty/repositories/pytorch\"; fi && if [[ -f \"${RTDETR_REPO_DIR}/requirements.txt\" ]]; then pip install -r \"${RTDETR_REPO_DIR}/requirements.txt\"; fi && pip install onnx onnxscript onnxruntime && bash \"${VISION_CORE_DIR}/export/detection/rtdetr/export.sh\" --config \"${RTDETR_CONFIG}\" --checkpoint \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" --repo-dir \"${RTDETR_REPO_DIR}\" --install-deps --download-weights --weights-dir \"${WEIGHTS_DIR}\" --format onnx --output-dir \"${WEIGHTS_DIR}\""
+            "if [[ ! -d \"${NEURIPLO_TASKS_DIR}/environments/${EXPORT_VENV_NAME}\" ]]; then bash \"${NEURIPLO_TASKS_DIR}/export/detection/rtdetr/setup_env.sh\" --env-name \"${EXPORT_VENV_NAME}\" --output-dir \"${NEURIPLO_TASKS_DIR}/environments\"; fi"
+            "source \"${NEURIPLO_TASKS_DIR}/environments/${EXPORT_VENV_NAME}/bin/activate\" && if [[ ! -d \"${RTDETR_REPO_DIR}\" ]]; then bash \"${NEURIPLO_TASKS_DIR}/export/detection/rtdetr/clone_repo.sh\" --version v4 --output-dir \"${ROOT_DIR}/3rdparty/repositories/pytorch\"; fi && if [[ -f \"${RTDETR_REPO_DIR}/requirements.txt\" ]]; then pip install -r \"${RTDETR_REPO_DIR}/requirements.txt\"; fi && pip install onnx onnxscript onnxruntime && bash \"${NEURIPLO_TASKS_DIR}/export/detection/rtdetr/export.sh\" --config \"${RTDETR_CONFIG}\" --checkpoint \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" --repo-dir \"${RTDETR_REPO_DIR}\" --install-deps --download-weights --weights-dir \"${WEIGHTS_DIR}\" --format onnx --output-dir \"${WEIGHTS_DIR}\""
         )
         RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--input_sizes=${INPUT_SIZES}")
         ;;
@@ -259,14 +268,14 @@ case "$PRESET" in
         MODEL_BASENAME="owlv2"
         SOURCE_IN_CONTAINER="/app/data/dog.jpg"
         HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
-        TOKENIZER_VOCAB_HOST="${VISION_CORE_DIR}/vocab.json"
-        TOKENIZER_MERGES_HOST="${VISION_CORE_DIR}/merges.txt"
+        TOKENIZER_VOCAB_HOST="${NEURIPLO_TASKS_DIR}/vocab.json"
+        TOKENIZER_MERGES_HOST="${NEURIPLO_TASKS_DIR}/merges.txt"
         TOKENIZER_VOCAB_IN_CONTAINER="/weights/vocab.json"
         TOKENIZER_MERGES_IN_CONTAINER="/weights/merges.txt"
-        EXTRA_REQUIREMENTS=("${VISION_CORE_DIR}/export/open_vocab_detection/owlv2/requirements.txt")
+        EXTRA_REQUIREMENTS=("${NEURIPLO_TASKS_DIR}/export/open_vocab_detection/owlv2/requirements.txt")
         EXPORT_COMMANDS=(
-            "${PYTHON_BIN} -m venv \"${VISION_CORE_DIR}/environments/open-vocab-export\""
-            "source \"${VISION_CORE_DIR}/environments/open-vocab-export/bin/activate\" && python -m pip install --upgrade pip setuptools wheel && python -m pip install -r \"${VISION_CORE_DIR}/export/open_vocab_detection/owlv2/requirements.txt\" && python -m pip install numpy && ${PYTHON_BIN} \"${VISION_CORE_DIR}/export/open_vocab_detection/owlv2/export_owlv2_to_onnx.py\" --model google/owlv2-base-patch16-ensemble --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" --image-height 960 --image-width 960 --max-queries 16 --sequence-length 16 --test"
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/open-vocab-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/open-vocab-export/bin/activate\" && python -m pip install --upgrade pip setuptools wheel && python -m pip install -r \"${NEURIPLO_TASKS_DIR}/export/open_vocab_detection/owlv2/requirements.txt\" && python -m pip install numpy && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/open_vocab_detection/owlv2/export_owlv2_to_onnx.py\" --model google/owlv2-base-patch16-ensemble --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" --image-height 960 --image-width 960 --max-queries 16 --sequence-length 16 --test"
         )
         RUNTIME_EXTRA_ARGS=("--text_prompts=${TEXT_PROMPTS}" "--tokenizer_vocab=${TOKENIZER_VOCAB_IN_CONTAINER}" "--tokenizer_merges=${TOKENIZER_MERGES_IN_CONTAINER}" "--min_confidence=0.2")
         ;;
@@ -280,10 +289,10 @@ case "$PRESET" in
         HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
         LABELS_IN_CONTAINER="/labels/imagenet_labels.txt"
         HOST_LABELS_PATH="${LABELS_DIR}/imagenet_labels.txt"
-        EXTRA_REQUIREMENTS=("${VISION_CORE_DIR}/export/classification/torchvision/requirements.txt")
+        EXTRA_REQUIREMENTS=("${NEURIPLO_TASKS_DIR}/export/classification/torchvision/requirements.txt")
         EXPORT_COMMANDS=(
-            "${PYTHON_BIN} -m venv \"${VISION_CORE_DIR}/environments/classification-export\""
-            "source \"${VISION_CORE_DIR}/environments/classification-export/bin/activate\" && pip install -r \"${VISION_CORE_DIR}/export/requirements.txt\" -r \"${VISION_CORE_DIR}/export/classification/torchvision/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${VISION_CORE_DIR}/export/classification/torchvision/export_torchvision_classifier.py\" --library torchvision --model resnet50 --export_format onnx --output_onnx \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/classification-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/classification-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" -r \"${NEURIPLO_TASKS_DIR}/export/classification/torchvision/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/classification/torchvision/export_torchvision_classifier.py\" --library torchvision --model resnet50 --export_format onnx --output_onnx \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
         )
         RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}")
         ;;
@@ -299,7 +308,7 @@ case "$PRESET" in
         HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
         EXTRA_REQUIREMENTS=()
         EXPORT_COMMANDS=(
-            "source \"${VISION_CORE_DIR}/environments/yolo-export/bin/activate\" 2>/dev/null || true; bash \"${VISION_CORE_DIR}/export/detection/yolo/export.sh\" --model \"${MODEL_BASENAME}.pt\" --format onnx --download-weights --weights-dir \"${WEIGHTS_DIR}\" --output-dir \"${WEIGHTS_DIR}\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/yolo-export/bin/activate\" 2>/dev/null || true; bash \"${NEURIPLO_TASKS_DIR}/export/detection/yolo/export.sh\" --model \"${MODEL_BASENAME}.pt\" --format onnx --download-weights --weights-dir \"${WEIGHTS_DIR}\" --output-dir \"${WEIGHTS_DIR}\""
         )
         RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5" "--mask_threshold=0.5")
         ;;
@@ -314,7 +323,7 @@ case "$PRESET" in
         LABELS_IN_CONTAINER="/labels/coco.names"
         HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
         EXTRA_REQUIREMENTS=()
-        # Export: ultralytics + executorch Python package; no vision-core checkout required.
+        # Export: ultralytics + executorch Python package; no neuriplo-tasks checkout required.
         # The ultralytics YOLO() call downloads yolov8n.pt from Ultralytics' servers on first run.
         EXECUTORCH_VENV="${ROOT_DIR}/environments/yolo-executorch-export"
         EXPORT_COMMANDS=(
@@ -345,7 +354,7 @@ print('Exported to', dest)
         LABELS_IN_CONTAINER="/labels/coco.names"
         HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
         EXTRA_REQUIREMENTS=()
-        # Export: ultralytics TFLite export; no vision-core checkout required.
+        # Export: ultralytics TFLite export; no neuriplo-tasks checkout required.
         # The ultralytics YOLO() call downloads yolo26s.pt from Ultralytics' servers on first run.
         TFLITE_VENV="${ROOT_DIR}/environments/yolo-tflite-export"
         EXPORT_COMMANDS=(
@@ -369,6 +378,59 @@ print('Exported to', dest)
         )
         RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
         ;;
+    edgecrafter_det|edgecrafter_seg|edgecrafter_pose)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        # EdgeCrafter exports two inputs: images [1,3,640,640] + orig_target_sizes int64 [1,2].
+        # The ONNX graph performs top-k selection and rescales boxes/keypoints to the
+        # original image size internally, so the runtime only supplies --input_sizes.
+        EDGECRAFTER_REPO_DIR="${ROOT_DIR}/3rdparty/repositories/pytorch/EdgeCrafter"
+        EDGECRAFTER_VENV="${ROOT_DIR}/environments/edgecrafter-export"
+        INPUT_SIZES="3,640,640;2"
+        EXTRA_REQUIREMENTS=()
+        case "$PRESET" in
+            edgecrafter_det)
+                MODEL_TYPE="ecdet"
+                MODEL_BASENAME="ecdet_s"
+                EC_TASK_DIR="ecdetseg"
+                EC_CONFIG="configs/ecdet/ecdet_s.yml"
+                SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+                LABELS_IN_CONTAINER="/labels/coco.names"
+                HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+                RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5")
+                ;;
+            edgecrafter_seg)
+                MODEL_TYPE="ecseg"
+                MODEL_BASENAME="ecseg_s"
+                EC_TASK_DIR="ecdetseg"
+                EC_CONFIG="configs/ecseg/ecseg_s.yml"
+                SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+                LABELS_IN_CONTAINER="/labels/coco.names"
+                HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+                RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5" "--mask_threshold=0.5")
+                ;;
+            edgecrafter_pose)
+                MODEL_TYPE="ecpose"
+                MODEL_BASENAME="ecpose_s"
+                EC_TASK_DIR="ecpose"
+                EC_CONFIG="configs/ecpose/ecpose_s_coco.yml"
+                SOURCE_IN_CONTAINER="/app/data/person.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/person.jpg"
+                RUNTIME_EXTRA_ARGS=("--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5")
+                ;;
+        esac
+        # Self-contained export mirroring neuriplo-tasks/export/<task>/edgecrafter/README.md:
+        # clone EdgeCrafter, install the task requirements, download the checkpoint, run
+        # the upstream export_onnx.py. The ONNX is written next to the checkpoint path.
+        EXPORT_COMMANDS=(
+            "if [[ ! -d \"${EDGECRAFTER_REPO_DIR}/.git\" ]]; then git clone --depth 1 https://github.com/Intellindust-AI-Lab/EdgeCrafter \"${EDGECRAFTER_REPO_DIR}\"; fi"
+            "${PYTHON_BIN} -m venv \"${EDGECRAFTER_VENV}\""
+            "source \"${EDGECRAFTER_VENV}/bin/activate\" && pip install --upgrade pip && pip install -r \"${EDGECRAFTER_REPO_DIR}/${EC_TASK_DIR}/requirements.txt\" onnx onnxsim onnxscript && if [[ ! -f \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" ]]; then curl -L --fail --retry 3 -o \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" \"https://github.com/capsule2077/edgecrafter/releases/download/edgecrafterv1/${MODEL_BASENAME}.pth\"; fi && cd \"${EDGECRAFTER_REPO_DIR}/${EC_TASK_DIR}\" && python tools/deployment/export_onnx.py -c \"${EC_CONFIG}\" -r \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" --check --simplify"
+        )
+        ;;
     raft)
         if [[ "$BACKEND_SET" == false ]]; then
             BACKEND="onnxruntime"
@@ -379,8 +441,8 @@ print('Exported to', dest)
         HOST_SOURCE_PATH="${DATA_DIR}/frame_001.png,${DATA_DIR}/frame_002.png"
         EXTRA_REQUIREMENTS=()
         EXPORT_COMMANDS=(
-            "${PYTHON_BIN} -m venv \"${VISION_CORE_DIR}/environments/raft-export\""
-            "source \"${VISION_CORE_DIR}/environments/raft-export/bin/activate\" && pip install -r \"${VISION_CORE_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${VISION_CORE_DIR}/export/optical_flow/raft/raft_exporter.py\" --model-type large --output-dir \"${WEIGHTS_DIR}\" --format onnx"
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/raft-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/raft-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/optical_flow/raft/raft_exporter.py\" --model-type large --output-dir \"${WEIGHTS_DIR}\" --format onnx"
         )
         RUNTIME_EXTRA_ARGS=("--input_sizes=3,520,960;3,520,960")
         ;;
@@ -394,8 +456,8 @@ print('Exported to', dest)
         HOST_SOURCE_PATH="${DATA_DIR}/person.jpg"
         EXTRA_REQUIREMENTS=()
         EXPORT_COMMANDS=(
-            "${PYTHON_BIN} -m venv \"${VISION_CORE_DIR}/environments/vitpose-export\""
-            "source \"${VISION_CORE_DIR}/environments/vitpose-export/bin/activate\" && pip install -r \"${VISION_CORE_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${VISION_CORE_DIR}/export/pose_estimation/vitpose/export_vitpose_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/vitpose-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/vitpose-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/pose_estimation/vitpose/export_vitpose_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
         )
         RUNTIME_EXTRA_ARGS=()
         ;;
@@ -409,8 +471,8 @@ print('Exported to', dest)
         HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
         EXTRA_REQUIREMENTS=()
         EXPORT_COMMANDS=(
-            "${PYTHON_BIN} -m venv \"${VISION_CORE_DIR}/environments/depth-export\""
-            "source \"${VISION_CORE_DIR}/environments/depth-export/bin/activate\" && pip install -r \"${VISION_CORE_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${VISION_CORE_DIR}/export/depth_estimation/depth_anything_v2/export_depth_anything_v2_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/depth-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/depth-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/depth_estimation/depth_anything_v2/export_depth_anything_v2_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
         )
         RUNTIME_EXTRA_ARGS=()
         ;;
@@ -424,8 +486,8 @@ print('Exported to', dest)
         HOST_SOURCE_PATH="${DATA_DIR}/input.mp4"
         EXTRA_REQUIREMENTS=()
         EXPORT_COMMANDS=(
-            "${PYTHON_BIN} -m venv \"${VISION_CORE_DIR}/environments/video-export\""
-            "source \"${VISION_CORE_DIR}/environments/video-export/bin/activate\" && pip install -r \"${VISION_CORE_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${VISION_CORE_DIR}/export/video_classification/videomae/export_videomae_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/video-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/video-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/video_classification/videomae/export_videomae_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
         )
         RUNTIME_EXTRA_ARGS=("--num_frames=16")
         ;;
@@ -453,9 +515,9 @@ esac
 
 if [[ -z "$DOCKER_IMAGE" ]]; then
     if [[ "$BACKEND" == "tensorrt" ]]; then
-        DOCKER_IMAGE="vision-inference:tensorrt"
+        DOCKER_IMAGE="neuriplo-infer:tensorrt"
     else
-        DOCKER_IMAGE="vision-inference:${BACKEND}"
+        DOCKER_IMAGE="neuriplo-infer:${BACKEND}"
     fi
 fi
 
@@ -488,10 +550,14 @@ esac
 
 ensure_dir "$WEIGHTS_DIR"
 
-# These presets handle export without vision-core tooling.
-if [[ "$PRESET" != "gemma4" && "$PRESET" != "yolov8_executorch" && "$PRESET" != "yolo26s_tflite" ]]; then
-    ensure_vision_core
-fi
+# These presets handle export without neuriplo-tasks tooling.
+case "$PRESET" in
+    gemma4|yolov8_executorch|yolo26s_tflite|edgecrafter_det|edgecrafter_seg|edgecrafter_pose)
+        ;;
+    *)
+        ensure_neuriplo_tasks
+        ;;
+esac
 
 if [[ "$PRESET" == "owlv2" ]]; then
     ensure_file "$TOKENIZER_VOCAB_HOST"

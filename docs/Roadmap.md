@@ -6,19 +6,19 @@ The vision-stack cluster consists of four repos with clean separation of concern
 
 | Repo | Role |
 |---|---|
-| **vision-core** | Task contracts, pre/postprocessing, result types |
+| **neuriplo-tasks** | Task contracts, pre/postprocessing, result types |
 | **neuriplo** | Backend orchestration for the backends currently wired into this app, plus additional backend experiments owned upstream |
 | **videocapture** | Video I/O (OpenCV, GStreamer, FFmpeg) |
-| **vision-inference** | Application layer, CLI, visualization |
+| **neuriplo-infer** | Application layer, CLI, visualization |
 
-Sibling application repos consume vision-core independently:
+Sibling application repos consume neuriplo-tasks independently:
 
-| Sibling Repo | Role | vision-core consumer? |
+| Sibling Repo | Role | neuriplo-tasks consumer? |
 |---|---|---|
-| [vision-tracking](https://github.com/olibartfast/vision-tracking) | Detection + tracking pipelines | Yes |
+| [neuriplo-track](https://github.com/olibartfast/neuriplo-track) | Detection + tracking pipelines | Yes |
 | [tritonic](https://github.com/olibartfast/tritonic) | Triton Inference Server client for CV tasks | Yes |
 
-Both maintain their own ops control planes independently — vision-inference does not depend on them.
+Both maintain their own ops control planes independently — neuriplo-infer does not depend on them.
 
 For canonical current repo boundaries and public surfaces, prefer `ops/` metadata over this roadmap.
 
@@ -49,12 +49,12 @@ For canonical current repo boundaries and public surfaces, prefer `ops/` metadat
 - Expand VLM/multi-modal support beyond OWLv2 (tokenizer infrastructure already in CLI)
 - Add a multimodal understanding path for Gemma 4-class models with freeform text plus optional structured outputs
 - Prefer a Cactus-backed on-device path in `neuriplo` for Gemma 4 image understanding, with `llama.cpp` retained as a fallback runtime candidate
-- Add OCR/text detection task types (in vision-core)
+- Add OCR/text detection task types (in neuriplo-tasks)
 
 ### Model Coverage — 3D
-- **Monocular 3D detection** (MonoDETR, FCOS3D) — single image input, new `Detection3D` result variant in vision-core. Easiest entry point for 3D; no changes needed in neuriplo or videocapture
+- **Monocular 3D detection** (MonoDETR, FCOS3D) — single image input, new `Detection3D` result variant in neuriplo-tasks. Easiest entry point for 3D; no changes needed in neuriplo or videocapture
 - **Stereo depth** (RAFT-Stereo, CREStereo) — multi-frame input already supported via RAFT optical flow pattern. Reuses existing `DepthEstimation` result type
-- **BEV detection** (BEVFormer, PointPillars) — evaluate once monocular 3D is stable. May require new input abstractions in vision-core for point cloud data
+- **BEV detection** (BEVFormer, PointPillars) — evaluate once monocular 3D is stable. May require new input abstractions in neuriplo-tasks for point cloud data
 
 > Note: NeRF/Gaussian Splatting and real-time SLAM are iterative/stateful pipelines that don't fit the single-pass `TaskInterface` model. These belong in a separate repo if pursued.
 
@@ -65,13 +65,13 @@ For canonical current repo boundaries and public surfaces, prefer `ops/` metadat
 - Start with short local clips, sampled frames, and text-first outputs before adding audio or streaming support
 
 ### Multimodal Understanding
-- Introduce new `vision-core` task/result contracts for `ImageUnderstanding` and `VideoUnderstanding` instead of overloading classification semantics
+- Introduce new `neuriplo-tasks` task/result contracts for `ImageUnderstanding` and `VideoUnderstanding` instead of overloading classification semantics
 - Standardize outputs around a stable schema with required freeform `text` plus optional `answer`, grounded regions, and temporal events
 - Keep V1 constrained to local files, uniform frame sampling, and parseable JSON/text outputs suitable for E2E regression tests
-- Validate in this order: standalone runtime spike, upstream contract work in `vision-core`, backend integration in `neuriplo`, then CLI and E2E wiring in `vision-inference`
+- Validate in this order: standalone runtime spike, upstream contract work in `neuriplo-tasks`, backend integration in `neuriplo`, then CLI and E2E wiring in `neuriplo-infer`
 - Prioritize Cactus for mobile/on-device Gemma 4 support, especially for image understanding and short video understanding, with `llama.cpp` as the generic fallback path
-- Design multimodal contracts in `vision-core` so they are consumable by all downstream apps (vision-inference, tritonic, vision-tracking) without backend-specific coupling
-- Coordinate with tritonic's planned multimodal task mode: tritonic will consume the same `vision-core` multimodal contracts via Triton Server backends, so contract design must remain backend-agnostic and avoid assumptions about local model loading
+- Design multimodal contracts in `neuriplo-tasks` so they are consumable by all downstream apps (neuriplo-infer, tritonic, neuriplo-track) without backend-specific coupling
+- Coordinate with tritonic's planned multimodal task mode: tritonic will consume the same `neuriplo-tasks` multimodal contracts via Triton Server backends, so contract design must remain backend-agnostic and avoid assumptions about local model loading
 
 ## Phase 3: Production & Deployment
 

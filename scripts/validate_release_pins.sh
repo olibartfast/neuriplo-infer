@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Validate that versions.env at the current checkout pins every sibling
-# (vision-core, neuriplo, videocapture) to a real release tag, and that each
+# (neuriplo-tasks, neuriplo, videocapture) to a real release tag, and that each
 # pinned tag actually exists on the sibling's remote. Used by:
-#   - .githooks/pre-push (blocks pushes of unpinned vision-inference release tags)
+#   - .githooks/pre-push (blocks pushes of unpinned neuriplo-infer release tags)
 #   - .github/workflows/release-guard.yml (server-side enforcement on tag push)
 #   - scripts/cut_release.sh (sanity check before staging release changes)
 #
-# Siblings version independently: vision-core and neuriplo track the
-# vision-inference release cadence, but videocapture may lag (e.g. stay at
+# Siblings version independently: neuriplo-tasks and neuriplo track the
+# neuriplo-infer release cadence, but videocapture may lag (e.g. stay at
 # v0.2.0 while the others move to v0.3.0). So this does NOT require the three
 # pins to be equal -- it only requires each to be a concrete semver tag
 # (vX.Y.Z), never a branch name like 'master' or 'develop', and to exist on
@@ -46,7 +46,7 @@ echo "==> Validating sibling pins in versions.env for ${TAG}..."
 # Each entry maps a versions.env key to the sibling repository it pins.
 for entry in "NEURIPLO_VERSION=neuriplo" \
              "VIDEOCAPTURE_VERSION=videocapture" \
-             "VISION_CORE_VERSION=vision-core"; do
+             "NEURIPLO_TASKS_VERSION=neuriplo-tasks"; do
   key="${entry%%=*}"
   repo="${entry#*=}"
   val="$(extract_pin "${key}")"
@@ -65,7 +65,7 @@ for entry in "NEURIPLO_VERSION=neuriplo" \
        | grep -q "refs/tags/${val}$"; then
     echo "  ok ${key}=${val} (${repo} tag exists)"
   else
-    echo "::error::${key}=${val} but ${repo} has no tag ${val}. Tag it before pushing vision-inference ${TAG}." >&2
+    echo "::error::${key}=${val} but ${repo} has no tag ${val}. Tag it before pushing neuriplo-infer ${TAG}." >&2
     fail=1
   fi
 done

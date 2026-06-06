@@ -37,6 +37,9 @@ jobs:
           - yoloseg
           - yolov8_executorch
           - yolo26s_tflite
+          - edgecrafter_det
+          - edgecrafter_seg
+          - edgecrafter_pose
           - raft
           - vitpose
           - depth_anything_v2
@@ -55,12 +58,12 @@ jobs:
 
       - name: Dry-run e2e workflow
         env:
-          VISION_CORE_DIR: /tmp/vision-core-placeholder
+          NEURIPLO_TASKS_DIR: /tmp/neuriplo-tasks-placeholder
         run: |
           set -o pipefail
           bash docker_run_inference_e2e_example.sh \
             --preset "${{ matrix.preset }}" \
-            --vision-core-dir "${VISION_CORE_DIR}" \
+            --neuriplo-tasks-dir "${NEURIPLO_TASKS_DIR}" \
             --dry-run | tee e2e-dry-run.log
 
           grep -F "=== Step 1: Exporting preset '${{ matrix.preset }}' ===" e2e-dry-run.log

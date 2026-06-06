@@ -1,14 +1,14 @@
-# Vision Inference Framework
+# neuriplo-infer
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-C++ application for computer vision inference, supporting multiple vision tasks and deep learning backends.
+Local inference application for computer vision tasks, supporting multiple task types and deep learning backends.
 
 > 🚧 Status: Under Development — expect frequent updates.
 ## Key Features
 
-- **Multiple Computer Vision Tasks**: Supported via [vision-core library](https://github.com/olibartfast/vision-core/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM)
+- **Multiple Computer Vision Tasks**: Supported via [neuriplo-tasks library](https://github.com/olibartfast/neuriplo-tasks/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
@@ -30,7 +30,7 @@ C++ application for computer vision inference, supporting multiple vision tasks 
 ### Dependency Management
 
 This project automatically fetches:
-1. [vision-core](https://github.com/olibartfast/vision-core) - Contains pre/post-processing and model logic.
+1. [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) - Contains pre/post-processing and model logic.
 2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
 3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
 
@@ -44,27 +44,14 @@ This project automatically fetches:
 
 ## Agentic Operations
 
-This repository includes an agent-operable maintenance layer under `ops/`.
+Cross-repository control-plane docs now live in `neuriplo-platform/ops`. The local `ops/` directory is retained only as a compatibility pointer for older workflows.
 
-- `ops/README.md` defines the control-plane intent for the repo cluster.
-- `ops/CLUSTER_MAP.yaml` declares repo ownership, dependency edges, validation order, and agent roles.
-- `ops/repo-meta/vision-inference.yaml` provides repo-local entrypoints for configure, build, test, and benchmark flows.
-- `ops/policies.yaml` defines which automated change classes are allowed and which changes require human review.
-- `ops/runbooks/` encodes repeatable maintenance workflows such as CI triage and cross-repo API migration.
-
-The intended maintenance loop is:
-
-1. Observe the failure, request, or contract change.
-2. Diagnose ownership and allowed change scope from `ops/`.
-3. Act with the smallest reviewable repo-local change.
-4. Verify repo-local and downstream impact in the declared validation order.
-
-This makes the repository not just buildable by humans, but operable by coding agents working within explicit ownership, validation, and release-safety constraints.
+Use `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml` for canonical configure, build, test, and benchmark entrypoints during cross-repo maintenance. Keep app-local implementation, CLI, and build details in this repository.
 
 
 ## Setup
 For the selected inference backends, set up the required dependencies first.
-Canonical repo-local configure/build/test commands live in [`ops/repo-meta/vision-inference.yaml`](ops/repo-meta/vision-inference.yaml).
+Canonical cross-repo maintenance commands live in `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`.
 
 - **ONNX Runtime**:
   ```bash
@@ -140,12 +127,22 @@ cmake --build build-test
 ctest --test-dir build-test --output-on-failure
 ```
 
+## End-to-End Examples
+
+The runnable local Docker E2E script remains app-owned:
+
+```bash
+bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
+```
+
+Platform-level scenario ownership, compatibility sets, and cross-repo validation expectations live in `neuriplo-platform/examples/e2e-local-inference/README.md`.
+
 ## App Usage
 
 ### Command Line Options
 
 ```bash
-./vision-inference \
+./neuriplo-infer \
   [--help | -h] \
   --type=<model_type> \
   --source=<input_source> \
@@ -166,6 +163,8 @@ ctest --test-dir build-test --output-on-failure
   [--use-gpu] \
   [--warmup] \
   [--benchmark] \
+  [--export_metadata] \
+  [--no_gif] \
   [--iterations=<number>]
 ```
 
@@ -173,8 +172,15 @@ ctest --test-dir build-test --output-on-failure
 
 - `--type=<model_type>`: Specifies the type of vision model to use. Supported categories:
   <!-- SUPPORTED_MODEL_TYPES:START -->
+`TaskFactory` routes model type strings through a **built-in, compile-time**
+registration table in `src/core/task_factory.cpp`. New built-in tasks require
+editing that table and the README list below. **Third-party or runtime task
+plugins are not supported**; if plugin extension becomes a product goal, add a
+separate explicit extension registry rather than growing the internal table
+indefinitely.
+
 <!-- TASKFACTORY_MODEL_LIST:START -->
-The TaskFactory supports the following model type strings:
+The TaskFactory supports the following model type strings. Matching normalizes strings by lowercasing and stripping whitespace, hyphens, and underscores, so `YOLO-V8`, `yolo_v8`, and ` yolo v8 ` route identically. Specific segmentation and pose aliases are checked before generic detection aliases.
 
 **Object Detection:**
 
@@ -183,9 +189,12 @@ The TaskFactory supports the following model type strings:
 - `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
 - `"rtdetrul"`, `"rtdetrultralytics"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
+- `"ecdet"` - EdgeCrafter detection (any string starting with `ecdet`)
+- `"edgecrafter"`, `"edgecrafter-det"` - EdgeCrafter detection unless the normalized string contains `seg` or `pose`
 
 **Instance Segmentation:**
-- `"yoloseg"` - YOLOv5/YOLOv8/YOLO11
+- `"ecseg"` - EdgeCrafter segmentation (any string starting with `ecseg` or `edgecrafter` and containing `seg`)
+- `"yoloseg"`, `"yolo-seg"`, `"yolov8-seg"` - YOLOv5/YOLOv8/YOLO11-style segmentation
 - `"yolov10seg"`- YOLOv10
 - `"yolo26seg"` - YOLO26
 - `"rfdetrseg"` - RF-DETR
@@ -211,6 +220,7 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
 - `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
 - `"vitpose"` - ViTPose (top-down, heatmap-based)
+- `"ecpose"` - EdgeCrafter pose estimation (any string starting with `ecpose`, or `edgecrafter` and containing `pose`)
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
@@ -228,7 +238,7 @@ The expected ONNX contract is:
 
 Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
 
-For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/vision-core/blob/master/export/open_vocab_detection/OWLv2.md).
+For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/open_vocab_detection/OWLv2.md).
 
 **Image Understanding (VLM):**
 - `"gemma4"`, `"gemma"`, `"llama"`, `"llamacpp"`, `"imageunderstanding"` - Vision-language model image captioning / Q&A via llama.cpp backend
@@ -237,22 +247,31 @@ Input contract: `preprocess()` returns two tensors — `[0]` UTF-8 prompt bytes,
 
 Requires the llama.cpp `LLAMACPP` backend with an mmproj (vision projector) GGUF.
 
-For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/vision-core/blob/master/export/image_understanding/ImageUnderstanding.md).
+For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/image_understanding/ImageUnderstanding.md).
 
 **Gaussian Splatting:**
 - `"lgm"`, `"lgm-mini"` - LGM (Large Gaussian Model)
 - `"grm"` - GRM
 - `"gaussiansplatting"`, any string containing `"splat"` - generic alias
+
+
+EdgeCrafter export and tensor contract details live in the task-specific docs:
+
+- [EdgeCrafter Detection](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md)
+- [EdgeCrafter Segmentation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md)
+- [EdgeCrafter Pose Estimation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md)
+
 <!-- TASKFACTORY_MODEL_LIST:END -->
 
 Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 <!-- SUPPORTED_MODEL_TYPES:END -->
-  App-specific routing and validation in `vision-inference` still define the end-to-end supported subset for this repo.
+  App-specific routing and validation in `neuriplo-infer` still define the end-to-end supported subset for this repo.
 
-- `--source=<input_source>`: Defines the input source for the object detection. It can be:
+- `--source=<input_source>`: Defines the input source for inference. It can be:
   - A live feed URL, e.g., `rtsp://cameraip:port/stream`
   - A path to a video file, e.g., `path/to/video.format`
   - A path to an image file, e.g., `path/to/image.format`
+  This can be omitted for text-only image-understanding tasks and for `--export_metadata`.
 
 - `--labels=<path/to/labels/file>`: Optional for fixed-label models. Specifies the path to the file containing the class labels. This file should list the labels used by the model, with each label on a new line.
 
@@ -268,9 +287,9 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 
 - `--max_frames=<n>`: Optional cap on sampled frames for future multimodal video tasks. Passed through `TaskConfig::extra_params["max_frames"]`.
 
-- `--tokenizer_vocab=<path/to/vocab.json>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `vision-core`.
+- `--tokenizer_vocab=<path/to/vocab.json>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `neuriplo-tasks`.
 
-- `--tokenizer_merges=<path/to/merges.txt>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `vision-core`.
+- `--tokenizer_merges=<path/to/merges.txt>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `neuriplo-tasks`.
 
 #### Optional Parameters
 
@@ -293,26 +312,30 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 
 - `[--benchmark]`: Enables benchmarking mode. In this mode, the application will run multiple iterations of inference to measure and report the average inference time. This is useful for evaluating the performance of the model and the inference setup. This parameter is relevant only if the inference is being performed on an image source. Default is `false`.
 
+- `[--export_metadata]`: Initializes the selected backend and task, prints model type, routed task type, input layers, and output layers, then exits without running inference. This still requires `--weights`, but does not require `--source`.
+
+- `[--no_gif]`: Accepted output flag reserved for workflows that emit GIFs. Current image and video inference paths do not generate GIF output. Default is `false`.
+
 - `[--iterations=<number>]`: Specifies the number of iterations for benchmarking. The default value is `10`.
 
 ### To check all available options:
 
 ```bash
-./vision-inference --help
+./neuriplo-infer --help
 ```
 
 ### Common Use Case Examples
 
 ```bash
 # Object Detection - YOLOv8 ONNX Runtime image processing
-./vision-inference \
+./neuriplo-infer \
   --type=yolo \
   --source=image.png \
   --weights=models/yolov8s.onnx \
   --labels=data/coco.names
 
 # Object Detection - RT-DETR video processing
-./vision-inference \
+./neuriplo-infer \
   --type=rtdetr \
   --source=video.mp4 \
   --weights=models/rtdetr-l.onnx \
@@ -320,14 +343,14 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   --min_confidence=0.4
 
 # Classification - Image classification
-./vision-inference \
+./neuriplo-infer \
   --type=torchvisionclassifier \
   --source=image.png \
   --weights=models/resnet50.onnx \
   --labels=data/imagenet_labels.txt
 
 # Instance Segmentation - YOLO segmentation
-./vision-inference \
+./neuriplo-infer \
   --type=yoloseg \
   --source=video.mp4 \
   --weights=models/yolov8s-seg.onnx \
@@ -338,13 +361,13 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   --use-gpu
 
 # Optical Flow - RAFT model
-./vision-inference \
+./neuriplo-infer \
   --type=raft \
   --source=video.mp4 \
   --weights=models/raft-small.onnx
 
 # Open-vocabulary detection - OWLv2 image processing
-./vision-inference \
+./neuriplo-infer \
   --type=owlv2 \
   --source=image.png \
   --weights=models/owlv2.onnx \
@@ -352,6 +375,12 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   --tokenizer_vocab=models/owlv2/vocab.json \
   --tokenizer_merges=models/owlv2/merges.txt \
   --min_confidence=0.2
+
+# Model metadata inspection without an input source
+./neuriplo-infer \
+  --type=yolo \
+  --weights=models/yolov8s.onnx \
+  --export_metadata
 ```
 
 *Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
@@ -359,12 +388,13 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 ## Documentation Map
 
 - [`AGENTS.md`](AGENTS.md): canonical workflow, review focus, and repo-local entrypoints for agents and maintainers
-- [`ops/CLUSTER_MAP.yaml`](ops/CLUSTER_MAP.yaml): cluster ownership, dependency edges, and validation order
-- [`ops/repo-meta/vision-inference.yaml`](ops/repo-meta/vision-inference.yaml): canonical configure/build/test commands and public surface
-- [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated upstream model-type inventory from `vision-core`
+- `neuriplo-platform/ops/CLUSTER_MAP.yaml`: cluster ownership, dependency edges, and validation order
+- `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`: canonical configure/build/test commands and public surface
+- [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated upstream model-type inventory from `neuriplo-tasks`
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and canonical sources of truth
 - [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version-source guidance
 - [`docs/Versioning.md`](docs/Versioning.md): release/version workflow for `VERSION` and `CHANGELOG.md`
+- [`scripts/check_code_quality.sh`](scripts/check_code_quality.sh): optional local format, static-analysis, ASan/UBSan, and TSan check helper
 
 ## Docker Deployment
 
@@ -372,7 +402,7 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 Inside the project, in the [Dockerfiles folder](docker), there will be a dockerfile for each inference backend (currently onnxruntime, libtorch, tensorrt, openvino)
 ```bash
 # Build for specific backend
-docker build --rm -t vision-inference:<backend_tag> \
+docker build --rm -t neuriplo-infer:<backend_tag> \
     -f docker/Dockerfile.<backend_tag> .
 ```
 
@@ -383,7 +413,7 @@ docker run --rm \
     -v<path_host_data_folder>:/app/data \
     -v<path_host_weights_folder>:/weights \
     -v<path_host_labels_folder>:/labels \
-    vision-inference:<backend_tag> \
+    neuriplo-infer:<backend_tag> \
     --type=<model_type> \
     --weights=<weight_according_your_backend> \
     --source=/app/data/<image_or_video> \
@@ -409,14 +439,30 @@ Preview a workflow without executing it:
 bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 ```
 
-YOLO26s also has a dedicated TFLite preset that exports with Ultralytics and runs through the LiteRT backend without requiring a `vision-core` checkout:
+YOLO26s also has a dedicated TFLite preset that exports with Ultralytics and runs through the LiteRT backend without requiring a `neuriplo-tasks` checkout:
 
 ```bash
-docker build --rm -t vision-inference:litert \
+docker build --rm -t neuriplo-infer:litert \
     -f docker/Dockerfile.litert \
     --build-arg NEURIPLO_VERSION=8cf93e6 .
 
 bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
+```
+
+EdgeCrafter exposes three ONNX Runtime presets covering its detection, instance
+segmentation, and pose estimation tasks. Each preset is self-contained: it clones the
+upstream [EdgeCrafter](https://github.com/Intellindust-AI-Lab/EdgeCrafter) repo, downloads
+the matching checkpoint, and runs the upstream `export_onnx.py`, so no `neuriplo-tasks`
+checkout is required. The exported graphs take two inputs (`images` and
+`orig_target_sizes`), so the runtime passes `--input_sizes=3,640,640;2`:
+
+```bash
+docker build --rm -t neuriplo-infer:onnxruntime \
+    -f docker/Dockerfile.onnxruntime .
+
+bash docker_run_inference_e2e_example.sh --preset edgecrafter_det
+bash docker_run_inference_e2e_example.sh --preset edgecrafter_seg
+bash docker_run_inference_e2e_example.sh --preset edgecrafter_pose
 ```
 
 ### Full OWLv2 End-to-End Run
@@ -426,26 +472,26 @@ OWLv2 uses the `onnxruntime` backend by default in the generic e2e script.
 Build the container:
 
 ```bash
-docker build --rm -t vision-inference:onnxruntime \
+docker build --rm -t neuriplo-infer:onnxruntime \
     -f docker/Dockerfile.onnxruntime .
 ```
 
 Run the full export and inference flow:
 
 ```bash
-mkdir -p /tmp/vision-inference-e2e
+mkdir -p /tmp/neuriplo-infer-e2e
 
 bash docker_run_inference_e2e_example.sh \
     --preset owlv2 \
-    --vision-core-dir /path/to/vision-core \
+    --neuriplo-tasks-dir /path/to/neuriplo-tasks \
     --text-prompts 'person;dog;bicycle' \
-    --weights-dir /tmp/vision-inference-e2e
+    --weights-dir /tmp/neuriplo-infer-e2e
 ```
 
 This flow expects:
 
-- a `vision-core` checkout passed via `--vision-core-dir` or `VISION_CORE_DIR`
-- tokenizer assets at `<vision-core-dir>/vocab.json` and `<vision-core-dir>/merges.txt`
+- a `neuriplo-tasks` checkout passed via `--neuriplo-tasks-dir` or `NEURIPLO_TASKS_DIR`
+- tokenizer assets at `<neuriplo-tasks-dir>/vocab.json` and `<neuriplo-tasks-dir>/merges.txt`
 - sample input image at `data/dog.jpg`
 - a working `python3` or `python` on the host for export-time virtualenv creation
 
@@ -461,7 +507,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 - [Detector Architectures Guide](docs/DetectorArchitectures.md)
 - [Supported Model Types](docs/generated/supported-model-types.md)
 - [Model Export Guide](docs/ExportInstructions.md)
-- [Vision-Core Export Tools](https://github.com/olibartfast/vision-core/tree/main/export) - Comprehensive export utilities for all supported models
+- [neuriplo-tasks Export Tools](https://github.com/olibartfast/neuriplo-tasks/tree/main/export) - Comprehensive export utilities for all supported models
 
 ## ⚠️ Known Limitations
 - Windows builds not currently supported
@@ -478,5 +524,5 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 
 ## Support
 
-- Open an [issue](https://github.com/olibartfast/vision-inference/issues) for bug reports or feature requests: contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
+- Open an [issue](https://github.com/olibartfast/neuriplo-infer/issues) for bug reports or feature requests: contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
 - Check existing issues for solutions to common problems
