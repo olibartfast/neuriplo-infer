@@ -6,15 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-07
+
 ### Changed
 - Renamed application entry class to `NeuriploInfer` and aligned related
   source/test filenames with the `NeuriploInfer*` prefix.
-- Renamed repository identity per ADR 0004: CMake project and executable
-  `neuriplo-infer` CMake project, static library, and executable output name, sibling pin
+- Renamed repository identity per ADR 0004: `neuriplo-infer` CMake project,
+  static library, and executable output name, sibling pin
   `NEURIPLO_TASKS_VERSION`, and consumer updates for `neuriplo-tasks`
-  includes/namespaces/link targets. FetchContent tracks
-  `feature/neuriplo-tasks` on the not-yet-renamed GitHub repo until ADR 0004
-  repo rename lands.
+  includes/namespaces/link targets. The GitHub repo rename
+  (`vision-inference` → `neuriplo-infer`) and the `vision-core` →
+  `neuriplo-tasks` rename are both complete; FetchContent and the release
+  scripts now track the renamed repos directly and the legacy compat shims
+  were removed.
+- Pinned `neuriplo` to `v0.5.0` (Abstract-Factory backend features),
+  `neuriplo-tasks` to `v0.4.0`, and `videocapture` to `v0.3.0`.
 
 ## [0.3.2] - 2026-05-28
 
