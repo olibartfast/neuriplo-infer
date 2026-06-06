@@ -13,9 +13,35 @@ endif()
 
 project(vision-inference VERSION ${PROJECT_SEMVER})
 
+include(cmake/CompileSpeed.cmake)
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(PROJECT_WARNING_FLAGS
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Wshadow
+    -Wnon-virtual-dtor
+    -Wold-style-cast
+    -Wcast-align
+    -Wunused
+    -Woverloaded-virtual
+    -Wconversion
+    -Wsign-conversion
+    -Wnull-dereference
+    -Wdouble-promotion
+    -Wformat=2
+    -Wimplicit-fallthrough
+)
+
+option(WERROR "Treat compiler warnings as errors" OFF)
+if(WERROR)
+    list(APPEND PROJECT_WARNING_FLAGS -Werror)
+endif()
 
 option(ENABLE_APP_TESTS "Enable unit testing for app module" OFF)
 if(ENABLE_APP_TESTS)
@@ -67,8 +93,16 @@ FetchContent_Declare(
     GIT_TAG        ${VIDEOCAPTURE_VERSION}  # Use specific version instead of master
 )
 
-# Disable neuriplo's tests so it doesn't require GTest
+# Disable subproject tests and sample apps when fetched as dependencies.
 set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+# Prefer a sibling checkout during local cross-repo development.
+set(_VISION_CORE_SIBLING "${CMAKE_CURRENT_SOURCE_DIR}/../vision-core")
+if(EXISTS "${_VISION_CORE_SIBLING}/CMakeLists.txt")
+    set(FETCHCONTENT_SOURCE_DIR_VISION-CORE "${_VISION_CORE_SIBLING}" CACHE PATH "" FORCE)
+endif()
+
 FetchContent_MakeAvailable(neuriplo VideoCapture vision-core)
 message(STATUS "vision-core_SOURCE_DIR: ${vision-core_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
