@@ -1,7 +1,7 @@
 # Faster C++ Compilation Plan
 
 This plan keeps build-speed work small, measurable, and separate from inference
-behavior. It applies to local development builds for `vision-inference`.
+behavior. It applies to local development builds for `neuriplo-infer`.
 
 ## Goals
 
@@ -54,7 +54,7 @@ Acceptance:
 Notes:
 
 - If `ccache` is unavailable, omit `-DCMAKE_CXX_COMPILER_LAUNCHER=ccache`.
-- Keep canonical repo commands in `ops/repo-meta/vision-inference.yaml`
+- Keep canonical repo commands in `ops/repo-meta/neuriplo-infer.yaml`
   unchanged unless CI or maintainers explicitly adopt the faster profile.
 
 ## Phase 2: Faster Linker When Link Time Dominates

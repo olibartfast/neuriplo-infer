@@ -1,5 +1,5 @@
-name: vision-core
-repo_root: ../vision-core
+name: neuriplo-tasks
+repo_root: ../neuriplo-tasks
 role: task-contracts
 default_branches:
   integration: develop
@@ -51,7 +51,7 @@ owned_paths:
   - CMakeLists.txt
 
 consumers:
-  - vision-inference
+  - neuriplo-infer
   - tritonic
 
 automation_rules:

@@ -65,26 +65,26 @@ TEST(UtilsStandalone, NormalizeModelType) {
   EXPECT_EQ(normalizeModelType("Video Understanding"), "videounderstanding");
 }
 
-TEST(TaskRouting, MirrorsVisionCoreContractAliases) {
-  EXPECT_EQ(getTaskTypeForModel("yolo26"), vision_core::TaskType::Detection);
+TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
+  EXPECT_EQ(getTaskTypeForModel("yolo26"), neuriplo_tasks::TaskType::Detection);
   EXPECT_EQ(getTaskTypeForModel("rtdetrultralytics"),
-            vision_core::TaskType::Detection);
+            neuriplo_tasks::TaskType::Detection);
   EXPECT_EQ(getTaskTypeForModel("edgecrafter-seg"),
-            vision_core::TaskType::InstanceSegmentation);
+            neuriplo_tasks::TaskType::InstanceSegmentation);
   EXPECT_EQ(getTaskTypeForModel("ecpose-small"),
-            vision_core::TaskType::PoseEstimation);
+            neuriplo_tasks::TaskType::PoseEstimation);
   EXPECT_EQ(getTaskTypeForModel("resnet50"),
-            vision_core::TaskType::Classification);
+            neuriplo_tasks::TaskType::Classification);
   EXPECT_EQ(getTaskTypeForModel("my_tensorflow_model"),
-            vision_core::TaskType::Classification);
+            neuriplo_tasks::TaskType::Classification);
   EXPECT_EQ(getTaskTypeForModel("depth_anything_v2"),
-            vision_core::TaskType::DepthEstimation);
+            neuriplo_tasks::TaskType::DepthEstimation);
   EXPECT_EQ(getTaskTypeForModel("groundingdino"),
-            vision_core::TaskType::OpenVocabDetection);
+            neuriplo_tasks::TaskType::OpenVocabDetection);
   EXPECT_EQ(getTaskTypeForModel("lgm-mini"),
-            vision_core::TaskType::GaussianSplatting);
+            neuriplo_tasks::TaskType::GaussianSplatting);
   EXPECT_EQ(getTaskTypeForModel("grm"),
-            vision_core::TaskType::GaussianSplatting);
+            neuriplo_tasks::TaskType::GaussianSplatting);
   EXPECT_EQ(getTaskTypeForModel("imageunderstanding"),
-            vision_core::TaskType::ImageUnderstanding);
+            neuriplo_tasks::TaskType::ImageUnderstanding);
 }

@@ -4,8 +4,8 @@
 #include "InferenceBackendSetup.hpp"
 #include "ResultRenderer.hpp"
 #include "TaskRouting.hpp"
-#include "vision-core/core/model_info.hpp"
-#include "vision-core/core/task_interface.hpp"
+#include "neuriplo/tasks/core/model_info.hpp"
+#include "neuriplo/tasks/core/task_interface.hpp"
 
 #include <memory>
 #include <string>
@@ -14,15 +14,15 @@
 struct InferencePipeline {
   AppConfig config;
   std::unique_ptr<InferenceInterface> engine;
-  std::unique_ptr<vision_core::TaskInterface> task;
+  std::unique_ptr<neuriplo_tasks::TaskInterface> task;
   std::unique_ptr<ResultRenderer> renderer;
   std::vector<std::string> classes;
   InferenceMetadata inference_metadata;
-  vision_core::ModelInfo model_info;
-  vision_core::TaskType task_type{vision_core::TaskType::Detection};
+  neuriplo_tasks::ModelInfo model_info;
+  neuriplo_tasks::TaskType task_type{neuriplo_tasks::TaskType::Detection};
 
   int getRequiredFrameCount() const;
-  void renderResults(const std::vector<vision_core::Result> &results,
+  void renderResults(const std::vector<neuriplo_tasks::Result> &results,
                      cv::Mat &image);
 };
 

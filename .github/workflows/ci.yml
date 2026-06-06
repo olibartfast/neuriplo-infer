@@ -40,7 +40,7 @@ jobs:
         run: |
           cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=OPENCV_DNN \
-            -DVISION_CORE_VERSION=develop \
+            -DNEURIPLO_TASKS_VERSION=feature/neuriplo-tasks \
             -DENABLE_APP_TESTS=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -48,7 +48,7 @@ jobs:
       - name: Check model-type docs are in sync
         run: |
           python3 scripts/sync_supported_model_types.py \
-            --vision-core-readme build/_deps/vision-core-src/README.md \
+            --neuriplo-tasks-readme build/_deps/neuriplo-tasks-src/README.md \
             --check
 
       - name: Build
@@ -186,7 +186,7 @@ jobs:
           context: .
           file: docker/Dockerfile.libtensorflow
           push: false
-          tags: vision-inference:libtensorflow
+          tags: neuriplo-infer:libtensorflow
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -213,7 +213,7 @@ jobs:
           context: .
           file: docker/Dockerfile.tensorrt
           push: false
-          tags: vision-inference:tensorrt
+          tags: neuriplo-infer:tensorrt
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -240,6 +240,6 @@ jobs:
           context: .
           file: docker/Dockerfile.openvino
           push: false
-          tags: vision-inference:openvino
+          tags: neuriplo-infer:openvino
           cache-from: type=gha
           cache-to: type=gha,mode=max

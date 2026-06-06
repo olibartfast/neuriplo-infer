@@ -1,5 +1,5 @@
 #!/bin/bash
-# ExecuTorch C++ runtime setup for vision-inference.
+# ExecuTorch C++ runtime setup for neuriplo-infer.
 # Delegates to neuriplo's setup_executorch.sh which builds ExecuTorch from source.
 #
 # Usage: bash scripts/setup_executorch.sh [--install-dir <path>]

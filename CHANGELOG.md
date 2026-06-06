@@ -6,18 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Renamed application entry class to `NeuriploInfer` and aligned related
+  source/test filenames with the `NeuriploInfer*` prefix.
+- Renamed repository identity per ADR 0004: CMake project and executable
+  `neuriplo-infer` CMake project, static library, and executable output name, sibling pin
+  `NEURIPLO_TASKS_VERSION`, and consumer updates for `neuriplo-tasks`
+  includes/namespaces/link targets. FetchContent tracks
+  `feature/neuriplo-tasks` on the not-yet-renamed GitHub repo until ADR 0004
+  repo rename lands.
+
 ## [0.3.2] - 2026-05-28
 
 ### Changed
 - Pinned `neuriplo` to `v0.4.0` (LiteRT NCHW→NHWC transpose fix, new LiteRT
-  backend) and `vision-core` to `v0.3.2` (YOLO26 normalized coordinate scaling
+  backend) and `neuriplo-tasks` to `v0.3.2` (YOLO26 normalized coordinate scaling
   fix). `videocapture` pin unchanged at `v0.2.0`.
 
 ## [0.3.1] - 2026-05-21
 
 ### Changed
-- Pinned `vision-core` to `v0.3.1` in `versions.env` (README ↔ TaskFactory contract fixes and test hardening; no API change). `neuriplo` and `videocapture` pins unchanged.
-- Re-synced `README.md` and `docs/generated/supported-model-types.md` from vision-core v0.3.1's model-type block
+- Pinned `neuriplo-tasks` to `v0.3.1` in `versions.env` (README ↔ TaskFactory contract fixes and test hardening; no API change). `neuriplo` and `videocapture` pins unchanged.
+- Re-synced `README.md` and `docs/generated/supported-model-types.md` from neuriplo-tasks v0.3.1's model-type block
 
 ## [0.3.0] - 2026-05-21
 
@@ -28,9 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - VLM image understanding how-to and agentic wiring runbook
 
 ### Changed
-- Sibling refs (`neuriplo`, `vision-core`, `videocapture`) pinned in `versions.env` to each sibling's own release tag for reproducible tag checkouts; siblings now version independently
+- Sibling refs (`neuriplo`, `neuriplo-tasks`, `videocapture`) pinned in `versions.env` to each sibling's own release tag for reproducible tag checkouts; siblings now version independently
 - Release tooling reworked for per-sibling pins: `cut_release.sh` detects each sibling's latest release tag, `validate_release_pins.sh` rejects branch-name pins (e.g. `master`/`develop`), enforced by the pre-push hook and the release-guard workflow
-- Supported model types synced from vision-core (adds ImageUnderstanding)
+- Supported model types synced from neuriplo-tasks (adds ImageUnderstanding)
 - CI skips on docs-only pushes; frees disk space before Docker builds
 
 ### Fixed
@@ -58,7 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.2.1] - 2026-04-01
 
 ### Fixed
-- Dependency ref selection now follows the vision-inference release line: `master` uses dependency `master`, all other branches use dependency `develop`
+- Dependency ref selection now follows the neuriplo-infer release line: `master` uses dependency `master`, all other branches use dependency `develop`
 - Reject invalid `VERSION` contents early during CMake configure
 - Require `--tokenizer_vocab` and `--tokenizer_merges` explicitly for open-vocabulary detection
 - Include TensorFlow runtime libraries in the `libtensorflow` Docker runtime image
@@ -71,8 +81,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - TensorRT Docker build job in CI workflow
-- OWLv2 open-vocabulary detection support (via vision-core)
-- Dependency branch ref validation in CMake (ensures neuriplo, videocapture, vision-core target the same ref)
+- OWLv2 open-vocabulary detection support (via neuriplo-tasks)
+- Dependency branch ref validation in CMake (ensures neuriplo, videocapture, neuriplo-tasks target the same ref)
 
 ### Fixed
 - CMake validation function name collision with neuriplo (renamed to `validate_project_dependencies`)
@@ -97,13 +107,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Docker builds no longer depend on pre-existing `build/_deps/neuriplo-src/versions.env` (#15)
 - Confidence/NMS/mask thresholds now correctly passed from CLI to task factory (#18)
 - Dockerfiles source backend versions from neuriplo `versions.env`
-- Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via vision-core)
+- Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/vision-inference/compare/v0.3.1...HEAD
-[0.3.1]: https://github.com/olibartfast/vision-inference/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/olibartfast/vision-inference/compare/v0.2.3...v0.3.0
-[0.2.3]: https://github.com/olibartfast/vision-inference/compare/v0.2.2...v0.2.3
-[0.2.2]: https://github.com/olibartfast/vision-inference/compare/v0.2.1...v0.2.2
-[0.2.1]: https://github.com/olibartfast/vision-inference/compare/v0.2.0...v0.2.1
-[0.2.0]: https://github.com/olibartfast/vision-inference/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/olibartfast/vision-inference/releases/tag/v0.1.0
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.2.3...v0.3.0
+[0.2.3]: https://github.com/olibartfast/neuriplo-infer/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/olibartfast/neuriplo-infer/releases/tag/v0.1.0
