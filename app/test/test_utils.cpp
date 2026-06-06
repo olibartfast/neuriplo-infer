@@ -65,7 +65,7 @@ TEST(UtilsStandalone, NormalizeModelType) {
   EXPECT_EQ(normalizeModelType("Video Understanding"), "videounderstanding");
 }
 
-TEST(TaskRouting, MirrorsVisionCoreContractAliases) {
+TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
   EXPECT_EQ(getTaskTypeForModel("yolo26"), neuriplo_tasks::TaskType::Detection);
   EXPECT_EQ(getTaskTypeForModel("rtdetrultralytics"),
             neuriplo_tasks::TaskType::Detection);

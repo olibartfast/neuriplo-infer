@@ -24,6 +24,9 @@
 
 set -euo pipefail
 
+# GitHub repo not renamed yet (ADR 0004).
+LEGACY_NEURIPLO_TASKS_GITHUB_REPO="${LEGACY_NEURIPLO_TASKS_GITHUB_REPO:-vision-core}"
+
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <version>" >&2
   echo "Example: $0 0.3.0" >&2
@@ -62,7 +65,7 @@ NEURIPLO_PIN="$(latest_remote_tag neuriplo)"
 VIDEOCAPTURE_PIN="$(latest_remote_tag videocapture)"
 NEURIPLO_TASKS_PIN="$(latest_remote_tag neuriplo-tasks)"
 if [ -z "${NEURIPLO_TASKS_PIN}" ]; then
-  NEURIPLO_TASKS_PIN="$(latest_remote_tag vision-core)"
+  NEURIPLO_TASKS_PIN="$(latest_remote_tag "${LEGACY_NEURIPLO_TASKS_GITHUB_REPO}")"
 fi
 
 for entry in "neuriplo=${NEURIPLO_PIN}" \

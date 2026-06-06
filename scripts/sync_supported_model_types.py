@@ -121,12 +121,6 @@ def main() -> int:
         help="Path to neuriplo-tasks README.md (default: build/_deps/neuriplo-tasks-src/README.md)",
     )
     parser.add_argument(
-        "--vision-core-readme",
-        type=Path,
-        default=None,
-        help=argparse.SUPPRESS,
-    )
-    parser.add_argument(
         "--check",
         action="store_true",
         help="Dry-run: exit 1 if any file would change (for CI)",
@@ -134,11 +128,7 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[1]
-    source_path = (
-        args.neuriplo_tasks_readme
-        or args.vision_core_readme
-        or default_neuriplo_tasks_readme(repo_root)
-    )
+    source_path = args.neuriplo_tasks_readme or default_neuriplo_tasks_readme(repo_root)
 
     if not source_path.exists():
         print(f"error: source README not found: {source_path}", file=sys.stderr)

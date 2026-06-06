@@ -20,6 +20,9 @@
 
 set -euo pipefail
 
+# GitHub repo not renamed yet (ADR 0004).
+LEGACY_NEURIPLO_TASKS_GITHUB_REPO="${LEGACY_NEURIPLO_TASKS_GITHUB_REPO:-vision-core}"
+
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <tag>" >&2
   exit 2
@@ -64,9 +67,9 @@ for entry in "NEURIPLO_VERSION=neuriplo" \
   if git ls-remote --tags "https://github.com/olibartfast/${repo}.git" "refs/tags/${val}" 2>/dev/null \
        | grep -q "refs/tags/${val}$"; then
     echo "  ok ${key}=${val} (${repo} tag exists)"
-  elif [ "${repo}" = "neuriplo-tasks" ] && git ls-remote --tags "https://github.com/olibartfast/vision-core.git" "refs/tags/${val}" 2>/dev/null \
+  elif [ "${repo}" = "neuriplo-tasks" ] && git ls-remote --tags "https://github.com/olibartfast/${LEGACY_NEURIPLO_TASKS_GITHUB_REPO}.git" "refs/tags/${val}" 2>/dev/null \
        | grep -q "refs/tags/${val}$"; then
-    echo "  ok ${key}=${val} (vision-core tag exists; neuriplo-tasks redirect pending)"
+    echo "  ok ${key}=${val} (legacy GitHub repo tag exists pending rename)"
   else
     echo "::error::${key}=${val} but ${repo} has no tag ${val}. Tag it before pushing neuriplo-infer ${TAG}." >&2
     fail=1
