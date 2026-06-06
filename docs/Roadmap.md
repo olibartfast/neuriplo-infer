@@ -15,7 +15,7 @@ Sibling application repos consume neuriplo-tasks independently:
 
 | Sibling Repo | Role | neuriplo-tasks consumer? |
 |---|---|---|
-| [vision-tracking](https://github.com/olibartfast/vision-tracking) | Detection + tracking pipelines | Yes |
+| [neuriplo-track](https://github.com/olibartfast/neuriplo-track) | Detection + tracking pipelines | Yes |
 | [tritonic](https://github.com/olibartfast/tritonic) | Triton Inference Server client for CV tasks | Yes |
 
 Both maintain their own ops control planes independently — neuriplo-infer does not depend on them.
@@ -70,7 +70,7 @@ For canonical current repo boundaries and public surfaces, prefer `ops/` metadat
 - Keep V1 constrained to local files, uniform frame sampling, and parseable JSON/text outputs suitable for E2E regression tests
 - Validate in this order: standalone runtime spike, upstream contract work in `neuriplo-tasks`, backend integration in `neuriplo`, then CLI and E2E wiring in `neuriplo-infer`
 - Prioritize Cactus for mobile/on-device Gemma 4 support, especially for image understanding and short video understanding, with `llama.cpp` as the generic fallback path
-- Design multimodal contracts in `neuriplo-tasks` so they are consumable by all downstream apps (neuriplo-infer, tritonic, vision-tracking) without backend-specific coupling
+- Design multimodal contracts in `neuriplo-tasks` so they are consumable by all downstream apps (neuriplo-infer, tritonic, neuriplo-track) without backend-specific coupling
 - Coordinate with tritonic's planned multimodal task mode: tritonic will consume the same `neuriplo-tasks` multimodal contracts via Triton Server backends, so contract design must remain backend-agnostic and avoid assumptions about local model loading
 
 ## Phase 3: Production & Deployment

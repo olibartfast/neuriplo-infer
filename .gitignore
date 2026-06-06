@@ -13,3 +13,15 @@ data/output/
 environments/
 models/
 yolov8n.pt
+
+# Local model weights / export fixtures (not source-controlled)
+*.onnx
+*.pt
+*.tflite
+*_saved_model/
+calibration_*.npy
+
+# Editor / tooling local junk
+.antigravitycli/
+# caveman-compress human-readable backups
+*.original.md

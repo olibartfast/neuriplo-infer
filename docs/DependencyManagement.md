@@ -4,11 +4,11 @@ This document describes dependency behavior owned by `neuriplo-infer`: local
 build inputs, app-level sibling checkout selection, and setup scripts.
 
 Cross-repository dependency ownership and compatibility policy now live in
-`vision-platform`:
+`neuriplo-platform`:
 
-- `vision-platform/docs/architecture/dependency-policy.md`
-- `vision-platform/versions.yaml`
-- `vision-platform/ops/CLUSTER_MAP.yaml`
+- `neuriplo-platform/docs/architecture/dependency-policy.md`
+- `neuriplo-platform/versions.yaml`
+- `neuriplo-platform/ops/CLUSTER_MAP.yaml`
 
 ## Source Of Truth
 
@@ -20,7 +20,7 @@ Repo-local sources:
   app-level sibling-ref selection.
 - [`versions.env`](../versions.env): repo-owned minimum system dependency
   versions.
-- `vision-platform/ops/repo-meta/neuriplo-infer.yaml`: canonical configure,
+- `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`: canonical configure,
   build, and test commands for cross-repo maintenance.
 
 External owners:
@@ -51,7 +51,7 @@ External owners:
 - Cross-repository compatibility matrices.
 
 Those belong to `neuriplo`, `videocapture`, `neuriplo-tasks`, and
-`vision-platform` respectively.
+`neuriplo-platform` respectively.
 
 ## Shared Dependency Ref
 
@@ -67,7 +67,7 @@ ref for the app build:
 If explicit per-repo overrides disagree with that derived ref, configure fails.
 
 Platform compatibility sets are tracked separately in
-`vision-platform/versions.yaml`.
+`neuriplo-platform/versions.yaml`.
 
 ## Setup Scripts
 
@@ -87,12 +87,12 @@ CMake build targets.
 ## Recommended Workflow
 
 1. Use the canonical commands in
-   `vision-platform/ops/repo-meta/neuriplo-infer.yaml`
+   `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`
    for configure/build/test when doing cross-repo maintenance.
 2. Run setup scripts only when a backend dependency is needed locally.
 3. Use [`cmake/versions.cmake`](../cmake/versions.cmake) to understand app-local
    sibling ref selection.
-4. Use `vision-platform/docs/architecture/dependency-policy.md`
+4. Use `neuriplo-platform/docs/architecture/dependency-policy.md`
    when reasoning about cross-repo compatibility policy.
 5. For video-backend setup specifics, consult `videocapture` documentation
    instead of duplicating those instructions here.
