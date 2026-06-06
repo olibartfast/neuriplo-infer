@@ -4,9 +4,9 @@
 
 #include <string>
 
-class NeuriploInferApp {
+class NeuriploInfer {
 public:
-  explicit NeuriploInferApp(const AppConfig &app_config);
+  explicit NeuriploInfer(const AppConfig &app_config);
   int run();
 
 private:

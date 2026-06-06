@@ -48,7 +48,7 @@ still depends on the app's own CLI validation, task routing, rendering, and test
 The app runtime is split by responsibility:
 
 - `CommandLineParser`: parses CLI flags and validates app-owned input paths and task-specific assets.
-- `NeuriploInferApp`: sets up logging, builds an `InferencePipeline`, and selects a CLI command.
+- `NeuriploInfer`: sets up logging, builds an `InferencePipeline`, and selects a CLI command.
 - `InferencePipelineBuilder`: wires labels, backend engine, model metadata, `neuriplo-tasks` task config, task instance, and result renderer.
 - `CLICommands`: owns executable workflows such as normal inference, warmup, benchmarking, image-understanding dispatch, and metadata export.
 - `ResultRenderer`: renders `neuriplo-tasks::Result` variants for each routed `TaskType`.

@@ -6,7 +6,7 @@
 // neuriplo_tasks::TaskConfig. This mirrors the mapping done in
 // InferencePipelineBuilder task config mapping.
 
-TEST(NeuriploInferAppTaskConfig, ThresholdMapping) {
+TEST(NeuriploInferTaskConfig, ThresholdMapping) {
   AppConfig config;
   config.confidenceThreshold = 0.3f;
   config.nmsThreshold = 0.6f;
@@ -22,7 +22,7 @@ TEST(NeuriploInferAppTaskConfig, ThresholdMapping) {
   EXPECT_FLOAT_EQ(task_config.mask_threshold, 0.7f);
 }
 
-TEST(NeuriploInferAppTaskConfig, DefaultThresholdsRoundtrip) {
+TEST(NeuriploInferTaskConfig, DefaultThresholdsRoundtrip) {
   AppConfig config;
   config.confidenceThreshold = 0.25f;
   // nmsThreshold and maskThreshold use in-class defaults
@@ -37,7 +37,7 @@ TEST(NeuriploInferAppTaskConfig, DefaultThresholdsRoundtrip) {
   EXPECT_FLOAT_EQ(task_config.mask_threshold, 0.50f);
 }
 
-TEST(NeuriploInferAppTaskConfig, OpenVocabFieldsRoundtrip) {
+TEST(NeuriploInferTaskConfig, OpenVocabFieldsRoundtrip) {
   AppConfig config;
   config.textPrompts = {"cat", "dog"};
   config.tokenizerVocabPath = "vocab.json";
@@ -53,7 +53,7 @@ TEST(NeuriploInferAppTaskConfig, OpenVocabFieldsRoundtrip) {
   EXPECT_EQ(config.tokenizerMergesPath, "merges.txt");
 }
 
-TEST(NeuriploInferAppTaskConfig, ExtraParamsRoundtrip) {
+TEST(NeuriploInferTaskConfig, ExtraParamsRoundtrip) {
   AppConfig config;
   config.taskExtraParams = {{"prompt", "Describe the image"},
                             {"output_format", "json"},

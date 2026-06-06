@@ -1,4 +1,4 @@
-#include "NeuriploInferApp.hpp"
+#include "NeuriploInfer.hpp"
 
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 
@@ -21,7 +21,7 @@ std::vector<neuriplo_tasks::Tensor> convertToTensors(const T1 &outputs,
 
 } // namespace
 
-void NeuriploInferApp::warmup_gpu(const cv::Mat &image) {
+void NeuriploInfer::warmup_gpu(const cv::Mat &image) {
   try {
     for (int i = 0; i < 5; ++i) { // Warmup for 5 iterations
       // Use neuriplo-tasks preprocessing
@@ -41,7 +41,7 @@ void NeuriploInferApp::warmup_gpu(const cv::Mat &image) {
   }
 }
 
-void NeuriploInferApp::benchmark(const cv::Mat &image) {
+void NeuriploInfer::benchmark(const cv::Mat &image) {
   try {
     double total_time = 0.0;
     for (int i = 0; i < config.benchmark_iterations; ++i) {
@@ -74,7 +74,7 @@ void NeuriploInferApp::benchmark(const cv::Mat &image) {
   }
 }
 
-void NeuriploInferApp::processImage(const std::string &source) {
+void NeuriploInfer::processImage(const std::string &source) {
   try {
     cv::Mat image = cv::imread(source);
     if (config.enable_warmup) {
@@ -132,7 +132,7 @@ void NeuriploInferApp::processImage(const std::string &source) {
   }
 }
 
-void NeuriploInferApp::processVideo(const std::string &source) {
+void NeuriploInfer::processVideo(const std::string &source) {
   try {
     std::unique_ptr<VideoCaptureInterface> videoInterface =
         createVideoInterface();
@@ -181,7 +181,7 @@ void NeuriploInferApp::processVideo(const std::string &source) {
   }
 }
 
-int NeuriploInferApp::getRequiredFrameCount() const {
+int NeuriploInfer::getRequiredFrameCount() const {
   // Use CLI override if provided, otherwise get from task
   if (config.num_frames > 0) {
     return config.num_frames;
@@ -189,7 +189,7 @@ int NeuriploInferApp::getRequiredFrameCount() const {
   return task ? task->getRequiredFrames() : 1;
 }
 
-void NeuriploInferApp::processVideoClassification(const std::string &source) {
+void NeuriploInfer::processVideoClassification(const std::string &source) {
   try {
     std::unique_ptr<VideoCaptureInterface> videoInterface =
         createVideoInterface();
@@ -258,7 +258,7 @@ void NeuriploInferApp::processVideoClassification(const std::string &source) {
   }
 }
 
-void NeuriploInferApp::processOpticalFlow() {
+void NeuriploInfer::processOpticalFlow() {
   // Process optical flow with multiple input tensors
   // Now supported with updated neuriplo library
 
@@ -326,7 +326,7 @@ void NeuriploInferApp::processOpticalFlow() {
   }
 }
 
-void NeuriploInferApp::processImageUnderstanding() {
+void NeuriploInfer::processImageUnderstanding() {
   try {
     const std::string prompt_log = config.taskExtraParams.count("prompt")
                                        ? config.taskExtraParams.at("prompt")
@@ -367,7 +367,7 @@ void NeuriploInferApp::processImageUnderstanding() {
 }
 
 std::tuple<int, int, int, int>
-NeuriploInferApp::extractInputDims(const std::vector<int64_t> &shape) {
+NeuriploInfer::extractInputDims(const std::vector<int64_t> &shape) {
   if (shape.size() == 4) {
     return {static_cast<int>(shape[0]), static_cast<int>(shape[1]),
             static_cast<int>(shape[2]), static_cast<int>(shape[3])};
