@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Renamed application entry class to `NeuriploInfer` and aligned related
   source/test filenames with the `NeuriploInfer*` prefix.
 - Renamed repository identity per ADR 0004: CMake project and executable
-  `neuriplo-infer`, static library `neuriplo-infer-app`, sibling pin
+  `neuriplo-infer` CMake project, static library, and executable output name, sibling pin
   `NEURIPLO_TASKS_VERSION`, and consumer updates for `neuriplo-tasks`
   includes/namespaces/link targets. FetchContent tracks
   `feature/neuriplo-tasks` on the not-yet-renamed GitHub repo until ADR 0004
