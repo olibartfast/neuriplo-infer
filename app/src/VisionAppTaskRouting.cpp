@@ -1,6 +1,17 @@
 #include "TaskRouting.hpp"
 #include "utils.hpp"
 
+namespace {
+bool startsWith(const std::string &value, const std::string &prefix) {
+  return value.size() >= prefix.size() &&
+         value.compare(0, prefix.size(), prefix) == 0;
+}
+
+bool contains(const std::string &value, const std::string &needle) {
+  return value.find(needle) != std::string::npos;
+}
+} // namespace
+
 vision_core::TaskType getTaskTypeForModel(const std::string &model_type) {
   std::string normalized = normalizeModelType(model_type);
 
@@ -11,10 +22,11 @@ vision_core::TaskType getTaskTypeForModel(const std::string &model_type) {
   }
   // Single-frame classification models
   if (normalized == "torchvisionclassifier" ||
-      normalized == "tensorflowclassifier" || normalized == "vitclassifier") {
+      normalized == "tensorflowclassifier" || normalized == "vitclassifier" ||
+      startsWith(normalized, "resnet") || contains(normalized, "tensorflow")) {
     return vision_core::TaskType::Classification;
   }
-  if (normalized.find("seg") != std::string::npos || normalized == "yoloseg") {
+  if (contains(normalized, "seg") || normalized == "yoloseg") {
     return vision_core::TaskType::InstanceSegmentation;
   }
   if (normalized == "raft") {
@@ -22,11 +34,16 @@ vision_core::TaskType getTaskTypeForModel(const std::string &model_type) {
   }
   // Pose estimation: vitpose plus yolo*pose* and EdgeCrafter
   // ecpose*/edgecrafter*pose*, mirroring vision_core::TaskFactory routing.
-  if (normalized == "vitpose" || normalized.find("pose") != std::string::npos) {
+  if (normalized == "vitpose" || contains(normalized, "pose")) {
     return vision_core::TaskType::PoseEstimation;
   }
-  if (normalized.find("depthanythingv2") != std::string::npos) {
+  if (contains(normalized, "depthanythingv2")) {
     return vision_core::TaskType::DepthEstimation;
+  }
+  if (normalized == "lgm" || normalized == "grm" ||
+      normalized == "gaussiansplatting" || normalized == "lgmmini" ||
+      contains(normalized, "splat")) {
+    return vision_core::TaskType::GaussianSplatting;
   }
   if (normalized == "owlv2" || normalized == "owlvit" ||
       normalized == "groundingdino") {
