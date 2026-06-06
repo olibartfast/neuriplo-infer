@@ -76,8 +76,8 @@ include(FetchContent)
 
 FetchContent_Declare(
     neuriplo-tasks
-    GIT_REPOSITORY https://github.com/olibartfast/neuriplo-tasks.git
-    GIT_TAG        ${NEURIPLO_TASKS_VERSION}  # Use specific version instead of master
+    GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
+    GIT_TAG        ${NEURIPLO_TASKS_VERSION}
 )
 
 # Fetch the neuriplo project from GitHub with specific version
