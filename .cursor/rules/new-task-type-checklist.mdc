@@ -29,7 +29,7 @@ python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path> --c
 
 ## 2. Keep task routing aligned with neuriplo-tasks TaskFactory
 
-`VisionApp::getTaskType` (`app/src/VisionAppTaskRouting.cpp`) must map every new
+`getTaskTypeForModel` (`app/src/NeuriploInferTaskRouting.cpp`) must map every new
 type string to the same `TaskType` that `neuriplo_tasks::TaskFactory` builds.
 Prefer substring rules that mirror the factory (e.g. `find("pose")`,
 `find("seg")`) so model-family prefixes like `ecpose`/`yolo*pose` route to

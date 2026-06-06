@@ -1,4 +1,4 @@
-#include "VisionApp.hpp"
+#include "NeuriploInferApp.hpp"
 
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 
@@ -230,7 +230,7 @@ void renderImageUnderstandingResults(
 
 } // namespace
 
-void VisionApp::processResults(const std::vector<neuriplo_tasks::Result> &results,
+void NeuriploInferApp::processResults(const std::vector<neuriplo_tasks::Result> &results,
                                cv::Mat &image) {
   const auto task_type = getTaskType(config.detectorType);
 

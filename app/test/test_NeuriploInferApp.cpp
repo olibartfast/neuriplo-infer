@@ -4,9 +4,9 @@
 
 // Verify that AppConfig threshold fields map correctly to
 // neuriplo_tasks::TaskConfig. This mirrors the mapping done in
-// VisionApp::VisionApp().
+// InferencePipelineBuilder task config mapping.
 
-TEST(VisionAppTaskConfig, ThresholdMapping) {
+TEST(NeuriploInferAppTaskConfig, ThresholdMapping) {
   AppConfig config;
   config.confidenceThreshold = 0.3f;
   config.nmsThreshold = 0.6f;
@@ -22,7 +22,7 @@ TEST(VisionAppTaskConfig, ThresholdMapping) {
   EXPECT_FLOAT_EQ(task_config.mask_threshold, 0.7f);
 }
 
-TEST(VisionAppTaskConfig, DefaultThresholdsRoundtrip) {
+TEST(NeuriploInferAppTaskConfig, DefaultThresholdsRoundtrip) {
   AppConfig config;
   config.confidenceThreshold = 0.25f;
   // nmsThreshold and maskThreshold use in-class defaults
@@ -37,7 +37,7 @@ TEST(VisionAppTaskConfig, DefaultThresholdsRoundtrip) {
   EXPECT_FLOAT_EQ(task_config.mask_threshold, 0.50f);
 }
 
-TEST(VisionAppTaskConfig, OpenVocabFieldsRoundtrip) {
+TEST(NeuriploInferAppTaskConfig, OpenVocabFieldsRoundtrip) {
   AppConfig config;
   config.textPrompts = {"cat", "dog"};
   config.tokenizerVocabPath = "vocab.json";
@@ -53,7 +53,7 @@ TEST(VisionAppTaskConfig, OpenVocabFieldsRoundtrip) {
   EXPECT_EQ(config.tokenizerMergesPath, "merges.txt");
 }
 
-TEST(VisionAppTaskConfig, ExtraParamsRoundtrip) {
+TEST(NeuriploInferAppTaskConfig, ExtraParamsRoundtrip) {
   AppConfig config;
   config.taskExtraParams = {{"prompt", "Describe the image"},
                             {"output_format", "json"},
