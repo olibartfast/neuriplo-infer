@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <stdexcept>
 
-VisionApp::VisionApp(const AppConfig &config) : config(config) {
+VisionApp::VisionApp(const AppConfig &app_config) : config(app_config) {
   setupLogging();
 }
 

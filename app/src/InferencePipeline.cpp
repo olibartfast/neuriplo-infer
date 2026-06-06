@@ -178,9 +178,9 @@ void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
   LOG(INFO) << "CPU info " << getCPUInfo();
   LOG(INFO) << "GPU info: " << getGPUModel();
   const auto use_gpu = config_.use_gpu && hasNvidiaGPU();
-  pipeline.engine =
-      setup_inference_engine(buildEngineWeights(config_), use_gpu,
-                             config_.batch_size, config_.input_sizes);
+  pipeline.engine = setup_inference_engine(
+      buildEngineWeights(config_), use_gpu,
+      static_cast<size_t>(config_.batch_size), config_.input_sizes);
   if (!pipeline.engine) {
     throw std::runtime_error("Can't setup an inference engine for " +
                              config_.weights);

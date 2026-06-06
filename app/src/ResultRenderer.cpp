@@ -1,6 +1,7 @@
 #include "ResultRenderer.hpp"
 
 #include "utils.hpp"
+#include "vision-core/core/opencv_interop.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -25,17 +26,29 @@ void forEachResultOfType(const std::vector<vision_core::Result> &results,
   }
 }
 
+std::string labelForClass(float class_id,
+                          const std::vector<std::string> &classes) {
+  const int class_index = static_cast<int>(class_id);
+  const std::string fallback = std::to_string(class_index);
+  if (class_id < 0.0F) {
+    return fallback;
+  }
+
+  const auto index = static_cast<size_t>(class_index);
+  if (index < classes.size()) {
+    return classes[index];
+  }
+  return fallback;
+}
+
 void renderDetectionResults(const std::vector<vision_core::Result> &results,
                             cv::Mat &image,
                             const std::vector<std::string> &classes) {
   forEachResultOfType<vision_core::Detection>(
       results, [&](const auto &detection) {
-        cv::rectangle(image, detection.bbox, cv::Scalar(255, 0, 0), 3);
-        std::string label =
-            std::to_string(static_cast<int>(detection.class_id));
-        if (detection.class_id >= 0 && detection.class_id < classes.size()) {
-          label = classes[static_cast<int>(detection.class_id)];
-        }
+        cv::rectangle(image, vision_core::toCvRect(detection.bbox),
+                      cv::Scalar(255, 0, 0), 3);
+        std::string label = labelForClass(detection.class_id, classes);
         draw_label(image, label, detection.class_confidence, detection.bbox.x,
                    detection.bbox.y);
       });
@@ -45,7 +58,8 @@ void renderOpenVocabDetectionResults(
     const std::vector<vision_core::Result> &results, cv::Mat &image) {
   forEachResultOfType<vision_core::OpenVocabDetection>(
       results, [&](const auto &detection) {
-        cv::rectangle(image, detection.bbox, cv::Scalar(0, 165, 255), 3);
+        cv::rectangle(image, vision_core::toCvRect(detection.bbox),
+                      cv::Scalar(0, 165, 255), 3);
         const std::string label = detection.label.empty()
                                       ? std::to_string(detection.prompt_index)
                                       : detection.label;
@@ -60,10 +74,10 @@ void renderClassificationResults(
   std::string result_text = "Classification: ";
   forEachResultOfType<vision_core::Classification>(
       results, [&](const auto &classification) {
-        if (classification.class_id >= 0 &&
-            classification.class_id < classes.size()) {
-          result_text += classes[static_cast<int>(classification.class_id)] +
-                         " (" +
+        const int class_index = static_cast<int>(classification.class_id);
+        if (classification.class_id >= 0.0F &&
+            static_cast<size_t>(class_index) < classes.size()) {
+          result_text += classes[static_cast<size_t>(class_index)] + " (" +
                          std::to_string(classification.class_confidence) + ")";
         }
       });
@@ -89,18 +103,14 @@ void renderInstanceSegmentationResults(
     const std::vector<std::string> &classes) {
   forEachResultOfType<vision_core::InstanceSegmentation>(
       results, [&](const auto &segmentation) {
-        cv::rectangle(image, segmentation.bbox, cv::Scalar(255, 0, 0), 3);
-        std::string label =
-            std::to_string(static_cast<int>(segmentation.class_id));
-        if (segmentation.class_id >= 0 &&
-            segmentation.class_id < classes.size()) {
-          label = classes[static_cast<int>(segmentation.class_id)];
-        }
+        cv::rectangle(image, vision_core::toCvRect(segmentation.bbox),
+                      cv::Scalar(255, 0, 0), 3);
+        std::string label = labelForClass(segmentation.class_id, classes);
         draw_label(image, label, segmentation.class_confidence,
                    segmentation.bbox.x, segmentation.bbox.y);
 
         if (!segmentation.mask.empty()) {
-          cv::Mat mask = segmentation.mask;
+          cv::Mat mask = vision_core::toCvMat(segmentation.mask);
           cv::Mat maskForRender;
           if (mask.size() != image.size()) {
             cv::resize(mask, maskForRender, image.size(), 0, 0,
@@ -126,7 +136,7 @@ void renderOpticalFlowResults(const std::vector<vision_core::Result> &results,
                               cv::Mat &image) {
   forEachResultOfType<vision_core::OpticalFlow>(results, [&](const auto &flow) {
     if (!flow.flow.empty()) {
-      image = flow.flow.clone();
+      image = vision_core::toCvMat(flow.flow).clone();
     }
     std::string flow_text =
         "Max displacement: " + std::to_string(flow.max_displacement);
@@ -138,7 +148,7 @@ void renderOpticalFlowResults(const std::vector<vision_core::Result> &results,
 void renderPoseEstimationResults(
     const std::vector<vision_core::Result> &results, cv::Mat &image,
     float confidence_threshold) {
-  const std::vector<std::pair<int, int>> skeleton = {
+  const std::vector<std::pair<size_t, size_t>> skeleton = {
       {0, 1},   {0, 2},   {1, 3},   {2, 4},  {5, 6},  {5, 7},
       {7, 9},   {6, 8},   {8, 10},  {5, 11}, {6, 12}, {11, 12},
       {11, 13}, {13, 15}, {12, 14}, {14, 16}};
@@ -181,10 +191,10 @@ void renderDepthEstimationResults(
       results, [&](const auto &depth_result) {
         cv::Mat depth_for_vis;
         if (!depth_result.normalized_depth.empty()) {
-          depth_for_vis = depth_result.normalized_depth;
+          depth_for_vis = vision_core::toCvMat(depth_result.normalized_depth);
         } else if (!depth_result.depth.empty()) {
-          cv::normalize(depth_result.depth, depth_for_vis, 0.0f, 1.0f,
-                        cv::NORM_MINMAX, CV_32FC1);
+          cv::normalize(vision_core::toCvMat(depth_result.depth), depth_for_vis,
+                        0.0f, 1.0f, cv::NORM_MINMAX, CV_32FC1);
         } else {
           return;
         }

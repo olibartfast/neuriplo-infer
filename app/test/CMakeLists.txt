@@ -9,15 +9,8 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_VisionApp.cpp    
+    ${CMAKE_CURRENT_LIST_DIR}/test_VisionApp.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_InferencePipelineBuilder.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/utils.cpp 
-    ${CMAKE_SOURCE_DIR}/app/src/CommandLineParser.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/VisionApp.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/InferencePipeline.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/CLICommands.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/ResultRenderer.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/VisionAppTaskRouting.cpp
 )
 
 include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
@@ -61,7 +54,11 @@ elseif(DEFAULT_BACKEND STREQUAL "LITERT")
     target_link_directories(${PROJECT_NAME_TEST} PRIVATE ${LITERT_DIR}/lib)
 endif()
 
-target_link_libraries(${PROJECT_NAME_TEST} PUBLIC gtest gtest_main glog::glog ${OpenCV_LIBS} vision-core VideoCapture neuriplo)
+target_link_libraries(${PROJECT_NAME_TEST} PUBLIC
+    gtest
+    gtest_main
+    vision-inference-app
+)
 
 # Discover and run tests
 gtest_discover_tests(${PROJECT_NAME_TEST})
