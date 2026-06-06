@@ -1,4 +1,4 @@
-# docker build --rm -t vision-inference:libtensorflow -f docker/Dockerfile.libtensorflow .
+# docker build --rm -t neuriplo-infer:libtensorflow -f docker/Dockerfile.libtensorflow .
 
 # Stage 1: Common dependencies
 ARG UBUNTU_VERSION=24.04
@@ -22,10 +22,10 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-COPY VERSION /tmp/vision-inference.VERSION
+COPY VERSION /tmp/neuriplo-infer.VERSION
 
 RUN dependency_ref=develop && \
-    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/vision-inference.VERSION; then dependency_ref=master; fi && \
+    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi && \
     wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
 # Stage 2: Common backend environment
@@ -61,7 +61,7 @@ FROM backend_dependencies AS final
 WORKDIR /app
 
 # Copy the executable
-COPY --from=builder /app/build/app/vision-inference /app/vision-inference
+COPY --from=builder /app/build/app/neuriplo-infer /app/neuriplo-infer
 
 # Copy TensorFlow runtime libraries installed during the builder stage.
 COPY --from=builder /root/dependencies/tensorflow /root/dependencies/tensorflow
@@ -74,4 +74,4 @@ COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 ENV LD_LIBRARY_PATH=/app:${TENSORFLOW_DIR}/lib
 
 # Set the entry point to the compiled executable
-ENTRYPOINT ["./vision-inference"]
+ENTRYPOINT ["./neuriplo-infer"]

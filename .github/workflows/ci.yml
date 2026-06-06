@@ -24,6 +24,11 @@ jobs:
       - name: Install shared dependencies
         uses: ./.github/actions/install-linux-deps
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -33,15 +38,17 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DNEURIPLO_TASKS_VERSION=feature/neuriplo-tasks \
             -DENABLE_APP_TESTS=ON \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Check model-type docs are in sync
         run: |
           python3 scripts/sync_supported_model_types.py \
-            --vision-core-readme build/_deps/vision-core-src/README.md \
+            --neuriplo-tasks-readme build/_deps/neuriplo-tasks-src/README.md \
             --check
 
       - name: Build
@@ -78,6 +85,11 @@ jobs:
           tar -xzf onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz -C ~
           rm onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -87,12 +99,13 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=ONNX_RUNTIME \
             -DORT_VERSION=${ORT_VERSION} \
             -DONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-${ORT_VERSION} \
             -DENABLE_APP_TESTS=OFF \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)
@@ -125,6 +138,11 @@ jobs:
           unzip -q libtorch.zip -d ~
           rm libtorch.zip
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -134,12 +152,13 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=LIBTORCH \
             -DCMAKE_PREFIX_PATH=$HOME/libtorch \
             -DLIBTORCH_DIR=$HOME/libtorch \
             -DENABLE_APP_TESTS=OFF \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)
@@ -167,7 +186,7 @@ jobs:
           context: .
           file: docker/Dockerfile.libtensorflow
           push: false
-          tags: vision-inference:libtensorflow
+          tags: neuriplo-infer:libtensorflow
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -194,7 +213,7 @@ jobs:
           context: .
           file: docker/Dockerfile.tensorrt
           push: false
-          tags: vision-inference:tensorrt
+          tags: neuriplo-infer:tensorrt
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -221,6 +240,6 @@ jobs:
           context: .
           file: docker/Dockerfile.openvino
           push: false
-          tags: vision-inference:openvino
+          tags: neuriplo-infer:openvino
           cache-from: type=gha
           cache-to: type=gha,mode=max

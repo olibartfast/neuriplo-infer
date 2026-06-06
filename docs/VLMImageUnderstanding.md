@@ -40,7 +40,7 @@ cmake --install build --prefix $HOME/dependencies/llamacpp
 
 Download via Hugging Face Hub or use the preset in `docker_run_inference_e2e_example.sh`.
 
-### 3. Build vision-inference with LLAMACPP backend
+### 3. Build neuriplo-infer with LLAMACPP backend
 
 ```bash
 cmake -B build-llamacpp \
@@ -56,7 +56,7 @@ cmake --build build-llamacpp -j$(nproc)
 
 ```bash
 LD_LIBRARY_PATH=/path/to/llamacpp/lib \
-  build-llamacpp/app/vision-inference \
+  build-llamacpp/app/neuriplo-infer \
   --type=gemma4 \
   --weights=/path/to/gemma-4-E4B-it-Q4_K_M.gguf \
   --mmproj=/path/to/mmproj-gemma4-E4B-F16.gguf \
@@ -68,7 +68,7 @@ LD_LIBRARY_PATH=/path/to/llamacpp/lib \
 
 | Flag | Description |
 |------|-------------|
-| `--type=gemma4` | Selects the `ImageUnderstanding` task in vision-core |
+| `--type=gemma4` | Selects the `ImageUnderstanding` task in neuriplo-tasks |
 | `--weights` | Path to the language model GGUF |
 | `--mmproj` | Path to the vision projector GGUF (enables multimodal mode) |
 | `--source` | Path to the input image (`jpg`, `png`); omit for text-only mode |
@@ -79,7 +79,7 @@ LD_LIBRARY_PATH=/path/to/llamacpp/lib \
 Omit `--source` (or provide an empty path) to run without an image:
 
 ```bash
-build-llamacpp/app/vision-inference \
+build-llamacpp/app/neuriplo-infer \
   --type=gemma4 \
   --weights=/path/to/model.gguf \
   --prompt="What is 2+2?"
@@ -99,7 +99,7 @@ Omit `--mmproj` entirely. The `--source` flag is then ignored and only text infe
 docker build \
   --build-arg LLAMACPP_VERSION=b9085 \
   -f docker/Dockerfile.llamacpp \
-  -t vision-inference-llamacpp:latest \
+  -t neuriplo-infer-llamacpp:latest \
   .
 ```
 
@@ -121,7 +121,7 @@ the default prompt `"Describe what you see in this image."`.
 docker run --rm \
   -v /path/to/models:/models:ro \
   -v /path/to/images:/data:ro \
-  vision-inference-llamacpp:latest \
+  neuriplo-infer-llamacpp:latest \
   --type=gemma4 \
   --weights=/models/gemma-4-E4B-it-Q4_K_M.gguf \
   --mmproj=/models/mmproj-gemma4-E4B-F16.gguf \
@@ -134,11 +134,11 @@ docker run --rm \
 ## How It Works
 
 1. **CLI layer** (`CommandLineParser`) parses `--mmproj` into `AppConfig.mmprojectPath`.
-2. **VisionApp** concatenates the projector path into the engine weights string:
+2. **Pipeline wiring** (`InferencePipelineBuilder`) concatenates the projector path into the engine weights string:
    `model.gguf|mmproj=/path/to/mmproj.gguf`
 3. **LlamaCppInfer** constructor splits on `|mmproj=`, loads the language model, then
    calls `mtmd_init_from_file()` with the projector path.
-4. **Preprocessing** (vision-core `ImageUnderstandingTask::preprocess`):
+4. **Preprocessing** (neuriplo-tasks `ImageUnderstandingTask::preprocess`):
    - Tensor 0: UTF-8 prompt bytes
    - Tensor 1 (when image provided): `[4B width LE][4B height LE][H×W×3 RGB bytes]`
 5. **Inference dispatch** (`LlamaCppInfer::get_infer_results`):
@@ -149,7 +149,7 @@ docker run --rm \
    - `mtmd_tokenize()` merges text tokens and image embeddings
    - `mtmd_helper_eval_chunks()` evaluates the combined sequence
    - `autoregressiveGenerate()` samples tokens until EOG or 512-token limit
-7. **Response** is returned as a UTF-8 string via `processResults()`.
+7. **Response** is returned as a UTF-8 string and printed by `ResultRenderer`.
 
 ---
 

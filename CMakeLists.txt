@@ -11,11 +11,37 @@ if(PROJECT_SEMVER STREQUAL "")
         "semantic version (expected MAJOR.MINOR.PATCH). Got: '${PROJECT_VERSION_RAW}'")
 endif()
 
-project(vision-inference VERSION ${PROJECT_SEMVER})
+project(neuriplo-infer VERSION ${PROJECT_SEMVER})
+
+include(cmake/CompileSpeed.cmake)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(PROJECT_WARNING_FLAGS
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Wshadow
+    -Wnon-virtual-dtor
+    -Wold-style-cast
+    -Wcast-align
+    -Wunused
+    -Woverloaded-virtual
+    -Wconversion
+    -Wsign-conversion
+    -Wnull-dereference
+    -Wdouble-promotion
+    -Wformat=2
+    -Wimplicit-fallthrough
+)
+
+option(WERROR "Treat compiler warnings as errors" OFF)
+if(WERROR)
+    list(APPEND PROJECT_WARNING_FLAGS -Werror)
+endif()
 
 option(ENABLE_APP_TESTS "Enable unit testing for app module" OFF)
 if(ENABLE_APP_TESTS)
@@ -48,10 +74,12 @@ message(STATUS "✓ glog found")
 
 include(FetchContent)
 
+set(NEURIPLO_TASKS_GIT_REPOSITORY "https://github.com/olibartfast/neuriplo-tasks.git")
+
 FetchContent_Declare(
-    vision-core
-    GIT_REPOSITORY https://github.com/olibartfast/vision-core.git
-    GIT_TAG        ${VISION_CORE_VERSION}  # Use specific version instead of master
+    neuriplo-tasks
+    GIT_REPOSITORY ${NEURIPLO_TASKS_GIT_REPOSITORY}
+    GIT_TAG        ${NEURIPLO_TASKS_VERSION}
 )
 
 # Fetch the neuriplo project from GitHub with specific version
@@ -67,10 +95,25 @@ FetchContent_Declare(
     GIT_TAG        ${VIDEOCAPTURE_VERSION}  # Use specific version instead of master
 )
 
-# Disable neuriplo's tests so it doesn't require GTest
+# Disable subproject tests and sample apps when fetched as dependencies.
 set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(neuriplo VideoCapture vision-core)
-message(STATUS "vision-core_SOURCE_DIR: ${vision-core_SOURCE_DIR}")
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+# Prefer a sibling checkout during local cross-repo development.
+set(_NEURIPLO_TASKS_SIBLING "")
+foreach(_candidate IN ITEMS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo-tasks")
+    if(EXISTS "${_candidate}/CMakeLists.txt")
+        set(_NEURIPLO_TASKS_SIBLING "${_candidate}")
+        break()
+    endif()
+endforeach()
+if(NOT _NEURIPLO_TASKS_SIBLING STREQUAL "")
+    set(FETCHCONTENT_SOURCE_DIR_NEURIPLO-TASKS "${_NEURIPLO_TASKS_SIBLING}" CACHE PATH "" FORCE)
+endif()
+
+FetchContent_MakeAvailable(neuriplo VideoCapture neuriplo-tasks)
+message(STATUS "neuriplo-tasks_SOURCE_DIR: ${neuriplo-tasks_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
 

@@ -1,12 +1,19 @@
 # Supported Model Types
 
-Auto-generated from `vision-core` TaskFactory documentation.
+Auto-generated from `neuriplo-tasks` TaskFactory documentation.
 Do not edit manually; run `python scripts/sync_supported_model_types.py`.
 
-Source: [https://github.com/olibartfast/vision-core](https://github.com/olibartfast/vision-core)
+Source: [https://github.com/olibartfast/neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks)
+
+`TaskFactory` routes model type strings through a **built-in, compile-time**
+registration table in `src/core/task_factory.cpp`. New built-in tasks require
+editing that table and the README list below. **Third-party or runtime task
+plugins are not supported**; if plugin extension becomes a product goal, add a
+separate explicit extension registry rather than growing the internal table
+indefinitely.
 
 <!-- TASKFACTORY_MODEL_LIST:START -->
-The TaskFactory supports the following model type strings:
+The TaskFactory supports the following model type strings. Matching normalizes strings by lowercasing and stripping whitespace, hyphens, and underscores, so `YOLO-V8`, `yolo_v8`, and ` yolo v8 ` route identically. Specific segmentation and pose aliases are checked before generic detection aliases.
 
 **Object Detection:**
 
@@ -15,9 +22,12 @@ The TaskFactory supports the following model type strings:
 - `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
 - `"rtdetrul"`, `"rtdetrultralytics"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
+- `"ecdet"` - EdgeCrafter detection (any string starting with `ecdet`)
+- `"edgecrafter"`, `"edgecrafter-det"` - EdgeCrafter detection unless the normalized string contains `seg` or `pose`
 
 **Instance Segmentation:**
-- `"yoloseg"` - YOLOv5/YOLOv8/YOLO11
+- `"ecseg"` - EdgeCrafter segmentation (any string starting with `ecseg` or `edgecrafter` and containing `seg`)
+- `"yoloseg"`, `"yolo-seg"`, `"yolov8-seg"` - YOLOv5/YOLOv8/YOLO11-style segmentation
 - `"yolov10seg"`- YOLOv10
 - `"yolo26seg"` - YOLO26
 - `"rfdetrseg"` - RF-DETR
@@ -43,6 +53,7 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
 - `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
 - `"vitpose"` - ViTPose (top-down, heatmap-based)
+- `"ecpose"` - EdgeCrafter pose estimation (any string starting with `ecpose`, or `edgecrafter` and containing `pose`)
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
@@ -60,7 +71,7 @@ The expected ONNX contract is:
 
 Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
 
-For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/vision-core/blob/master/export/open_vocab_detection/OWLv2.md).
+For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/open_vocab_detection/OWLv2.md).
 
 **Image Understanding (VLM):**
 - `"gemma4"`, `"gemma"`, `"llama"`, `"llamacpp"`, `"imageunderstanding"` - Vision-language model image captioning / Q&A via llama.cpp backend
@@ -69,10 +80,18 @@ Input contract: `preprocess()` returns two tensors — `[0]` UTF-8 prompt bytes,
 
 Requires the llama.cpp `LLAMACPP` backend with an mmproj (vision projector) GGUF.
 
-For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/vision-core/blob/master/export/image_understanding/ImageUnderstanding.md).
+For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/image_understanding/ImageUnderstanding.md).
 
 **Gaussian Splatting:**
 - `"lgm"`, `"lgm-mini"` - LGM (Large Gaussian Model)
 - `"grm"` - GRM
 - `"gaussiansplatting"`, any string containing `"splat"` - generic alias
+
+
+EdgeCrafter export and tensor contract details live in the task-specific docs:
+
+- [EdgeCrafter Detection](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md)
+- [EdgeCrafter Segmentation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md)
+- [EdgeCrafter Pose Estimation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md)
+
 <!-- TASKFACTORY_MODEL_LIST:END -->

@@ -1,7 +1,7 @@
 # Runbook: Wiring a New VLM Task Across the Vision Stack
 
 This runbook describes how a vision-language model (VLM) task is threaded through the
-three-repo vision stack: vision-core → neuriplo → vision-inference. Use it as a template
+three-repo vision stack: neuriplo-tasks → neuriplo → neuriplo-infer. Use it as a template
 when adding support for a new VLM or multimodal task type.
 
 Reference implementation: **Gemma4 ImageUnderstanding** (commit `c55daf3` and preceding).
@@ -11,28 +11,28 @@ Reference implementation: **Gemma4 ImageUnderstanding** (commit `c55daf3` and pr
 ## Stack Overview
 
 ```
-vision-inference   (application layer — CLI, routing, VisionApp)
+neuriplo-infer   (application layer — CLI, routing, NeuriploInfer)
       │
       ▼
   neuriplo          (backend orchestration — InferenceInterface, LlamaCppInfer)
       │
       ▼
-  vision-core       (task contracts — TaskFactory, preprocess/postprocess)
+  neuriplo-tasks       (task contracts — TaskFactory, preprocess/postprocess)
 ```
 
 Each repo has a well-defined seam. Changes cross all three in a bottom-up order
-(vision-core first, neuriplo second, vision-inference last).
+(neuriplo-tasks first, neuriplo second, neuriplo-infer last).
 
 ---
 
-## 1. vision-core: Define the Task Contract
+## 1. neuriplo-tasks: Define the Task Contract
 
 ### 1a. Register the task type
 
-In `vision-core`, add the new type to `TaskType` enum and `TaskFactory`:
+In `neuriplo-tasks`, add the new type to `TaskType` enum and `TaskFactory`:
 
 ```cpp
-// include/vision_core/TaskType.hpp
+// include/neuriplo_tasks/TaskType.hpp
 enum class TaskType { ..., ImageUnderstanding, ... };
 
 // src/TaskFactory.cpp
@@ -195,7 +195,7 @@ endforeach()
 
 ---
 
-## 3. vision-inference: Plumb CLI → VisionApp → Task
+## 3. neuriplo-infer: Plumb CLI → NeuriploInfer → Task
 
 ### 3a. AppConfig
 
@@ -223,7 +223,7 @@ if (!mmproj.empty() && !isFile(mmproj)) {
 }
 ```
 
-### 3c. VisionApp constructor
+### 3c. NeuriploInfer constructor
 
 Embed the projector path before calling `setup_inference_engine`:
 
@@ -235,12 +235,12 @@ if (!config.mmprojectPath.empty()) {
 engine = setup_inference_engine(engine_weights, use_gpu, config.batch_size, config.input_sizes);
 ```
 
-### 3d. VisionApp::run() routing
+### 3d. NeuriploInfer::run() routing
 
 Add the `ImageUnderstanding` early-return before the image/video dispatch:
 
 ```cpp
-if (getTaskType(config.detectorType) == vision_core::TaskType::ImageUnderstanding) {
+if (getTaskType(config.detectorType) == neuriplo_tasks::TaskType::ImageUnderstanding) {
     processImageUnderstanding();
     return;
 }
@@ -275,22 +275,22 @@ if (source.empty() && !is_text_task) {
 
 ## 4. Checklist for a New VLM Task
 
-- [ ] vision-core: `TaskType` enum entry
-- [ ] vision-core: `TaskFactory` registration (normalize name variants)
-- [ ] vision-core: `preprocess()` returns 2-tensor encoding when image provided
-- [ ] vision-core: `postprocess()` decodes float-encoded bytes to text
+- [ ] neuriplo-tasks: `TaskType` enum entry
+- [ ] neuriplo-tasks: `TaskFactory` registration (normalize name variants)
+- [ ] neuriplo-tasks: `preprocess()` returns 2-tensor encoding when image provided
+- [ ] neuriplo-tasks: `postprocess()` decodes float-encoded bytes to text
 - [ ] neuriplo: `LlamaCppInfer` constructor parses `|mmproj=` separator
 - [ ] neuriplo: `mtmd_init_from_file()` called with parsed path
 - [ ] neuriplo: `get_infer_results()` dispatches on tensor count + `ctx_mtmd_`
 - [ ] neuriplo: multimodal prompt uses model's native token strings (not `llama_chat_apply_template`)
 - [ ] neuriplo: `n_ctx ≥ 8192`
 - [ ] neuriplo: `libmtmd` linked in `cmake/LinkBackend.cmake`
-- [ ] vision-inference: `AppConfig.mmprojectPath` field
-- [ ] vision-inference: `--mmproj` CLI flag + validation
-- [ ] vision-inference: `engine_weights += "|mmproj=..."` in VisionApp constructor
-- [ ] vision-inference: `processImageUnderstanding()` loads image from sources
-- [ ] vision-inference: `validateArguments` allows empty source for text-only task types
-- [ ] vision-inference: `getTaskType()` / `normalizeModelType()` maps new name variants
+- [ ] neuriplo-infer: `AppConfig.mmprojectPath` field
+- [ ] neuriplo-infer: `--mmproj` CLI flag + validation
+- [ ] neuriplo-infer: `engine_weights += "|mmproj=..."` in NeuriploInfer constructor
+- [ ] neuriplo-infer: `processImageUnderstanding()` loads image from sources
+- [ ] neuriplo-infer: `validateArguments` allows empty source for text-only task types
+- [ ] neuriplo-infer: `getTaskType()` / `normalizeModelType()` maps new name variants
 
 ---
 
@@ -298,12 +298,12 @@ if (source.empty() && !is_text_task) {
 
 | File | Purpose |
 |------|---------|
-| `vision-core/src/image_understanding/image_understanding_task.cpp` | Two-tensor preprocess impl |
+| `neuriplo-tasks/src/image_understanding/image_understanding_task.cpp` | Two-tensor preprocess impl |
 | `neuriplo/backends/llamacpp/src/LlamaCppInfer.cpp` | mtmd dispatch and Gemma4 prompt format |
 | `neuriplo/backends/llamacpp/src/LlamaCppInfer.hpp` | `ctx_mtmd_` member, method declarations |
-| `vision-inference/app/inc/AppConfig.hpp` | `mmprojectPath` field |
-| `vision-inference/app/src/CommandLineParser.cpp` | `--mmproj` flag and validation |
-| `vision-inference/app/src/VisionApp.cpp` | Path embedding and task setup |
-| `vision-inference/app/src/VisionAppProcessing.cpp` | `processImageUnderstanding()` |
-| `vision-inference/cmake/LinkBackend.cmake` | `libmtmd` linkage |
-| `vision-inference/docker/Dockerfile.llamacpp` | Multi-stage build with mtmd |
+| `neuriplo-infer/app/inc/AppConfig.hpp` | `mmprojectPath` field |
+| `neuriplo-infer/app/src/CommandLineParser.cpp` | `--mmproj` flag and validation |
+| `neuriplo-infer/app/src/NeuriploInfer.cpp` | Path embedding and task setup |
+| `neuriplo-infer/app/src/NeuriploInferProcessing.cpp` | `processImageUnderstanding()` |
+| `neuriplo-infer/cmake/LinkBackend.cmake` | `libmtmd` linkage |
+| `neuriplo-infer/docker/Dockerfile.llamacpp` | Multi-stage build with mtmd |

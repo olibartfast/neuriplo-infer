@@ -1,3 +1,3 @@
 # Claude Instructions
 
-Canonical agent instructions live in [AGENTS.md](AGENTS.md).
+Agent instructions in [AGENTS.md](AGENTS.md).
