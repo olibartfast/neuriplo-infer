@@ -1,20 +1,4 @@
-# Fetch the VideoCapture project from GitHub with specific version
-include(FetchContent)
-FetchContent_Declare(
-    VideoCapture
-    GIT_REPOSITORY https://github.com/olibartfast/VideoCapture.git
-    GIT_TAG        ${VIDEOCAPTURE_VERSION}  
-)
-# Pass video backend options to VideoCapture library
-set(USE_GSTREAMER ${USE_GSTREAMER})
-set(USE_FFMPEG ${USE_FFMPEG})
-FetchContent_MakeAvailable(VideoCapture)
-message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
-message(STATUS "CMAKE_CURRENT_SOURCE_DIR:  ${CMAKE_CURRENT_SOURCE_DIR}")
-
-# Define sources using CMAKE_CURRENT_SOURCE_DIR instead of CMAKE_SOURCE_DIR
-set(SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+set(APP_LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionApp.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
@@ -23,13 +7,10 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
 )
-add_executable(${PROJECT_NAME} ${SOURCES})
-include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
-enable_target_sanitizers(${PROJECT_NAME})
 
+add_library(vision-inference-app STATIC ${APP_LIB_SOURCES})
 
-# Set include directories
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_include_directories(vision-inference-app PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${VideoCapture_SOURCE_DIR}/include
@@ -40,14 +21,36 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${GLOG_INCLUDE_DIRS}
 )
 
-# Link libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(vision-inference-app PUBLIC
     glog::glog
     ${OpenCV_LIBS}
     neuriplo
     VideoCapture
     vision-core
 )
+
+if(MSVC)
+    target_compile_options(vision-inference-app PRIVATE /W4)
+else()
+    target_compile_options(vision-inference-app PRIVATE ${PROJECT_WARNING_FLAGS})
+endif()
+
+add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
+enable_target_sanitizers(${PROJECT_NAME})
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE vision-inference-app)
+
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
+endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/LinkBackend.cmake)
 

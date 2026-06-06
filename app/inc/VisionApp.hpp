@@ -6,7 +6,7 @@
 
 class VisionApp {
 public:
-  explicit VisionApp(const AppConfig &config);
+  explicit VisionApp(const AppConfig &app_config);
   int run();
 
 private:

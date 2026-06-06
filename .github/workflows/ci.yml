@@ -24,6 +24,11 @@ jobs:
       - name: Install shared dependencies
         uses: ./.github/actions/install-linux-deps
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -33,10 +38,12 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DVISION_CORE_VERSION=develop \
             -DENABLE_APP_TESTS=ON \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Check model-type docs are in sync
         run: |
@@ -78,6 +85,11 @@ jobs:
           tar -xzf onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz -C ~
           rm onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -87,12 +99,13 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=ONNX_RUNTIME \
             -DORT_VERSION=${ORT_VERSION} \
             -DONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-${ORT_VERSION} \
             -DENABLE_APP_TESTS=OFF \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)
@@ -125,6 +138,11 @@ jobs:
           unzip -q libtorch.zip -d ~
           rm libtorch.zip
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -134,12 +152,13 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=LIBTORCH \
             -DCMAKE_PREFIX_PATH=$HOME/libtorch \
             -DLIBTORCH_DIR=$HOME/libtorch \
             -DENABLE_APP_TESTS=OFF \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)

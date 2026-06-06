@@ -1,5 +1,7 @@
 #include "VisionApp.hpp"
 
+#include "vision-core/core/opencv_interop.hpp"
+
 #include <cstdlib>
 #include <iostream>
 #include <utility>
@@ -12,7 +14,8 @@ void renderDetectionResults(const std::vector<vision_core::Result> &results,
   for (const auto &result : results) {
     if (std::holds_alternative<vision_core::Detection>(result)) {
       const auto &detection = std::get<vision_core::Detection>(result);
-      cv::rectangle(image, detection.bbox, cv::Scalar(255, 0, 0), 3);
+      cv::rectangle(image, vision_core::toCvRect(detection.bbox),
+                    cv::Scalar(255, 0, 0), 3);
       std::string label = std::to_string(static_cast<int>(detection.class_id));
       if (detection.class_id >= 0 && detection.class_id < classes.size()) {
         label = classes[static_cast<int>(detection.class_id)];
@@ -28,7 +31,8 @@ void renderOpenVocabDetectionResults(
   for (const auto &result : results) {
     if (std::holds_alternative<vision_core::OpenVocabDetection>(result)) {
       const auto &detection = std::get<vision_core::OpenVocabDetection>(result);
-      cv::rectangle(image, detection.bbox, cv::Scalar(0, 165, 255), 3);
+      cv::rectangle(image, vision_core::toCvRect(detection.bbox),
+                    cv::Scalar(0, 165, 255), 3);
       const std::string label = detection.label.empty()
                                     ? std::to_string(detection.prompt_index)
                                     : detection.label;
@@ -81,7 +85,8 @@ void renderInstanceSegmentationResults(
     if (std::holds_alternative<vision_core::InstanceSegmentation>(result)) {
       const auto &segmentation =
           std::get<vision_core::InstanceSegmentation>(result);
-      cv::rectangle(image, segmentation.bbox, cv::Scalar(255, 0, 0), 3);
+      cv::rectangle(image, vision_core::toCvRect(segmentation.bbox),
+                    cv::Scalar(255, 0, 0), 3);
       std::string label =
           std::to_string(static_cast<int>(segmentation.class_id));
       if (segmentation.class_id >= 0 &&
@@ -92,7 +97,7 @@ void renderInstanceSegmentationResults(
                  segmentation.bbox.x, segmentation.bbox.y);
 
       if (!segmentation.mask.empty()) {
-        cv::Mat mask = segmentation.mask;
+        cv::Mat mask = vision_core::toCvMat(segmentation.mask);
         cv::Mat maskForRender;
         if (mask.size() != image.size()) {
           cv::resize(mask, maskForRender, image.size(), 0, 0,
@@ -121,7 +126,7 @@ void renderOpticalFlowResults(const std::vector<vision_core::Result> &results,
     if (std::holds_alternative<vision_core::OpticalFlow>(result)) {
       const auto &flow = std::get<vision_core::OpticalFlow>(result);
       if (!flow.flow.empty()) {
-        image = flow.flow.clone();
+        image = vision_core::toCvMat(flow.flow).clone();
       }
       std::string flow_text =
           "Max displacement: " + std::to_string(flow.max_displacement);
@@ -183,10 +188,10 @@ void renderDepthEstimationResults(
 
       cv::Mat depth_for_vis;
       if (!depth_result.normalized_depth.empty()) {
-        depth_for_vis = depth_result.normalized_depth;
+        depth_for_vis = vision_core::toCvMat(depth_result.normalized_depth);
       } else if (!depth_result.depth.empty()) {
-        cv::normalize(depth_result.depth, depth_for_vis, 0.0f, 1.0f,
-                      cv::NORM_MINMAX, CV_32FC1);
+        cv::normalize(vision_core::toCvMat(depth_result.depth), depth_for_vis,
+                      0.0f, 1.0f, cv::NORM_MINMAX, CV_32FC1);
       } else {
         continue;
       }
