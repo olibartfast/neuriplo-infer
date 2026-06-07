@@ -1,4 +1,4 @@
-# docker build --rm -t neuriplo-infer:litert -f docker/Dockerfile.litert --build-arg NEURIPLO_VERSION=8cf93e6 .
+# docker build --rm -t neuriplo-infer:litert -f docker/Dockerfile.litert .
 
 ARG UBUNTU_VERSION=24.04
 FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
@@ -39,10 +39,12 @@ ARG BACKEND=LITERT
 ARG NEURIPLO_VERSION
 
 WORKDIR /app
-COPY . .
+COPY scripts ./scripts
 
 RUN cp /tmp/versions.env /app/versions.neuriplo.env && \
     ./scripts/setup_dependencies.sh --backend litert
+
+COPY . .
 
 RUN cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=${BACKEND} \
