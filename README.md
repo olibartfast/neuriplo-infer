@@ -443,8 +443,7 @@ YOLO26s also has a dedicated TFLite preset that exports with Ultralytics and run
 
 ```bash
 docker build --rm -t neuriplo-infer:litert \
-    -f docker/Dockerfile.litert \
-    --build-arg NEURIPLO_VERSION=8cf93e6 .
+    -f docker/Dockerfile.litert .
 
 bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
 ```
