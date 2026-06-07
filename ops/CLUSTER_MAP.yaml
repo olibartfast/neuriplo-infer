@@ -3,19 +3,19 @@ cluster:
   integration_branch: develop
   release_branch: master
   source_of_truth:
-    task_contracts: vision-core
+    task_contracts: neuriplo-tasks
     backend_orchestration: neuriplo
     video_io: videocapture
-    application_flow: vision-inference
+    application_flow: neuriplo-infer
   local_checkout_hints:
-    vision-inference: .
-    vision-core: ../vision-core
+    neuriplo-infer: .
+    neuriplo-tasks: ../neuriplo-tasks
     neuriplo: ../neuriplo
     videocapture: ../videocapture
 
 repos:
-  vision-core:
-    repo_root: ../vision-core
+  neuriplo-tasks:
+    repo_root: ../neuriplo-tasks
     role: task-contracts
     provides:
       - task_factory
@@ -24,7 +24,7 @@ repos:
       - postprocessing
       - result_types
     consumed_by:
-      - vision-inference
+      - neuriplo-infer
       - tritonic
     automation_scope:
       - ci-triage
@@ -41,7 +41,7 @@ repos:
       - backend_version_management
       - runtime_selection
     consumed_by:
-      - vision-inference
+      - neuriplo-infer
     automation_scope:
       - ci-triage
       - dependency-sync
@@ -57,18 +57,18 @@ repos:
       - file_backends
       - camera_backends
     consumed_by:
-      - vision-inference
+      - neuriplo-infer
     automation_scope:
       - ci-triage
       - dependency-sync
       - io-regression-fix
       - docs-sync
 
-  vision-inference:
+  neuriplo-infer:
     repo_root: .
     role: application
     depends_on:
-      - vision-core
+      - neuriplo-tasks
       - neuriplo
       - videocapture
     provides:
@@ -84,21 +84,21 @@ repos:
       - test-fix
 
 dependency_edges:
-  - from: vision-inference
-    to: vision-core
+  - from: neuriplo-infer
+    to: neuriplo-tasks
     type: api
     critical_contracts:
       - task_factory model type strings
       - result variant semantics
       - tensor shape and dtype expectations
-  - from: vision-inference
+  - from: neuriplo-infer
     to: neuriplo
     type: runtime
     critical_contracts:
       - backend selection
       - device placement
       - dependency setup paths
-  - from: vision-inference
+  - from: neuriplo-infer
     to: videocapture
     type: io
     critical_contracts:
@@ -106,7 +106,7 @@ dependency_edges:
       - backend priority
       - stream reliability
   - from: tritonic
-    to: vision-core
+    to: neuriplo-tasks
     type: api
     critical_contracts:
       - task_factory model type strings
@@ -125,10 +125,10 @@ agents:
       - classify_change_type
       - dispatch_repo_scoped_tasks
   repo_workers:
-    - vision-core-worker
+    - neuriplo-tasks-worker
     - neuriplo-worker
     - videocapture-worker
-    - vision-inference-worker
+    - neuriplo-infer-worker
   verifier:
     responsibilities:
       - run_repo_local_checks

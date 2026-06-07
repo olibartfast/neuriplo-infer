@@ -1,6 +1,7 @@
 #include "CLICommands.hpp"
 
 #include "VideoCaptureFactory.hpp"
+#include "neuriplo/tasks/core/opencv_interop.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -9,9 +10,9 @@
 namespace {
 
 template <typename T1, typename T2>
-std::vector<vision_core::Tensor> convertToTensors(const T1 &outputs,
+std::vector<neuriplo_tasks::Tensor> convertToTensors(const T1 &outputs,
                                                   const T2 &shapes) {
-  std::vector<vision_core::Tensor> tensors;
+  std::vector<neuriplo_tasks::Tensor> tensors;
   tensors.reserve(outputs.size());
   for (size_t i = 0; i < outputs.size(); ++i) {
     tensors.emplace_back(outputs[i], shapes[i]);
@@ -76,7 +77,7 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
   std::filesystem::create_directories("data/output");
   std::string processed_path = "data/output/processed.png";
   if (!cv::imwrite(processed_path, image)) {
-    const std::string fallback_path = "/tmp/vision-inference-processed.png";
+    const std::string fallback_path = "/tmp/neuriplo-infer-processed.png";
     if (!cv::imwrite(fallback_path, image)) {
       LOG(ERROR) << "Failed to save output image to both " << processed_path
                  << " and " << fallback_path;
@@ -115,7 +116,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
             .count();
-    double fps = 1000.0 / duration;
+    double fps = 1000.0 / static_cast<double>(duration);
     std::string fpsText = "FPS: " + std::to_string(fps);
     cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1,
                 cv::Scalar(0, 255, 0), 2);
@@ -123,7 +124,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     pipeline.renderResults(results, frame);
 
     cv::imshow("opencv feed", frame);
-    char key = cv::waitKey(1);
+    const int key = cv::waitKey(1);
     if (key == 27 || key == 'q') {
       LOG(INFO) << "Exit requested";
       break;
@@ -148,7 +149,7 @@ void processVideoClassification(InferencePipeline &pipeline,
 
   cv::Mat frame;
   std::vector<cv::Mat> frameBuffer;
-  frameBuffer.reserve(requiredFrames);
+  frameBuffer.reserve(static_cast<size_t>(requiredFrames));
 
   while (videoInterface->readFrame(frame)) {
     frameBuffer.push_back(frame.clone());
@@ -165,7 +166,7 @@ void processVideoClassification(InferencePipeline &pipeline,
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
               .count();
-      double fps = 1000.0 / duration;
+      double fps = 1000.0 / static_cast<double>(duration);
       std::string fpsText = "FPS: " + std::to_string(fps);
 
       cv::Mat displayFrame = frameBuffer.back().clone();
@@ -178,7 +179,7 @@ void processVideoClassification(InferencePipeline &pipeline,
       frameBuffer.erase(frameBuffer.begin());
     }
 
-    char key = cv::waitKey(1);
+    const int key = cv::waitKey(1);
     if (key == 27 || key == 'q') {
       LOG(INFO) << "Exit requested";
       break;
@@ -226,10 +227,10 @@ void processOpticalFlow(InferencePipeline &pipeline) {
 
     cv::Mat &image = images[0];
     for (const auto &prediction : predictions) {
-      if (std::holds_alternative<vision_core::OpticalFlow>(prediction)) {
-        vision_core::OpticalFlow flow =
-            std::get<vision_core::OpticalFlow>(prediction);
-        flow.flow.copyTo(image);
+      if (std::holds_alternative<neuriplo_tasks::OpticalFlow>(prediction)) {
+        neuriplo_tasks::OpticalFlow flow =
+            std::get<neuriplo_tasks::OpticalFlow>(prediction);
+        neuriplo_tasks::toCvMat(flow.flow).copyTo(image);
       }
     }
 
@@ -281,27 +282,27 @@ void processImageUnderstanding(InferencePipeline &pipeline) {
   pipeline.renderResults(results, dummy);
 }
 
-std::string taskTypeName(vision_core::TaskType task_type) {
+std::string taskTypeName(neuriplo_tasks::TaskType task_type) {
   switch (task_type) {
-  case vision_core::TaskType::OpticalFlow:
+  case neuriplo_tasks::TaskType::OpticalFlow:
     return "OpticalFlow";
-  case vision_core::TaskType::Classification:
+  case neuriplo_tasks::TaskType::Classification:
     return "Classification";
-  case vision_core::TaskType::Detection:
+  case neuriplo_tasks::TaskType::Detection:
     return "Detection";
-  case vision_core::TaskType::InstanceSegmentation:
+  case neuriplo_tasks::TaskType::InstanceSegmentation:
     return "InstanceSegmentation";
-  case vision_core::TaskType::VideoClassification:
+  case neuriplo_tasks::TaskType::VideoClassification:
     return "VideoClassification";
-  case vision_core::TaskType::PoseEstimation:
+  case neuriplo_tasks::TaskType::PoseEstimation:
     return "PoseEstimation";
-  case vision_core::TaskType::DepthEstimation:
+  case neuriplo_tasks::TaskType::DepthEstimation:
     return "DepthEstimation";
-  case vision_core::TaskType::OpenVocabDetection:
+  case neuriplo_tasks::TaskType::OpenVocabDetection:
     return "OpenVocabDetection";
-  case vision_core::TaskType::GaussianSplatting:
+  case neuriplo_tasks::TaskType::GaussianSplatting:
     return "GaussianSplatting";
-  case vision_core::TaskType::ImageUnderstanding:
+  case neuriplo_tasks::TaskType::ImageUnderstanding:
     return "ImageUnderstanding";
   }
   return "Unknown";
@@ -358,9 +359,10 @@ int BenchmarkCommand::execute(InferencePipeline &pipeline) {
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
             .count();
     LOG(INFO) << "Iteration " << i << ": " << duration << "ms";
-    total_time += duration;
+    total_time += static_cast<double>(duration);
   }
-  double average_time = total_time / pipeline.config.benchmark_iterations;
+  double average_time =
+      total_time / static_cast<double>(pipeline.config.benchmark_iterations);
   LOG(INFO) << "Average inference time over "
             << pipeline.config.benchmark_iterations
             << " iterations: " << average_time << "ms";
@@ -368,7 +370,7 @@ int BenchmarkCommand::execute(InferencePipeline &pipeline) {
 }
 
 int RunInferenceCommand::execute(InferencePipeline &pipeline) {
-  if (pipeline.task_type == vision_core::TaskType::ImageUnderstanding) {
+  if (pipeline.task_type == neuriplo_tasks::TaskType::ImageUnderstanding) {
     processImageUnderstanding(pipeline);
     return 0;
   }
@@ -379,7 +381,7 @@ int RunInferenceCommand::execute(InferencePipeline &pipeline) {
       return 0;
     }
     if (pipeline.config.sources.size() >= 2 &&
-        pipeline.task_type == vision_core::TaskType::OpticalFlow) {
+        pipeline.task_type == neuriplo_tasks::TaskType::OpticalFlow) {
       processOpticalFlow(pipeline);
       return 0;
     }
@@ -393,7 +395,7 @@ int RunInferenceCommand::execute(InferencePipeline &pipeline) {
     throw std::runtime_error("Video processing requires single source");
   }
 
-  if (pipeline.task_type == vision_core::TaskType::VideoClassification) {
+  if (pipeline.task_type == neuriplo_tasks::TaskType::VideoClassification) {
     processVideoClassification(pipeline, pipeline.config.sources[0]);
   } else {
     processVideo(pipeline, pipeline.config.sources[0]);

@@ -17,7 +17,7 @@ introducing silent behavior changes.
 ## Procedure
 
 1. Identify the source of truth.
-   - `vision-core` for task and result contracts
+   - `neuriplo-tasks` for task and result contracts
    - `neuriplo` for backend orchestration and runtime contracts
    - `videocapture` for source and backend IO contracts
 

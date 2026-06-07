@@ -3,7 +3,7 @@ docker run --gpus=all --rm \
     -v $(pwd)/data:/app/data \
     -v $HOME/repos/D-FINE/exports:/weights \
     -v $(pwd)/labels:/labels \
-    vision-inference:tensorrt \
+    neuriplo-infer:tensorrt \
     --type=dfine \
     --weights=/weights/model.engine \
     --source=/app/data/dog.jpg \
@@ -17,5 +17,5 @@ docker run --gpus=all --rm \
 #     -v labels:/labels \
 #     -w /app/data \
 #     --entrypoint ls \
-#     vision-inference:tensorrt  \
+#     neuriplo-infer:tensorrt  \
 #     -alt /app/app

@@ -1,4 +1,4 @@
-name: vision-inference
+name: neuriplo-infer
 repo_root: .
 role: application
 default_branches:
@@ -6,7 +6,7 @@ default_branches:
   release: master
 
 dependencies:
-  - vision-core
+  - neuriplo-tasks
   - neuriplo
   - videocapture
 
@@ -22,7 +22,7 @@ entrypoints:
   test:
     - ctest --test-dir build-test --output-on-failure
   benchmark_smoke:
-    - VISION_INFERENCE_BENCHMARK_WEIGHTS=<path-to-yolo-weights.onnx> ./build/app/vision-inference --type=yolo --source=data/dog.jpg --weights=${VISION_INFERENCE_BENCHMARK_WEIGHTS} --benchmark --iterations=10
+    - NEURIPLO_INFER_BENCHMARK_WEIGHTS=<path-to-yolo-weights.onnx> ./build/app/neuriplo-infer --type=yolo --source=data/dog.jpg --weights=${NEURIPLO_INFER_BENCHMARK_WEIGHTS} --benchmark --iterations=10
 
 api_surface:
   cli_flags:
@@ -47,7 +47,7 @@ api_surface:
     - benchmark
     - iterations
   public_components:
-    - VisionApp
+    - NeuriploInfer
     - CommandLineParser
     - AppConfig
 
@@ -66,7 +66,7 @@ owned_paths:
   - versions.env
 
 cross_repo_contracts:
-  consumes_from_vision_core:
+  consumes_from_neuriplo_tasks:
     - TaskFactory model types
     - Result variant semantics
     - Tensor shape assumptions

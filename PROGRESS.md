@@ -4,11 +4,11 @@ Last updated: 2026-05-23
 
 ## Current State
 
-`vision-inference`
+`neuriplo-infer`
 - agentic maintenance control-plane docs were merged to `develop`
 - CI fixes for topic-branch dependency checks and slower OPENCV_DNN installs were included in that merged work
 
-`vision-core`
+`neuriplo-tasks`
 - branch pushed: `chore/repo-meta-agentic-maintenance`
 - adds repo-local `AGENTS.md` and `REPO_META.yaml`
 
@@ -56,7 +56,7 @@ Planned phases:
    - use the NDK CMake toolchain from `~/dependencies/android-ndk-r26d/build/cmake/android.toolchain.cmake`
    - link/package the QNN ExecuTorch backend and required QAIRT shared libraries
 4. Deploy and run on Quest
-   - push runner, `.pte`, input tensor, and required QNN libraries to `/data/local/tmp/vision-inference-qnn`
+   - push runner, `.pte`, input tensor, and required QNN libraries to `/data/local/tmp/neuriplo-infer-qnn`
    - set `LD_LIBRARY_PATH` and `ADSP_LIBRARY_PATH` for the pushed library layout
    - run inference through `adb shell`
    - pull output tensors and run host-side YOLO postprocessing/NMS and visualization
@@ -74,7 +74,7 @@ Current blockers:
 ## Valid Branches / PRs
 
 Keep:
-- `vision-core`: `chore/repo-meta-agentic-maintenance`
+- `neuriplo-tasks`: `chore/repo-meta-agentic-maintenance`
 - `neuriplo`: `chore/repo-meta-agentic-maintenance`
 - `videocapture`: `chore/repo-meta-agentic-maintenance-v2`
 - `videocapture` PR `#5`
