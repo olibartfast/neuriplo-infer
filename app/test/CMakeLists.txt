@@ -1,4 +1,3 @@
-
 include(GoogleTest)
 find_package(GTest REQUIRED)
 
@@ -9,26 +8,19 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_VisionApp.cpp    
+    ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_InferencePipelineBuilder.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/utils.cpp 
-    ${CMAKE_SOURCE_DIR}/app/src/CommandLineParser.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/VisionApp.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/InferencePipeline.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/CLICommands.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/ResultRenderer.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/VisionAppTaskRouting.cpp
 )
 
 include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
 enable_target_sanitizers(${PROJECT_NAME_TEST})
 
-target_include_directories(${PROJECT_NAME_TEST} 
-    PRIVATE ${CMAKE_SOURCE_DIR}/common 
+target_include_directories(${PROJECT_NAME_TEST}
+    PRIVATE ${CMAKE_SOURCE_DIR}/common
     ${OpenCV_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/app/inc 
-    ${CMAKE_SOURCE_DIR}/app/src 
-    ${vision-core_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/app/inc
+    ${CMAKE_SOURCE_DIR}/app/src
+    ${neuriplo-tasks_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/src
     ${neuriplo_SOURCE_DIR}/backends/src
@@ -52,7 +44,7 @@ elseif (DEFAULT_BACKEND STREQUAL "TENSORRT")
     target_link_libraries(${PROJECT_NAME_TEST} PRIVATE nvinfer nvonnxparser cudart)
 elseif(DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW" )
     target_include_directories(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_INCLUDE_DIRS} ${neuriplo_SOURCE_DIR}/backends/libtensorflow/src)
-    target_link_libraries(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_LIBRARIES})  
+    target_link_libraries(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_LIBRARIES})
 elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")
     target_include_directories(${PROJECT_NAME_TEST} PRIVATE ${InferenceEngine_INCLUDE_DIRS} ${neuriplo_SOURCE_DIR}/backends/openvino/src)
     target_link_libraries(${PROJECT_NAME_TEST} PRIVATE openvino::runtime )
@@ -61,12 +53,16 @@ elseif(DEFAULT_BACKEND STREQUAL "LITERT")
     target_link_directories(${PROJECT_NAME_TEST} PRIVATE ${LITERT_DIR}/lib)
 endif()
 
-target_link_libraries(${PROJECT_NAME_TEST} PUBLIC gtest gtest_main glog::glog ${OpenCV_LIBS} vision-core VideoCapture neuriplo)
+target_link_libraries(${PROJECT_NAME_TEST} PUBLIC
+    gtest
+    gtest_main
+    neuriplo-infer
+)
 
 # Discover and run tests
 gtest_discover_tests(${PROJECT_NAME_TEST})
 
 add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run
-    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR} ${vision-core_SOURCE_DIR}
+    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR} ${neuriplo-tasks_SOURCE_DIR}
 )

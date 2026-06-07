@@ -1,6 +1,6 @@
 name: Release Guard
 
-# Runs when a vision-inference release tag is pushed. Verifies that
+# Runs when a neuriplo-infer release tag is pushed. Verifies that
 # versions.env at the tag pins all three sibling repos to the same tag
 # and that each sibling has that tag on its remote. This makes the tag
 # checkout reproducible: future builds at this tag will fetch fixed

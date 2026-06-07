@@ -47,8 +47,10 @@ const std::string CommandLineParser::params =
     "{ iterations | 10     | number of iterations for benchmarking}"
     "{ num_frames nf | 0   | number of frames for video classification (0 = "
     "use model default, e.g., 16 for VideoMAE)}"
-    "{ kserve_endpoint | | KServe V2 endpoint URL (e.g. http://127.0.0.1:8080) }"
-    "{ kserve_model_name | | model name on the KServe endpoint (defaults to --type) }"
+    "{ kserve_endpoint | | KServe V2 endpoint URL (e.g. http://127.0.0.1:8080) "
+    "}"
+    "{ kserve_model_name | | model name on the KServe endpoint (defaults to "
+    "--type) }"
     "{ kserve_model_version | 1 | model version for KServe requests }"
     "{ kserve_timeout_ms | 30000 | KServe request timeout in milliseconds }"
     "{ kserve_transport | grpc | KServe transport: grpc (default) or http }";
@@ -156,6 +158,10 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   config.kserve_model_version = parser.get<std::string>("kserve_model_version");
   config.kserve_timeout_ms = parser.get<int>("kserve_timeout_ms");
   config.kserve_transport = parser.get<std::string>("kserve_transport");
+  std::transform(config.kserve_transport.begin(), config.kserve_transport.end(),
+                 config.kserve_transport.begin(), [](unsigned char c) {
+                   return static_cast<char>(std::tolower(c));
+                 });
 
   if (!config.kserve_endpoint.empty() && config.kserve_model_name.empty()) {
     config.kserve_model_name = config.detectorType;
@@ -200,10 +206,23 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
   }
 
   std::string weights = parser.get<std::string>("weights");
-  const std::string kserve_endpoint = parser.get<std::string>("kserve_endpoint");
+  const std::string kserve_endpoint =
+      parser.get<std::string>("kserve_endpoint");
   if (!kserve_endpoint.empty()) {
     if (weights.empty()) {
       weights = "kserve://" + kserve_endpoint;
+    }
+    if (parser.get<int>("kserve_timeout_ms") <= 0) {
+      LOG(ERROR) << "--kserve_timeout_ms must be > 0";
+      std::exit(1);
+    }
+    std::string transport = parser.get<std::string>("kserve_transport");
+    std::transform(
+        transport.begin(), transport.end(), transport.begin(),
+        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    if (transport != "grpc" && transport != "http") {
+      LOG(ERROR) << "--kserve_transport must be either 'grpc' or 'http'";
+      std::exit(1);
     }
   } else if (!isFile(weights)) {
     LOG(ERROR) << "Weights file " << weights << " doesn't exist";

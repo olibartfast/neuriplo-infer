@@ -2,14 +2,14 @@
 
 ## System overview
 
-`vision-inference` is the application-layer repo in the `vision-stack` cluster.
+`neuriplo-infer` is the application-layer repo in the `vision-stack` cluster.
 
 - It owns the CLI, app configuration, runtime wiring, visualization, and end-to-end execution flow.
-- It consumes task contracts from `vision-core`.
+- It consumes task contracts from `neuriplo-tasks`.
 - It consumes backend orchestration and runtime compatibility from `neuriplo`.
 - It consumes source and video backend behavior from `videocapture`.
 
-A sibling application repo, [vision-tracking](https://github.com/olibartfast/vision-tracking), handles detection + tracking pipelines using the same shared libraries. Another sibling, [tritonic](https://github.com/olibartfast/tritonic), is a Triton Inference Server client for CV tasks that also consumes vision-core. Both maintain their own ops control planes independently — vision-inference does not depend on them.
+A sibling application repo, [neuriplo-track](https://github.com/olibartfast/neuriplo-track), handles detection + tracking pipelines using the same shared libraries. Another sibling, [tritonic](https://github.com/olibartfast/tritonic), is a Triton Inference Server client for CV tasks that also consumes neuriplo-tasks. Both maintain their own ops control planes independently — neuriplo-infer does not depend on them.
 
 Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
 
@@ -21,13 +21,13 @@ type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
 
 1. **Supported-model-types docs are generated, not hand-written.** The
    `<!-- SUPPORTED_MODEL_TYPES -->` block in `README.md` and
-   `docs/generated/supported-model-types.md` come from the vision-core README via
-   `python3 scripts/sync_supported_model_types.py [--vision-core-readme <path>]`.
+   `docs/generated/supported-model-types.md` come from the neuriplo-tasks README via
+   `python3 scripts/sync_supported_model_types.py [--neuriplo-tasks-readme <path>]`.
    `ci.yml` runs it with `--check`; a stale block fails CI. Run it (not a manual
-   edit) whenever vision-core adds/changes a task or model type.
-2. **App task routing must match vision-core.** `VisionApp::getTaskType`
-   (`app/src/VisionAppTaskRouting.cpp`) must map each type string to the same
-   `TaskType` that `vision_core::TaskFactory` builds.
+   edit) whenever neuriplo-tasks adds/changes a task or model type.
+2. **App task routing must match neuriplo-tasks.** `getTaskTypeForModel`
+   (`app/src/NeuriploInferTaskRouting.cpp`) must map each type string to the same
+   `TaskType` that `neuriplo_tasks::TaskFactory` builds.
 
 ## Repository workflow
 
@@ -37,10 +37,10 @@ type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
 - Pull requests into `master` are release PRs only and should be treated as release-safety checks.
 - Before creating a release, update both `VERSION` and `CHANGELOG.md`.
 - Before tagging a release, pin sibling refs in `versions.env` for reproducibility.
-  - Tag the matching commit in each sibling repo (`vision-core`, `neuriplo`, `videocapture`) with the same tag name (e.g. `v0.3.0`) first.
-  - Then run `scripts/cut_release.sh <version>` (e.g. `0.3.0`) to bump `VERSION` and rewrite the `NEURIPLO_VERSION` / `VIDEOCAPTURE_VERSION` / `VISION_CORE_VERSION` pins in `versions.env`. The script refuses to proceed if any sibling is missing the matching tag.
+  - Tag the matching commit in each sibling repo (`neuriplo-tasks`, `neuriplo`, `videocapture`) with the same tag name (e.g. `v0.3.0`) first.
+  - Then run `scripts/cut_release.sh <version>` (e.g. `0.3.0`) to bump `VERSION` and rewrite the `NEURIPLO_VERSION` / `VIDEOCAPTURE_VERSION` / `NEURIPLO_TASKS_VERSION` pins in `versions.env`. The script refuses to proceed if any sibling is missing the matching tag.
   - `scripts/validate_release_pins.sh <tag>` is the same check used by the pre-push hook and the `release-guard.yml` CI workflow; run it manually if you want to sanity-check before pushing.
-  - Without these pins, checking out an old vision-inference tag fetches sibling `master` at fetch time, which keeps moving — builds drift.
+  - Without these pins, checking out an old neuriplo-infer tag fetches sibling `master` at fetch time, which keeps moving — builds drift.
 - After finishing a release, delete any temporary branches created ad hoc for that release.
 - Do not suggest switching this repository to a `main`-centric trunk workflow.
 
@@ -96,7 +96,7 @@ Stop and escalate to a human if the required work falls into a forbidden change 
 
 ## Repo-local entrypoints
 
-Use the canonical repo-local commands from `ops/repo-meta/vision-inference.yaml`:
+Use the canonical repo-local commands from `ops/repo-meta/neuriplo-infer.yaml`:
 
 - Configure default build:
   - `cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release`
@@ -109,20 +109,20 @@ Use the canonical repo-local commands from `ops/repo-meta/vision-inference.yaml`
 - Run tests:
   - `ctest --test-dir build-test --output-on-failure`
 
-Use the benchmark smoke command from `ops/repo-meta/vision-inference.yaml` only when the required weights are available.
+Use the benchmark smoke command from `ops/repo-meta/neuriplo-infer.yaml` only when the required weights are available.
 
 ## Documentation checklist when wiring a new task type
 
-When a new task type is added end-to-end (vision-core → neuriplo → vision-inference), update **all** of the following before closing the work:
+When a new task type is added end-to-end (neuriplo-tasks → neuriplo → neuriplo-infer), update **all** of the following before closing the work:
 
-**vision-core:**
+**neuriplo-tasks:**
 1. `## Features` bullet list in `README.md` — one line for the new task.
 2. `<!-- TASKFACTORY_MODEL_LIST:START/END -->` block in `README.md` — type strings, contract, backend requirements.
 3. `export/<task_domain>/` directory — setup/download guide; update `export/README.md` tree and reference links (use absolute GitHub URLs).
 
-**vision-inference:**
-4. `## Key Features` bullet in `README.md` — update the task list inline (not synced from vision-core).
-5. Run `python3 scripts/sync_supported_model_types.py --vision-core-readme <path>` and commit the updated `README.md` and `docs/generated/supported-model-types.md`.
+**neuriplo-infer:**
+4. `## Key Features` bullet in `README.md` — update the task list inline (not synced from neuriplo-tasks).
+5. Run `python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path>` and commit the updated `README.md` and `docs/generated/supported-model-types.md`.
 
 Missing any of these makes the task invisible to users reading the top-level READMEs.
 

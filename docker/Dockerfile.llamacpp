@@ -1,8 +1,8 @@
-# docker build --rm -t vision-inference:llamacpp -f docker/Dockerfile.llamacpp .
+# docker build --rm -t neuriplo-infer:llamacpp -f docker/Dockerfile.llamacpp .
 # docker run --rm \
 #   -v $(pwd)/models/e2e:/weights \
 #   -v $(pwd)/data:/app/data \
-#   vision-inference:llamacpp \
+#   neuriplo-infer:llamacpp \
 #   --type=gemma4 --weights=/weights/gemma-4-E2B-it-Q4_K_M.gguf \
 #   --prompt="What do you see in this image?"
 #
@@ -73,7 +73,7 @@ RUN mkdir -p /opt/models && \
         "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf" \
     || echo "Warning: model download failed — mount the GGUF file at runtime with -v /path/to/model.gguf:/weights/gemma-4-E2B-it-Q4_K_M.gguf"
 
-# ── Stage 4: build vision-inference with LLAMACPP backend ────────────────────
+# ── Stage 4: build neuriplo-infer with LLAMACPP backend ────────────────────
 FROM model_download AS builder
 
 ENV LLAMACPP_DIR=${DEPENDENCIES_DIR}/llamacpp
@@ -94,10 +94,10 @@ ENV LLAMACPP_DIR=/opt/llamacpp
 ENV LD_LIBRARY_PATH=${LLAMACPP_DIR}/lib:${LLAMACPP_DIR}/lib64:/usr/local/lib
 
 COPY --from=llamacpp_build ${DEPENDENCIES_DIR}/llamacpp /opt/llamacpp
-COPY --from=builder        /src/build/app/vision-inference /usr/local/bin/vision-inference
+COPY --from=builder        /src/build/app/neuriplo-infer /usr/local/bin/neuriplo-infer
 COPY --from=model_download /opt/models /opt/models
 
 RUN mkdir -p /app/data /weights
 
-ENTRYPOINT ["vision-inference"]
+ENTRYPOINT ["neuriplo-infer"]
 CMD ["--help"]

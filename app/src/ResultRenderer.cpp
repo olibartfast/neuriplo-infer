@@ -1,6 +1,7 @@
 #include "ResultRenderer.hpp"
 
 #include "utils.hpp"
+#include "neuriplo/tasks/core/opencv_interop.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -11,7 +12,7 @@
 namespace {
 
 template <typename ResultT, typename Func>
-void forEachResultOfType(const std::vector<vision_core::Result> &results,
+void forEachResultOfType(const std::vector<neuriplo_tasks::Result> &results,
                          Func render) {
   for (const auto &result : results) {
     std::visit(
@@ -25,27 +26,40 @@ void forEachResultOfType(const std::vector<vision_core::Result> &results,
   }
 }
 
-void renderDetectionResults(const std::vector<vision_core::Result> &results,
+std::string labelForClass(float class_id,
+                          const std::vector<std::string> &classes) {
+  const int class_index = static_cast<int>(class_id);
+  const std::string fallback = std::to_string(class_index);
+  if (class_id < 0.0F) {
+    return fallback;
+  }
+
+  const auto index = static_cast<size_t>(class_index);
+  if (index < classes.size()) {
+    return classes[index];
+  }
+  return fallback;
+}
+
+void renderDetectionResults(const std::vector<neuriplo_tasks::Result> &results,
                             cv::Mat &image,
                             const std::vector<std::string> &classes) {
-  forEachResultOfType<vision_core::Detection>(
+  forEachResultOfType<neuriplo_tasks::Detection>(
       results, [&](const auto &detection) {
-        cv::rectangle(image, detection.bbox, cv::Scalar(255, 0, 0), 3);
-        std::string label =
-            std::to_string(static_cast<int>(detection.class_id));
-        if (detection.class_id >= 0 && detection.class_id < classes.size()) {
-          label = classes[static_cast<int>(detection.class_id)];
-        }
+        cv::rectangle(image, neuriplo_tasks::toCvRect(detection.bbox),
+                      cv::Scalar(255, 0, 0), 3);
+        std::string label = labelForClass(detection.class_id, classes);
         draw_label(image, label, detection.class_confidence, detection.bbox.x,
                    detection.bbox.y);
       });
 }
 
 void renderOpenVocabDetectionResults(
-    const std::vector<vision_core::Result> &results, cv::Mat &image) {
-  forEachResultOfType<vision_core::OpenVocabDetection>(
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
+  forEachResultOfType<neuriplo_tasks::OpenVocabDetection>(
       results, [&](const auto &detection) {
-        cv::rectangle(image, detection.bbox, cv::Scalar(0, 165, 255), 3);
+        cv::rectangle(image, neuriplo_tasks::toCvRect(detection.bbox),
+                      cv::Scalar(0, 165, 255), 3);
         const std::string label = detection.label.empty()
                                       ? std::to_string(detection.prompt_index)
                                       : detection.label;
@@ -55,15 +69,15 @@ void renderOpenVocabDetectionResults(
 }
 
 void renderClassificationResults(
-    const std::vector<vision_core::Result> &results, cv::Mat &image,
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
     const std::vector<std::string> &classes) {
   std::string result_text = "Classification: ";
-  forEachResultOfType<vision_core::Classification>(
+  forEachResultOfType<neuriplo_tasks::Classification>(
       results, [&](const auto &classification) {
-        if (classification.class_id >= 0 &&
-            classification.class_id < classes.size()) {
-          result_text += classes[static_cast<int>(classification.class_id)] +
-                         " (" +
+        const int class_index = static_cast<int>(classification.class_id);
+        if (classification.class_id >= 0.0F &&
+            static_cast<size_t>(class_index) < classes.size()) {
+          result_text += classes[static_cast<size_t>(class_index)] + " (" +
                          std::to_string(classification.class_confidence) + ")";
         }
       });
@@ -72,9 +86,9 @@ void renderClassificationResults(
 }
 
 void renderVideoClassificationResults(
-    const std::vector<vision_core::Result> &results, cv::Mat &image) {
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
   std::string result_text = "Action: ";
-  forEachResultOfType<vision_core::VideoClassification>(
+  forEachResultOfType<neuriplo_tasks::VideoClassification>(
       results, [&](const auto &video_classification) {
         result_text += video_classification.action_label + " (" +
                        std::to_string(video_classification.class_confidence) +
@@ -85,35 +99,44 @@ void renderVideoClassificationResults(
 }
 
 void renderInstanceSegmentationResults(
-    const std::vector<vision_core::Result> &results, cv::Mat &image,
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
     const std::vector<std::string> &classes) {
-  forEachResultOfType<vision_core::InstanceSegmentation>(
+  forEachResultOfType<neuriplo_tasks::InstanceSegmentation>(
       results, [&](const auto &segmentation) {
-        cv::rectangle(image, segmentation.bbox, cv::Scalar(255, 0, 0), 3);
-        draw_label(image, classes[static_cast<int>(segmentation.class_id)],
-                   segmentation.class_confidence, segmentation.bbox.x,
-                   segmentation.bbox.y);
+        cv::rectangle(image, neuriplo_tasks::toCvRect(segmentation.bbox),
+                      cv::Scalar(255, 0, 0), 3);
+        std::string label = labelForClass(segmentation.class_id, classes);
+        draw_label(image, label, segmentation.class_confidence,
+                   segmentation.bbox.x, segmentation.bbox.y);
 
         if (!segmentation.mask.empty()) {
-          cv::Mat mask = cv::Mat(
-              segmentation.mask_height, segmentation.mask_width, CV_8UC1,
-              const_cast<uint8_t *>(segmentation.mask_data.data()));
+          cv::Mat mask = neuriplo_tasks::toCvMat(segmentation.mask);
+          cv::Mat maskForRender;
+          if (mask.size() != image.size()) {
+            cv::resize(mask, maskForRender, image.size(), 0, 0,
+                       cv::INTER_NEAREST);
+          } else {
+            maskForRender = mask;
+          }
+          if (maskForRender.type() != CV_8UC1) {
+            maskForRender.convertTo(maskForRender, CV_8UC1);
+          }
 
           cv::Mat colorMask = cv::Mat::zeros(image.size(), CV_8UC3);
           cv::Scalar color = cv::Scalar(std::rand() & 255, std::rand() & 255,
                                         std::rand() & 255);
-          colorMask.setTo(color, mask);
+          colorMask.setTo(color, maskForRender);
 
           cv::addWeighted(image, 1, colorMask, 0.7, 0, image);
         }
       });
 }
 
-void renderOpticalFlowResults(const std::vector<vision_core::Result> &results,
+void renderOpticalFlowResults(const std::vector<neuriplo_tasks::Result> &results,
                               cv::Mat &image) {
-  forEachResultOfType<vision_core::OpticalFlow>(results, [&](const auto &flow) {
+  forEachResultOfType<neuriplo_tasks::OpticalFlow>(results, [&](const auto &flow) {
     if (!flow.flow.empty()) {
-      image = flow.flow.clone();
+      image = neuriplo_tasks::toCvMat(flow.flow).clone();
     }
     std::string flow_text =
         "Max displacement: " + std::to_string(flow.max_displacement);
@@ -123,14 +146,14 @@ void renderOpticalFlowResults(const std::vector<vision_core::Result> &results,
 }
 
 void renderPoseEstimationResults(
-    const std::vector<vision_core::Result> &results, cv::Mat &image,
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
     float confidence_threshold) {
-  const std::vector<std::pair<int, int>> skeleton = {
+  const std::vector<std::pair<size_t, size_t>> skeleton = {
       {0, 1},   {0, 2},   {1, 3},   {2, 4},  {5, 6},  {5, 7},
       {7, 9},   {6, 8},   {8, 10},  {5, 11}, {6, 12}, {11, 12},
       {11, 13}, {13, 15}, {12, 14}, {14, 16}};
 
-  forEachResultOfType<vision_core::PoseEstimation>(
+  forEachResultOfType<neuriplo_tasks::PoseEstimation>(
       results, [&](const auto &pose) {
         for (const auto &[i, j] : skeleton) {
           if (i < pose.keypoints.size() && j < pose.keypoints.size()) {
@@ -163,15 +186,15 @@ void renderPoseEstimationResults(
 }
 
 void renderDepthEstimationResults(
-    const std::vector<vision_core::Result> &results, cv::Mat &image) {
-  forEachResultOfType<vision_core::DepthEstimation>(
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
+  forEachResultOfType<neuriplo_tasks::DepthEstimation>(
       results, [&](const auto &depth_result) {
         cv::Mat depth_for_vis;
         if (!depth_result.normalized_depth.empty()) {
-          depth_for_vis = depth_result.normalized_depth;
+          depth_for_vis = neuriplo_tasks::toCvMat(depth_result.normalized_depth);
         } else if (!depth_result.depth.empty()) {
-          cv::normalize(depth_result.depth, depth_for_vis, 0.0f, 1.0f,
-                        cv::NORM_MINMAX, CV_32FC1);
+          cv::normalize(neuriplo_tasks::toCvMat(depth_result.depth), depth_for_vis,
+                        0.0f, 1.0f, cv::NORM_MINMAX, CV_32FC1);
         } else {
           return;
         }
@@ -198,8 +221,8 @@ void renderDepthEstimationResults(
 }
 
 void renderImageUnderstandingResults(
-    const std::vector<vision_core::Result> &results, cv::Mat & /*image*/) {
-  forEachResultOfType<vision_core::ImageUnderstanding>(
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat & /*image*/) {
+  forEachResultOfType<neuriplo_tasks::ImageUnderstanding>(
       results, [](const auto &understanding) {
         std::cout << understanding.text << '\n';
       });
@@ -208,37 +231,37 @@ void renderImageUnderstandingResults(
 } // namespace
 
 void DefaultResultRenderer::render(
-    const std::vector<vision_core::Result> &results, cv::Mat &image,
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
     const RenderContext &context) {
   switch (context.task_type) {
-  case vision_core::TaskType::Detection:
+  case neuriplo_tasks::TaskType::Detection:
     renderDetectionResults(results, image, context.classes);
     break;
-  case vision_core::TaskType::Classification:
+  case neuriplo_tasks::TaskType::Classification:
     renderClassificationResults(results, image, context.classes);
     break;
-  case vision_core::TaskType::VideoClassification:
+  case neuriplo_tasks::TaskType::VideoClassification:
     renderVideoClassificationResults(results, image);
     break;
-  case vision_core::TaskType::InstanceSegmentation:
+  case neuriplo_tasks::TaskType::InstanceSegmentation:
     renderInstanceSegmentationResults(results, image, context.classes);
     break;
-  case vision_core::TaskType::OpticalFlow:
+  case neuriplo_tasks::TaskType::OpticalFlow:
     renderOpticalFlowResults(results, image);
     break;
-  case vision_core::TaskType::PoseEstimation:
+  case neuriplo_tasks::TaskType::PoseEstimation:
     renderPoseEstimationResults(results, image, context.confidence_threshold);
     break;
-  case vision_core::TaskType::DepthEstimation:
+  case neuriplo_tasks::TaskType::DepthEstimation:
     renderDepthEstimationResults(results, image);
     break;
-  case vision_core::TaskType::OpenVocabDetection:
+  case neuriplo_tasks::TaskType::OpenVocabDetection:
     renderOpenVocabDetectionResults(results, image);
     break;
-  case vision_core::TaskType::ImageUnderstanding:
+  case neuriplo_tasks::TaskType::ImageUnderstanding:
     renderImageUnderstandingResults(results, image);
     break;
-  case vision_core::TaskType::GaussianSplatting:
+  case neuriplo_tasks::TaskType::GaussianSplatting:
     break;
   }
 }

@@ -1,31 +1,15 @@
-# Fetch the VideoCapture project from GitHub with specific version
-include(FetchContent)
-FetchContent_Declare(
-    VideoCapture
-    GIT_REPOSITORY https://github.com/olibartfast/VideoCapture.git
-    GIT_TAG        ${VIDEOCAPTURE_VERSION}  
-)
-# Pass video backend options to VideoCapture library
-set(USE_GSTREAMER ${USE_GSTREAMER})
-set(USE_FFMPEG ${USE_FFMPEG})
-FetchContent_MakeAvailable(VideoCapture)
-message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
-message(STATUS "CMAKE_CURRENT_SOURCE_DIR:  ${CMAKE_CURRENT_SOURCE_DIR}")
-
-# Define sources using CMAKE_CURRENT_SOURCE_DIR instead of CMAKE_SOURCE_DIR
-set(SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionApp.cpp
+set(APP_LIB_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ResultRenderer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/VisionAppTaskRouting.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInferTaskRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveClient.cpp
 )
 
-if(VISION_INFERENCE_WITH_GRPC)
+if(NEURIPLO_INFER_WITH_GRPC)
     set(PROTO_FILE "${CMAKE_SOURCE_DIR}/proto/kserve_grpc.proto")
     get_filename_component(PROTO_DIR "${PROTO_FILE}" DIRECTORY)
     set(PROTO_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/proto")
@@ -71,16 +55,18 @@ if(VISION_INFERENCE_WITH_GRPC)
         )
     endif()
 
-    list(APPEND SOURCES "${PROTO_SRCS}" "${GRPC_SRCS}"
+    list(APPEND APP_LIB_SOURCES
+        "${PROTO_SRCS}"
+        "${GRPC_SRCS}"
         ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveGrpcClient.cpp)
 endif()
-add_executable(${PROJECT_NAME} ${SOURCES})
-include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
-enable_target_sanitizers(${PROJECT_NAME})
 
+set(NEURIPLO_INFER_LIBRARY neuriplo-infer)
+set(NEURIPLO_INFER_EXECUTABLE neuriplo-infer-cli)
 
-# Set include directories
-target_include_directories(${PROJECT_NAME} PRIVATE
+add_library(${NEURIPLO_INFER_LIBRARY} STATIC ${APP_LIB_SOURCES})
+
+target_include_directories(${NEURIPLO_INFER_LIBRARY} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${VideoCapture_SOURCE_DIR}/include
@@ -91,24 +77,47 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${GLOG_INCLUDE_DIRS}
 )
 
-# Link libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC
     glog::glog
     ${OpenCV_LIBS}
     neuriplo
     VideoCapture
-    vision-core
+    neuriplo-tasks
     nlohmann_json::nlohmann_json
 )
 
-if(VISION_INFERENCE_WITH_GRPC)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE VISION_INFERENCE_WITH_GRPC)
-    target_include_directories(${PROJECT_NAME} PRIVATE "${PROTO_GEN_DIR}")
-    target_link_directories(${PROJECT_NAME} PRIVATE "/tmp/grpc-sysroot/usr/lib/x86_64-linux-gnu")
-    target_link_libraries(${PROJECT_NAME} PRIVATE
+if(NEURIPLO_INFER_WITH_GRPC)
+    target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PRIVATE NEURIPLO_INFER_WITH_GRPC)
+    target_include_directories(${NEURIPLO_INFER_LIBRARY} PRIVATE "${PROTO_GEN_DIR}")
+    target_link_libraries(${NEURIPLO_INFER_LIBRARY} PRIVATE
         protobuf::libprotobuf
         gRPC::grpc++
     )
+endif()
+
+if(MSVC)
+    target_compile_options(${NEURIPLO_INFER_LIBRARY} PRIVATE /W4)
+else()
+    target_compile_options(${NEURIPLO_INFER_LIBRARY} PRIVATE ${PROJECT_WARNING_FLAGS})
+endif()
+
+add_executable(${NEURIPLO_INFER_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+set_target_properties(${NEURIPLO_INFER_EXECUTABLE} PROPERTIES OUTPUT_NAME neuriplo-infer)
+
+include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
+enable_target_sanitizers(${NEURIPLO_INFER_EXECUTABLE})
+
+target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${NEURIPLO_INFER_LIBRARY})
+
+if(MSVC)
+    target_compile_options(${NEURIPLO_INFER_EXECUTABLE} PRIVATE /W4)
+else()
+    target_compile_options(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${PROJECT_WARNING_FLAGS})
 endif()
 
 include(${CMAKE_SOURCE_DIR}/cmake/LinkBackend.cmake)
