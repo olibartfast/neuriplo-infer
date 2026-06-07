@@ -4,9 +4,9 @@
 #include "KserveGrpcClient.hpp"
 #endif
 #include "KserveClient.hpp"
-#include "utils.hpp"
 #include "neuriplo/tasks/core/task_config.hpp"
 #include "neuriplo/tasks/core/task_factory.hpp"
+#include "utils.hpp"
 
 #include <filesystem>
 #include <fstream>
