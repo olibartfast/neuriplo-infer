@@ -12,6 +12,7 @@ Local inference application for computer vision tasks, supporting multiple task 
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **Docker Deployment Ready**: Multi-backend container support
+- **Remote KServe Runtime Mode**: Send preprocessed tensors to a KServe V2 endpoint, including `neuriplo-kserve-runtime`, while keeping task preprocessing, postprocessing, and rendering in this app
 
 ## Requirements
 
@@ -57,6 +58,8 @@ cmake --build build
 
 Replace `<backend>` with one of the supported inference backends (see [Dependency Management Guide](docs/DependencyManagement.md)).
 
+KServe HTTP client support is built into the app. gRPC client support is optional and is enabled only when Protobuf and gRPC are available at configure time; otherwise the build falls back to HTTP.
+
 ### Video Backend Support
 
 The VideoCapture library picks a video backend by priority: **FFmpeg** (`-DUSE_FFMPEG=ON`, widest codec support) > **GStreamer** (`-DUSE_GSTREAMER=ON`) > **OpenCV** (default). Add the desired flag(s) at configure time, e.g.:
@@ -92,7 +95,12 @@ Platform-level scenario ownership, compatibility sets, and cross-repo validation
   [--help | -h] \
   --type=<model_type> \
   --source=<input_source> \
-  --weights=<model_weights> \
+  [--weights=<model_weights>] \
+  [--kserve_endpoint=<url>] \
+  [--kserve_model_name=<name>] \
+  [--kserve_model_version=<version>] \
+  [--kserve_transport=<http|grpc>] \
+  [--kserve_timeout_ms=<milliseconds>] \
   [--labels=<labels_file>] \
   [--text_prompts='<prompt_a;prompt_b;...>'] \
   [--prompt='<freeform_prompt>'] \
@@ -214,13 +222,23 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   App-specific routing and validation in `neuriplo-infer` still define the end-to-end supported subset for this repo.
 
 - `--source=<input_source>`: Input image, video file, or stream URL (e.g. `rtsp://...`). Omit for text-only image-understanding tasks and for `--export_metadata`.
-- `--weights=<path>`: Path to the model weights.
+- `--weights=<path>`: Path to local model weights. Required for local backend execution and `--export_metadata`; not required when `--kserve_endpoint` is provided.
 - `--labels=<path>`: Class-labels file, one label per line. Optional, for fixed-label models.
 - `--text_prompts='<a;b;...>'`: Semicolon-separated prompts. Required for open-vocabulary detection (OWLv2).
 - `--tokenizer_vocab=<vocab.json>`, `--tokenizer_merges=<merges.txt>`: Tokenizer assets. Required for OWLv2.
 - `--prompt='<text>'`: Freeform prompt for image-understanding / VLM tasks.
 - `--output_format=<text|json>`: Output hint; use `json` for parseable multimodal responses.
 - `--sample_stride=<n>`, `--max_frames=<n>`: Frame-sampling stride and cap for multimodal video tasks.
+
+#### KServe Runtime Parameters
+
+Use these flags to run preprocessing/postprocessing in `neuriplo-infer` while sending inference tensors to a remote KServe V2 runtime. This is the intended path for `neuriplo-kserve-runtime` integration.
+
+- `--kserve_endpoint=<url>`: Base KServe V2 endpoint, for example `http://127.0.0.1:19090`. A path prefix is allowed when the runtime is behind a gateway.
+- `--kserve_model_name=<name>`: Model name served by the endpoint. Defaults to `--type` when omitted.
+- `--kserve_model_version=<version>`: KServe model version to call. Defaults to `1`.
+- `--kserve_transport=<http|grpc>`: Transport selection. HTTP is validated in this branch; gRPC requires a build with Protobuf/gRPC available.
+- `--kserve_timeout_ms=<milliseconds>`: Request timeout. Must be greater than zero; default is `30000`.
 
 #### Optional Parameters
 
@@ -293,6 +311,16 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
   --tokenizer_merges=models/owlv2/merges.txt \
   --min_confidence=0.2
 
+# Remote KServe runtime - YOLO served by neuriplo-kserve-runtime over HTTP
+./neuriplo-infer \
+  --type=yolo26 \
+  --source=data/dog.jpg \
+  --labels=labels/coco.names \
+  --kserve_endpoint=http://127.0.0.1:19090 \
+  --kserve_model_name=yolo \
+  --kserve_transport=http \
+  --min_confidence=0.25
+
 # Model metadata inspection without an input source
 ./neuriplo-infer \
   --type=yolo \
@@ -362,6 +390,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 ## ⚠️ Known Limitations
 - Windows builds not currently supported
 - Some model/backend combinations may require specific export configurations
+- KServe HTTP mode is validated against `neuriplo-kserve-runtime`; gRPC parity is still pending in environments without gRPC development packages.
 
 ## 🙏 Acknowledgments
 - [OpenCV YOLO detection with DNN module](https://github.com/opencv/opencv/blob/4.x/samples/dnn/yolo_detector.cpp)
