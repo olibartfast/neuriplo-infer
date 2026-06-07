@@ -36,58 +36,17 @@ This project automatically fetches:
 
 ## Development Workflow
 
-- `develop` is the integration branch for normal feature and fix work.
-- `master` is release-only and should only receive release PRs and tagged releases.
-- Use short-lived topic branches such as `feat/...`, `fix/...`, `refactor/...`, `docs/...`, and `chore/...`.
-- Open normal pull requests into `develop`.
-- Open release pull requests into `master`, then cut tags from `master`.
-
-## Agentic Operations
-
-Cross-repository control-plane docs now live in `neuriplo-platform/ops`. The local `ops/` directory is retained only as a compatibility pointer for older workflows.
-
-Use `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml` for canonical configure, build, test, and benchmark entrypoints during cross-repo maintenance. Keep app-local implementation, CLI, and build details in this repository.
-
+`develop` is the integration branch; `master` is release-only. Use short-lived topic branches (`feat/...`, `fix/...`, `docs/...`, `chore/...`) and open PRs into `develop`. See [`AGENTS.md`](AGENTS.md) for the full workflow.
 
 ## Setup
-For the selected inference backends, set up the required dependencies first.
-Canonical cross-repo maintenance commands live in `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`.
 
-- **ONNX Runtime**:
-  ```bash
-  ./scripts/setup_dependencies.sh --backend onnx_runtime
-  ```
+Install dependencies for the backends you need:
 
-- **TensorRT**:
-  ```bash
-  ./scripts/setup_dependencies.sh --backend tensorrt
-  ```
+```bash
+./scripts/setup_dependencies.sh --backend <onnx_runtime|tensorrt|libtorch|openvino|tensorflow|all>
+```
 
-- **LibTorch (CPU only)**:
-  ```bash
-  ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cpu
-  ```
-
-- **LibTorch with GPU support**:
-  ```bash
-  ./scripts/setup_dependencies.sh --backend libtorch --compute-platform cuda
-  # Note: Automatically set CUDA version from `versions.neuriplo.env`
-  ```
-
-- **OpenVINO**:
-  ```bash
-  ./scripts/setup_dependencies.sh --backend openvino
-  ```
-
-- **TensorFlow**:
-  ```bash
-  ./scripts/setup_dependencies.sh --backend tensorflow
-  ```
-
-- **All backends**:
-  ```bash
-  ./scripts/setup_dependencies.sh --backend all
-  ```
+LibTorch also accepts `--compute-platform cpu` or `--compute-platform cuda` (CUDA version is read from `versions.neuriplo.env`). See [docs/DependencyManagement.md](docs/DependencyManagement.md) for details.
 
 ## Building
 ```bash
@@ -96,29 +55,16 @@ cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-#### Enabling Video Backend Support
+Replace `<backend>` with one of the supported inference backends (see [Dependency Management Guide](docs/DependencyManagement.md)).
 
-The VideoCapture library supports multiple video processing backends with the following priority:
-1. **FFmpeg** (if `USE_FFMPEG=ON`) - Maximum format/codec compatibility
-2. **GStreamer** (if `USE_GSTREAMER=ON`) - Advanced pipeline capabilities
-3. **OpenCV** (default) - Simple and reliable
+### Video Backend Support
+
+The VideoCapture library picks a video backend by priority: **FFmpeg** (`-DUSE_FFMPEG=ON`, widest codec support) > **GStreamer** (`-DUSE_GSTREAMER=ON`) > **OpenCV** (default). Add the desired flag(s) at configure time, e.g.:
 
 ```bash
-# Enable GStreamer support
-cmake -DDEFAULT_BACKEND=<backend>  -DUSE_GSTREAMER=ON -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-
-# Enable FFmpeg support
-cmake -DDEFAULT_BACKEND=<backend>  -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-
-# Enable both (FFmpeg takes priority)
-cmake -DDEFAULT_BACKEND=<backend>  -DUSE_GSTREAMER=ON -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
+cmake -S . -B build -DDEFAULT_BACKEND=<backend> -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
-
-### Inference Backend Options
-Replace `<backend>` with one of the supported options. See [Dependency Management Guide](docs/DependencyManagement.md) for complete list and details.
 
 ### Test Build
 ```bash
@@ -267,56 +213,27 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 <!-- SUPPORTED_MODEL_TYPES:END -->
   App-specific routing and validation in `neuriplo-infer` still define the end-to-end supported subset for this repo.
 
-- `--source=<input_source>`: Defines the input source for inference. It can be:
-  - A live feed URL, e.g., `rtsp://cameraip:port/stream`
-  - A path to a video file, e.g., `path/to/video.format`
-  - A path to an image file, e.g., `path/to/image.format`
-  This can be omitted for text-only image-understanding tasks and for `--export_metadata`.
-
-- `--labels=<path/to/labels/file>`: Optional for fixed-label models. Specifies the path to the file containing the class labels. This file should list the labels used by the model, with each label on a new line.
-
-- `--weights=<path/to/model/weights>`: Defines the path to the file containing the model weights.
-
-- `--text_prompts='<prompt_a;prompt_b;...>'`: Required for open-vocabulary detection with OWLv2. Prompts are semicolon-separated and passed at runtime.
-
-- `--prompt='<freeform_prompt>'`: Optional freeform task prompt passed through `TaskConfig::extra_params["prompt"]`. This is intended for upcoming multimodal understanding models.
-
-- `--output_format=<text|json>`: Optional output hint passed through `TaskConfig::extra_params["output_format"]`. Use `json` for parseable text-first multimodal responses.
-
-- `--sample_stride=<n>`: Optional uniform frame-sampling stride for future multimodal video tasks. Passed through `TaskConfig::extra_params["sample_stride"]`.
-
-- `--max_frames=<n>`: Optional cap on sampled frames for future multimodal video tasks. Passed through `TaskConfig::extra_params["max_frames"]`.
-
-- `--tokenizer_vocab=<path/to/vocab.json>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `neuriplo-tasks`.
-
-- `--tokenizer_merges=<path/to/merges.txt>`: Required for OWLv2. The app loads this tokenizer asset and passes its contents into `neuriplo-tasks`.
+- `--source=<input_source>`: Input image, video file, or stream URL (e.g. `rtsp://...`). Omit for text-only image-understanding tasks and for `--export_metadata`.
+- `--weights=<path>`: Path to the model weights.
+- `--labels=<path>`: Class-labels file, one label per line. Optional, for fixed-label models.
+- `--text_prompts='<a;b;...>'`: Semicolon-separated prompts. Required for open-vocabulary detection (OWLv2).
+- `--tokenizer_vocab=<vocab.json>`, `--tokenizer_merges=<merges.txt>`: Tokenizer assets. Required for OWLv2.
+- `--prompt='<text>'`: Freeform prompt for image-understanding / VLM tasks.
+- `--output_format=<text|json>`: Output hint; use `json` for parseable multimodal responses.
+- `--sample_stride=<n>`, `--max_frames=<n>`: Frame-sampling stride and cap for multimodal video tasks.
 
 #### Optional Parameters
 
-- `[--min_confidence=<confidence_value>]`: Sets the minimum confidence threshold for detections. Detections with a confidence score below this value will be discarded. The default value is `0.25`.
-
-- `[--nms_threshold=<iou_value>]`: IoU threshold used for Non-Maximum Suppression in YOLO-based detectors and segmenters. Higher values keep more overlapping boxes. The default value is `0.45`.
-
-- `[--mask_threshold=<value>]`: Binarization threshold applied to predicted masks in instance segmentation models. Pixels above this value are considered foreground. The default value is `0.50`.
-
-- `[--batch | -b=<batch_size>]`: Specifies the batch size for inference. Default value is `1`, inference with batch size bigger than 1 is not currently supported.
-
-- `[--input_sizes | -is=<input_sizes>]`: Input sizes for each model input when models have dynamic axes or the backend can't retrieve input layer information (like the OpenCV DNN module). Format: `CHW;CHW;...`. For example:
-  - `'3,224,224'` for a single input
-  - `'3,224,224;3,224,224'` for two inputs
-  - `'3,640,640;2'` for RT-DETR/RT-DETRv2/D-FINE/DEIM/DEIMv2 models
-
-- `[--use-gpu]`: Activates GPU support for inference. This can significantly speed up the inference process if a compatible GPU is available. Default is `false`.
-
-- `[--warmup]`: Enables GPU warmup. Warming up the GPU before performing actual inference can help achieve more consistent and optimized performance. This parameter is relevant only if the inference is being performed on an image source. Default is `false`.
-
-- `[--benchmark]`: Enables benchmarking mode. In this mode, the application will run multiple iterations of inference to measure and report the average inference time. This is useful for evaluating the performance of the model and the inference setup. This parameter is relevant only if the inference is being performed on an image source. Default is `false`.
-
-- `[--export_metadata]`: Initializes the selected backend and task, prints model type, routed task type, input layers, and output layers, then exits without running inference. This still requires `--weights`, but does not require `--source`.
-
-- `[--no_gif]`: Accepted output flag reserved for workflows that emit GIFs. Current image and video inference paths do not generate GIF output. Default is `false`.
-
-- `[--iterations=<number>]`: Specifies the number of iterations for benchmarking. The default value is `10`.
+- `--min_confidence=<v>`: Minimum detection confidence (default `0.25`).
+- `--nms_threshold=<v>`: IoU threshold for NMS in YOLO detectors/segmenters (default `0.45`).
+- `--mask_threshold=<v>`: Mask binarization threshold for instance segmentation (default `0.50`).
+- `--batch | -b=<n>`: Batch size (default `1`; batches > 1 not currently supported).
+- `--input_sizes | -is='<CHW;...>'`: Input sizes for models with dynamic axes or backends that can't report input shapes (e.g. OpenCV DNN). E.g. `'3,224,224'`, or `'3,640,640;2'` for RT-DETR/D-FINE/DEIM.
+- `--use-gpu`: Enable GPU inference (default `false`).
+- `--warmup`: GPU warmup before inference; image sources only (default `false`).
+- `--benchmark` / `--iterations=<n>`: Run repeated inference and report average time; image sources only (default `10` iterations).
+- `--export_metadata`: Print model type, routed task, and input/output layers, then exit. Requires `--weights`, not `--source`.
+- `--no_gif`: Reserved output flag; current paths emit no GIFs (default `false`).
 
 ### To check all available options:
 
@@ -385,16 +302,19 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 
 *Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
 
-## Documentation Map
+## Documentation
 
-- [`AGENTS.md`](AGENTS.md): canonical workflow, review focus, and repo-local entrypoints for agents and maintainers
-- `neuriplo-platform/ops/CLUSTER_MAP.yaml`: cluster ownership, dependency edges, and validation order
-- `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`: canonical configure/build/test commands and public surface
-- [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated upstream model-type inventory from `neuriplo-tasks`
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and canonical sources of truth
-- [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version-source guidance
+- [`AGENTS.md`](AGENTS.md): workflow, review focus, and repo-local entrypoints
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and runtime flow
+- [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version sources
 - [`docs/Versioning.md`](docs/Versioning.md): release/version workflow for `VERSION` and `CHANGELOG.md`
-- [`scripts/check_code_quality.sh`](scripts/check_code_quality.sh): optional local format, static-analysis, ASan/UBSan, and TSan check helper
+- [`docs/DetectorArchitectures.md`](docs/DetectorArchitectures.md): object-detection architecture guide
+- [`docs/ExportInstructions.md`](docs/ExportInstructions.md) and [neuriplo-tasks export tools](https://github.com/olibartfast/neuriplo-tasks/tree/main/export): model export guides
+- [`docs/VLMImageUnderstanding.md`](docs/VLMImageUnderstanding.md): running VLMs via the llama.cpp backend
+- [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated model-type inventory
+- [`scripts/check_code_quality.sh`](scripts/check_code_quality.sh): optional format / static-analysis / sanitizer helper
+
+Cross-repo control-plane docs (cluster map, policies, repo-meta) live in `neuriplo-platform/ops/`.
 
 ## Docker Deployment
 
@@ -423,91 +343,21 @@ docker run --rm \
 
 For GPU support, add `--gpus all` to the docker run command.
 
-### Generic End-to-End Example Script
+### End-to-End Example Script
 
-Use the generic Docker end-to-end helper at [`docker_run_inference_e2e_example.sh`](docker_run_inference_e2e_example.sh). It replaces the old task-specific RT-DETRv4 script and provides preset-driven export and inference workflows.
-
-Inspect the available presets:
+[`docker_run_inference_e2e_example.sh`](docker_run_inference_e2e_example.sh) provides preset-driven export-plus-inference workflows (OWLv2, YOLO26s TFLite, EdgeCrafter detection/segmentation/pose, and more). Most presets are self-contained and need no `neuriplo-tasks` checkout.
 
 ```bash
-bash docker_run_inference_e2e_example.sh --list-presets
+bash docker_run_inference_e2e_example.sh --list-presets        # list presets
+bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run   # preview without running
+bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite    # run a preset
 ```
 
-Preview a workflow without executing it:
-
-```bash
-bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
-```
-
-YOLO26s also has a dedicated TFLite preset that exports with Ultralytics and runs through the LiteRT backend without requiring a `neuriplo-tasks` checkout:
-
-```bash
-docker build --rm -t neuriplo-infer:litert \
-    -f docker/Dockerfile.litert \
-    --build-arg NEURIPLO_VERSION=8cf93e6 .
-
-bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
-```
-
-EdgeCrafter exposes three ONNX Runtime presets covering its detection, instance
-segmentation, and pose estimation tasks. Each preset is self-contained: it clones the
-upstream [EdgeCrafter](https://github.com/Intellindust-AI-Lab/EdgeCrafter) repo, downloads
-the matching checkpoint, and runs the upstream `export_onnx.py`, so no `neuriplo-tasks`
-checkout is required. The exported graphs take two inputs (`images` and
-`orig_target_sizes`), so the runtime passes `--input_sizes=3,640,640;2`:
-
-```bash
-docker build --rm -t neuriplo-infer:onnxruntime \
-    -f docker/Dockerfile.onnxruntime .
-
-bash docker_run_inference_e2e_example.sh --preset edgecrafter_det
-bash docker_run_inference_e2e_example.sh --preset edgecrafter_seg
-bash docker_run_inference_e2e_example.sh --preset edgecrafter_pose
-```
-
-### Full OWLv2 End-to-End Run
-
-OWLv2 uses the `onnxruntime` backend by default in the generic e2e script.
-
-Build the container:
-
-```bash
-docker build --rm -t neuriplo-infer:onnxruntime \
-    -f docker/Dockerfile.onnxruntime .
-```
-
-Run the full export and inference flow:
-
-```bash
-mkdir -p /tmp/neuriplo-infer-e2e
-
-bash docker_run_inference_e2e_example.sh \
-    --preset owlv2 \
-    --neuriplo-tasks-dir /path/to/neuriplo-tasks \
-    --text-prompts 'person;dog;bicycle' \
-    --weights-dir /tmp/neuriplo-infer-e2e
-```
-
-This flow expects:
-
-- a `neuriplo-tasks` checkout passed via `--neuriplo-tasks-dir` or `NEURIPLO_TASKS_DIR`
-- tokenizer assets at `<neuriplo-tasks-dir>/vocab.json` and `<neuriplo-tasks-dir>/merges.txt`
-- sample input image at `data/dog.jpg`
-- a working `python3` or `python` on the host for export-time virtualenv creation
-
-The script-level OWLv2 dry-run test is also exposed through CTest:
+The OWLv2 dry-run is also exposed through CTest:
 
 ```bash
 ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 ```
-
-
-## Additional Resources
-
-- [Detector Architectures Guide](docs/DetectorArchitectures.md)
-- [Supported Model Types](docs/generated/supported-model-types.md)
-- [Model Export Guide](docs/ExportInstructions.md)
-- [neuriplo-tasks Export Tools](https://github.com/olibartfast/neuriplo-tasks/tree/main/export) - Comprehensive export utilities for all supported models
 
 ## ⚠️ Known Limitations
 - Windows builds not currently supported

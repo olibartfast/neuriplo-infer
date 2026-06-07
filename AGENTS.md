@@ -11,7 +11,7 @@
 
 A sibling application repo, [neuriplo-track](https://github.com/olibartfast/neuriplo-track), handles detection + tracking pipelines using the same shared libraries. Another sibling, [tritonic](https://github.com/olibartfast/tritonic), is a Triton Inference Server client for CV tasks that also consumes neuriplo-tasks. Both maintain their own ops control planes independently — neuriplo-infer does not depend on them.
 
-Treat `ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
+Treat `neuriplo-platform/ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
 
 ## Do-not-skip automated steps
 
@@ -77,18 +77,18 @@ Avoid:
 
 ## Agentic maintenance assets
 
-- Cluster-level metadata and runbooks live under `ops/`.
-- Use `ops/CLUSTER_MAP.yaml` as the source of truth for repo ownership, dependency edges, and validation order.
-- Use `ops/repo-meta/*.yaml` for repo-specific build, test, benchmark, and API-surface metadata.
-- Use `ops/policies.yaml` before proposing or implementing automated changes; changes outside the allowed classes require human review.
-- Use `ops/runbooks/` for the execution flow for CI triage and cross-repo API migrations.
+- Cluster-level metadata and runbooks live under `neuriplo-platform/ops/`.
+- Use `neuriplo-platform/ops/CLUSTER_MAP.yaml` as the source of truth for repo ownership, dependency edges, and validation order.
+- Use `neuriplo-platform/ops/repo-meta/*.yaml` for repo-specific build, test, benchmark, and API-surface metadata.
+- Use `neuriplo-platform/ops/policies.yaml` before proposing or implementing automated changes; changes outside the allowed classes require human review.
+- Use `neuriplo-platform/ops/runbooks/` for the execution flow for CI triage and cross-repo API migrations.
 
 ## Standard workflow
 
 When operating as an agent in this repo, follow this loop:
 
 1. Observe the task, failing signal, or requested change.
-2. Diagnose the owning repo, dependency edge, and allowed change class using `ops/CLUSTER_MAP.yaml` and `ops/policies.yaml`.
+2. Diagnose the owning repo, dependency edge, and allowed change class using `neuriplo-platform/ops/CLUSTER_MAP.yaml` and `neuriplo-platform/ops/policies.yaml`.
 3. Act with the smallest reviewable change that fixes the issue without widening scope.
 4. Verify using repo-local checks first, then downstream validation when a declared contract edge is affected.
 
@@ -96,7 +96,7 @@ Stop and escalate to a human if the required work falls into a forbidden change 
 
 ## Repo-local entrypoints
 
-Use the canonical repo-local commands from `ops/repo-meta/neuriplo-infer.yaml`:
+Use the canonical repo-local commands from `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`:
 
 - Configure default build:
   - `cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release`
@@ -109,7 +109,7 @@ Use the canonical repo-local commands from `ops/repo-meta/neuriplo-infer.yaml`:
 - Run tests:
   - `ctest --test-dir build-test --output-on-failure`
 
-Use the benchmark smoke command from `ops/repo-meta/neuriplo-infer.yaml` only when the required weights are available.
+Use the benchmark smoke command from `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml` only when the required weights are available.
 
 ## Documentation checklist when wiring a new task type
 
@@ -140,5 +140,4 @@ For mixed commits (docs + code) where CI is still unnecessary, add `[skip ci]` t
 - Preserve output schema, backend fallback behavior, and latency-sensitive paths.
 - Keep changes small and reviewable.
 - For cross-repo contract work, validate in the declared order: repo-local checks first, then downstream integration, then performance/output checks.
-- PRs produced by agents should include evidence consistent with `ops/PR_EVIDENCE_TEMPLATE.md`.
-- Consult `docs/Roadmap.md` for project direction when evaluating whether a change aligns with planned work.
+- PRs produced by agents should include evidence consistent with `neuriplo-platform/ops/PR_EVIDENCE_TEMPLATE.md`.
