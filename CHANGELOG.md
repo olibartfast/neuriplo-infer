@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-07
+
+### Fixed
+- Removed the stale YOLO26 LiteRT Docker build override that pinned `neuriplo`
+  to commit `8cf93e6`, so release builds use the `versions.env` pin
+  `NEURIPLO_VERSION=v0.5.0` with the LiteRT NCHW→NHWC transpose fix.
+- Moved LiteRT dependency setup before the full source copy in the Docker build
+  so source-only changes do not force a TensorFlow Lite rebuild.
+
 ## [0.4.0] - 2026-06-07
 
 ### Changed
@@ -115,7 +124,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.2...v0.4.0
+[0.3.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/olibartfast/neuriplo-infer/compare/v0.2.2...v0.2.3
