@@ -1,7 +1,7 @@
 #include "ResultRenderer.hpp"
 
-#include "utils.hpp"
 #include "neuriplo/tasks/core/opencv_interop.hpp"
+#include "utils.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -132,17 +132,18 @@ void renderInstanceSegmentationResults(
       });
 }
 
-void renderOpticalFlowResults(const std::vector<neuriplo_tasks::Result> &results,
-                              cv::Mat &image) {
-  forEachResultOfType<neuriplo_tasks::OpticalFlow>(results, [&](const auto &flow) {
-    if (!flow.flow.empty()) {
-      image = neuriplo_tasks::toCvMat(flow.flow).clone();
-    }
-    std::string flow_text =
-        "Max displacement: " + std::to_string(flow.max_displacement);
-    cv::putText(image, flow_text, cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX,
-                1, cv::Scalar(255, 255, 255), 2);
-  });
+void renderOpticalFlowResults(
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
+  forEachResultOfType<neuriplo_tasks::OpticalFlow>(
+      results, [&](const auto &flow) {
+        if (!flow.flow.empty()) {
+          image = neuriplo_tasks::toCvMat(flow.flow).clone();
+        }
+        std::string flow_text =
+            "Max displacement: " + std::to_string(flow.max_displacement);
+        cv::putText(image, flow_text, cv::Point(10, 60),
+                    cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+      });
 }
 
 void renderPoseEstimationResults(
@@ -191,10 +192,11 @@ void renderDepthEstimationResults(
       results, [&](const auto &depth_result) {
         cv::Mat depth_for_vis;
         if (!depth_result.normalized_depth.empty()) {
-          depth_for_vis = neuriplo_tasks::toCvMat(depth_result.normalized_depth);
+          depth_for_vis =
+              neuriplo_tasks::toCvMat(depth_result.normalized_depth);
         } else if (!depth_result.depth.empty()) {
-          cv::normalize(neuriplo_tasks::toCvMat(depth_result.depth), depth_for_vis,
-                        0.0f, 1.0f, cv::NORM_MINMAX, CV_32FC1);
+          cv::normalize(neuriplo_tasks::toCvMat(depth_result.depth),
+                        depth_for_vis, 0.0f, 1.0f, cv::NORM_MINMAX, CV_32FC1);
         } else {
           return;
         }
