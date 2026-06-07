@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.4.1] - 2026-06-07
 
+### Changed
+- Slimmed `README.md` and removed deprecated docs (`PROGRESS.md`,
+  `docs/Roadmap.md`, `docs/FasterCompilationPlan.md`) and the deprecated local
+  `ops/` compatibility pointer; redirected agent references to
+  `neuriplo-platform/ops`.
+- Dropped the stale `neuriplo-tasks` branch pin in the OPENCV_DNN CI job.
+
 ### Fixed
 - Removed the stale YOLO26 LiteRT Docker build override that pinned `neuriplo`
   to commit `8cf93e6`, so release builds use the `versions.env` pin
