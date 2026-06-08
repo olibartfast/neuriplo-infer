@@ -170,6 +170,23 @@ HttpResponse parseHttpResponse(const std::string &raw) {
   const bool chunked = lower.find("transfer-encoding:") != std::string::npos &&
                        lower.find("chunked") != std::string::npos;
 
+  // Binary Tensor Data Extension: capture the JSON-header length so callers can
+  // split the body into JSON header + binary blob.
+  const std::string marker = "inference-header-content-length:";
+  const auto marker_pos = lower.find(marker);
+  if (marker_pos != std::string::npos) {
+    std::size_t v = marker_pos + marker.size();
+    while (v < headers.size() && (headers[v] == ' ' || headers[v] == '\t')) {
+      ++v;
+    }
+    try {
+      response.inference_header_length =
+          std::stol(headers.substr(v)); // stops at the trailing CRLF
+    } catch (...) {
+      response.inference_header_length = -1;
+    }
+  }
+
   if (!chunked) {
     response.body = std::move(body);
     return response;
@@ -333,6 +350,61 @@ std::vector<std::uint8_t> decodeTensorData(const nlohmann::json &data,
         data, [](const nlohmann::json &e) { return e.get<std::uint64_t>(); });
   }
   throw std::runtime_error("unsupported KServe output datatype: " + datatype);
+}
+
+nlohmann::json appendBinaryInput(const std::string &name,
+                                 const std::string &datatype,
+                                 const std::vector<int64_t> &shape,
+                                 const std::vector<std::uint8_t> &bytes,
+                                 std::vector<std::uint8_t> &blob) {
+  nlohmann::json node;
+  node["name"] = name;
+  node["datatype"] = datatype;
+  node["shape"] = shape;
+  node["parameters"]["binary_data_size"] = bytes.size();
+  blob.insert(blob.end(), bytes.begin(), bytes.end());
+  return node;
+}
+
+nlohmann::json requestBinaryOutput(const std::string &name) {
+  nlohmann::json node;
+  node["name"] = name;
+  node["parameters"]["binary_data"] = true;
+  return node;
+}
+
+long binaryDataSize(const nlohmann::json &node) {
+  if (!node.contains("parameters")) {
+    return -1;
+  }
+  const auto &params = node["parameters"];
+  if (!params.contains("binary_data_size")) {
+    return -1;
+  }
+  return params["binary_data_size"].get<long>();
+}
+
+nlohmann::json splitBinaryBody(const std::string &body, std::size_t header_len,
+                               std::vector<std::uint8_t> &blob) {
+  if (header_len > body.size()) {
+    throw std::runtime_error(
+        "invalid binary response: header length exceeds body");
+  }
+  nlohmann::json header = nlohmann::json::parse(body.substr(0, header_len));
+  blob.assign(body.begin() + static_cast<std::ptrdiff_t>(header_len),
+              body.end());
+  return header;
+}
+
+std::vector<std::uint8_t> sliceBlob(const std::vector<std::uint8_t> &blob,
+                                    std::size_t offset, std::size_t size) {
+  if (offset > blob.size() || size > blob.size() - offset) {
+    throw std::runtime_error(
+        "invalid binary response: tensor slice runs past the blob");
+  }
+  return std::vector<std::uint8_t>(
+      blob.begin() + static_cast<std::ptrdiff_t>(offset),
+      blob.begin() + static_cast<std::ptrdiff_t>(offset + size));
 }
 
 } // namespace kserve
