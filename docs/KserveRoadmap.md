@@ -99,9 +99,35 @@ Phases 1 and 3.
 
 ### Phase 2 — Performance & resilience
 
-- KServe binary tensor extension for HTTP and gRPC raw contents.
-- Retry with exponential backoff + jitter on transient gRPC/HTTP errors.
-- Connection reuse / keep-alive.
+- [x] KServe binary tensor extension for HTTP and gRPC raw contents. Pure
+      framing helpers live in `KserveProtocol` (`appendBinaryInput` /
+      `requestBinaryOutput` / `binaryDataSize` / `splitBinaryBody` / `sliceBlob`
+      plus `Inference-Header-Content-Length` parsing) and are unit-tested. HTTP
+      sends inputs as raw little-endian bytes after the JSON header with
+      `parameters.binary_data_size`, requests binary outputs (by name, learned
+      from `modelMetadata()`), and parses binary responses symmetrically;
+      gated by `KSERVE_BINARY` (opt-in, JSON stays the default/fallback). gRPC
+      uses `raw_input_contents` by default (`KSERVE_BINARY=0` falls back to typed
+      `contents`); the server's `raw_output_contents` were already read. Raw
+      framing also widens datatype coverage (e.g. FP16/BF16) on gRPC.
+- [x] Retry with exponential backoff + jitter on transient gRPC/HTTP errors.
+      New pure `KserveRetry` module: a `RetryPolicy` (sourced from
+      `KSERVE_MAX_RETRIES` / `KSERVE_RETRY_BASE_MS` / `KSERVE_RETRY_MAX_MS` /
+      `KSERVE_RETRY_JITTER`), a deterministic `backoffDelayMs(policy, attempt,
+      rand_unit)` schedule (exponential, capped, jittered), and retryable-status
+      predicates for HTTP (429/502/503/504) and gRPC (UNAVAILABLE /
+      DEADLINE_EXCEEDED / RESOURCE_EXHAUSTED). The `runWithRetry` loop (injectable
+      sleeper + RNG, so it is unit-tested) wraps the HTTP round-trip and every
+      gRPC stub call; non-retryable and final failures still throw the same
+      exception types/messages as before.
+- [x] Connection reuse / keep-alive. The HTTP client holds a persistent socket
+      (`HttpConnection`), sends `Connection: keep-alive`, and reads exactly one
+      framed response per request (honouring Content-Length / chunked instead of
+      relying on EOF), reusing the socket across requests. The socket is dropped
+      and transparently reconnected (via the retry loop) on any I/O error, on an
+      explicit `Connection: close`, or on a server-side EOF, so stale keep-alive
+      sockets degrade gracefully. Not thread-safe: calls on one client are
+      assumed serialized (unchanged from before).
 - [x] Server-readiness / live probes. `IClient` exposes `serverLive()` /
       `serverReady()` / `modelReady()`, implemented over HTTP
       (`/v2/health/live`, `/v2/health/ready`, `/v2/models/{m}[/versions/{v}]/ready`)
