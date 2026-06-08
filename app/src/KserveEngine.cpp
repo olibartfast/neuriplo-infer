@@ -2,6 +2,9 @@
 
 #include "KserveProtocol.hpp"
 
+#include <glog/logging.h>
+
+#include <chrono>
 #include <cstring>
 #include <stdexcept>
 #include <utility>
@@ -127,7 +130,15 @@ KserveEngine::get_infer_results(
     inputs.push_back({spec.name, spec.datatype, spec.shape, &input_tensors[i]});
   }
 
+  const auto start = std::chrono::steady_clock::now();
   const auto results = client_->infer(inputs);
+  const auto end = std::chrono::steady_clock::now();
+  last_latency_ms_ =
+      std::chrono::duration<double, std::milli>(end - start).count();
+  total_latency_ms_ += last_latency_ms_;
+  ++infer_count_;
+  VLOG(1) << "KServe infer round-trip: " << last_latency_ms_ << " ms (request "
+          << infer_count_ << ", avg " << averageInferenceLatencyMs() << " ms)";
 
   std::vector<std::vector<TensorElement>> output_data;
   std::vector<std::vector<int64_t>> output_shapes;
@@ -142,3 +153,15 @@ KserveEngine::get_infer_results(
 }
 
 bool KserveEngine::is_gpu_available() const noexcept { return false; }
+
+double KserveEngine::lastInferenceLatencyMs() const noexcept {
+  return last_latency_ms_;
+}
+
+double KserveEngine::averageInferenceLatencyMs() const noexcept {
+  return infer_count_ == 0
+             ? 0.0
+             : total_latency_ms_ / static_cast<double>(infer_count_);
+}
+
+uint64_t KserveEngine::inferenceCount() const noexcept { return infer_count_; }
