@@ -45,13 +45,13 @@ the practical gaps.
 
 | # | Gap | Severity | Phase |
 |---|-----|----------|-------|
-| 1 | HTTP: `https://` stripped but connection is plaintext (no TLS) | High | 3 |
+| 1 | ~~HTTP: `https://` stripped but connection is plaintext (no TLS)~~ — **done (Phase 3)**: OpenSSL TLS with cert verification + SNI | High | 3 |
 | 2 | HTTP: response read assumes `Connection: close`; no `Content-Length` / chunked handling | High | 1 |
 | 3 | HTTP: `gethostbyname` (deprecated, not thread-safe, IPv4-only) | Medium | 1 |
 | 4 | Both: input datatype hardcoded `FP32`; metadata datatype ignored | High | 1 |
 | 5 | Both: partial output datatype coverage | Medium | 1 |
 | 6 | Both: no auth (bearer token / header / gRPC metadata) | High | 1/3 |
-| 7 | gRPC: `InsecureChannelCredentials` only | High | 3 |
+| 7 | ~~gRPC: `InsecureChannelCredentials` only~~ — **done (Phase 3)**: `SslCredentials` from CA/cert/key (mTLS) for `grpcs://` | High | 3 |
 | 8 | No retry / backoff on transient failures | Medium | 2 |
 | 9 | No binary tensor extension (JSON float arrays only) | Medium (perf) | 2 |
 | 10 | No inference round-trip tests | High | 1 |
@@ -139,10 +139,31 @@ Phases 1 and 3.
 
 ### Phase 3 — Security hardening
 
-- HTTPS for the HTTP client (OpenSSL/BoringSSL) — new optional dependency.
-- gRPC `SslChannelCredentials` from CA/cert/key or system roots when endpoint is
-  `grpcs://` / `https://`.
-- mTLS support; secret sourcing from env/file rather than CLI.
+- [x] HTTPS for the HTTP client (OpenSSL) — new **optional** dependency. The
+      socket is wrapped in a small `Connection` abstraction
+      (`KserveHttpClient.cpp`) with plaintext and TLS implementations, so the
+      request-building code is transport-agnostic. For an `https://` endpoint
+      (`Endpoint::tls`) the TLS connection verifies the server certificate
+      against the system CA roots (or a PEM CA file named by `KSERVE_CA_CERT`),
+      sends SNI, and checks the certificate hostname. OpenSSL is gated behind the
+      `NEURIPLO_INFER_ENABLE_KSERVE_TLS` CMake option (default ON when OpenSSL is
+      found) and the `NEURIPLO_INFER_WITH_KSERVE_TLS` compile define; a build
+      without OpenSSL still compiles and an `https://` endpoint then fails fast
+      with a clear "built without TLS support" error.
+- [x] gRPC `SslChannelCredentials` from CA/cert/key or system roots when the
+      endpoint is `grpcs://` / `https://`. `KserveGrpcClient` builds
+      `SslCredentialsOptions` from `KSERVE_CA_CERT` (pem_root_certs),
+      `KSERVE_CLIENT_CERT` (pem_cert_chain) and `KSERVE_CLIENT_KEY`
+      (pem_private_key); empty values fall back to system roots / no client cert
+      (the previous behaviour).
+- [x] mTLS support; secret sourcing from env/file rather than CLI. When both
+      `KSERVE_CLIENT_CERT` and `KSERVE_CLIENT_KEY` are provided the gRPC channel
+      presents a client certificate (mTLS); providing only one fails fast. The
+      bearer token is sourced from `KSERVE_BEARER_TOKEN`, falling back to the
+      file named by `KSERVE_BEARER_TOKEN_FILE` (trailing whitespace trimmed) —
+      secrets never come from the command line. The pure resolution helpers
+      (`trimTrailingWhitespace`, `resolveSecret`, `requireClientCertPair`) live
+      in `KserveProtocol` and are unit-tested.
 
 ### Phase 4 — Productionization
 

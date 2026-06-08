@@ -1,7 +1,10 @@
 #include "KserveProtocol.hpp"
 
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
 
 namespace kserve {
@@ -405,6 +408,82 @@ std::vector<std::uint8_t> sliceBlob(const std::vector<std::uint8_t> &blob,
   return std::vector<std::uint8_t>(
       blob.begin() + static_cast<std::ptrdiff_t>(offset),
       blob.begin() + static_cast<std::ptrdiff_t>(offset + size));
+}
+
+std::string trimTrailingWhitespace(const std::string &value) {
+  std::size_t end = value.size();
+  while (end > 0) {
+    const unsigned char c = static_cast<unsigned char>(value[end - 1]);
+    if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+      --end;
+    } else {
+      break;
+    }
+  }
+  return value.substr(0, end);
+}
+
+std::string resolveSecret(const std::string *env_value,
+                          const std::string *file_contents) {
+  if (env_value != nullptr && !env_value->empty()) {
+    return *env_value;
+  }
+  if (file_contents != nullptr) {
+    return trimTrailingWhitespace(*file_contents);
+  }
+  return std::string();
+}
+
+bool requireClientCertPair(const std::string &client_cert,
+                           const std::string &client_key) {
+  const bool has_cert = !client_cert.empty();
+  const bool has_key = !client_key.empty();
+  if (has_cert != has_key) {
+    throw std::runtime_error(
+        "KServe mTLS requires both KSERVE_CLIENT_CERT and KSERVE_CLIENT_KEY "
+        "(only one was provided)");
+  }
+  return has_cert && has_key;
+}
+
+std::string readFileToString(const std::string &path) {
+  std::ifstream stream(path, std::ios::binary);
+  if (!stream) {
+    throw std::runtime_error("failed to open file: " + path);
+  }
+  std::ostringstream buffer;
+  buffer << stream.rdbuf();
+  return buffer.str();
+}
+
+std::string readSecretFromEnvOrFile(const char *env_var,
+                                    const char *file_env_var) {
+  const char *env_raw = std::getenv(env_var);
+  std::string env_str;
+  const std::string *env_ptr = nullptr;
+  if (env_raw != nullptr) {
+    env_str = env_raw;
+    env_ptr = &env_str;
+  }
+
+  std::string file_str;
+  const std::string *file_ptr = nullptr;
+  if (env_ptr == nullptr || env_ptr->empty()) {
+    const char *file_path = std::getenv(file_env_var);
+    if (file_path != nullptr && file_path[0] != '\0') {
+      file_str = readFileToString(file_path);
+      file_ptr = &file_str;
+    }
+  }
+  return resolveSecret(env_ptr, file_ptr);
+}
+
+std::string readFileFromEnvPath(const char *env_var) {
+  const char *path = std::getenv(env_var);
+  if (path == nullptr || path[0] == '\0') {
+    return std::string();
+  }
+  return readFileToString(path);
 }
 
 } // namespace kserve
