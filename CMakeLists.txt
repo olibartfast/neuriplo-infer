@@ -163,6 +163,29 @@ else()
     set(NEURIPLO_INFER_WITH_GRPC FALSE)
 endif()
 
+# HTTPS (OpenSSL) for the KServe HTTP client. Optional: when OpenSSL is not
+# found the HTTP client still builds but https:// endpoints fail fast at runtime.
+option(NEURIPLO_INFER_ENABLE_KSERVE_TLS
+       "Enable HTTPS (OpenSSL) for the KServe HTTP client" ON)
+# TLS for the HTTP client is meaningless without the KServe client.
+if(NOT NEURIPLO_INFER_ENABLE_KSERVE)
+    set(NEURIPLO_INFER_ENABLE_KSERVE_TLS OFF)
+endif()
+if(NEURIPLO_INFER_ENABLE_KSERVE_TLS)
+    find_package(OpenSSL QUIET)
+    if(OpenSSL_FOUND)
+        message(STATUS "KServe HTTPS enabled (OpenSSL ${OPENSSL_VERSION})")
+        set(NEURIPLO_INFER_WITH_KSERVE_TLS TRUE)
+    else()
+        message(WARNING
+            "OpenSSL not found; KServe HTTP client built without TLS. "
+            "https:// endpoints will error at runtime.")
+        set(NEURIPLO_INFER_WITH_KSERVE_TLS FALSE)
+    endif()
+else()
+    set(NEURIPLO_INFER_WITH_KSERVE_TLS FALSE)
+endif()
+
 message(STATUS "neuriplo-tasks_SOURCE_DIR: ${neuriplo-tasks_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")

@@ -23,8 +23,25 @@ namespace kserve {
 namespace {
 
 std::string envToken() {
-  const char *token = std::getenv("KSERVE_BEARER_TOKEN");
-  return token != nullptr ? std::string(token) : std::string();
+  return readSecretFromEnvOrFile("KSERVE_BEARER_TOKEN",
+                                 "KSERVE_BEARER_TOKEN_FILE");
+}
+
+// Builds channel credentials for the endpoint. Plaintext for grpc://; for
+// grpcs:// a TLS channel verifying the server against KSERVE_CA_CERT (or the
+// system roots when unset). When KSERVE_CLIENT_CERT and KSERVE_CLIENT_KEY are
+// both provided the channel presents a client certificate for mTLS.
+std::shared_ptr<grpc::ChannelCredentials> makeChannelCredentials(bool tls) {
+  if (!tls) {
+    return grpc::InsecureChannelCredentials();
+  }
+  grpc::SslCredentialsOptions options;
+  options.pem_root_certs = readFileFromEnvPath("KSERVE_CA_CERT");
+  options.pem_cert_chain = readFileFromEnvPath("KSERVE_CLIENT_CERT");
+  options.pem_private_key = readFileFromEnvPath("KSERVE_CLIENT_KEY");
+  // mTLS requires both the client cert and key (or neither).
+  requireClientCertPair(options.pem_cert_chain, options.pem_private_key);
+  return grpc::SslCredentials(options);
 }
 
 // Reinterprets raw little-endian bytes as `datatype` and fills the matching
@@ -149,10 +166,7 @@ GrpcClient::GrpcClient(const std::string &endpoint, std::string model_name,
       auth_token_(envToken()), impl_(std::make_unique<Impl>()) {
   const auto ep = parseEndpoint(endpoint, 8001);
   const std::string target = ep.host + ":" + std::to_string(ep.port);
-  const auto credentials =
-      ep.tls ? grpc::SslCredentials(grpc::SslCredentialsOptions{})
-             : grpc::InsecureChannelCredentials();
-  impl_->channel = grpc::CreateChannel(target, credentials);
+  impl_->channel = grpc::CreateChannel(target, makeChannelCredentials(ep.tls));
   impl_->stub = inference::GRPCInferenceService::NewStub(impl_->channel);
 }
 

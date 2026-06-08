@@ -65,4 +65,43 @@ nlohmann::json encodeTensorData(const std::vector<std::uint8_t> &bytes,
 std::vector<std::uint8_t> decodeTensorData(const nlohmann::json &data,
                                            const std::string &datatype);
 
+// --- Secret / TLS configuration helpers --------------------------------------
+// Secrets and TLS material are always sourced from environment variables or
+// files they name, never from the command line. The helpers below split the
+// pure resolution logic (unit-testable without env/filesystem) from the impure
+// readers that touch the environment and disk.
+
+// Removes trailing whitespace (spaces, tabs, CR, LF) from a value read from a
+// file, so a trailing newline does not leak into a token. Pure.
+std::string trimTrailingWhitespace(const std::string &value);
+
+// Resolves a secret with env-over-file precedence: a non-empty env value is
+// returned verbatim; otherwise the file contents (if any) are returned with
+// trailing whitespace trimmed. Either pointer may be null (= unset). Returns
+// empty when neither source yields a value. Pure.
+std::string resolveSecret(const std::string *env_value,
+                          const std::string *file_contents);
+
+// Validates the mTLS client cert/key pairing: both must be present or both
+// absent. Returns true when a client certificate pair is configured; throws
+// std::runtime_error when only one of cert/key is provided. Pure.
+bool requireClientCertPair(const std::string &client_cert,
+                           const std::string &client_key);
+
+// Reads an entire file into a string. Throws std::runtime_error if the file
+// cannot be opened. Impure (filesystem).
+std::string readFileToString(const std::string &path);
+
+// Reads a secret from `env_var`, falling back to the file named by
+// `file_env_var` when the env var is unset/empty (trailing whitespace trimmed).
+// Returns empty when neither is set. Impure (env + filesystem); the pure
+// resolution logic lives in resolveSecret / trimTrailingWhitespace.
+std::string readSecretFromEnvOrFile(const char *env_var,
+                                    const char *file_env_var);
+
+// Returns the contents of the file whose path is held in `env_var`, or an empty
+// string when the env var is unset/empty. Used for PEM CA/cert/key material.
+// Impure (env + filesystem).
+std::string readFileFromEnvPath(const char *env_var);
+
 } // namespace kserve
