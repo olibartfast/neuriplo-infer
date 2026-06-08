@@ -138,4 +138,82 @@ TEST(KserveProtocol, DecodeRejectsNonArrayAndUnknown) {
                std::runtime_error);
 }
 
+// --- Binary Tensor Data Extension -------------------------------------------
+
+TEST(KserveProtocol, ParseHttpResponseInferenceHeaderLength) {
+  const std::string raw = "HTTP/1.1 200 OK\r\n"
+                          "Content-Length: 20\r\n"
+                          "Inference-Header-Content-Length: 12\r\n\r\n"
+                          "{\"outputs\":1}ABCDEFG";
+  const auto resp = kserve::parseHttpResponse(raw);
+  EXPECT_EQ(resp.status, 200);
+  EXPECT_EQ(resp.inference_header_length, 12);
+  // Plain JSON responses leave the field at -1.
+  const std::string plain = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}";
+  EXPECT_EQ(kserve::parseHttpResponse(plain).inference_header_length, -1);
+}
+
+TEST(KserveProtocol, AppendBinaryInputBuildsNodeAndBlob) {
+  const float values[] = {1.5F, -2.0F};
+  const auto bytes = bytesOf(values, sizeof(values));
+  std::vector<std::uint8_t> blob;
+  const auto node =
+      kserve::appendBinaryInput("input0", "FP32", {1, 2}, bytes, blob);
+  EXPECT_EQ(node["name"], "input0");
+  EXPECT_EQ(node["datatype"], "FP32");
+  EXPECT_FALSE(node.contains("data")); // binary inputs omit inline data
+  EXPECT_EQ(node["parameters"]["binary_data_size"].get<std::size_t>(),
+            bytes.size());
+  EXPECT_EQ(blob, bytes);
+
+  // A second input appends to the same blob in order.
+  const std::uint8_t more[] = {0xAA, 0xBB};
+  const auto more_bytes = bytesOf(more, sizeof(more));
+  kserve::appendBinaryInput("input1", "UINT8", {2}, more_bytes, blob);
+  ASSERT_EQ(blob.size(), bytes.size() + more_bytes.size());
+  EXPECT_EQ(blob[bytes.size()], 0xAA);
+  EXPECT_EQ(blob[bytes.size() + 1], 0xBB);
+}
+
+TEST(KserveProtocol, RequestBinaryOutputAndBinaryDataSize) {
+  const auto out = kserve::requestBinaryOutput("logits");
+  EXPECT_EQ(out["name"], "logits");
+  EXPECT_TRUE(out["parameters"]["binary_data"].get<bool>());
+
+  nlohmann::json with_size;
+  with_size["parameters"]["binary_data_size"] = 16;
+  EXPECT_EQ(kserve::binaryDataSize(with_size), 16);
+
+  nlohmann::json without; // inline JSON tensor
+  without["data"] = nlohmann::json::array();
+  EXPECT_EQ(kserve::binaryDataSize(without), -1);
+}
+
+TEST(KserveProtocol, SplitBinaryBodyAndSlice) {
+  nlohmann::json header;
+  header["outputs"] = nlohmann::json::array();
+  const std::string header_str = header.dump();
+  const std::vector<std::uint8_t> tensor = {0x01, 0x02, 0x03, 0x04};
+  std::string body = header_str;
+  body.append(reinterpret_cast<const char *>(tensor.data()), tensor.size());
+
+  std::vector<std::uint8_t> blob;
+  const auto parsed = kserve::splitBinaryBody(body, header_str.size(), blob);
+  EXPECT_TRUE(parsed.contains("outputs"));
+  EXPECT_EQ(blob, tensor);
+
+  EXPECT_EQ(kserve::sliceBlob(blob, 0, 2),
+            (std::vector<std::uint8_t>{0x01, 0x02}));
+  EXPECT_EQ(kserve::sliceBlob(blob, 2, 2),
+            (std::vector<std::uint8_t>{0x03, 0x04}));
+}
+
+TEST(KserveProtocol, SplitAndSliceRejectTruncation) {
+  std::vector<std::uint8_t> blob;
+  EXPECT_THROW(kserve::splitBinaryBody("{}", 100, blob), std::runtime_error);
+  const std::vector<std::uint8_t> small = {0x00, 0x01};
+  EXPECT_THROW(kserve::sliceBlob(small, 1, 5), std::runtime_error);
+  EXPECT_THROW(kserve::sliceBlob(small, 3, 1), std::runtime_error);
+}
+
 #endif // NEURIPLO_INFER_WITH_KSERVE
