@@ -1,11 +1,12 @@
 #pragma once
 
-// App-local, dependency-free copy of the subset of neuriplo's InferenceInterface
-// that neuriplo-infer relies on. Used when building WITHOUT local backends
-// (KServe-only), so the app needs to fetch neither neuriplo nor any external
-// contract library. Put on the include path only in that build mode; full builds
-// use neuriplo's own header. Signatures must stay identical to neuriplo's so the
-// same source compiles unchanged in both modes. See docs/KserveRoadmap.md.
+// App-local, dependency-free copy of the subset of neuriplo's
+// InferenceInterface that neuriplo-infer relies on. Used when building WITHOUT
+// local backends (KServe-only), so the app needs to fetch neither neuriplo nor
+// any external contract library. Put on the include path only in that build
+// mode; full builds use neuriplo's own header. Signatures must stay identical
+// to neuriplo's so the same source compiles unchanged in both modes. See
+// docs/KserveRoadmap.md.
 
 #include "InferenceMetadata.hpp"
 

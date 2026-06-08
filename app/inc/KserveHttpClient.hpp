@@ -16,9 +16,17 @@ public:
              std::string model_version = "1", int timeout_ms = 30000);
 
   ModelMetadata modelMetadata() override;
-  std::vector<InferOutput> infer(const std::vector<InferInput> &inputs) override;
+  std::vector<InferOutput>
+  infer(const std::vector<InferInput> &inputs) override;
+
+  bool serverLive() override;
+  bool serverReady() override;
+  bool modelReady() override;
 
 private:
+  // GETs `path_prefix + path` and reports whether the server answered HTTP 200.
+  bool probe(const std::string &path);
+
   std::string endpoint_;
   std::string model_name_;
   std::string model_version_;

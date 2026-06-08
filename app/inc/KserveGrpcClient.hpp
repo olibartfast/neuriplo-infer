@@ -18,7 +18,12 @@ public:
   ~GrpcClient() override;
 
   ModelMetadata modelMetadata() override;
-  std::vector<InferOutput> infer(const std::vector<InferInput> &inputs) override;
+  std::vector<InferOutput>
+  infer(const std::vector<InferInput> &inputs) override;
+
+  bool serverLive() override;
+  bool serverReady() override;
+  bool modelReady() override;
 
 private:
   std::string model_name_;

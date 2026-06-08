@@ -1,13 +1,14 @@
 #pragma once
 
 // Adapter that exposes a pure KServe protocol client (kserve::IClient) as a
-// neuriplo InferenceInterface, so a remote KServe model is a drop-in for a local
-// engine inside InferencePipeline.
+// neuriplo InferenceInterface, so a remote KServe model is a drop-in for a
+// local engine inside InferencePipeline.
 //
 // This is the ONLY KServe file that depends on the neuriplo contract
-// (InferenceInterface / TensorElement / InferenceMetadata). The protocol clients
-// themselves are neuriplo-free; this layer owns metadata caching and the
-// conversion between raw protocol bytes and the application's typed tensors.
+// (InferenceInterface / TensorElement / InferenceMetadata). The protocol
+// clients themselves are neuriplo-free; this layer owns metadata caching and
+// the conversion between raw protocol bytes and the application's typed
+// tensors.
 
 #include "InferenceInterface.hpp"
 #include "InferenceMetadata.hpp"

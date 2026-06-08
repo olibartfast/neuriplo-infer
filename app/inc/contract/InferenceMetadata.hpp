@@ -1,9 +1,9 @@
 #pragma once
 
 // App-local, dependency-free copy of neuriplo's InferenceMetadata, used when
-// neuriplo-infer is built WITHOUT local backends (KServe-only). It is put on the
-// include path only in that build mode, so no source #include changes are needed
-// between modes. Keep the public shape identical to neuriplo's version.
+// neuriplo-infer is built WITHOUT local backends (KServe-only). It is put on
+// the include path only in that build mode, so no source #include changes are
+// needed between modes. Keep the public shape identical to neuriplo's version.
 // See docs/KserveRoadmap.md.
 
 #include <cstddef>

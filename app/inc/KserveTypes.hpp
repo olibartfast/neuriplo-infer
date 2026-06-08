@@ -59,6 +59,17 @@ public:
   // Runs inference and returns every output the server produced.
   virtual std::vector<InferOutput>
   infer(const std::vector<InferInput> &inputs) = 0;
+
+  // KServe V2 health probes. Return true when the server/model reports healthy.
+  // A reachable server that reports "not ready" returns false; a transport
+  // failure (unreachable endpoint) propagates as an exception so callers can
+  // distinguish "down" from "up but not ready".
+  //   serverLive  — GET /v2/health/live     / gRPC ServerLive
+  //   serverReady — GET /v2/health/ready    / gRPC ServerReady
+  //   modelReady  — GET /v2/models/{m}/ready / gRPC ModelReady (this model)
+  virtual bool serverLive() = 0;
+  virtual bool serverReady() = 0;
+  virtual bool modelReady() = 0;
 };
 
 } // namespace kserve

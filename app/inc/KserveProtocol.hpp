@@ -33,8 +33,17 @@ struct HttpResponse {
 };
 
 // Parses a raw HTTP/1.1 response (headers + body). Honours Content-Length and
-// Transfer-Encoding: chunked. Throws std::runtime_error on a malformed response.
+// Transfer-Encoding: chunked. Throws std::runtime_error on a malformed
+// response.
 HttpResponse parseHttpResponse(const std::string &raw);
+
+// KServe V2 health/readiness endpoint paths, without any Endpoint::path_prefix
+// (callers prepend it). modelReadyPath omits the /versions segment when version
+// is empty, mirroring inferPath.
+std::string serverLivePath();
+std::string serverReadyPath();
+std::string modelReadyPath(const std::string &model_name,
+                           const std::string &model_version);
 
 // Byte width of a KServe datatype tag (FP32, INT64, UINT8, ...). Returns 0 for
 // variable-width / unknown datatypes (e.g. BYTES).
@@ -50,8 +59,9 @@ nlohmann::json encodeTensorData(const std::vector<std::uint8_t> &bytes,
                                 const std::string &datatype);
 
 // Inverse of encodeTensorData: reads a KServe V2 "data" JSON numeric array and
-// packs it into raw little-endian bytes for `datatype`. FP16 values are narrowed
-// back to half. Throws on a non-array input or an unsupported datatype.
+// packs it into raw little-endian bytes for `datatype`. FP16 values are
+// narrowed back to half. Throws on a non-array input or an unsupported
+// datatype.
 std::vector<std::uint8_t> decodeTensorData(const nlohmann::json &data,
                                            const std::string &datatype);
 

@@ -42,11 +42,15 @@ endfunction()
 
 # Function to validate fetched dependencies
 function(validate_fetched_dependencies)
-    # Validate neuriplo library
-    if(NOT DEFINED neuriplo_SOURCE_DIR)
-        message(FATAL_ERROR "neuriplo library not found. This should be fetched automatically by CMake.")
+    # Validate neuriplo library (only fetched when local backends are enabled)
+    if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+        if(NOT DEFINED neuriplo_SOURCE_DIR)
+            message(FATAL_ERROR "neuriplo library not found. This should be fetched automatically by CMake.")
+        endif()
+        message(STATUS "✓ neuriplo library found at ${neuriplo_SOURCE_DIR}")
+    else()
+        message(STATUS "✓ neuriplo library skipped (local backends disabled)")
     endif()
-    message(STATUS "✓ neuriplo library found at ${neuriplo_SOURCE_DIR}")
     
     # Validate VideoCapture library
     if(NOT DEFINED VideoCapture_SOURCE_DIR)

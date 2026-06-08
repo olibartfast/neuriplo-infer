@@ -191,6 +191,20 @@ ModelMetadata HttpClient::modelMetadata() {
   return metadata;
 }
 
+bool HttpClient::probe(const std::string &path) {
+  const auto ep = parseEndpoint(endpoint_, 8080);
+  return httpGet(ep, ep.path_prefix + path, auth_token_, timeout_ms_).status ==
+         200;
+}
+
+bool HttpClient::serverLive() { return probe(serverLivePath()); }
+
+bool HttpClient::serverReady() { return probe(serverReadyPath()); }
+
+bool HttpClient::modelReady() {
+  return probe(modelReadyPath(model_name_, model_version_));
+}
+
 std::vector<InferOutput>
 HttpClient::infer(const std::vector<InferInput> &inputs) {
   const auto ep = parseEndpoint(endpoint_, 8080);
@@ -200,8 +214,7 @@ HttpClient::infer(const std::vector<InferInput> &inputs) {
   Json json_inputs = Json::array();
   for (const auto &input : inputs) {
     if (input.data == nullptr) {
-      throw std::runtime_error("KServe input '" + input.name +
-                               "' has no data");
+      throw std::runtime_error("KServe input '" + input.name + "' has no data");
     }
     Json node;
     node["name"] = input.name;

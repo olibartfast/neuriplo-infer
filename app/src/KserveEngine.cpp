@@ -21,8 +21,9 @@ template <typename T, typename Proj>
 void readInto(const std::vector<uint8_t> &bytes,
               std::vector<TensorElement> &out, Proj proj) {
   if (bytes.size() % sizeof(T) != 0) {
-    throw std::runtime_error("KServe output byte count is not a multiple of the "
-                             "datatype width");
+    throw std::runtime_error(
+        "KServe output byte count is not a multiple of the "
+        "datatype width");
   }
   const size_t count = bytes.size() / sizeof(T);
   for (size_t i = 0; i < count; ++i) {
@@ -40,7 +41,8 @@ std::vector<TensorElement> bytesToElements(const std::vector<uint8_t> &bytes,
   if (datatype == "FP32") {
     readInto<float>(bytes, out, [](float v) { return v; });
   } else if (datatype == "FP64") {
-    readInto<double>(bytes, out, [](double v) { return static_cast<float>(v); });
+    readInto<double>(bytes, out,
+                     [](double v) { return static_cast<float>(v); });
   } else if (datatype == "FP16") {
     readInto<uint16_t>(bytes, out,
                        [](uint16_t v) { return kserve::halfToFloat(v); });
@@ -83,6 +85,14 @@ KserveEngine::KserveEngine(std::unique_ptr<kserve::IClient> client)
 void KserveEngine::ensureMetadata() {
   if (metadata_loaded_) {
     return;
+  }
+  // Fail fast with a clear message when the server is reachable but the model
+  // is not loaded/ready. A transport failure (unreachable endpoint) propagates
+  // from the probe as a connection error, distinct from "up but not ready".
+  if (!client_->modelReady()) {
+    throw std::runtime_error(
+        "KServe server is reachable but the model is not ready "
+        "(not loaded, or still initialising)");
   }
   raw_metadata_ = client_->modelMetadata();
   for (const auto &input : raw_metadata_.inputs) {
