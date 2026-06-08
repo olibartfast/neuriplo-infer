@@ -5,125 +5,158 @@
 #include <grpcpp/channel.h>
 #include <grpcpp/client_context.h>
 #include <grpcpp/create_channel.h>
+#include <grpcpp/security/credentials.h>
 
+#include "KserveProtocol.hpp"
+
+#include <chrono>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
-namespace grpc_client {
+namespace kserve {
 
-struct KserveGrpcClient::Impl {
+namespace {
+
+std::string envToken() {
+  const char *token = std::getenv("KSERVE_BEARER_TOKEN");
+  return token != nullptr ? std::string(token) : std::string();
+}
+
+// Reinterprets raw little-endian bytes as `datatype` and fills the matching
+// typed field of an InferTensorContents.
+template <typename T, typename Add>
+void fillContents(const std::vector<uint8_t> &bytes, Add add) {
+  if (bytes.size() % sizeof(T) != 0) {
+    throw std::runtime_error("KServe gRPC input byte count is not a multiple of "
+                             "the datatype width");
+  }
+  const size_t count = bytes.size() / sizeof(T);
+  for (size_t i = 0; i < count; ++i) {
+    T value;
+    std::memcpy(&value, bytes.data() + i * sizeof(T), sizeof(T));
+    add(value);
+  }
+}
+
+void encodeInput(inference::InferTensorContents *contents,
+                 const std::vector<uint8_t> &bytes,
+                 const std::string &datatype) {
+  if (datatype == "FP32") {
+    fillContents<float>(bytes, [&](float v) { contents->add_fp32_contents(v); });
+  } else if (datatype == "FP64") {
+    fillContents<double>(bytes,
+                         [&](double v) { contents->add_fp64_contents(v); });
+  } else if (datatype == "INT8") {
+    fillContents<int8_t>(bytes,
+                         [&](int8_t v) { contents->add_int_contents(v); });
+  } else if (datatype == "INT16") {
+    fillContents<int16_t>(bytes,
+                          [&](int16_t v) { contents->add_int_contents(v); });
+  } else if (datatype == "INT32") {
+    fillContents<int32_t>(bytes,
+                          [&](int32_t v) { contents->add_int_contents(v); });
+  } else if (datatype == "INT64") {
+    fillContents<int64_t>(bytes,
+                          [&](int64_t v) { contents->add_int64_contents(v); });
+  } else if (datatype == "UINT8" || datatype == "BOOL") {
+    fillContents<uint8_t>(bytes,
+                          [&](uint8_t v) { contents->add_uint_contents(v); });
+  } else if (datatype == "UINT16") {
+    fillContents<uint16_t>(bytes,
+                           [&](uint16_t v) { contents->add_uint_contents(v); });
+  } else if (datatype == "UINT32") {
+    fillContents<uint32_t>(bytes,
+                           [&](uint32_t v) { contents->add_uint_contents(v); });
+  } else if (datatype == "UINT64") {
+    fillContents<uint64_t>(
+        bytes, [&](uint64_t v) { contents->add_uint64_contents(v); });
+  } else {
+    throw std::runtime_error(
+        "unsupported KServe gRPC input datatype (use HTTP transport): " +
+        datatype);
+  }
+}
+
+// Appends each element of a typed contents range as raw little-endian bytes of
+// width T (used when the server returns typed contents instead of raw bytes).
+template <typename T, typename Range>
+void appendBytes(std::vector<uint8_t> &out, const Range &range) {
+  for (const auto value : range) {
+    const T typed = static_cast<T>(value);
+    const auto *p = reinterpret_cast<const uint8_t *>(&typed);
+    out.insert(out.end(), p, p + sizeof(T));
+  }
+}
+
+std::vector<uint8_t> contentsToBytes(const inference::InferTensorContents &c,
+                                     const std::string &datatype) {
+  std::vector<uint8_t> out;
+  if (datatype == "FP32") {
+    appendBytes<float>(out, c.fp32_contents());
+  } else if (datatype == "FP64") {
+    appendBytes<double>(out, c.fp64_contents());
+  } else if (datatype == "INT8") {
+    appendBytes<int8_t>(out, c.int_contents());
+  } else if (datatype == "INT16") {
+    appendBytes<int16_t>(out, c.int_contents());
+  } else if (datatype == "INT32") {
+    appendBytes<int32_t>(out, c.int_contents());
+  } else if (datatype == "INT64") {
+    appendBytes<int64_t>(out, c.int64_contents());
+  } else if (datatype == "UINT8") {
+    appendBytes<uint8_t>(out, c.uint_contents());
+  } else if (datatype == "BOOL") {
+    appendBytes<uint8_t>(out, c.bool_contents());
+  } else if (datatype == "UINT16") {
+    appendBytes<uint16_t>(out, c.uint_contents());
+  } else if (datatype == "UINT32") {
+    appendBytes<uint32_t>(out, c.uint_contents());
+  } else if (datatype == "UINT64") {
+    appendBytes<uint64_t>(out, c.uint64_contents());
+  } else {
+    throw std::runtime_error("unsupported KServe gRPC output datatype: " +
+                             datatype);
+  }
+  return out;
+}
+
+template <typename Range> std::vector<int64_t> toShape(const Range &dims) {
+  std::vector<int64_t> shape;
+  for (const auto dim : dims) {
+    shape.push_back(static_cast<int64_t>(dim));
+  }
+  return shape;
+}
+
+} // namespace
+
+struct GrpcClient::Impl {
   std::shared_ptr<grpc::Channel> channel;
   std::unique_ptr<inference::GRPCInferenceService::Stub> stub;
 };
 
-KserveGrpcClient::KserveGrpcClient(const std::string &endpoint,
-                                   const std::string &model_name,
-                                   const std::string &model_version,
-                                   int timeout_ms)
-    : InferenceInterface("", false, 1), endpoint_(endpoint),
-      model_name_(model_name), model_version_(model_version),
-      timeout_ms_(timeout_ms), impl_(std::make_unique<Impl>()) {
-  impl_->channel =
-      grpc::CreateChannel(endpoint_, grpc::InsecureChannelCredentials());
+GrpcClient::GrpcClient(const std::string &endpoint, std::string model_name,
+                       std::string model_version, int timeout_ms)
+    : model_name_(std::move(model_name)),
+      model_version_(std::move(model_version)), timeout_ms_(timeout_ms),
+      auth_token_(envToken()), impl_(std::make_unique<Impl>()) {
+  const auto ep = parseEndpoint(endpoint, 8001);
+  const std::string target = ep.host + ":" + std::to_string(ep.port);
+  const auto credentials =
+      ep.tls ? grpc::SslCredentials(grpc::SslCredentialsOptions{})
+             : grpc::InsecureChannelCredentials();
+  impl_->channel = grpc::CreateChannel(target, credentials);
   impl_->stub = inference::GRPCInferenceService::NewStub(impl_->channel);
 }
 
-KserveGrpcClient::~KserveGrpcClient() = default;
+GrpcClient::~GrpcClient() = default;
 
-std::tuple<std::vector<std::vector<TensorElement>>,
-           std::vector<std::vector<int64_t>>>
-KserveGrpcClient::get_infer_results(
-    const std::vector<std::vector<uint8_t>> &input_tensors) {
-  if (!metadata_loaded_) {
-    throw std::runtime_error("KServe gRPC client metadata not loaded");
-  }
-
-  inference::ModelInferRequest request;
-  request.set_model_name(model_name_);
-  request.set_model_version(model_version_);
-  request.set_id("kserve-grpc-client");
-
-  const auto &meta_inputs = cached_metadata_.getInputs();
-  for (size_t i = 0; i < input_tensors.size() && i < meta_inputs.size(); ++i) {
-    auto *input = request.add_inputs();
-    input->set_name(meta_inputs[i].name);
-    input->set_datatype("FP32");
-    for (const auto dim : meta_inputs[i].shape) {
-      input->add_shape(dim);
-    }
-
-    auto *contents = input->mutable_contents();
-    const auto &bytes = input_tensors[i];
-    const auto *floats = reinterpret_cast<const float *>(bytes.data());
-    const size_t count = bytes.size() / sizeof(float);
-    for (size_t j = 0; j < count; ++j) {
-      contents->add_fp32_contents(floats[j]);
-    }
-  }
-
-  const auto &meta_outputs = cached_metadata_.getOutputs();
-  for (const auto &output : meta_outputs) {
-    auto *out = request.add_outputs();
-    out->set_name(output.name);
-  }
-
-  grpc::ClientContext context;
-  context.set_deadline(std::chrono::system_clock::now() +
-                       std::chrono::milliseconds(timeout_ms_));
-
-  inference::ModelInferResponse response;
-  const auto status = impl_->stub->ModelInfer(&context, request, &response);
-
-  if (!status.ok()) {
-    std::ostringstream msg;
-    msg << "KServe gRPC inference failed: "
-        << static_cast<int>(status.error_code()) << " "
-        << status.error_message();
-    throw std::runtime_error(msg.str());
-  }
-
-  std::vector<std::vector<TensorElement>> output_data;
-  std::vector<std::vector<int64_t>> output_shapes;
-
-  for (const auto &output : response.outputs()) {
-    std::vector<int64_t> shape;
-    for (const auto dim : output.shape()) {
-      shape.push_back(dim);
-    }
-    output_shapes.push_back(shape);
-
-    std::vector<TensorElement> data;
-    const auto &contents = output.contents();
-    for (const auto value : contents.fp32_contents()) {
-      data.push_back(value);
-    }
-    for (const auto value : contents.fp64_contents()) {
-      data.push_back(static_cast<float>(value));
-    }
-    for (const auto value : contents.int64_contents()) {
-      data.push_back(static_cast<int64_t>(value));
-    }
-    for (const auto value : contents.int_contents()) {
-      data.push_back(static_cast<int32_t>(value));
-    }
-    output_data.push_back(std::move(data));
-  }
-
-  return {std::move(output_data), std::move(output_shapes)};
-}
-
-InferenceMetadata KserveGrpcClient::get_inference_metadata() {
-  if (!metadata_loaded_) {
-    fetchMetadata();
-  }
-  return cached_metadata_;
-}
-
-bool KserveGrpcClient::is_gpu_available() const noexcept { return false; }
-
-bool KserveGrpcClient::fetchMetadata() {
+ModelMetadata GrpcClient::modelMetadata() {
   inference::ModelMetadataRequest request;
   request.set_name(model_name_);
   if (!model_version_.empty()) {
@@ -133,10 +166,12 @@ bool KserveGrpcClient::fetchMetadata() {
   grpc::ClientContext context;
   context.set_deadline(std::chrono::system_clock::now() +
                        std::chrono::milliseconds(timeout_ms_));
+  if (!auth_token_.empty()) {
+    context.AddMetadata("authorization", "Bearer " + auth_token_);
+  }
 
   inference::ModelMetadataResponse response;
   const auto status = impl_->stub->ModelMetadata(&context, request, &response);
-
   if (!status.ok()) {
     std::ostringstream msg;
     msg << "KServe gRPC metadata fetch failed: "
@@ -145,23 +180,78 @@ bool KserveGrpcClient::fetchMetadata() {
     throw std::runtime_error(msg.str());
   }
 
+  ModelMetadata metadata;
   for (const auto &input : response.inputs()) {
-    std::vector<int64_t> shape;
-    for (const auto dim : input.shape()) {
-      shape.push_back(dim);
-    }
-    cached_metadata_.addInput(input.name(), shape, 1);
+    metadata.inputs.push_back(
+        {input.name(), input.datatype().empty() ? "FP32" : input.datatype(),
+         toShape(input.shape())});
   }
   for (const auto &output : response.outputs()) {
-    std::vector<int64_t> shape;
-    for (const auto dim : output.shape()) {
-      shape.push_back(dim);
-    }
-    cached_metadata_.addOutput(output.name(), shape, 1);
+    metadata.outputs.push_back(
+        {output.name(), output.datatype().empty() ? "FP32" : output.datatype(),
+         toShape(output.shape())});
   }
-
-  metadata_loaded_ = true;
-  return true;
+  return metadata;
 }
 
-} // namespace grpc_client
+std::vector<InferOutput>
+GrpcClient::infer(const std::vector<InferInput> &inputs) {
+  inference::ModelInferRequest request;
+  request.set_model_name(model_name_);
+  request.set_model_version(model_version_);
+  request.set_id("kserve-grpc-client");
+
+  for (const auto &input : inputs) {
+    if (input.data == nullptr) {
+      throw std::runtime_error("KServe input '" + input.name +
+                               "' has no data");
+    }
+    auto *node = request.add_inputs();
+    node->set_name(input.name);
+    node->set_datatype(input.datatype);
+    for (const auto dim : input.shape) {
+      node->add_shape(dim);
+    }
+    encodeInput(node->mutable_contents(), *input.data, input.datatype);
+  }
+
+  grpc::ClientContext context;
+  context.set_deadline(std::chrono::system_clock::now() +
+                       std::chrono::milliseconds(timeout_ms_));
+  if (!auth_token_.empty()) {
+    context.AddMetadata("authorization", "Bearer " + auth_token_);
+  }
+
+  inference::ModelInferResponse response;
+  const auto status = impl_->stub->ModelInfer(&context, request, &response);
+  if (!status.ok()) {
+    std::ostringstream msg;
+    msg << "KServe gRPC inference failed: "
+        << static_cast<int>(status.error_code()) << " "
+        << status.error_message();
+    throw std::runtime_error(msg.str());
+  }
+
+  // The server may return tensor payloads either as raw_output_contents (the
+  // common, efficient form) or as typed contents. Handle both.
+  const bool has_raw = response.raw_output_contents_size() > 0;
+
+  std::vector<InferOutput> outputs;
+  for (int i = 0; i < response.outputs_size(); ++i) {
+    const auto &output = response.outputs(i);
+    InferOutput out;
+    out.name = output.name();
+    out.datatype = output.datatype().empty() ? "FP32" : output.datatype();
+    out.shape = toShape(output.shape());
+    if (has_raw && i < response.raw_output_contents_size()) {
+      const auto &raw = response.raw_output_contents(i);
+      out.data.assign(raw.begin(), raw.end());
+    } else {
+      out.data = contentsToBytes(output.contents(), out.datatype);
+    }
+    outputs.push_back(std::move(out));
+  }
+  return outputs;
+}
+
+} // namespace kserve

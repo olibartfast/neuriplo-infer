@@ -44,5 +44,5 @@ struct AppConfig {
   std::string kserve_model_name;
   std::string kserve_model_version{"1"};
   int kserve_timeout_ms{30000};
-  std::string kserve_transport{"grpc"};
+  std::string kserve_transport{"http"};
 };

@@ -57,6 +57,105 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure
 
+  kserve-build-matrix:
+    name: KServe (${{ matrix.label }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: http+grpc
+            enable_kserve: "ON"
+            enable_grpc: "ON"
+            enable_local: "ON"
+            install_grpc: true
+          - label: http-only
+            enable_kserve: "ON"
+            enable_grpc: "OFF"
+            enable_local: "ON"
+            install_grpc: false
+          - label: local-only
+            enable_kserve: "OFF"
+            enable_grpc: "OFF"
+            enable_local: "ON"
+            install_grpc: false
+          - label: kserve-only
+            enable_kserve: "ON"
+            enable_grpc: "OFF"
+            enable_local: "OFF"
+            install_grpc: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shared dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Install gRPC toolchain
+        if: matrix.install_grpc
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            protobuf-compiler protobuf-compiler-grpc \
+            libprotobuf-dev libgrpc++-dev
+
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ matrix.label }}
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DENABLE_APP_TESTS=ON \
+            -DNEURIPLO_INFER_ENABLE_KSERVE=${{ matrix.enable_kserve }} \
+            -DNEURIPLO_INFER_ENABLE_GRPC=${{ matrix.enable_grpc }} \
+            -DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=${{ matrix.enable_local }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache 2>&1 | tee configure.log
+
+      - name: Assert gRPC KServe client was actually enabled
+        if: matrix.install_grpc
+        shell: bash
+        run: |
+          if ! grep -q "gRPC KServe client enabled" configure.log; then
+            echo "::error::gRPC requested but not detected; build would silently fall back to HTTP" >&2
+            exit 1
+          fi
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(nproc)
+
+      - name: Test (KServe unit tests, skip docker e2e)
+        # The pipeline tests assume local backends; the KServe-only build proves
+        # it compiles/links without fetching neuriplo. Protocol unit tests are
+        # covered by the http+grpc / http-only entries.
+        if: matrix.enable_local != 'OFF'
+        working-directory: build
+        run: ctest --output-on-failure -E docker
+
+      - name: Assert KServe sources are absent in local-only build
+        if: matrix.enable_kserve == 'OFF'
+        shell: bash
+        run: |
+          if find build -name 'Kserve*.cpp.o' | grep -q .; then
+            echo "::error::KServe sources were compiled in a local-only build" >&2
+            find build -name 'Kserve*.cpp.o'
+            exit 1
+          fi
+
+      - name: Assert neuriplo was NOT fetched in kserve-only build
+        if: matrix.enable_local == 'OFF'
+        shell: bash
+        run: |
+          if [ -d build/_deps/neuriplo-src ]; then
+            echo "::error::neuriplo was fetched in a KServe-only build (LOCAL_BACKENDS=OFF)" >&2
+            exit 1
+          fi
+
   build-onnxruntime:
     name: Build (ONNX_RUNTIME)
     runs-on: ubuntu-24.04

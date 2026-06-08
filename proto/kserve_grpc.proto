@@ -66,6 +66,9 @@ message ModelInferRequest {
   map<string, InferParameter> parameters = 4;
   repeated InferInputTensor inputs = 5;
   repeated InferRequestedOutputTensor outputs = 6;
+  // Optional raw tensor payloads, one per input, in input order. Matches the
+  // official KServe/Triton proto; lets servers receive untyped bytes.
+  repeated bytes raw_input_contents = 7;
 
   message InferInputTensor {
     string name = 1;
@@ -115,6 +118,10 @@ message ModelInferResponse {
   string id = 3;
   map<string, InferParameter> parameters = 4;
   repeated InferOutputTensor outputs = 5;
+  // Raw tensor payloads, one per output, in output order. Triton (and KServe
+  // with binary outputs) returns tensor data here rather than in the typed
+  // `contents` field, so a compatible client must read it.
+  repeated bytes raw_output_contents = 6;
 
   message InferOutputTensor {
     string name = 1;
