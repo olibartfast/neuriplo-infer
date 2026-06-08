@@ -13,6 +13,7 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveProtocol.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveEngine.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveRetry.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_KserveSecurity.cpp
 )
 
 include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)

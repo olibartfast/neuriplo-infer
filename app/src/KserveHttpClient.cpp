@@ -5,6 +5,7 @@
 
 #include <cctype>
 #include <cstdlib>
+#include <memory>
 #include <netdb.h>
 #include <nlohmann/json.hpp>
 #include <sstream>
@@ -15,25 +16,45 @@
 #include <unistd.h>
 #include <utility>
 
+#ifdef NEURIPLO_INFER_WITH_KSERVE_TLS
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
+#endif
+
 using Json = nlohmann::json;
 
 namespace kserve {
 
-// Persistent keep-alive socket. Not thread-safe: the client assumes inference
-// calls on a single HttpClient are serialized (the existing design held no lock
-// either). Reused across requests; any I/O error drops the fd so the next
-// round-trip — driven by the retry loop — reconnects.
+// Byte transport over an established socket. The request-building code below is
+// transport-agnostic: it writes a request string and reads bytes back, whether
+// they travel in plaintext or through a TLS session. Declared at namespace
+// scope (not in the anonymous namespace) so the keep-alive holder below can own
+// one without tripping -Wsubobject-linkage.
+class Connection {
+public:
+  virtual ~Connection() = default;
+  virtual void sendAll(const std::string &data) = 0;
+  // Reads up to buf_size bytes into buf. Returns the number of bytes read
+  // (> 0), 0 when the peer closed the connection, or < 0 on a transport error.
+  virtual long recvSome(char *buf, std::size_t buf_size) = 0;
+};
+
+// Persistent keep-alive connection. Not thread-safe: the client assumes
+// inference calls on a single HttpClient are serialized (the original design
+// held no lock either). The transport is reused across requests; any I/O error
+// drops it so the next round-trip — driven by the retry loop — reconnects.
 struct HttpConnection {
-  int fd = -1;
+  std::unique_ptr<Connection> transport;
   std::string host;
   int port = 0;
+  bool tls = false;
 
-  ~HttpConnection() { drop(); }
   void drop() {
-    if (fd >= 0) {
-      ::close(fd);
-      fd = -1;
-    }
+    transport.reset();
+    host.clear();
+    port = 0;
+    tls = false;
   }
 };
 
@@ -83,28 +104,155 @@ int connectSocket(const std::string &host, int port, int timeout_ms) {
   return fd;
 }
 
-// Returns a connected fd for `ep`, reusing the persistent socket when it
-// already targets the same host/port, otherwise (re)connecting.
-int ensureConnected(HttpConnection &conn, const Endpoint &ep, int timeout_ms) {
-  if (conn.fd >= 0 && conn.host == ep.host && conn.port == ep.port) {
-    return conn.fd;
-  }
-  conn.drop();
-  conn.fd = connectSocket(ep.host, ep.port, timeout_ms);
-  conn.host = ep.host;
-  conn.port = ep.port;
-  return conn.fd;
-}
-
-void sendAll(int fd, const std::string &request) {
-  size_t sent = 0;
-  while (sent < request.size()) {
-    const auto n = ::send(fd, request.data() + sent, request.size() - sent, 0);
-    if (n <= 0) {
-      throw std::runtime_error("HTTP send failed");
+class PlainConnection : public Connection {
+public:
+  explicit PlainConnection(int fd) : fd_(fd) {}
+  ~PlainConnection() override {
+    if (fd_ >= 0) {
+      ::close(fd_);
     }
-    sent += static_cast<size_t>(n);
   }
+  PlainConnection(const PlainConnection &) = delete;
+  PlainConnection &operator=(const PlainConnection &) = delete;
+
+  void sendAll(const std::string &data) override {
+    size_t sent = 0;
+    while (sent < data.size()) {
+      const auto n = ::send(fd_, data.data() + sent, data.size() - sent, 0);
+      if (n <= 0) {
+        throw std::runtime_error("HTTP send failed");
+      }
+      sent += static_cast<size_t>(n);
+    }
+  }
+
+  long recvSome(char *buf, std::size_t buf_size) override {
+    const auto received = ::recv(fd_, buf, buf_size, 0);
+    return static_cast<long>(received);
+  }
+
+private:
+  int fd_;
+};
+
+#ifdef NEURIPLO_INFER_WITH_KSERVE_TLS
+// TLS transport built on OpenSSL. Verifies the server certificate against the
+// system CA roots (or KSERVE_CA_CERT when set), sends SNI, and checks the
+// certificate hostname against the endpoint host.
+class TlsConnection : public Connection {
+public:
+  TlsConnection(int fd, const std::string &host) : fd_(fd) {
+    ctx_ = SSL_CTX_new(TLS_client_method());
+    if (ctx_ == nullptr) {
+      fail("SSL_CTX_new failed");
+    }
+    SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
+    SSL_CTX_set_verify(ctx_, SSL_VERIFY_PEER, nullptr);
+
+    const char *ca_path = std::getenv("KSERVE_CA_CERT");
+    if (ca_path != nullptr && ca_path[0] != '\0') {
+      if (SSL_CTX_load_verify_locations(ctx_, ca_path, nullptr) != 1) {
+        fail("failed to load CA file named by KSERVE_CA_CERT");
+      }
+    } else if (SSL_CTX_set_default_verify_paths(ctx_) != 1) {
+      fail("failed to load system CA roots");
+    }
+
+    ssl_ = SSL_new(ctx_);
+    if (ssl_ == nullptr) {
+      fail("SSL_new failed");
+    }
+    SSL_set_fd(ssl_, fd_);
+    // SNI: tell the server which virtual host we want.
+    SSL_set_tlsext_host_name(ssl_, host.c_str());
+    // Verify the certificate matches the host we connected to.
+    X509_VERIFY_PARAM *param = SSL_get0_param(ssl_);
+    X509_VERIFY_PARAM_set_hostflags(param,
+                                    X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+    if (X509_VERIFY_PARAM_set1_host(param, host.c_str(), host.size()) != 1) {
+      fail("failed to set expected TLS hostname");
+    }
+    if (SSL_connect(ssl_) != 1) {
+      fail("TLS handshake failed");
+    }
+  }
+
+  ~TlsConnection() override { cleanup(); }
+  TlsConnection(const TlsConnection &) = delete;
+  TlsConnection &operator=(const TlsConnection &) = delete;
+
+  void sendAll(const std::string &data) override {
+    size_t sent = 0;
+    while (sent < data.size()) {
+      const int n = SSL_write(ssl_, data.data() + sent,
+                              static_cast<int>(data.size() - sent));
+      if (n <= 0) {
+        throw std::runtime_error("TLS send failed");
+      }
+      sent += static_cast<size_t>(n);
+    }
+  }
+
+  long recvSome(char *buf, std::size_t buf_size) override {
+    const int n = SSL_read(ssl_, buf, static_cast<int>(buf_size));
+    // Treat any non-positive return as a clean end-of-response; the framing
+    // logic decides completeness from the bytes already read.
+    return n > 0 ? static_cast<long>(n) : 0;
+  }
+
+private:
+  void cleanup() {
+    if (ssl_ != nullptr) {
+      SSL_shutdown(ssl_);
+      SSL_free(ssl_);
+      ssl_ = nullptr;
+    }
+    if (ctx_ != nullptr) {
+      SSL_CTX_free(ctx_);
+      ctx_ = nullptr;
+    }
+    if (fd_ >= 0) {
+      ::close(fd_);
+      fd_ = -1;
+    }
+  }
+
+  // Captures the OpenSSL error string, releases all resources, and throws.
+  [[noreturn]] void fail(const std::string &what) {
+    const unsigned long err = ERR_get_error();
+    std::string message = "KServe TLS: " + what;
+    if (err != 0) {
+      char buf[256];
+      ERR_error_string_n(err, buf, sizeof(buf));
+      message += ": ";
+      message += buf;
+    }
+    cleanup();
+    throw std::runtime_error(message);
+  }
+
+  int fd_;
+  SSL_CTX *ctx_ = nullptr;
+  SSL *ssl_ = nullptr;
+};
+#endif // NEURIPLO_INFER_WITH_KSERVE_TLS
+
+// Establishes a connection to the endpoint, wrapping it in TLS for https://.
+// A TLS endpoint on a build without OpenSSL fails fast with a clear message.
+std::unique_ptr<Connection> connect(const Endpoint &ep, int timeout_ms) {
+  const int fd = connectSocket(ep.host, ep.port, timeout_ms);
+  if (ep.tls) {
+#ifdef NEURIPLO_INFER_WITH_KSERVE_TLS
+    return std::make_unique<TlsConnection>(fd, ep.host);
+#else
+    ::close(fd);
+    throw std::runtime_error(
+        "KServe https:// endpoint requested but the client was built without "
+        "TLS support (rebuild with OpenSSL / "
+        "-DNEURIPLO_INFER_ENABLE_KSERVE_TLS=ON)");
+#endif
+  }
+  return std::make_unique<PlainConnection>(fd);
 }
 
 std::string toLower(const std::string &s) {
@@ -151,15 +299,15 @@ bool messageComplete(const std::string &raw) {
   return false;
 }
 
-// Reads one framed HTTP response. Stops as soon as the message is complete (so
-// the connection can be kept alive) or at EOF for close-delimited responses.
-// Sets `server_closed` when the peer closed the connection.
-std::string readFramed(int fd, bool &server_closed) {
+// Reads one framed HTTP response over `transport`. Stops as soon as the message
+// is complete (so the connection can be kept alive) or at EOF for
+// close-delimited responses. Sets `server_closed` when the peer closed first.
+std::string readFramed(Connection &transport, bool &server_closed) {
   server_closed = false;
   std::string raw;
   char buffer[4096];
   while (!messageComplete(raw)) {
-    const auto received = ::recv(fd, buffer, sizeof(buffer), 0);
+    const long received = transport.recvSome(buffer, sizeof(buffer));
     if (received < 0) {
       throw std::runtime_error("HTTP recv failed");
     }
@@ -167,7 +315,7 @@ std::string readFramed(int fd, bool &server_closed) {
       server_closed = true;
       break;
     }
-    raw.append(buffer, static_cast<size_t>(received));
+    raw.append(buffer, static_cast<std::size_t>(received));
   }
   if (raw.empty()) {
     throw std::runtime_error("HTTP read failed: empty response");
@@ -184,16 +332,32 @@ bool wantsClose(const std::string &raw) {
   return headers.find("connection: close") != std::string::npos;
 }
 
+// Returns the live transport for `ep`, reusing the persistent connection when
+// it already targets the same host/port/scheme, otherwise (re)connecting.
+Connection &ensureConnected(HttpConnection &conn, const Endpoint &ep,
+                            int timeout_ms) {
+  if (conn.transport && conn.host == ep.host && conn.port == ep.port &&
+      conn.tls == ep.tls) {
+    return *conn.transport;
+  }
+  conn.drop();
+  conn.transport = connect(ep, timeout_ms);
+  conn.host = ep.host;
+  conn.port = ep.port;
+  conn.tls = ep.tls;
+  return *conn.transport;
+}
+
 // Performs a single keep-alive round-trip: (re)connect if needed, send, read
-// the framed response, and parse it. Any I/O failure drops the socket and
+// the framed response, and parse it. Any I/O failure drops the connection and
 // rethrows so the retry loop reconnects on the next attempt.
 HttpResponse roundTrip(HttpConnection &conn, const Endpoint &ep,
                        const std::string &request, int timeout_ms) {
   try {
-    const int fd = ensureConnected(conn, ep, timeout_ms);
-    sendAll(fd, request);
+    Connection &transport = ensureConnected(conn, ep, timeout_ms);
+    transport.sendAll(request);
     bool server_closed = false;
-    const std::string raw = readFramed(fd, server_closed);
+    const std::string raw = readFramed(transport, server_closed);
     auto response = parseHttpResponse(raw);
     if (server_closed || wantsClose(raw)) {
       conn.drop();
@@ -247,8 +411,8 @@ std::string inferPath(const std::string &model_name,
 }
 
 std::string envToken() {
-  const char *token = std::getenv("KSERVE_BEARER_TOKEN");
-  return token != nullptr ? std::string(token) : std::string();
+  return readSecretFromEnvOrFile("KSERVE_BEARER_TOKEN",
+                                 "KSERVE_BEARER_TOKEN_FILE");
 }
 
 // HTTP binary tensor extension is opt-in (the JSON path is the validated

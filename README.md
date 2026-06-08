@@ -234,13 +234,20 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 
 Use these flags to run preprocessing/postprocessing in `neuriplo-infer` while sending inference tensors to a remote KServe V2 runtime. This is the intended path for `neuriplo-kserve-runtime` integration.
 
-- `--kserve_endpoint=<url>`: Base KServe V2 endpoint, for example `http://127.0.0.1:19090`. A path prefix is allowed when the runtime is behind a gateway. `https://`/`grpcs://` selects TLS (gRPC; HTTPS for the HTTP client is roadmap Phase 3).
+- `--kserve_endpoint=<url>`: Base KServe V2 endpoint, for example `http://127.0.0.1:19090`. A path prefix is allowed when the runtime is behind a gateway. `https://` (HTTP client) and `grpcs://` (gRPC client) select TLS; the server certificate is verified against the system CA roots (or `KSERVE_CA_CERT`). HTTPS requires a build with OpenSSL (`NEURIPLO_INFER_ENABLE_KSERVE_TLS`, on by default when OpenSSL is found); otherwise an `https://` endpoint fails fast with a clear error.
 - `--kserve_model_name=<name>`: Model name served by the endpoint. Defaults to `--type` when omitted.
 - `--kserve_model_version=<version>`: KServe model version to call. Defaults to `1`.
 - `--kserve_transport=<http|grpc>`: Transport selection. Defaults to `http` (the validated path). `grpc` requires a build with Protobuf/gRPC available.
 - `--kserve_timeout_ms=<milliseconds>`: Request timeout. Must be greater than zero; default is `30000`.
 
 Tensor datatypes are taken from the server's model metadata (no longer hardcoded to `FP32`), so models with `UINT8`/`INT*`/`FP16`/etc. inputs work against KServe, Triton Inference Server, and OpenVINO Model Server. Set a bearer token via the `KSERVE_BEARER_TOKEN` environment variable to authenticate (sent as `Authorization: Bearer …` on HTTP and as gRPC call metadata).
+
+Security/TLS environment variables (secrets are sourced from env/file, never the command line):
+
+- `KSERVE_BEARER_TOKEN`: bearer token sent as `Authorization: Bearer …` (HTTP) / gRPC call metadata.
+- `KSERVE_BEARER_TOKEN_FILE`: path to a file holding the bearer token, used when `KSERVE_BEARER_TOKEN` is unset (trailing whitespace/newline trimmed).
+- `KSERVE_CA_CERT`: path to a PEM CA bundle used to verify the server certificate for `https://` / `grpcs://`. Defaults to the system CA roots when unset.
+- `KSERVE_CLIENT_CERT` / `KSERVE_CLIENT_KEY`: PEM client certificate and private key. Providing both enables mutual TLS (mTLS); providing only one is an error.
 
 Before loading model metadata the client issues a KServe V2 readiness probe (HTTP `/v2/models/{name}/ready`, gRPC `ModelReady`). If the endpoint is reachable but the model is not loaded/ready the run fails fast with a clear message instead of a confusing metadata error; an unreachable endpoint still surfaces as a connection error.
 
@@ -410,7 +417,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 - Windows builds not currently supported
 - Some model/backend combinations may require specific export configurations
 - KServe HTTP mode is validated against `neuriplo-kserve-runtime`; gRPC support is built only when Protobuf/gRPC are available and has not yet been validated against every server. FP16/BF16 inputs over gRPC are not yet supported (use HTTP); see [docs/KserveRoadmap.md](docs/KserveRoadmap.md).
-- KServe HTTPS (TLS for the HTTP client) is not yet implemented; gRPC TLS works via `grpcs://`/`https://` endpoints. Tracked as roadmap Phase 3.
+- KServe TLS is supported on both transports: HTTPS for the HTTP client (requires an OpenSSL-enabled build) and `grpcs://` for the gRPC client, with optional mTLS via `KSERVE_CLIENT_CERT`/`KSERVE_CLIENT_KEY`. A build without OpenSSL still works over plaintext `http://`, but `https://` endpoints fail fast with a clear error.
 
 ## 🙏 Acknowledgments
 - [OpenCV YOLO detection with DNN module](https://github.com/opencv/opencv/blob/4.x/samples/dnn/yolo_detector.cpp)
