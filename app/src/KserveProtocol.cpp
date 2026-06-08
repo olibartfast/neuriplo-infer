@@ -27,7 +27,8 @@ std::string stripScheme(const std::string &url, bool &tls) {
   return url;
 }
 
-// Narrows a float to an IEEE-754 half-precision bit pattern (round toward zero).
+// Narrows a float to an IEEE-754 half-precision bit pattern (round toward
+// zero).
 std::uint16_t floatToHalf(float f) {
   std::uint32_t x;
   std::memcpy(&x, &f, sizeof(x));
@@ -44,12 +45,12 @@ std::uint16_t floatToHalf(float f) {
     if (exp < -10) {
       return sign; // underflow to zero
     }
-    const std::uint32_t m = (mant | 0x800000u) >> static_cast<std::uint32_t>(14 - exp);
+    const std::uint32_t m =
+        (mant | 0x800000u) >> static_cast<std::uint32_t>(14 - exp);
     return static_cast<std::uint16_t>(sign | m);
   }
-  return static_cast<std::uint16_t>(sign |
-                                    (static_cast<std::uint32_t>(exp) << 10) |
-                                    (mant >> 13));
+  return static_cast<std::uint16_t>(
+      sign | (static_cast<std::uint32_t>(exp) << 10) | (mant >> 13));
 }
 
 // Reads a contiguous array of T from raw bytes and appends to a JSON array via
@@ -163,7 +164,8 @@ HttpResponse parseHttpResponse(const std::string &raw) {
   std::string lower;
   lower.reserve(headers.size());
   for (char c : headers) {
-    lower.push_back(static_cast<char>(::tolower(static_cast<unsigned char>(c))));
+    lower.push_back(
+        static_cast<char>(::tolower(static_cast<unsigned char>(c))));
   }
   const bool chunked = lower.find("transfer-encoding:") != std::string::npos &&
                        lower.find("chunked") != std::string::npos;
@@ -202,6 +204,18 @@ HttpResponse parseHttpResponse(const std::string &raw) {
   }
   response.body = std::move(decoded);
   return response;
+}
+
+std::string serverLivePath() { return "/v2/health/live"; }
+
+std::string serverReadyPath() { return "/v2/health/ready"; }
+
+std::string modelReadyPath(const std::string &model_name,
+                           const std::string &model_version) {
+  if (model_version.empty()) {
+    return "/v2/models/" + model_name + "/ready";
+  }
+  return "/v2/models/" + model_name + "/versions/" + model_version + "/ready";
 }
 
 std::size_t datatypeByteWidth(const std::string &datatype) {
@@ -278,8 +292,9 @@ std::vector<std::uint8_t> decodeTensorData(const nlohmann::json &data,
         data, [](const nlohmann::json &e) { return e.get<double>(); });
   }
   if (datatype == "FP16") {
-    return writeArray<std::uint16_t>(
-        data, [](const nlohmann::json &e) { return floatToHalf(e.get<float>()); });
+    return writeArray<std::uint16_t>(data, [](const nlohmann::json &e) {
+      return floatToHalf(e.get<float>());
+    });
   }
   if (datatype == "INT8") {
     return writeArray<std::int8_t>(data, [](const nlohmann::json &e) {

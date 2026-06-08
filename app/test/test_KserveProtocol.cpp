@@ -18,7 +18,8 @@ std::vector<std::uint8_t> bytesOf(const void *p, std::size_t n) {
 } // namespace
 
 TEST(KserveProtocol, ParseEndpointHostPortPrefix) {
-  const auto ep = kserve::parseEndpoint("http://127.0.0.1:19090/gateway/", 8080);
+  const auto ep =
+      kserve::parseEndpoint("http://127.0.0.1:19090/gateway/", 8080);
   EXPECT_EQ(ep.host, "127.0.0.1");
   EXPECT_EQ(ep.port, 19090);
   EXPECT_EQ(ep.path_prefix, "/gateway"); // trailing slash trimmed
@@ -59,6 +60,14 @@ TEST(KserveProtocol, ParseHttpResponseChunked) {
 TEST(KserveProtocol, ParseHttpResponseError) {
   EXPECT_THROW(kserve::parseHttpResponse("garbage-with-no-status"),
                std::runtime_error);
+}
+
+TEST(KserveProtocol, HealthPaths) {
+  EXPECT_EQ(kserve::serverLivePath(), "/v2/health/live");
+  EXPECT_EQ(kserve::serverReadyPath(), "/v2/health/ready");
+  EXPECT_EQ(kserve::modelReadyPath("resnet", "1"),
+            "/v2/models/resnet/versions/1/ready");
+  EXPECT_EQ(kserve::modelReadyPath("resnet", ""), "/v2/models/resnet/ready");
 }
 
 TEST(KserveProtocol, DatatypeByteWidth) {
@@ -111,9 +120,9 @@ TEST(KserveProtocol, DecodeFp32RoundTrip) {
 TEST(KserveProtocol, DecodeInt64AndUint8RoundTrip) {
   const std::int64_t i64[] = {-5, 1LL << 40};
   const auto b64 = bytesOf(i64, sizeof(i64));
-  EXPECT_EQ(kserve::decodeTensorData(kserve::encodeTensorData(b64, "INT64"),
-                                     "INT64"),
-            b64);
+  EXPECT_EQ(
+      kserve::decodeTensorData(kserve::encodeTensorData(b64, "INT64"), "INT64"),
+      b64);
 
   const std::uint8_t u8[] = {0, 127, 255};
   const auto b8 = bytesOf(u8, sizeof(u8));

@@ -65,7 +65,9 @@ Exit criteria to merge `feature/neuriplo-kserve-runtime` into `develop`:
 - [x] HTTP responses parsed correctly (Content-Length + chunked).
 - [x] Auth supported on both paths (`KSERVE_BEARER_TOKEN`).
 - [x] Unit tests for protocol helpers added and passing.
-- [ ] CI matrix builds with and without gRPC / with `ENABLE_KSERVE=OFF` (verify in CI).
+- [x] CI matrix builds with and without gRPC / with `ENABLE_KSERVE=OFF` and a
+      `kserve-only` (LOCAL_BACKENDS=OFF) config; asserts KServe sources absent in
+      local-only and neuriplo not fetched in kserve-only (`ci.yml` `kserve-build-matrix`).
 - [x] README/Known Limitations updated to match actual capability.
 
 ### Point 3 — Works with any KServe server
@@ -100,7 +102,14 @@ Phases 1 and 3.
 - KServe binary tensor extension for HTTP and gRPC raw contents.
 - Retry with exponential backoff + jitter on transient gRPC/HTTP errors.
 - Connection reuse / keep-alive.
-- Server-readiness / live probes (`/v2/health/ready`).
+- [x] Server-readiness / live probes. `IClient` exposes `serverLive()` /
+      `serverReady()` / `modelReady()`, implemented over HTTP
+      (`/v2/health/live`, `/v2/health/ready`, `/v2/models/{m}[/versions/{v}]/ready`)
+      and gRPC (`ServerLive` / `ServerReady` / `ModelReady`). `KserveEngine`
+      probes `modelReady()` once before loading metadata to fail fast with a
+      clear message when the server is up but the model is not ready; a transport
+      failure still surfaces as a connection error. Path builders are pure
+      (`KserveProtocol`) and unit-tested.
 
 ### Phase 3 — Security hardening
 

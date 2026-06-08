@@ -32,8 +32,9 @@ std::string envToken() {
 template <typename T, typename Add>
 void fillContents(const std::vector<uint8_t> &bytes, Add add) {
   if (bytes.size() % sizeof(T) != 0) {
-    throw std::runtime_error("KServe gRPC input byte count is not a multiple of "
-                             "the datatype width");
+    throw std::runtime_error(
+        "KServe gRPC input byte count is not a multiple of "
+        "the datatype width");
   }
   const size_t count = bytes.size() / sizeof(T);
   for (size_t i = 0; i < count; ++i) {
@@ -47,7 +48,8 @@ void encodeInput(inference::InferTensorContents *contents,
                  const std::vector<uint8_t> &bytes,
                  const std::string &datatype) {
   if (datatype == "FP32") {
-    fillContents<float>(bytes, [&](float v) { contents->add_fp32_contents(v); });
+    fillContents<float>(bytes,
+                        [&](float v) { contents->add_fp32_contents(v); });
   } else if (datatype == "FP64") {
     fillContents<double>(bytes,
                          [&](double v) { contents->add_fp64_contents(v); });
@@ -203,8 +205,7 @@ GrpcClient::infer(const std::vector<InferInput> &inputs) {
 
   for (const auto &input : inputs) {
     if (input.data == nullptr) {
-      throw std::runtime_error("KServe input '" + input.name +
-                               "' has no data");
+      throw std::runtime_error("KServe input '" + input.name + "' has no data");
     }
     auto *node = request.add_inputs();
     node->set_name(input.name);
@@ -252,6 +253,67 @@ GrpcClient::infer(const std::vector<InferInput> &inputs) {
     outputs.push_back(std::move(out));
   }
   return outputs;
+}
+
+namespace {
+
+// Applies the shared per-call deadline and optional bearer token.
+void prepareContext(grpc::ClientContext &context, int timeout_ms,
+                    const std::string &auth_token) {
+  context.set_deadline(std::chrono::system_clock::now() +
+                       std::chrono::milliseconds(timeout_ms));
+  if (!auth_token.empty()) {
+    context.AddMetadata("authorization", "Bearer " + auth_token);
+  }
+}
+
+[[noreturn]] void throwStatus(const char *what, const grpc::Status &status) {
+  std::ostringstream msg;
+  msg << what << ": " << static_cast<int>(status.error_code()) << " "
+      << status.error_message();
+  throw std::runtime_error(msg.str());
+}
+
+} // namespace
+
+bool GrpcClient::serverLive() {
+  inference::ServerLiveRequest request;
+  grpc::ClientContext context;
+  prepareContext(context, timeout_ms_, auth_token_);
+  inference::ServerLiveResponse response;
+  const auto status = impl_->stub->ServerLive(&context, request, &response);
+  if (!status.ok()) {
+    throwStatus("KServe gRPC ServerLive failed", status);
+  }
+  return response.live();
+}
+
+bool GrpcClient::serverReady() {
+  inference::ServerReadyRequest request;
+  grpc::ClientContext context;
+  prepareContext(context, timeout_ms_, auth_token_);
+  inference::ServerReadyResponse response;
+  const auto status = impl_->stub->ServerReady(&context, request, &response);
+  if (!status.ok()) {
+    throwStatus("KServe gRPC ServerReady failed", status);
+  }
+  return response.ready();
+}
+
+bool GrpcClient::modelReady() {
+  inference::ModelReadyRequest request;
+  request.set_name(model_name_);
+  if (!model_version_.empty()) {
+    request.set_version(model_version_);
+  }
+  grpc::ClientContext context;
+  prepareContext(context, timeout_ms_, auth_token_);
+  inference::ModelReadyResponse response;
+  const auto status = impl_->stub->ModelReady(&context, request, &response);
+  if (!status.ok()) {
+    throwStatus("KServe gRPC ModelReady failed", status);
+  }
+  return response.ready();
 }
 
 } // namespace kserve
