@@ -11,6 +11,7 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_InferencePipelineBuilder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveProtocol.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_KserveEngine.cpp
 )
 
 include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
@@ -67,3 +68,14 @@ add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run
     COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR} ${neuriplo-tasks_SOURCE_DIR}
 )
+
+# KServe integration round-trip against containerized Triton + OVMS. Registered
+# in dry-run mode so it validates command construction and passes on CI runners
+# without docker/images/GPUs. The live path (--live) is opt-in; see the script
+# and docs/KserveCompatibility.md.
+if(NEURIPLO_INFER_ENABLE_KSERVE)
+    add_test(
+        NAME kserve_integration_dry_run
+        COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/kserve_integration.sh --dry-run
+    )
+endif()

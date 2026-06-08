@@ -244,6 +244,8 @@ Tensor datatypes are taken from the server's model metadata (no longer hardcoded
 
 Before loading model metadata the client issues a KServe V2 readiness probe (HTTP `/v2/models/{name}/ready`, gRPC `ModelReady`). If the endpoint is reachable but the model is not loaded/ready the run fails fast with a clear message instead of a confusing metadata error; an unreachable endpoint still surfaces as a connection error.
 
+Tested server/transport/datatype combinations (kept green by CI via `app/test/kserve_integration.sh`) are documented in [docs/KserveCompatibility.md](docs/KserveCompatibility.md).
+
 Build gating:
 - `-DNEURIPLO_INFER_ENABLE_KSERVE=OFF` produces a pure local-only build that compiles no KServe code (and needs neither Protobuf nor gRPC).
 - `-DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF` produces a **KServe-only** build that does **not** fetch or build `neuriplo` (nor any external contract library): the inference contract comes from the app-local headers in `app/inc/contract/`, `setup_inference_engine` is compiled out, and `--kserve_endpoint` becomes mandatory. Still uses OpenCV + `neuriplo-tasks`.
