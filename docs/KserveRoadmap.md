@@ -120,9 +120,28 @@ Phases 1 and 3.
 
 ### Phase 4 — Productionization
 
-- Integration test against a containerized Triton + OVMS in CI (dry-run + live).
-- Observability: per-request latency already tracked in base class; surface it.
-- Documented compatibility matrix kept green by CI.
+- [x] Integration test against a containerized Triton + OVMS in CI (dry-run +
+      live). `app/test/kserve_integration.sh` serves a tiny shared ONNX
+      `Identity` model from Triton and OVMS and drives a KServe V2 round-trip
+      over HTTP (curl) and gRPC (grpcurl over `proto/kserve_grpc.proto`) against
+      each. Dry-run mode validates command construction and skips when
+      docker/images/tooling are absent (mirrors the e2e script's gating), so CI
+      without GPUs still passes; registered with CTest as
+      `kserve_integration_dry_run` (KServe builds only) and run on every PR by
+      the new `kserve-integration.yml` workflow. The live path is gated behind a
+      manual `workflow_dispatch` (`run_live=true`) so routine CI never pulls the
+      multi-GB server images.
+- [x] Observability: per-request latency surfaced through `KserveEngine`.
+      `get_infer_results` times the remote round-trip (around
+      `IClient::infer()`) and emits a `glog VLOG(1)` debug line per request;
+      callers can read `lastInferenceLatencyMs()` /
+      `averageInferenceLatencyMs()` / `inferenceCount()`. Covered by
+      `test_KserveEngine.cpp` (fake client). The base class already times the
+      whole task pipeline; this isolates the network/inference component.
+- [x] Documented compatibility matrix kept green by CI.
+      `docs/KserveCompatibility.md` records the tested server/transport/datatype
+      combinations and is tied to the integration harness above (dry-run on
+      every PR, live behind dispatch); referenced from `README.md`.
 
 ## Build decoupling: local-only vs KServe-only
 
