@@ -234,11 +234,26 @@ Canonical copy: [docs/generated/supported-model-types.md](docs/generated/support
 
 Use these flags to run preprocessing/postprocessing in `neuriplo-infer` while sending inference tensors to a remote KServe V2 runtime. This is the intended path for `neuriplo-kserve-runtime` integration.
 
-- `--kserve_endpoint=<url>`: Base KServe V2 endpoint, for example `http://127.0.0.1:19090`. A path prefix is allowed when the runtime is behind a gateway.
+- `--kserve_endpoint=<url>`: Base KServe V2 endpoint, for example `http://127.0.0.1:19090`. A path prefix is allowed when the runtime is behind a gateway. `https://`/`grpcs://` selects TLS (gRPC; HTTPS for the HTTP client is roadmap Phase 3).
 - `--kserve_model_name=<name>`: Model name served by the endpoint. Defaults to `--type` when omitted.
 - `--kserve_model_version=<version>`: KServe model version to call. Defaults to `1`.
-- `--kserve_transport=<http|grpc>`: Transport selection. HTTP is validated in this branch; gRPC requires a build with Protobuf/gRPC available.
+- `--kserve_transport=<http|grpc>`: Transport selection. Defaults to `http` (the validated path). `grpc` requires a build with Protobuf/gRPC available.
 - `--kserve_timeout_ms=<milliseconds>`: Request timeout. Must be greater than zero; default is `30000`.
+
+Tensor datatypes are taken from the server's model metadata (no longer hardcoded to `FP32`), so models with `UINT8`/`INT*`/`FP16`/etc. inputs work against KServe, Triton Inference Server, and OpenVINO Model Server. Set a bearer token via the `KSERVE_BEARER_TOKEN` environment variable to authenticate (sent as `Authorization: Bearer …` on HTTP and as gRPC call metadata).
+
+Build gating:
+- `-DNEURIPLO_INFER_ENABLE_KSERVE=OFF` produces a pure local-only build that compiles no KServe code (and needs neither Protobuf nor gRPC).
+- `-DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF` produces a **KServe-only** build that does **not** fetch or build `neuriplo` (nor any external contract library): the inference contract comes from the app-local headers in `app/inc/contract/`, `setup_inference_engine` is compiled out, and `--kserve_endpoint` becomes mandatory. Still uses OpenCV + `neuriplo-tasks`.
+- At least one of `ENABLE_KSERVE` / `ENABLE_LOCAL_BACKENDS` must be `ON` (enforced at configure time).
+- `-DNEURIPLO_INFER_ENABLE_GRPC=OFF` keeps the HTTP KServe client but drops the gRPC transport.
+
+Example KServe-only build (no neuriplo fetch):
+```bash
+cmake -B build -DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF -DNEURIPLO_INFER_ENABLE_KSERVE=ON
+```
+
+See [docs/KserveRoadmap.md](docs/KserveRoadmap.md) for the production roadmap and server-compatibility matrix.
 
 #### Optional Parameters
 
@@ -390,7 +405,8 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 ## ⚠️ Known Limitations
 - Windows builds not currently supported
 - Some model/backend combinations may require specific export configurations
-- KServe HTTP mode is validated against `neuriplo-kserve-runtime`; gRPC parity is still pending in environments without gRPC development packages.
+- KServe HTTP mode is validated against `neuriplo-kserve-runtime`; gRPC support is built only when Protobuf/gRPC are available and has not yet been validated against every server. FP16/BF16 inputs over gRPC are not yet supported (use HTTP); see [docs/KserveRoadmap.md](docs/KserveRoadmap.md).
+- KServe HTTPS (TLS for the HTTP client) is not yet implemented; gRPC TLS works via `grpcs://`/`https://` endpoints. Tracked as roadmap Phase 3.
 
 ## 🙏 Acknowledgments
 - [OpenCV YOLO detection with DNN module](https://github.com/opencv/opencv/blob/4.x/samples/dnn/yolo_detector.cpp)

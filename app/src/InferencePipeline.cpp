@@ -1,9 +1,12 @@
 #include "InferencePipeline.hpp"
 
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+#include "KserveEngine.hpp"
+#include "KserveHttpClient.hpp"
 #ifdef NEURIPLO_INFER_WITH_GRPC
 #include "KserveGrpcClient.hpp"
 #endif
-#include "KserveClient.hpp"
+#endif
 #include "neuriplo/tasks/core/task_config.hpp"
 #include "neuriplo/tasks/core/task_factory.hpp"
 #include "utils.hpp"
@@ -16,6 +19,7 @@
 
 namespace {
 
+#ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
 std::string buildEngineWeights(const AppConfig &config) {
   std::string engine_weights = config.weights;
   if (!config.mmprojectPath.empty()) {
@@ -23,6 +27,7 @@ std::string buildEngineWeights(const AppConfig &config) {
   }
   return engine_weights;
 }
+#endif
 
 void setInputFormat(neuriplo_tasks::ModelInfo &model_info) {
   if (model_info.input_formats.empty() || model_info.input_shapes.empty() ||
@@ -183,25 +188,35 @@ void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
   LOG(INFO) << "GPU info: " << getGPUModel();
 
   if (!config_.kserve_endpoint.empty()) {
+#ifndef NEURIPLO_INFER_WITH_KSERVE
+    throw std::runtime_error(
+        "--kserve_endpoint was provided but this binary was built without "
+        "KServe support (reconfigure with -DNEURIPLO_INFER_ENABLE_KSERVE=ON)");
+#else
     LOG(INFO) << "KServe endpoint: " << config_.kserve_endpoint
               << " transport: " << config_.kserve_transport;
     LOG(INFO) << "KServe model: " << config_.kserve_model_name
               << " version: " << config_.kserve_model_version;
 
+    std::unique_ptr<kserve::IClient> client;
 #ifdef NEURIPLO_INFER_WITH_GRPC
     if (config_.kserve_transport == "grpc") {
-      pipeline.engine = std::make_unique<grpc_client::KserveGrpcClient>(
+      client = std::make_unique<kserve::GrpcClient>(
           config_.kserve_endpoint, config_.kserve_model_name,
           config_.kserve_model_version, config_.kserve_timeout_ms);
-      return;
     }
 #endif
-    pipeline.engine = std::make_unique<KserveClient>(
-        config_.kserve_endpoint, config_.kserve_model_name,
-        config_.kserve_model_version, config_.kserve_timeout_ms);
+    if (!client) {
+      client = std::make_unique<kserve::HttpClient>(
+          config_.kserve_endpoint, config_.kserve_model_name,
+          config_.kserve_model_version, config_.kserve_timeout_ms);
+    }
+    pipeline.engine = std::make_unique<KserveEngine>(std::move(client));
     return;
+#endif
   }
 
+#ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
   const auto use_gpu = config_.use_gpu && hasNvidiaGPU();
   pipeline.engine = setup_inference_engine(
       buildEngineWeights(config_), use_gpu,
@@ -210,6 +225,12 @@ void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
     throw std::runtime_error("Can't setup an inference engine for " +
                              config_.weights);
   }
+#else
+  throw std::runtime_error(
+      "This binary was built without local inference backends; a "
+      "--kserve_endpoint is required (reconfigure with "
+      "-DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=ON to run local models)");
+#endif
 }
 
 void InferencePipelineBuilder::setupTask(InferencePipeline &pipeline) const {

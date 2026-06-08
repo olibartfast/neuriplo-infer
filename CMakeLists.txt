@@ -74,6 +74,22 @@ message(STATUS "glog found")
 
 include(FetchContent)
 
+# Build-mode switches (defined before any fetch so they can gate it).
+#   ENABLE_KSERVE         -> KServe remote-runtime client (no neuriplo needed).
+#   ENABLE_LOCAL_BACKENDS -> local inference engines; this is what fetches and
+#                            builds neuriplo (OpenCV/glog/ONNX/TensorRT/...).
+# A KServe-only build (LOCAL_BACKENDS OFF, KSERVE ON) fetches neither neuriplo
+# nor any external contract library; it uses the app-local contract headers in
+# app/inc/contract. See docs/KserveRoadmap.md.
+option(NEURIPLO_INFER_ENABLE_KSERVE "Build KServe remote-runtime client" ON)
+option(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS
+       "Build local inference backends (fetches/builds neuriplo)" ON)
+if(NOT NEURIPLO_INFER_ENABLE_KSERVE AND NOT NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+    message(FATAL_ERROR
+        "At least one of NEURIPLO_INFER_ENABLE_KSERVE / "
+        "NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS must be ON.")
+endif()
+
 set(NEURIPLO_TASKS_GIT_REPOSITORY "https://github.com/olibartfast/neuriplo-tasks.git")
 
 FetchContent_Declare(
@@ -82,12 +98,14 @@ FetchContent_Declare(
     GIT_TAG        ${NEURIPLO_TASKS_VERSION}
 )
 
-# Fetch the neuriplo project from GitHub with specific version
-FetchContent_Declare(
-    neuriplo
-    GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git
-    GIT_TAG        ${NEURIPLO_VERSION}  # Use specific version instead of master
-)
+# Fetch the neuriplo project (local backends) only when they are enabled.
+if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+    FetchContent_Declare(
+        neuriplo
+        GIT_REPOSITORY https://github.com/olibartfast/neuriplo.git
+        GIT_TAG        ${NEURIPLO_VERSION}  # Use specific version instead of master
+    )
+endif()
 
 FetchContent_Declare(
     VideoCapture
@@ -118,11 +136,18 @@ if(NOT _NEURIPLO_TASKS_SIBLING STREQUAL "")
     set(FETCHCONTENT_SOURCE_DIR_NEURIPLO-TASKS "${_NEURIPLO_TASKS_SIBLING}" CACHE PATH "" FORCE)
 endif()
 
-FetchContent_MakeAvailable(neuriplo VideoCapture neuriplo-tasks nlohmann_json)
+if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+    FetchContent_MakeAvailable(neuriplo)
+endif()
+FetchContent_MakeAvailable(VideoCapture neuriplo-tasks nlohmann_json)
 
 option(NEURIPLO_INFER_ENABLE_GRPC "Build gRPC KServe client" ON)
 if(DEFINED VISION_INFERENCE_ENABLE_GRPC)
     set(NEURIPLO_INFER_ENABLE_GRPC ${VISION_INFERENCE_ENABLE_GRPC})
+endif()
+# gRPC transport is meaningless without the KServe client.
+if(NOT NEURIPLO_INFER_ENABLE_KSERVE)
+    set(NEURIPLO_INFER_ENABLE_GRPC OFF)
 endif()
 if(NEURIPLO_INFER_ENABLE_GRPC)
     find_package(Protobuf QUIET)

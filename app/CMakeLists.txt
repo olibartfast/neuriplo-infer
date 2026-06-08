@@ -6,8 +6,14 @@ set(APP_LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInferTaskRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveClient.cpp
 )
+
+if(NEURIPLO_INFER_ENABLE_KSERVE)
+    list(APPEND APP_LIB_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveProtocol.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveHttpClient.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveEngine.cpp)
+endif()
 
 if(NEURIPLO_INFER_WITH_GRPC)
     set(PROTO_FILE "${CMAKE_SOURCE_DIR}/proto/kserve_grpc.proto")
@@ -71,20 +77,40 @@ target_include_directories(${NEURIPLO_INFER_LIBRARY} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${VideoCapture_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/src
-    ${neuriplo_SOURCE_DIR}/backends
-    ${neuriplo_SOURCE_DIR}/backends/src
     ${OpenCV_INCLUDE_DIRS}
     ${GLOG_INCLUDE_DIRS}
 )
 
+if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+    # neuriplo provides the inference contract and the local-engine factory.
+    target_include_directories(${NEURIPLO_INFER_LIBRARY} PUBLIC
+        ${neuriplo_SOURCE_DIR}/backends
+        ${neuriplo_SOURCE_DIR}/backends/src
+    )
+else()
+    # KServe-only: the contract comes from the app-local headers, nothing fetched.
+    target_include_directories(${NEURIPLO_INFER_LIBRARY} PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc/contract
+    )
+endif()
+
 target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC
     glog::glog
     ${OpenCV_LIBS}
-    neuriplo
     VideoCapture
     neuriplo-tasks
     nlohmann_json::nlohmann_json
 )
+
+if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+    target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC neuriplo)
+    target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PUBLIC
+                               NEURIPLO_INFER_WITH_LOCAL_BACKENDS)
+endif()
+
+if(NEURIPLO_INFER_ENABLE_KSERVE)
+    target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PUBLIC NEURIPLO_INFER_WITH_KSERVE)
+endif()
 
 if(NEURIPLO_INFER_WITH_GRPC)
     target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PRIVATE NEURIPLO_INFER_WITH_GRPC)

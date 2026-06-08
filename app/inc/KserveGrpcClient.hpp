@@ -1,42 +1,33 @@
 #pragma once
 
-#include "InferenceInterface.hpp"
-#include "InferenceMetadata.hpp"
+// Pure gRPC protocol client for KServe V2 / Open Inference Protocol. Depends
+// only on KserveTypes (and the generated protobuf/gRPC stubs in the .cpp). No
+// neuriplo dependency — see KserveTypes.hpp for the rationale.
+
+#include "KserveTypes.hpp"
 
 #include <memory>
 #include <string>
-#include <tuple>
-#include <vector>
 
-namespace grpc_client {
+namespace kserve {
 
-class KserveGrpcClient : public InferenceInterface {
+class GrpcClient : public IClient {
 public:
-  KserveGrpcClient(const std::string &endpoint, const std::string &model_name,
-                   const std::string &model_version = "1",
-                   int timeout_ms = 30000);
-  ~KserveGrpcClient() override;
+  GrpcClient(const std::string &endpoint, std::string model_name,
+             std::string model_version = "1", int timeout_ms = 30000);
+  ~GrpcClient() override;
 
-  std::tuple<std::vector<std::vector<TensorElement>>,
-             std::vector<std::vector<int64_t>>>
-  get_infer_results(
-      const std::vector<std::vector<uint8_t>> &input_tensors) override;
-
-  InferenceMetadata get_inference_metadata() override;
-
-  bool is_gpu_available() const noexcept override;
+  ModelMetadata modelMetadata() override;
+  std::vector<InferOutput> infer(const std::vector<InferInput> &inputs) override;
 
 private:
-  bool fetchMetadata();
-
-  std::string endpoint_;
   std::string model_name_;
   std::string model_version_;
   int timeout_ms_;
-  bool metadata_loaded_{false};
-  InferenceMetadata cached_metadata_;
+  // Optional bearer token, sourced from the KSERVE_BEARER_TOKEN env var.
+  std::string auth_token_;
   class Impl;
   std::unique_ptr<Impl> impl_;
 };
 
-} // namespace grpc_client
+} // namespace kserve
