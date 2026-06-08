@@ -11,6 +11,7 @@ set(APP_LIB_SOURCES
 if(NEURIPLO_INFER_ENABLE_KSERVE)
     list(APPEND APP_LIB_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveProtocol.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveRetry.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveHttpClient.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveEngine.cpp)
 endif()

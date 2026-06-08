@@ -8,7 +8,9 @@
 #include <grpcpp/security/credentials.h>
 
 #include "KserveProtocol.hpp"
+#include "KserveRetry.hpp"
 
+#include <cctype>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -25,6 +27,55 @@ namespace {
 std::string envToken() {
   const char *token = std::getenv("KSERVE_BEARER_TOKEN");
   return token != nullptr ? std::string(token) : std::string();
+}
+
+// gRPC sends raw byte payloads (raw_input_contents) by default — it is the
+// efficient form the server already returns. Disable with a falsey
+// KSERVE_BINARY (0/false/off/no) to fall back to typed `contents`.
+bool rawContentsEnabled() {
+  const char *raw = std::getenv("KSERVE_BINARY");
+  if (raw == nullptr) {
+    return true;
+  }
+  std::string value;
+  for (const char *p = raw; *p != '\0'; ++p) {
+    value.push_back(
+        static_cast<char>(::tolower(static_cast<unsigned char>(*p))));
+  }
+  return !(value == "0" || value == "false" || value == "off" || value == "no");
+}
+
+// Applies the shared per-call deadline and optional bearer token.
+void prepareContext(grpc::ClientContext &context, int timeout_ms,
+                    const std::string &auth_token) {
+  context.set_deadline(std::chrono::system_clock::now() +
+                       std::chrono::milliseconds(timeout_ms));
+  if (!auth_token.empty()) {
+    context.AddMetadata("authorization", "Bearer " + auth_token);
+  }
+}
+
+[[noreturn]] void throwStatus(const char *what, const grpc::Status &status) {
+  std::ostringstream msg;
+  msg << what << ": " << static_cast<int>(status.error_code()) << " "
+      << status.error_message();
+  throw std::runtime_error(msg.str());
+}
+
+// Wraps a unary stub call in the retry/backoff loop. `call()` must build a
+// fresh ClientContext, reset its response, and return the resulting
+// grpc::Status; transient codes (UNAVAILABLE / DEADLINE_EXCEEDED /
+// RESOURCE_EXHAUSTED) are retried, and the final status is returned so callers
+// throw as before.
+template <typename Call>
+grpc::Status retryGrpc(const RetryPolicy &policy, Call call) {
+  return runWithRetry(
+      policy, call,
+      [](const grpc::Status &s) {
+        return !s.ok() &&
+               isRetryableGrpcStatus(static_cast<int>(s.error_code()));
+      },
+      defaultSleep, defaultJitter);
 }
 
 // Reinterprets raw little-endian bytes as `datatype` and fills the matching
@@ -140,6 +191,7 @@ template <typename Range> std::vector<int64_t> toShape(const Range &dims) {
 struct GrpcClient::Impl {
   std::shared_ptr<grpc::Channel> channel;
   std::unique_ptr<inference::GRPCInferenceService::Stub> stub;
+  RetryPolicy retry_policy = retryPolicyFromEnv();
 };
 
 GrpcClient::GrpcClient(const std::string &endpoint, std::string model_name,
@@ -165,21 +217,15 @@ ModelMetadata GrpcClient::modelMetadata() {
     request.set_version(model_version_);
   }
 
-  grpc::ClientContext context;
-  context.set_deadline(std::chrono::system_clock::now() +
-                       std::chrono::milliseconds(timeout_ms_));
-  if (!auth_token_.empty()) {
-    context.AddMetadata("authorization", "Bearer " + auth_token_);
-  }
-
   inference::ModelMetadataResponse response;
-  const auto status = impl_->stub->ModelMetadata(&context, request, &response);
+  const auto status = retryGrpc(impl_->retry_policy, [&] {
+    grpc::ClientContext context;
+    prepareContext(context, timeout_ms_, auth_token_);
+    response.Clear();
+    return impl_->stub->ModelMetadata(&context, request, &response);
+  });
   if (!status.ok()) {
-    std::ostringstream msg;
-    msg << "KServe gRPC metadata fetch failed: "
-        << static_cast<int>(status.error_code()) << " "
-        << status.error_message();
-    throw std::runtime_error(msg.str());
+    throwStatus("KServe gRPC metadata fetch failed", status);
   }
 
   ModelMetadata metadata;
@@ -203,6 +249,11 @@ GrpcClient::infer(const std::vector<InferInput> &inputs) {
   request.set_model_version(model_version_);
   request.set_id("kserve-grpc-client");
 
+  // Binary tensor extension: send raw little-endian bytes via
+  // raw_input_contents (one entry per input, in input order) instead of the
+  // typed `contents` fields. This is the efficient default and also widens
+  // datatype coverage (e.g. FP16/BF16) since no typed field is required.
+  const bool raw_contents = rawContentsEnabled();
   for (const auto &input : inputs) {
     if (input.data == nullptr) {
       throw std::runtime_error("KServe input '" + input.name + "' has no data");
@@ -213,24 +264,23 @@ GrpcClient::infer(const std::vector<InferInput> &inputs) {
     for (const auto dim : input.shape) {
       node->add_shape(dim);
     }
-    encodeInput(node->mutable_contents(), *input.data, input.datatype);
-  }
-
-  grpc::ClientContext context;
-  context.set_deadline(std::chrono::system_clock::now() +
-                       std::chrono::milliseconds(timeout_ms_));
-  if (!auth_token_.empty()) {
-    context.AddMetadata("authorization", "Bearer " + auth_token_);
+    if (raw_contents) {
+      request.add_raw_input_contents(
+          std::string(input.data->begin(), input.data->end()));
+    } else {
+      encodeInput(node->mutable_contents(), *input.data, input.datatype);
+    }
   }
 
   inference::ModelInferResponse response;
-  const auto status = impl_->stub->ModelInfer(&context, request, &response);
+  const auto status = retryGrpc(impl_->retry_policy, [&] {
+    grpc::ClientContext context;
+    prepareContext(context, timeout_ms_, auth_token_);
+    response.Clear();
+    return impl_->stub->ModelInfer(&context, request, &response);
+  });
   if (!status.ok()) {
-    std::ostringstream msg;
-    msg << "KServe gRPC inference failed: "
-        << static_cast<int>(status.error_code()) << " "
-        << status.error_message();
-    throw std::runtime_error(msg.str());
+    throwStatus("KServe gRPC inference failed", status);
   }
 
   // The server may return tensor payloads either as raw_output_contents (the
@@ -255,33 +305,15 @@ GrpcClient::infer(const std::vector<InferInput> &inputs) {
   return outputs;
 }
 
-namespace {
-
-// Applies the shared per-call deadline and optional bearer token.
-void prepareContext(grpc::ClientContext &context, int timeout_ms,
-                    const std::string &auth_token) {
-  context.set_deadline(std::chrono::system_clock::now() +
-                       std::chrono::milliseconds(timeout_ms));
-  if (!auth_token.empty()) {
-    context.AddMetadata("authorization", "Bearer " + auth_token);
-  }
-}
-
-[[noreturn]] void throwStatus(const char *what, const grpc::Status &status) {
-  std::ostringstream msg;
-  msg << what << ": " << static_cast<int>(status.error_code()) << " "
-      << status.error_message();
-  throw std::runtime_error(msg.str());
-}
-
-} // namespace
-
 bool GrpcClient::serverLive() {
   inference::ServerLiveRequest request;
-  grpc::ClientContext context;
-  prepareContext(context, timeout_ms_, auth_token_);
   inference::ServerLiveResponse response;
-  const auto status = impl_->stub->ServerLive(&context, request, &response);
+  const auto status = retryGrpc(impl_->retry_policy, [&] {
+    grpc::ClientContext context;
+    prepareContext(context, timeout_ms_, auth_token_);
+    response.Clear();
+    return impl_->stub->ServerLive(&context, request, &response);
+  });
   if (!status.ok()) {
     throwStatus("KServe gRPC ServerLive failed", status);
   }
@@ -290,10 +322,13 @@ bool GrpcClient::serverLive() {
 
 bool GrpcClient::serverReady() {
   inference::ServerReadyRequest request;
-  grpc::ClientContext context;
-  prepareContext(context, timeout_ms_, auth_token_);
   inference::ServerReadyResponse response;
-  const auto status = impl_->stub->ServerReady(&context, request, &response);
+  const auto status = retryGrpc(impl_->retry_policy, [&] {
+    grpc::ClientContext context;
+    prepareContext(context, timeout_ms_, auth_token_);
+    response.Clear();
+    return impl_->stub->ServerReady(&context, request, &response);
+  });
   if (!status.ok()) {
     throwStatus("KServe gRPC ServerReady failed", status);
   }
@@ -306,10 +341,13 @@ bool GrpcClient::modelReady() {
   if (!model_version_.empty()) {
     request.set_version(model_version_);
   }
-  grpc::ClientContext context;
-  prepareContext(context, timeout_ms_, auth_token_);
   inference::ModelReadyResponse response;
-  const auto status = impl_->stub->ModelReady(&context, request, &response);
+  const auto status = retryGrpc(impl_->retry_policy, [&] {
+    grpc::ClientContext context;
+    prepareContext(context, timeout_ms_, auth_token_);
+    response.Clear();
+    return impl_->stub->ModelReady(&context, request, &response);
+  });
   if (!status.ok()) {
     throwStatus("KServe gRPC ModelReady failed", status);
   }
