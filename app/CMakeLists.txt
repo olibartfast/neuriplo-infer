@@ -112,6 +112,14 @@ if(NEURIPLO_INFER_ENABLE_KSERVE)
     target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PUBLIC NEURIPLO_INFER_WITH_KSERVE)
 endif()
 
+if(NEURIPLO_INFER_WITH_KSERVE_TLS)
+    target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PRIVATE NEURIPLO_INFER_WITH_KSERVE_TLS)
+    target_link_libraries(${NEURIPLO_INFER_LIBRARY} PRIVATE
+        OpenSSL::SSL
+        OpenSSL::Crypto
+    )
+endif()
+
 if(NEURIPLO_INFER_WITH_GRPC)
     target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PRIVATE NEURIPLO_INFER_WITH_GRPC)
     target_include_directories(${NEURIPLO_INFER_LIBRARY} PRIVATE "${PROTO_GEN_DIR}")

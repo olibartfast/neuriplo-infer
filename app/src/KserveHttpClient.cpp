@@ -3,6 +3,7 @@
 #include "KserveProtocol.hpp"
 
 #include <cstdlib>
+#include <memory>
 #include <netdb.h>
 #include <nlohmann/json.hpp>
 #include <sstream>
@@ -11,6 +12,12 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <utility>
+
+#ifdef NEURIPLO_INFER_WITH_KSERVE_TLS
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
+#endif
 
 using Json = nlohmann::json;
 
@@ -62,73 +69,211 @@ int connectSocket(const std::string &host, int port, int timeout_ms) {
   return fd;
 }
 
-void sendAll(int fd, const std::string &request) {
-  size_t sent = 0;
-  while (sent < request.size()) {
-    const auto n = ::send(fd, request.data() + sent, request.size() - sent, 0);
-    if (n <= 0) {
-      throw std::runtime_error("HTTP send failed");
-    }
-    sent += static_cast<size_t>(n);
-  }
-}
+// Byte transport over an established socket. The request-building code below is
+// transport-agnostic: it writes a request string and reads the raw response,
+// whether the bytes travel in plaintext or through a TLS session. Each
+// connection owns its fd and closes it on destruction.
+class Connection {
+public:
+  virtual ~Connection() = default;
+  virtual void sendAll(const std::string &data) = 0;
+  virtual std::string readAll() = 0;
+};
 
-std::string readRaw(int fd) {
-  char buffer[4096];
-  std::string raw;
-  while (true) {
-    const auto received = ::recv(fd, buffer, sizeof(buffer), 0);
-    if (received <= 0) {
-      break;
+class PlainConnection : public Connection {
+public:
+  explicit PlainConnection(int fd) : fd_(fd) {}
+  ~PlainConnection() override {
+    if (fd_ >= 0) {
+      ::close(fd_);
     }
-    raw.append(buffer, static_cast<size_t>(received));
   }
-  return raw;
+  PlainConnection(const PlainConnection &) = delete;
+  PlainConnection &operator=(const PlainConnection &) = delete;
+
+  void sendAll(const std::string &data) override {
+    size_t sent = 0;
+    while (sent < data.size()) {
+      const auto n = ::send(fd_, data.data() + sent, data.size() - sent, 0);
+      if (n <= 0) {
+        throw std::runtime_error("HTTP send failed");
+      }
+      sent += static_cast<size_t>(n);
+    }
+  }
+
+  std::string readAll() override {
+    char buffer[4096];
+    std::string raw;
+    while (true) {
+      const auto received = ::recv(fd_, buffer, sizeof(buffer), 0);
+      if (received <= 0) {
+        break;
+      }
+      raw.append(buffer, static_cast<size_t>(received));
+    }
+    return raw;
+  }
+
+private:
+  int fd_;
+};
+
+#ifdef NEURIPLO_INFER_WITH_KSERVE_TLS
+// TLS transport built on OpenSSL. Verifies the server certificate against the
+// system CA roots (or KSERVE_CA_CERT when set), sends SNI, and checks the
+// certificate hostname against the endpoint host.
+class TlsConnection : public Connection {
+public:
+  TlsConnection(int fd, const std::string &host) : fd_(fd) {
+    ctx_ = SSL_CTX_new(TLS_client_method());
+    if (ctx_ == nullptr) {
+      fail("SSL_CTX_new failed");
+    }
+    SSL_CTX_set_min_proto_version(ctx_, TLS1_2_VERSION);
+    SSL_CTX_set_verify(ctx_, SSL_VERIFY_PEER, nullptr);
+
+    const char *ca_path = std::getenv("KSERVE_CA_CERT");
+    if (ca_path != nullptr && ca_path[0] != '\0') {
+      if (SSL_CTX_load_verify_locations(ctx_, ca_path, nullptr) != 1) {
+        fail("failed to load CA file named by KSERVE_CA_CERT");
+      }
+    } else if (SSL_CTX_set_default_verify_paths(ctx_) != 1) {
+      fail("failed to load system CA roots");
+    }
+
+    ssl_ = SSL_new(ctx_);
+    if (ssl_ == nullptr) {
+      fail("SSL_new failed");
+    }
+    SSL_set_fd(ssl_, fd_);
+    // SNI: tell the server which virtual host we want.
+    SSL_set_tlsext_host_name(ssl_, host.c_str());
+    // Verify the certificate matches the host we connected to.
+    X509_VERIFY_PARAM *param = SSL_get0_param(ssl_);
+    X509_VERIFY_PARAM_set_hostflags(param,
+                                    X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+    if (X509_VERIFY_PARAM_set1_host(param, host.c_str(), host.size()) != 1) {
+      fail("failed to set expected TLS hostname");
+    }
+    if (SSL_connect(ssl_) != 1) {
+      fail("TLS handshake failed");
+    }
+  }
+
+  ~TlsConnection() override { cleanup(); }
+  TlsConnection(const TlsConnection &) = delete;
+  TlsConnection &operator=(const TlsConnection &) = delete;
+
+  void sendAll(const std::string &data) override {
+    size_t sent = 0;
+    while (sent < data.size()) {
+      const int n = SSL_write(ssl_, data.data() + sent,
+                              static_cast<int>(data.size() - sent));
+      if (n <= 0) {
+        throw std::runtime_error("TLS send failed");
+      }
+      sent += static_cast<size_t>(n);
+    }
+  }
+
+  std::string readAll() override {
+    char buffer[4096];
+    std::string raw;
+    while (true) {
+      const int n = SSL_read(ssl_, buffer, sizeof(buffer));
+      if (n <= 0) {
+        break;
+      }
+      raw.append(buffer, static_cast<size_t>(n));
+    }
+    return raw;
+  }
+
+private:
+  void cleanup() {
+    if (ssl_ != nullptr) {
+      SSL_shutdown(ssl_);
+      SSL_free(ssl_);
+      ssl_ = nullptr;
+    }
+    if (ctx_ != nullptr) {
+      SSL_CTX_free(ctx_);
+      ctx_ = nullptr;
+    }
+    if (fd_ >= 0) {
+      ::close(fd_);
+      fd_ = -1;
+    }
+  }
+
+  // Captures the OpenSSL error string, releases all resources, and throws.
+  [[noreturn]] void fail(const std::string &what) {
+    const unsigned long err = ERR_get_error();
+    std::string message = "KServe TLS: " + what;
+    if (err != 0) {
+      char buf[256];
+      ERR_error_string_n(err, buf, sizeof(buf));
+      message += ": ";
+      message += buf;
+    }
+    cleanup();
+    throw std::runtime_error(message);
+  }
+
+  int fd_;
+  SSL_CTX *ctx_ = nullptr;
+  SSL *ssl_ = nullptr;
+};
+#endif // NEURIPLO_INFER_WITH_KSERVE_TLS
+
+// Establishes a connection to the endpoint, wrapping it in TLS for https://.
+// A TLS endpoint on a build without OpenSSL fails fast with a clear message.
+std::unique_ptr<Connection> connect(const Endpoint &ep, int timeout_ms) {
+  const int fd = connectSocket(ep.host, ep.port, timeout_ms);
+  if (ep.tls) {
+#ifdef NEURIPLO_INFER_WITH_KSERVE_TLS
+    return std::make_unique<TlsConnection>(fd, ep.host);
+#else
+    ::close(fd);
+    throw std::runtime_error(
+        "KServe https:// endpoint requested but the client was built without "
+        "TLS support (rebuild with OpenSSL / "
+        "-DNEURIPLO_INFER_ENABLE_KSERVE_TLS=ON)");
+#endif
+  }
+  return std::make_unique<PlainConnection>(fd);
 }
 
 HttpResponse httpGet(const Endpoint &ep, const std::string &path,
                      const std::string &auth_token, int timeout_ms) {
-  const int fd = connectSocket(ep.host, ep.port, timeout_ms);
-  try {
-    std::ostringstream request;
-    request << "GET " << path << " HTTP/1.1\r\n"
-            << "Host: " << ep.host << "\r\n";
-    if (!auth_token.empty()) {
-      request << "Authorization: Bearer " << auth_token << "\r\n";
-    }
-    request << "Connection: close\r\n\r\n";
-    sendAll(fd, request.str());
-    auto response = parseHttpResponse(readRaw(fd));
-    ::close(fd);
-    return response;
-  } catch (...) {
-    ::close(fd);
-    throw;
+  auto conn = connect(ep, timeout_ms);
+  std::ostringstream request;
+  request << "GET " << path << " HTTP/1.1\r\n"
+          << "Host: " << ep.host << "\r\n";
+  if (!auth_token.empty()) {
+    request << "Authorization: Bearer " << auth_token << "\r\n";
   }
+  request << "Connection: close\r\n\r\n";
+  conn->sendAll(request.str());
+  return parseHttpResponse(conn->readAll());
 }
 
 HttpResponse httpPost(const Endpoint &ep, const std::string &path,
                       const std::string &body, const std::string &auth_token,
                       int timeout_ms) {
-  const int fd = connectSocket(ep.host, ep.port, timeout_ms);
-  try {
-    std::ostringstream request;
-    request << "POST " << path << " HTTP/1.1\r\n"
-            << "Host: " << ep.host << "\r\n"
-            << "Content-Type: application/json\r\n"
-            << "Content-Length: " << body.size() << "\r\n";
-    if (!auth_token.empty()) {
-      request << "Authorization: Bearer " << auth_token << "\r\n";
-    }
-    request << "Connection: close\r\n\r\n" << body;
-    sendAll(fd, request.str());
-    auto response = parseHttpResponse(readRaw(fd));
-    ::close(fd);
-    return response;
-  } catch (...) {
-    ::close(fd);
-    throw;
+  auto conn = connect(ep, timeout_ms);
+  std::ostringstream request;
+  request << "POST " << path << " HTTP/1.1\r\n"
+          << "Host: " << ep.host << "\r\n"
+          << "Content-Type: application/json\r\n"
+          << "Content-Length: " << body.size() << "\r\n";
+  if (!auth_token.empty()) {
+    request << "Authorization: Bearer " << auth_token << "\r\n";
   }
+  request << "Connection: close\r\n\r\n" << body;
+  conn->sendAll(request.str());
+  return parseHttpResponse(conn->readAll());
 }
 
 std::string inferPath(const std::string &model_name,
@@ -140,8 +285,8 @@ std::string inferPath(const std::string &model_name,
 }
 
 std::string envToken() {
-  const char *token = std::getenv("KSERVE_BEARER_TOKEN");
-  return token != nullptr ? std::string(token) : std::string();
+  return readSecretFromEnvOrFile("KSERVE_BEARER_TOKEN",
+                                 "KSERVE_BEARER_TOKEN_FILE");
 }
 
 std::vector<int64_t> readShape(const Json &node) {
