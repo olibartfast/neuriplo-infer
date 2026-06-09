@@ -427,11 +427,6 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 - KServe TLS is supported on both transports: HTTPS for the HTTP client (requires an OpenSSL-enabled build) and `grpcs://` for the gRPC client, with optional mTLS via `KSERVE_CLIENT_CERT`/`KSERVE_CLIENT_KEY`. A build without OpenSSL still works over plaintext `http://`, but `https://` endpoints fail fast with a clear error.
 - KServe model management (Model Repository extension: index / load / unload) is implemented on the client API for both transports but is not yet exposed through the CLI, and is only available when the server enables the extension (e.g. Triton `--model-control-mode=explicit`); see [docs/KserveRuntime.md](docs/KserveRuntime.md).
 
-## 🙏 Acknowledgments
-- [OpenCV YOLO detection with DNN module](https://github.com/opencv/opencv/blob/4.x/samples/dnn/yolo_detector.cpp)
-- [TensorRTx](https://github.com/wang-xinyu/tensorrtx)
-- [RT-DETR Deploy](https://github.com/CVHub520/rtdetr-onnxruntime-deploy)
-
  ## References
  - https://paperswithcode.co/tasks
  - https://leaderboard.roboflow.com
