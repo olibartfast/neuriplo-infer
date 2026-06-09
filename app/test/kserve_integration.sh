@@ -113,6 +113,9 @@ skip_or_fail() {
 WORK_DIR=""
 CONTAINERS=()
 
+# Invoked indirectly via `trap ... EXIT`; newer ShellCheck mis-flags the body as
+# unreachable (SC2317), so silence that one false positive for this function.
+# shellcheck disable=SC2317
 cleanup() {
   if [[ "${KEEP}" == true ]]; then
     log "Leaving containers/workspace in place (--keep): ${WORK_DIR}"
