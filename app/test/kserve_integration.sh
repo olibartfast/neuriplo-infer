@@ -288,18 +288,19 @@ log "servers=${SERVERS} transports=${TRANSPORTS} model=${MODEL_NAME}"
 log "triton-image=${TRITON_IMAGE}"
 log "ovms-image=${OVMS_IMAGE}"
 
-if [[ ! -f "${PROTO_FILE}" ]]; then
-  echo "ERROR: proto not found at ${PROTO_FILE}" >&2
-  exit 1
-fi
-
-# Live prerequisites: docker + the model generator + curl.
+# Live prerequisites: docker + the model generator + curl. The gRPC proto (now
+# in the neuriplo-kserve-client sibling repo) is only needed for the live
+# grpcurl path, so it is checked here rather than in dry-run, where commands are
+# only printed.
 if [[ "${DRY_RUN}" == false ]]; then
   command -v docker >/dev/null 2>&1 || skip_or_fail "docker not available"
   docker info >/dev/null 2>&1 || skip_or_fail "docker daemon not reachable"
   command -v curl >/dev/null 2>&1 || skip_or_fail "curl not available"
   "${PY_BIN}" -c 'import onnx' >/dev/null 2>&1 ||
     skip_or_fail "python3 'onnx' package not available to build the tiny model"
+  if has "${TRANSPORTS}" grpc && [[ ! -f "${PROTO_FILE}" ]]; then
+    skip_or_fail "KServe gRPC proto not found at ${PROTO_FILE} (clone neuriplo-kserve-client beside this repo or set PROTO_FILE)"
+  fi
 fi
 
 WORK_DIR="$(mktemp -d)"
