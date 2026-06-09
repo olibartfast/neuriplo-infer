@@ -80,7 +80,7 @@ include(FetchContent)
 #                            builds neuriplo (OpenCV/glog/ONNX/TensorRT/...).
 # A KServe-only build (LOCAL_BACKENDS OFF, KSERVE ON) fetches neither neuriplo
 # nor any external contract library; it uses the app-local contract headers in
-# app/inc/contract. See docs/KserveRoadmap.md.
+# app/inc/contract. See docs/KserveRuntime.md.
 option(NEURIPLO_INFER_ENABLE_KSERVE "Build KServe remote-runtime client" ON)
 option(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS
        "Build local inference backends (fetches/builds neuriplo)" ON)

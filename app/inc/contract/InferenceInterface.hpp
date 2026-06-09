@@ -6,7 +6,7 @@
 // any external contract library. Put on the include path only in that build
 // mode; full builds use neuriplo's own header. Signatures must stay identical
 // to neuriplo's so the same source compiles unchanged in both modes. See
-// docs/KserveRoadmap.md.
+// docs/KserveRuntime.md.
 
 #include "InferenceMetadata.hpp"
 

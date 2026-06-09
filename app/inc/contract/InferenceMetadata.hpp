@@ -4,7 +4,7 @@
 // neuriplo-infer is built WITHOUT local backends (KServe-only). It is put on
 // the include path only in that build mode, so no source #include changes are
 // needed between modes. Keep the public shape identical to neuriplo's version.
-// See docs/KserveRoadmap.md.
+// See docs/KserveRuntime.md.
 
 #include <cstddef>
 #include <cstdint>

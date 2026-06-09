@@ -8,12 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Closed out the KServe production roadmap: `feature/neuriplo-kserve-runtime`
-  merged into `develop` (2026-06-09) with all phases complete.
-  `docs/KserveRoadmap.md` is now a design record (gap table marked done, its
-  matrix superseded by `docs/KserveCompatibility.md`); README and the
-  compatibility matrix updated to match actual capability (FP16/BF16 over gRPC
-  via the default raw tensor contents) and now document the `KSERVE_BINARY`
-  and `KSERVE_MAX_RETRIES`/`KSERVE_RETRY_*` environment variables.
+  merged into `develop` (2026-06-09) with all phases complete. The roadmap doc
+  was then transformed into `docs/KserveRuntime.md`, a reference for agents and
+  humans (architecture, capabilities, configuration/env vars, build modes,
+  testing); the historical gap tables and phase checklists were removed
+  (CHANGELOG and git history keep the record). README and
+  `docs/KserveCompatibility.md` updated to match actual capability (FP16/BF16
+  over gRPC via the default raw tensor contents) and now document the
+  `KSERVE_BINARY` and `KSERVE_MAX_RETRIES`/`KSERVE_RETRY_*` environment
+  variables.
 - Extracted the KServe V2 protocol client into a standalone sibling repository,
   [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client)
   (the pure, backend-agnostic HTTP/gRPC client + proto + protocol/retry/security
@@ -35,7 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (field numbers matching the official KServe/Triton service). Pure path
   builders, the neutral `RepositoryModel` result, and `parseRepositoryIndex`
   are unit-tested; the calls reuse the existing retry/auth/TLS plumbing. See
-  `docs/KserveRoadmap.md` Phase 5.
+  `docs/KserveRuntime.md`.
 
 ## [0.4.1] - 2026-06-07
 

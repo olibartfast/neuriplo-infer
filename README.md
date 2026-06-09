@@ -269,7 +269,7 @@ Example KServe-only build (no neuriplo fetch):
 cmake -B build -DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF -DNEURIPLO_INFER_ENABLE_KSERVE=ON
 ```
 
-The production roadmap is complete; [docs/KserveRoadmap.md](docs/KserveRoadmap.md) records it, and [docs/KserveCompatibility.md](docs/KserveCompatibility.md) is the maintained server-compatibility matrix.
+See [docs/KserveRuntime.md](docs/KserveRuntime.md) for the full KServe runtime reference (architecture, capabilities, configuration, build modes) and [docs/KserveCompatibility.md](docs/KserveCompatibility.md) for the maintained server-compatibility matrix.
 
 #### Optional Parameters
 
@@ -365,6 +365,8 @@ The production roadmap is complete; [docs/KserveRoadmap.md](docs/KserveRoadmap.m
 
 - [`AGENTS.md`](AGENTS.md): workflow, review focus, and repo-local entrypoints
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): ownership boundaries and runtime flow
+- [`docs/KserveRuntime.md`](docs/KserveRuntime.md): KServe remote-runtime reference (architecture, capabilities, configuration, build modes)
+- [`docs/KserveCompatibility.md`](docs/KserveCompatibility.md): CI-backed KServe server/transport/datatype matrix
 - [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version sources
 - [`docs/Versioning.md`](docs/Versioning.md): release/version workflow for `VERSION` and `CHANGELOG.md`
 - [`docs/DetectorArchitectures.md`](docs/DetectorArchitectures.md): object-detection architecture guide
@@ -423,7 +425,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 - Some model/backend combinations may require specific export configurations
 - KServe HTTP mode is validated live against `neuriplo-kserve-runtime`; gRPC support is built only when Protobuf/gRPC are available. Triton/OVMS round-trips run as a CI dry-run on every PR, with live runs behind a manual dispatch — see [docs/KserveCompatibility.md](docs/KserveCompatibility.md). FP16/BF16 inputs over gRPC require raw tensor contents (the default; the typed-`contents` fallback selected by `KSERVE_BINARY=0` cannot carry them).
 - KServe TLS is supported on both transports: HTTPS for the HTTP client (requires an OpenSSL-enabled build) and `grpcs://` for the gRPC client, with optional mTLS via `KSERVE_CLIENT_CERT`/`KSERVE_CLIENT_KEY`. A build without OpenSSL still works over plaintext `http://`, but `https://` endpoints fail fast with a clear error.
-- KServe model management (Model Repository extension: index / load / unload) is implemented on the client API for both transports but is not yet exposed through the CLI, and is only available when the server enables the extension (e.g. Triton `--model-control-mode=explicit`); see [docs/KserveRoadmap.md](docs/KserveRoadmap.md) Phase 5.
+- KServe model management (Model Repository extension: index / load / unload) is implemented on the client API for both transports but is not yet exposed through the CLI, and is only available when the server enables the extension (e.g. Triton `--model-control-mode=explicit`); see [docs/KserveRuntime.md](docs/KserveRuntime.md).
 
 ## 🙏 Acknowledgments
 - [OpenCV YOLO detection with DNN module](https://github.com/opencv/opencv/blob/4.x/samples/dnn/yolo_detector.cpp)
