@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Validate that versions.env at the current checkout pins every sibling
-# (neuriplo-tasks, neuriplo, videocapture) to a real release tag, and that each
-# pinned tag actually exists on the sibling's remote. Used by:
+# (neuriplo-tasks, neuriplo, videocapture, neuriplo-kserve-client) to a real
+# release tag, and that each pinned tag actually exists on the sibling's remote.
+# Used by:
 #   - .githooks/pre-push (blocks pushes of unpinned neuriplo-infer release tags)
 #   - .github/workflows/release-guard.yml (server-side enforcement on tag push)
 #   - scripts/cut_release.sh (sanity check before staging release changes)
@@ -46,7 +47,8 @@ echo "==> Validating sibling pins in versions.env for ${TAG}..."
 # Each entry maps a versions.env key to the sibling repository it pins.
 for entry in "NEURIPLO_VERSION=neuriplo" \
              "VIDEOCAPTURE_VERSION=videocapture" \
-             "NEURIPLO_TASKS_VERSION=neuriplo-tasks"; do
+             "NEURIPLO_TASKS_VERSION=neuriplo-tasks" \
+             "NEURIPLO_KSERVE_CLIENT_VERSION=neuriplo-kserve-client"; do
   key="${entry%%=*}"
   repo="${entry#*=}"
   val="$(extract_pin "${key}")"

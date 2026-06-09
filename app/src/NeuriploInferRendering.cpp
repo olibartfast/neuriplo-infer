@@ -30,7 +30,8 @@ void renderOpenVocabDetectionResults(
     const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
   for (const auto &result : results) {
     if (std::holds_alternative<neuriplo_tasks::OpenVocabDetection>(result)) {
-      const auto &detection = std::get<neuriplo_tasks::OpenVocabDetection>(result);
+      const auto &detection =
+          std::get<neuriplo_tasks::OpenVocabDetection>(result);
       cv::rectangle(image, neuriplo_tasks::toCvRect(detection.bbox),
                     cv::Scalar(0, 165, 255), 3);
       const std::string label = detection.label.empty()
@@ -120,8 +121,8 @@ void renderInstanceSegmentationResults(
   }
 }
 
-void renderOpticalFlowResults(const std::vector<neuriplo_tasks::Result> &results,
-                              cv::Mat &image) {
+void renderOpticalFlowResults(
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
   for (const auto &result : results) {
     if (std::holds_alternative<neuriplo_tasks::OpticalFlow>(result)) {
       const auto &flow = std::get<neuriplo_tasks::OpticalFlow>(result);
@@ -184,14 +185,15 @@ void renderDepthEstimationResults(
     const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
   for (const auto &result : results) {
     if (std::holds_alternative<neuriplo_tasks::DepthEstimation>(result)) {
-      const auto &depth_result = std::get<neuriplo_tasks::DepthEstimation>(result);
+      const auto &depth_result =
+          std::get<neuriplo_tasks::DepthEstimation>(result);
 
       cv::Mat depth_for_vis;
       if (!depth_result.normalized_depth.empty()) {
         depth_for_vis = neuriplo_tasks::toCvMat(depth_result.normalized_depth);
       } else if (!depth_result.depth.empty()) {
-        cv::normalize(neuriplo_tasks::toCvMat(depth_result.depth), depth_for_vis,
-                      0.0f, 1.0f, cv::NORM_MINMAX, CV_32FC1);
+        cv::normalize(neuriplo_tasks::toCvMat(depth_result.depth),
+                      depth_for_vis, 0.0f, 1.0f, cv::NORM_MINMAX, CV_32FC1);
       } else {
         continue;
       }
@@ -230,8 +232,8 @@ void renderImageUnderstandingResults(
 
 } // namespace
 
-void NeuriploInfer::processResults(const std::vector<neuriplo_tasks::Result> &results,
-                               cv::Mat &image) {
+void NeuriploInfer::processResults(
+    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
   const auto task_type = getTaskType(config.detectorType);
 
   switch (task_type) {

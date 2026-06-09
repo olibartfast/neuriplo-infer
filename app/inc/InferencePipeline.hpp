@@ -1,7 +1,15 @@
 #pragma once
 
 #include "AppConfig.hpp"
+#ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+// Brings in neuriplo's local-engine factory and, transitively, the inference
+// contract (InferenceInterface / TensorElement / InferenceMetadata).
 #include "InferenceBackendSetup.hpp"
+#else
+// KServe-only build: no neuriplo fetch, so use the app-local contract headers.
+#include "InferenceInterface.hpp"
+#include "InferenceMetadata.hpp"
+#endif
 #include "ResultRenderer.hpp"
 #include "TaskRouting.hpp"
 #include "neuriplo/tasks/core/model_info.hpp"
