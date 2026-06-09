@@ -10,10 +10,9 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_InferencePipelineBuilder.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_KserveProtocol.cpp
+    # The pure KServe protocol/retry/security suites live in the
+    # neuriplo-kserve-client repo; only the adapter test stays here.
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveEngine.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_KserveRetry.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_KserveSecurity.cpp
 )
 
 include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)

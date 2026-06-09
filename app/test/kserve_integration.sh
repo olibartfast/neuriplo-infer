@@ -50,7 +50,18 @@ TRITON_GRPC_PORT="${TRITON_GRPC_PORT:-18001}"
 OVMS_HTTP_PORT="${OVMS_HTTP_PORT:-18002}"
 OVMS_GRPC_PORT="${OVMS_GRPC_PORT:-18003}"
 
-PROTO_FILE="${REPO_ROOT}/proto/kserve_grpc.proto"
+# The KServe gRPC proto lives in the neuriplo-kserve-client sibling repo now.
+# Resolve it (for the live grpcurl path) from, in order: an explicit PROTO_FILE
+# override, a sibling checkout, or a FetchContent-populated build tree. Dry-run
+# only prints the command, so an unresolved path here is harmless there.
+if [[ -z "${PROTO_FILE:-}" ]]; then
+  for _cand in \
+    "${REPO_ROOT}/../neuriplo-kserve-client/proto/kserve_grpc.proto" \
+    "${REPO_ROOT}"/build*/_deps/neuriplo-kserve-client-src/proto/kserve_grpc.proto; do
+    if [[ -f "${_cand}" ]]; then PROTO_FILE="${_cand}"; break; fi
+  done
+fi
+PROTO_FILE="${PROTO_FILE:-${REPO_ROOT}/../neuriplo-kserve-client/proto/kserve_grpc.proto}"
 
 # ── Arg parsing ───────────────────────────────────────────────────────────────
 usage() {

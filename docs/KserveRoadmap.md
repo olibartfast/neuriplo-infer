@@ -6,25 +6,35 @@ compatibility (KServe, Triton Inference Server, OpenVINO Model Server, TorchServ
 
 ## Background
 
+> **Repository split (v0.1.0):** the pure protocol client now lives in the
+> standalone sibling repo
+> [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client)
+> and is consumed here via `FetchContent` (pinned by
+> `NEURIPLO_KSERVE_CLIENT_VERSION` in `versions.env`). The file paths below
+> prefixed `kserve-client:` live in that repo; only the `KserveEngine` adapter
+> (`app/src/KserveEngine.cpp`) and its test remain in neuriplo-infer.
+
 The client implements the KServe V2 / Open Inference Protocol, structured (like
 Triton's client library) as a **pure protocol client + an adapter** so the
 client depends only on the wire protocol, never on neuriplo:
 
-- Neutral contract: `KserveTypes.hpp` — `ModelMetadata` / `InferInput` /
-  `InferOutput` (raw little-endian byte payloads) and the abstract
+- Neutral contract: `kserve-client: include/KserveTypes.hpp` — `ModelMetadata` /
+  `InferInput` / `InferOutput` (raw little-endian byte payloads) and the abstract
   `kserve::IClient`. Standard-library only, no neuriplo types.
-- HTTP client: `kserve::HttpClient` (`app/src/KserveHttpClient.cpp`) — hand-rolled
-  socket client.
-- gRPC client: `kserve::GrpcClient` (`app/src/KserveGrpcClient.cpp`) over the
-  standard `inference.GRPCInferenceService` (`proto/kserve_grpc.proto`); reads
-  both typed `contents` and `raw_output_contents` (Triton's default form).
-- Shared helpers: `KserveProtocol.{hpp,cpp}` — URL/HTTP parsing, datatype byte
-  widths, and tensor `encode`/`decode` between raw bytes and KServe JSON.
+- HTTP client: `kserve::HttpClient` (`kserve-client: src/KserveHttpClient.cpp`) —
+  hand-rolled socket client.
+- gRPC client: `kserve::GrpcClient` (`kserve-client: src/KserveGrpcClient.cpp`)
+  over the standard `inference.GRPCInferenceService`
+  (`kserve-client: proto/kserve_grpc.proto`); reads both typed `contents` and
+  `raw_output_contents` (Triton's default form).
+- Shared helpers: `kserve-client: KserveProtocol.{hpp,cpp}` — URL/HTTP parsing,
+  datatype byte widths, and tensor `encode`/`decode` between raw bytes and
+  KServe JSON.
 - Adapter: `KserveEngine` (`app/src/KserveEngine.cpp`) — the **only** KServe file
-  that touches the neuriplo contract (`InferenceInterface` / `TensorElement` /
-  `InferenceMetadata`). It wraps a `kserve::IClient`, caches metadata, and
-  converts raw protocol bytes to typed `TensorElement`s, so a remote model is a
-  drop-in for a local engine in `InferencePipeline`.
+  in neuriplo-infer that touches the neuriplo contract (`InferenceInterface` /
+  `TensorElement` / `InferenceMetadata`). It wraps a `kserve::IClient`, caches
+  metadata, and converts raw protocol bytes to typed `TensorElement`s, so a
+  remote model is a drop-in for a local engine in `InferencePipeline`.
 
 Because the protocol is the same one Triton and OpenVINO Model Server expose, the
 client is wire-compatible with all of them **in principle**; the work below closes
@@ -245,8 +255,27 @@ per-backend runtimes. `neuriplo-tasks` does not depend on `neuriplo`.
 | Local + KServe (default) | required | HTTP (+gRPC) | defaults |
 | KServe only, no neuriplo | not needed | HTTP (+gRPC) | needs `neuriplo-core` extraction (future) |
 
+### Phase 5 — Model management (Model Repository extension)
+
+- [x] Load / unload / repository-index over the KServe V2 Model Repository
+      extension on both transports. `IClient` gains `repositoryIndex()` /
+      `loadModel(name)` / `unloadModel(name)` as an **optional** capability
+      (default implementations throw, so a client or test double that does not
+      support model management need not override them). HTTP POSTs
+      `/v2/repository/index`, `/v2/repository/models/{m}/load` and
+      `/v2/repository/models/{m}/unload`; gRPC calls `RepositoryIndex` /
+      `RepositoryModelLoad` / `RepositoryModelUnload` (added to
+      `proto/kserve_grpc.proto` with field numbers matching the official
+      KServe/Triton service for wire compatibility). The neutral
+      `RepositoryModel` result and the pure path builders + `parseRepositoryIndex`
+      helper live in `KserveTypes` / `KserveProtocol` and are unit-tested; the
+      repository calls reuse the existing retry/backoff and auth/TLS plumbing.
+      load/unload take an explicit model name (independent of the client's bound
+      inference model) and throw on a non-success response.
+
 ## Out of scope (for now)
 
 - Streaming inference.
-- Model management API (load/unload).
 - Server-side batching configuration.
+- CLI exposure of the model-management API (the capability lives on the client;
+  no admin subcommand is wired into the inference CLI yet).

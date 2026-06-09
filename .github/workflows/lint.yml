@@ -56,16 +56,17 @@ jobs:
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
-      # Build first so generated sources (e.g. the protobuf/gRPC headers
-      # produced from proto/kserve_grpc.proto) exist before analysis.
+      # Build first so fetched dependencies (e.g. the neuriplo-kserve-client
+      # library and its generated protobuf/gRPC headers) exist before analysis.
       - name: Build
         run: cmake --build build --parallel
 
       # Lint only the translation units that are actually part of the
       # configured build. Driving the file list from compile_commands.json
       # (instead of a blind `find`) skips conditionally-compiled sources
-      # such as KserveGrpcClient.cpp when gRPC is not enabled, which would
-      # otherwise fail to parse on a missing generated header.
+      # such as KserveEngine.cpp when the KServe runtime is disabled, and
+      # naturally excludes the fetched neuriplo-kserve-client sources (which
+      # are not under app/src).
       - name: Run clang-tidy
         run: |
           jq -r '.[].file' build/compile_commands.json \

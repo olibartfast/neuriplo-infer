@@ -3,7 +3,7 @@
 #ifdef NEURIPLO_INFER_WITH_KSERVE
 #include "KserveEngine.hpp"
 #include "KserveHttpClient.hpp"
-#ifdef NEURIPLO_INFER_WITH_GRPC
+#ifdef KSERVE_CLIENT_WITH_GRPC
 #include "KserveGrpcClient.hpp"
 #endif
 #endif
@@ -199,7 +199,7 @@ void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
               << " version: " << config_.kserve_model_version;
 
     std::unique_ptr<kserve::IClient> client;
-#ifdef NEURIPLO_INFER_WITH_GRPC
+#ifdef KSERVE_CLIENT_WITH_GRPC
     if (config_.kserve_transport == "grpc") {
       client = std::make_unique<kserve::GrpcClient>(
           config_.kserve_endpoint, config_.kserve_model_name,

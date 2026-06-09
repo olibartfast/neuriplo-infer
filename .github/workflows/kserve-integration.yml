@@ -15,7 +15,7 @@ on:
       - 'app/test/kserve_integration.sh'
       - 'app/src/Kserve*.cpp'
       - 'app/inc/Kserve*.hpp'
-      - 'proto/**'
+      - 'versions.env'
       - 'docs/KserveCompatibility.md'
   pull_request:
     branches: [develop, 'feature/**']
@@ -24,7 +24,7 @@ on:
       - 'app/test/kserve_integration.sh'
       - 'app/src/Kserve*.cpp'
       - 'app/inc/Kserve*.hpp'
-      - 'proto/**'
+      - 'versions.env'
       - 'docs/KserveCompatibility.md'
   workflow_dispatch:
     inputs:

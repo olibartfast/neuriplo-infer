@@ -1,9 +1,14 @@
 # KServe Server Compatibility Matrix
 
-The neuriplo-infer KServe client speaks the KServe V2 / Open Inference Protocol
-(OIP), so it is wire-compatible in principle with any server that implements it.
-This document records the combinations that are **actually exercised by CI** and
-how, so the matrix stays honest rather than aspirational.
+The KServe client speaks the KServe V2 / Open Inference Protocol (OIP), so it is
+wire-compatible in principle with any server that implements it. This document
+records the combinations that are **actually exercised by CI** and how, so the
+matrix stays honest rather than aspirational.
+
+> The protocol client itself lives in the standalone
+> [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client)
+> repo (fetched here via `FetchContent`); neuriplo-infer keeps the `KserveEngine`
+> adapter and this integration harness.
 
 It is kept green by the integration harness
 [`app/test/kserve_integration.sh`](../app/test/kserve_integration.sh) and the
@@ -59,6 +64,18 @@ the tiny model on both servers); the wider datatype decoding is covered by the
   call metadata).
 - TLS selection by scheme (`https://` / `grpcs://`). See the roadmap for the
   current state of HTTPS on the HTTP client.
+
+## Model management (Model Repository extension)
+
+The client implements the KServe V2 Model Repository extension on both
+transports — `repositoryIndex()` / `loadModel(name)` / `unloadModel(name)`
+(HTTP `POST /v2/repository/index|models/{m}/load|models/{m}/unload`; gRPC
+`RepositoryIndex` / `RepositoryModelLoad` / `RepositoryModelUnload`). This is an
+optional server capability: Triton exposes it (with
+`--model-control-mode=explicit`), and KServe/OVMS support varies by deployment,
+so it is **not** part of the routine integration round-trip. The pure path
+builders and index parser are unit-tested; the wire calls reuse the existing
+retry/auth/TLS plumbing. See [docs/KserveRoadmap.md](KserveRoadmap.md) Phase 5.
 
 ## Running it yourself
 

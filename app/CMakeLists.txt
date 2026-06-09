@@ -9,63 +9,12 @@ set(APP_LIB_SOURCES
 )
 
 if(NEURIPLO_INFER_ENABLE_KSERVE)
+    # The KServe protocol client (HTTP/gRPC transports, proto, TLS) lives in the
+    # standalone neuriplo-kserve-client library, fetched in the top-level
+    # CMakeLists. Only the adapter that bridges it to the neuriplo inference
+    # contract stays in this app.
     list(APPEND APP_LIB_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveProtocol.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveRetry.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveHttpClient.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveEngine.cpp)
-endif()
-
-if(NEURIPLO_INFER_WITH_GRPC)
-    set(PROTO_FILE "${CMAKE_SOURCE_DIR}/proto/kserve_grpc.proto")
-    get_filename_component(PROTO_DIR "${PROTO_FILE}" DIRECTORY)
-    set(PROTO_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/proto")
-    file(MAKE_DIRECTORY "${PROTO_GEN_DIR}")
-
-    set(PROTO_SRCS "${PROTO_GEN_DIR}/kserve_grpc.pb.cc")
-    set(GRPC_SRCS "${PROTO_GEN_DIR}/kserve_grpc.grpc.pb.cc")
-
-    get_target_property(_GRPC_PLUGIN_SUPPORT_LOC gRPC::grpc_plugin_support IMPORTED_LOCATION_NONE)
-    if(NOT _GRPC_PLUGIN_SUPPORT_LOC)
-        get_target_property(_GRPC_PLUGIN_SUPPORT_LOC gRPC::grpc_plugin_support IMPORTED_LOCATION)
-    endif()
-    if(_GRPC_PLUGIN_SUPPORT_LOC)
-        get_filename_component(_GRPC_LIB_DIR "${_GRPC_PLUGIN_SUPPORT_LOC}" DIRECTORY)
-    else()
-        set(_GRPC_LIB_DIR "")
-    endif()
-
-    if(_GRPC_LIB_DIR)
-        add_custom_command(
-            OUTPUT "${PROTO_SRCS}" "${GRPC_SRCS}"
-            COMMAND ${CMAKE_COMMAND} -E env "LD_LIBRARY_PATH=${_GRPC_LIB_DIR}"
-                "${PROTOBUF_PROTOC_EXECUTABLE}"
-                "--proto_path=${PROTO_DIR}"
-                "--cpp_out=${PROTO_GEN_DIR}"
-                "--grpc_out=${PROTO_GEN_DIR}"
-                "--plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
-                "${PROTO_FILE}"
-            DEPENDS "${PROTO_FILE}"
-            COMMENT "Generating gRPC sources"
-        )
-    else()
-        add_custom_command(
-            OUTPUT "${PROTO_SRCS}" "${GRPC_SRCS}"
-            COMMAND "${PROTOBUF_PROTOC_EXECUTABLE}"
-                "--proto_path=${PROTO_DIR}"
-                "--cpp_out=${PROTO_GEN_DIR}"
-                "--grpc_out=${PROTO_GEN_DIR}"
-                "--plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
-                "${PROTO_FILE}"
-            DEPENDS "${PROTO_FILE}"
-            COMMENT "Generating gRPC sources"
-        )
-    endif()
-
-    list(APPEND APP_LIB_SOURCES
-        "${PROTO_SRCS}"
-        "${GRPC_SRCS}"
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/KserveGrpcClient.cpp)
 endif()
 
 set(NEURIPLO_INFER_LIBRARY neuriplo-infer)
@@ -111,23 +60,10 @@ endif()
 
 if(NEURIPLO_INFER_ENABLE_KSERVE)
     target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PUBLIC NEURIPLO_INFER_WITH_KSERVE)
-endif()
-
-if(NEURIPLO_INFER_WITH_KSERVE_TLS)
-    target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PRIVATE NEURIPLO_INFER_WITH_KSERVE_TLS)
-    target_link_libraries(${NEURIPLO_INFER_LIBRARY} PRIVATE
-        OpenSSL::SSL
-        OpenSSL::Crypto
-    )
-endif()
-
-if(NEURIPLO_INFER_WITH_GRPC)
-    target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PRIVATE NEURIPLO_INFER_WITH_GRPC)
-    target_include_directories(${NEURIPLO_INFER_LIBRARY} PRIVATE "${PROTO_GEN_DIR}")
-    target_link_libraries(${NEURIPLO_INFER_LIBRARY} PRIVATE
-        protobuf::libprotobuf
-        gRPC::grpc++
-    )
+    # The KServe client library carries the HTTP/gRPC transports and its public
+    # include dir + KSERVE_CLIENT_WITH_GRPC define propagate to KserveEngine and
+    # InferencePipeline.
+    target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC neuriplo-kserve-client)
 endif()
 
 if(MSVC)
