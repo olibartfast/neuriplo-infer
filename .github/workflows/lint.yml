@@ -1,0 +1,145 @@
+name: C++ Lint & Build
+
+on:
+  push:
+    branches: [develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-18
+
+      - name: Check formatting
+        run: |
+          find app/src app/inc app/test -name '*.cpp' -o -name '*.hpp' | \
+            xargs clang-format-18 --dry-run --Werror
+
+  clang-tidy:
+    name: Clang-Tidy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shared dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy-18
+
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
+      - name: Generate compile_commands.json
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DENABLE_APP_TESTS=ON \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      # Build first so fetched dependencies (e.g. the neuriplo-kserve-client
+      # library and its generated protobuf/gRPC headers) exist before analysis.
+      - name: Build
+        run: cmake --build build --parallel
+
+      # Lint only the translation units that are actually part of the
+      # configured build. Driving the file list from compile_commands.json
+      # (instead of a blind `find`) skips conditionally-compiled sources
+      # such as KserveEngine.cpp when the KServe runtime is disabled, and
+      # naturally excludes the fetched neuriplo-kserve-client sources (which
+      # are not under app/src).
+      - name: Run clang-tidy
+        run: |
+          jq -r '.[].file' build/compile_commands.json \
+            | grep -E '/app/src/.*\.cpp$' \
+            | sort -u \
+            | xargs clang-tidy-18 -p build
+
+  cppcheck:
+    name: Cppcheck
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=warning --std=c++20 --error-exitcode=1 \
+            --suppress=missingIncludeSystem \
+            --suppress=unmatchedSuppression \
+            -I app/inc app/src app/inc
+
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shared dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DENABLE_APP_TESTS=ON \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+  build-warnings:
+    name: Build with Strict Warnings
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shared dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
+      - name: Configure with -DWERROR=ON
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DENABLE_APP_TESTS=ON \
+            -DWERROR=ON \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build --parallel

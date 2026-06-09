@@ -1,0 +1,3 @@
+---
+BasedOnStyle: LLVM
+Standard: c++20

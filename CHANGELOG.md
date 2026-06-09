@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Extracted the KServe V2 protocol client into a standalone sibling repository,
+  [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client)
+  (the pure, backend-agnostic HTTP/gRPC client + proto + protocol/retry/security
+  unit tests). neuriplo-infer now consumes it via `FetchContent`, pinned by
+  `NEURIPLO_KSERVE_CLIENT_VERSION` in `versions.env` (`v0.1.0`) and governed by
+  the same release tooling as the other siblings. Only the `KserveEngine`
+  adapter (which bridges the client to the neuriplo inference contract) and its
+  test remain in this repo. The library's gRPC-availability signal is the PUBLIC
+  `KSERVE_CLIENT_WITH_GRPC` define (replaces the in-tree `NEURIPLO_INFER_WITH_GRPC`
+  / `NEURIPLO_INFER_WITH_KSERVE_TLS` build flags).
+
+### Added
+- KServe V2 Model Repository extension on the runtime client (now in
+  `neuriplo-kserve-client`): `IClient` gains `repositoryIndex()` /
+  `loadModel(name)` / `unloadModel(name)` as an optional capability (base methods
+  throw; HTTP and gRPC clients implement them). HTTP POSTs
+  `/v2/repository/index|models/{m}/load|models/{m}/unload`; gRPC adds the
+  `RepositoryIndex` / `RepositoryModelLoad` / `RepositoryModelUnload` RPCs
+  (field numbers matching the official KServe/Triton service). Pure path
+  builders, the neutral `RepositoryModel` result, and `parseRepositoryIndex`
+  are unit-tested; the calls reuse the existing retry/auth/TLS plumbing. See
+  `docs/KserveRoadmap.md` Phase 5.
+
 ## [0.4.1] - 2026-06-07
 
 ### Changed
