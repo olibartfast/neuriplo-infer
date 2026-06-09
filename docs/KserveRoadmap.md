@@ -1,8 +1,13 @@
 # KServe Runtime Client — Production Roadmap
 
-Status of the `feature/neuriplo-kserve-runtime` work and the plan to bring the
-KServe V2 (Open Inference Protocol) client to production quality and broad server
-compatibility (KServe, Triton Inference Server, OpenVINO Model Server, TorchServe).
+> **Status: complete.** All phases below are done and the work was merged into
+> `develop` on 2026-06-09; the `feature/neuriplo-kserve-runtime` branch has been
+> closed. This document is kept as the design and decision record. The living,
+> CI-backed compatibility matrix is [KserveCompatibility.md](KserveCompatibility.md).
+
+The plan that brought the KServe V2 (Open Inference Protocol) client to
+production quality and broad server compatibility (KServe, Triton Inference
+Server, OpenVINO Model Server, TorchServe).
 
 ## Background
 
@@ -56,19 +61,20 @@ the practical gaps.
 | # | Gap | Severity | Phase |
 |---|-----|----------|-------|
 | 1 | ~~HTTP: `https://` stripped but connection is plaintext (no TLS)~~ — **done (Phase 3)**: OpenSSL TLS with cert verification + SNI | High | 3 |
-| 2 | HTTP: response read assumes `Connection: close`; no `Content-Length` / chunked handling | High | 1 |
-| 3 | HTTP: `gethostbyname` (deprecated, not thread-safe, IPv4-only) | Medium | 1 |
-| 4 | Both: input datatype hardcoded `FP32`; metadata datatype ignored | High | 1 |
-| 5 | Both: partial output datatype coverage | Medium | 1 |
-| 6 | Both: no auth (bearer token / header / gRPC metadata) | High | 1/3 |
+| 2 | ~~HTTP: response read assumes `Connection: close`; no `Content-Length` / chunked handling~~ — **done (Phase 1)** | High | 1 |
+| 3 | ~~HTTP: `gethostbyname` (deprecated, not thread-safe, IPv4-only)~~ — **done (Phase 1)**: `getaddrinfo` | Medium | 1 |
+| 4 | ~~Both: input datatype hardcoded `FP32`; metadata datatype ignored~~ — **done (Phase 1)** | High | 1 |
+| 5 | ~~Both: partial output datatype coverage~~ — **done (Phase 1)**, widened further by raw framing (Phase 2) | Medium | 1 |
+| 6 | ~~Both: no auth (bearer token / header / gRPC metadata)~~ — **done (Phases 1/3)** | High | 1/3 |
 | 7 | ~~gRPC: `InsecureChannelCredentials` only~~ — **done (Phase 3)**: `SslCredentials` from CA/cert/key (mTLS) for `grpcs://` | High | 3 |
-| 8 | No retry / backoff on transient failures | Medium | 2 |
-| 9 | No binary tensor extension (JSON float arrays only) | Medium (perf) | 2 |
-| 10 | No inference round-trip tests | High | 1 |
+| 8 | ~~No retry / backoff on transient failures~~ — **done (Phase 2)** | Medium | 2 |
+| 9 | ~~No binary tensor extension (JSON float arrays only)~~ — **done (Phase 2)** | Medium (perf) | 2 |
+| 10 | ~~No inference round-trip tests~~ — **done (Phases 1/4)**: unit tests + CI integration harness | High | 1 |
 
 ### Point 2 — Ready to close on develop
 
-Exit criteria to merge `feature/neuriplo-kserve-runtime` into `develop`:
+Exit criteria to merge the feature branch into `develop` — **all met; merged
+2026-06-09**:
 
 - [x] Default transport points at the validated path (`http`).
 - [x] Datatype no longer hardcoded; driven by fetched metadata (HTTP + gRPC).
@@ -82,7 +88,8 @@ Exit criteria to merge `feature/neuriplo-kserve-runtime` into `develop`:
 
 ### Point 3 — Works with any KServe server
 
-Compatibility matrix (target after Phase 1):
+Compatibility matrix as targeted after Phase 1 — superseded by the maintained,
+CI-backed matrix in [KserveCompatibility.md](KserveCompatibility.md):
 
 | Server | HTTP | gRPC | Notes |
 |--------|------|------|-------|
@@ -96,7 +103,7 @@ Phases 1 and 3.
 
 ## Phased plan
 
-### Phase 1 — Correctness & compatibility (this iteration)
+### Phase 1 — Correctness & compatibility (done; see Point 2 exit criteria)
 
 1. Extract pure helpers into `KserveProtocol.{hpp,cpp}` (URL parsing, HTTP
    response parsing incl. chunked de-chunking, datatype byte-width + encode/decode).
@@ -253,7 +260,7 @@ per-backend runtimes. `neuriplo-tasks` does not depend on `neuriplo`.
 |--------------|----------------|-------------|-----|
 | Local only | required | none | `-DNEURIPLO_INFER_ENABLE_KSERVE=OFF` |
 | Local + KServe (default) | required | HTTP (+gRPC) | defaults |
-| KServe only, no neuriplo | not needed | HTTP (+gRPC) | needs `neuriplo-core` extraction (future) |
+| KServe only, no neuriplo | not needed | HTTP (+gRPC) | `-DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF` (contract from `app/inc/contract/`) |
 
 ### Phase 5 — Model management (Model Repository extension)
 
