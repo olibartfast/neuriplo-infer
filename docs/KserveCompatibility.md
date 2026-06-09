@@ -77,7 +77,7 @@ optional server capability: Triton exposes it (with
 `--model-control-mode=explicit`), and KServe/OVMS support varies by deployment,
 so it is **not** part of the routine integration round-trip. The pure path
 builders and index parser are unit-tested; the wire calls reuse the existing
-retry/auth/TLS plumbing. See [docs/KserveRoadmap.md](KserveRoadmap.md) Phase 5.
+retry/auth/TLS plumbing. See [docs/KserveRuntime.md](KserveRuntime.md).
 
 ## Running it yourself
 
@@ -92,5 +92,5 @@ bash app/test/kserve_integration.sh --live
 bash app/test/kserve_integration.sh --live --servers triton --transports http
 ```
 
-See [docs/KserveRoadmap.md](KserveRoadmap.md) for the completed production
-roadmap (kept as the design record).
+See [docs/KserveRuntime.md](KserveRuntime.md) for the full KServe runtime
+reference (architecture, capabilities, configuration, build modes).
