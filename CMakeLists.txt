@@ -119,6 +119,17 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
+# The KServe V2 protocol client is a standalone sibling repo (neuriplo-free).
+# Fetched only when the KServe runtime is enabled; the adapter (KserveEngine)
+# that bridges it to the neuriplo contract stays in app/.
+if(NEURIPLO_INFER_ENABLE_KSERVE)
+    FetchContent_Declare(
+        neuriplo-kserve-client
+        GIT_REPOSITORY https://github.com/olibartfast/neuriplo-kserve-client.git
+        GIT_TAG        ${NEURIPLO_KSERVE_CLIENT_VERSION}
+    )
+endif()
+
 # Disable subproject tests and sample apps when fetched as dependencies.
 set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -136,54 +147,44 @@ if(NOT _NEURIPLO_TASKS_SIBLING STREQUAL "")
     set(FETCHCONTENT_SOURCE_DIR_NEURIPLO-TASKS "${_NEURIPLO_TASKS_SIBLING}" CACHE PATH "" FORCE)
 endif()
 
+# Prefer a neuriplo-kserve-client sibling checkout during local cross-repo dev.
+if(NEURIPLO_INFER_ENABLE_KSERVE)
+    set(_KSERVE_CLIENT_SIBLING "")
+    foreach(_candidate IN ITEMS
+        "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo-kserve-client")
+        if(EXISTS "${_candidate}/CMakeLists.txt")
+            set(_KSERVE_CLIENT_SIBLING "${_candidate}")
+            break()
+        endif()
+    endforeach()
+    if(NOT _KSERVE_CLIENT_SIBLING STREQUAL "")
+        set(FETCHCONTENT_SOURCE_DIR_NEURIPLO-KSERVE-CLIENT "${_KSERVE_CLIENT_SIBLING}" CACHE PATH "" FORCE)
+    endif()
+endif()
+
 if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
     FetchContent_MakeAvailable(neuriplo)
 endif()
 FetchContent_MakeAvailable(VideoCapture neuriplo-tasks nlohmann_json)
 
+# KServe transport knobs. The actual gRPC/Protobuf and OpenSSL detection now
+# lives in the neuriplo-kserve-client library; these options just map the
+# neuriplo-infer-facing names onto the library's options. The library exports a
+# PUBLIC KSERVE_CLIENT_WITH_GRPC define when the gRPC transport is compiled in,
+# which the app reads to decide whether to build the gRPC client path.
 option(NEURIPLO_INFER_ENABLE_GRPC "Build gRPC KServe client" ON)
 if(DEFINED VISION_INFERENCE_ENABLE_GRPC)
     set(NEURIPLO_INFER_ENABLE_GRPC ${VISION_INFERENCE_ENABLE_GRPC})
 endif()
-# gRPC transport is meaningless without the KServe client.
-if(NOT NEURIPLO_INFER_ENABLE_KSERVE)
-    set(NEURIPLO_INFER_ENABLE_GRPC OFF)
-endif()
-if(NEURIPLO_INFER_ENABLE_GRPC)
-    find_package(Protobuf QUIET)
-    find_package(gRPC CONFIG QUIET)
-    if(Protobuf_FOUND AND gRPC_FOUND)
-        message(STATUS "gRPC KServe client enabled")
-        set(NEURIPLO_INFER_WITH_GRPC TRUE)
-    else()
-        message(WARNING "gRPC not found, KServe client will use HTTP fallback")
-        set(NEURIPLO_INFER_WITH_GRPC FALSE)
-    endif()
-else()
-    set(NEURIPLO_INFER_WITH_GRPC FALSE)
-endif()
-
-# HTTPS (OpenSSL) for the KServe HTTP client. Optional: when OpenSSL is not
-# found the HTTP client still builds but https:// endpoints fail fast at runtime.
 option(NEURIPLO_INFER_ENABLE_KSERVE_TLS
        "Enable HTTPS (OpenSSL) for the KServe HTTP client" ON)
-# TLS for the HTTP client is meaningless without the KServe client.
-if(NOT NEURIPLO_INFER_ENABLE_KSERVE)
-    set(NEURIPLO_INFER_ENABLE_KSERVE_TLS OFF)
-endif()
-if(NEURIPLO_INFER_ENABLE_KSERVE_TLS)
-    find_package(OpenSSL QUIET)
-    if(OpenSSL_FOUND)
-        message(STATUS "KServe HTTPS enabled (OpenSSL ${OPENSSL_VERSION})")
-        set(NEURIPLO_INFER_WITH_KSERVE_TLS TRUE)
-    else()
-        message(WARNING
-            "OpenSSL not found; KServe HTTP client built without TLS. "
-            "https:// endpoints will error at runtime.")
-        set(NEURIPLO_INFER_WITH_KSERVE_TLS FALSE)
-    endif()
-else()
-    set(NEURIPLO_INFER_WITH_KSERVE_TLS FALSE)
+
+if(NEURIPLO_INFER_ENABLE_KSERVE)
+    set(KSERVE_CLIENT_ENABLE_GRPC ${NEURIPLO_INFER_ENABLE_GRPC} CACHE BOOL "" FORCE)
+    set(KSERVE_CLIENT_ENABLE_TLS ${NEURIPLO_INFER_ENABLE_KSERVE_TLS} CACHE BOOL "" FORCE)
+    set(KSERVE_CLIENT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(neuriplo-kserve-client)
+    message(STATUS "neuriplo-kserve-client_SOURCE_DIR: ${neuriplo-kserve-client_SOURCE_DIR}")
 endif()
 
 message(STATUS "neuriplo-tasks_SOURCE_DIR: ${neuriplo-tasks_SOURCE_DIR}")

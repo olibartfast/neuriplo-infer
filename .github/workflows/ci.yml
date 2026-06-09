@@ -121,7 +121,7 @@ jobs:
         if: matrix.install_grpc
         shell: bash
         run: |
-          if ! grep -q "gRPC KServe client enabled" configure.log; then
+          if ! grep -q "neuriplo-kserve-client: gRPC transport enabled" configure.log; then
             echo "::error::gRPC requested but not detected; build would silently fall back to HTTP" >&2
             exit 1
           fi
@@ -131,8 +131,9 @@ jobs:
 
       - name: Test (KServe unit tests, skip docker e2e)
         # The pipeline tests assume local backends; the KServe-only build proves
-        # it compiles/links without fetching neuriplo. Protocol unit tests are
-        # covered by the http+grpc / http-only entries.
+        # it compiles/links without fetching neuriplo. The pure protocol unit
+        # tests now live in (and are run by) the neuriplo-kserve-client repo;
+        # here ctest covers the KserveEngine adapter + integration dry-run.
         if: matrix.enable_local != 'OFF'
         working-directory: build
         run: ctest --output-on-failure -E docker

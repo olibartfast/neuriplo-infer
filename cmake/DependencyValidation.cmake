@@ -59,23 +59,9 @@ function(validate_fetched_dependencies)
     message(STATUS "✓ VideoCapture library found at ${VideoCapture_SOURCE_DIR}")
 endfunction()
 
-# Function to report KServe security (TLS) dependency status.
-# OpenSSL is an OPTIONAL dependency: it enables HTTPS for the KServe HTTP client
-# (gated by NEURIPLO_INFER_ENABLE_KSERVE_TLS, default ON when OpenSSL is found).
-# Without it the HTTP client still builds but https:// endpoints error at
-# runtime. gRPC TLS/mTLS (grpcs://) relies on the gRPC stack's own SSL support
-# and needs no extra dependency here.
-function(validate_kserve_security_dependencies)
-    if(NOT NEURIPLO_INFER_ENABLE_KSERVE)
-        return()
-    endif()
-    if(NEURIPLO_INFER_WITH_KSERVE_TLS)
-        message(STATUS "✓ KServe HTTPS available (OpenSSL ${OPENSSL_VERSION})")
-    else()
-        message(STATUS "ℹ KServe HTTPS disabled (OpenSSL not found or "
-                       "NEURIPLO_INFER_ENABLE_KSERVE_TLS=OFF); https:// will error")
-    endif()
-endfunction()
+# Note: KServe transport security (HTTPS/OpenSSL, gRPC TLS) is now owned by the
+# neuriplo-kserve-client library, which reports its own HTTPS/gRPC status at
+# configure time (e.g. "neuriplo-kserve-client: HTTPS enabled (...)").
 
 # Function to validate all dependencies for this project
 # Named validate_project_dependencies to avoid collision with neuriplo's
@@ -85,7 +71,6 @@ function(validate_project_dependencies)
 
     validate_project_system_dependencies()
     validate_fetched_dependencies()
-    validate_kserve_security_dependencies()
 
     message(STATUS "=== All Project Dependencies Validated Successfully ===")
 endfunction()

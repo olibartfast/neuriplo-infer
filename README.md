@@ -58,7 +58,7 @@ cmake --build build
 
 Replace `<backend>` with one of the supported inference backends (see [Dependency Management Guide](docs/DependencyManagement.md)).
 
-KServe HTTP client support is built into the app. gRPC client support is optional and is enabled only when Protobuf and gRPC are available at configure time; otherwise the build falls back to HTTP.
+The KServe V2 protocol client lives in the standalone [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client) repository and is fetched automatically (via `FetchContent`, pinned in `versions.env`) when `NEURIPLO_INFER_ENABLE_KSERVE` is on; neuriplo-infer keeps only the `KserveEngine` adapter. HTTP client support is always available; gRPC client support is optional and enabled only when Protobuf and gRPC are available at configure time, otherwise the build falls back to HTTP.
 
 ### Video Backend Support
 
@@ -418,6 +418,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 - Some model/backend combinations may require specific export configurations
 - KServe HTTP mode is validated against `neuriplo-kserve-runtime`; gRPC support is built only when Protobuf/gRPC are available and has not yet been validated against every server. FP16/BF16 inputs over gRPC are not yet supported (use HTTP); see [docs/KserveRoadmap.md](docs/KserveRoadmap.md).
 - KServe TLS is supported on both transports: HTTPS for the HTTP client (requires an OpenSSL-enabled build) and `grpcs://` for the gRPC client, with optional mTLS via `KSERVE_CLIENT_CERT`/`KSERVE_CLIENT_KEY`. A build without OpenSSL still works over plaintext `http://`, but `https://` endpoints fail fast with a clear error.
+- KServe model management (Model Repository extension: index / load / unload) is implemented on the client API for both transports but is not yet exposed through the CLI, and is only available when the server enables the extension (e.g. Triton `--model-control-mode=explicit`); see [docs/KserveRoadmap.md](docs/KserveRoadmap.md) Phase 5.
 
 ## 🙏 Acknowledgments
 - [OpenCV YOLO detection with DNN module](https://github.com/opencv/opencv/blob/4.x/samples/dnn/yolo_detector.cpp)
