@@ -48,7 +48,7 @@ narrowing wider server datatypes.
 |-----------------|------|------|------------|
 | FP32 | ✅ | ✅ | float |
 | FP64 | ✅ | ✅ | float (narrowed) |
-| FP16 | ✅ | ⏳ | float (HTTP only; see roadmap) |
+| FP16 | ✅ | ✅ | float (gRPC via raw tensor contents — the default; the typed-`contents` fallback `KSERVE_BINARY=0` cannot carry it) |
 | INT8 / INT16 / INT32 | ✅ | ✅ | int32 |
 | INT64 | ✅ | ✅ | int64 |
 | UINT8 / BOOL | ✅ | ✅ | uint8 |
@@ -62,8 +62,10 @@ the tiny model on both servers); the wider datatype decoding is covered by the
 
 - Bearer token via `KSERVE_BEARER_TOKEN` (HTTP `Authorization: Bearer …`, gRPC
   call metadata).
-- TLS selection by scheme (`https://` / `grpcs://`). See the roadmap for the
-  current state of HTTPS on the HTTP client.
+- TLS selection by scheme (`https://` / `grpcs://`); HTTPS requires an
+  OpenSSL-enabled build. Optional mTLS via `KSERVE_CLIENT_CERT` /
+  `KSERVE_CLIENT_KEY`; the CA bundle comes from `KSERVE_CA_CERT` (system roots
+  when unset).
 
 ## Model management (Model Repository extension)
 
@@ -90,4 +92,5 @@ bash app/test/kserve_integration.sh --live
 bash app/test/kserve_integration.sh --live --servers triton --transports http
 ```
 
-See [docs/KserveRoadmap.md](KserveRoadmap.md) for the broader production roadmap.
+See [docs/KserveRoadmap.md](KserveRoadmap.md) for the completed production
+roadmap (kept as the design record).

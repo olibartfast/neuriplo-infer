@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- Closed out the KServe production roadmap: `feature/neuriplo-kserve-runtime`
+  merged into `develop` (2026-06-09) with all phases complete.
+  `docs/KserveRoadmap.md` is now a design record (gap table marked done, its
+  matrix superseded by `docs/KserveCompatibility.md`); README and the
+  compatibility matrix updated to match actual capability (FP16/BF16 over gRPC
+  via the default raw tensor contents) and now document the `KSERVE_BINARY`
+  and `KSERVE_MAX_RETRIES`/`KSERVE_RETRY_*` environment variables.
 - Extracted the KServe V2 protocol client into a standalone sibling repository,
   [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client)
   (the pure, backend-agnostic HTTP/gRPC client + proto + protocol/retry/security

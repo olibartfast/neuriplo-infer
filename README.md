@@ -249,6 +249,11 @@ Security/TLS environment variables (secrets are sourced from env/file, never the
 - `KSERVE_CA_CERT`: path to a PEM CA bundle used to verify the server certificate for `https://` / `grpcs://`. Defaults to the system CA roots when unset.
 - `KSERVE_CLIENT_CERT` / `KSERVE_CLIENT_KEY`: PEM client certificate and private key. Providing both enables mutual TLS (mTLS); providing only one is an error.
 
+Resilience/performance environment variables:
+
+- `KSERVE_BINARY`: KServe binary tensor extension. On HTTP it is opt-in (`KSERVE_BINARY=1`; JSON is the default). On gRPC raw tensor contents are the default and `KSERVE_BINARY=0` falls back to typed `contents` (which cannot carry FP16/BF16).
+- `KSERVE_MAX_RETRIES`, `KSERVE_RETRY_BASE_MS`, `KSERVE_RETRY_MAX_MS`, `KSERVE_RETRY_JITTER`: retry with exponential backoff + jitter on transient failures (HTTP 429/502/503/504; gRPC UNAVAILABLE / DEADLINE_EXCEEDED / RESOURCE_EXHAUSTED).
+
 Before loading model metadata the client issues a KServe V2 readiness probe (HTTP `/v2/models/{name}/ready`, gRPC `ModelReady`). If the endpoint is reachable but the model is not loaded/ready the run fails fast with a clear message instead of a confusing metadata error; an unreachable endpoint still surfaces as a connection error.
 
 Tested server/transport/datatype combinations (kept green by CI via `app/test/kserve_integration.sh`) are documented in [docs/KserveCompatibility.md](docs/KserveCompatibility.md).
@@ -264,7 +269,7 @@ Example KServe-only build (no neuriplo fetch):
 cmake -B build -DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF -DNEURIPLO_INFER_ENABLE_KSERVE=ON
 ```
 
-See [docs/KserveRoadmap.md](docs/KserveRoadmap.md) for the production roadmap and server-compatibility matrix.
+The production roadmap is complete; [docs/KserveRoadmap.md](docs/KserveRoadmap.md) records it, and [docs/KserveCompatibility.md](docs/KserveCompatibility.md) is the maintained server-compatibility matrix.
 
 #### Optional Parameters
 
@@ -416,7 +421,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 ## ⚠️ Known Limitations
 - Windows builds not currently supported
 - Some model/backend combinations may require specific export configurations
-- KServe HTTP mode is validated against `neuriplo-kserve-runtime`; gRPC support is built only when Protobuf/gRPC are available and has not yet been validated against every server. FP16/BF16 inputs over gRPC are not yet supported (use HTTP); see [docs/KserveRoadmap.md](docs/KserveRoadmap.md).
+- KServe HTTP mode is validated live against `neuriplo-kserve-runtime`; gRPC support is built only when Protobuf/gRPC are available. Triton/OVMS round-trips run as a CI dry-run on every PR, with live runs behind a manual dispatch — see [docs/KserveCompatibility.md](docs/KserveCompatibility.md). FP16/BF16 inputs over gRPC require raw tensor contents (the default; the typed-`contents` fallback selected by `KSERVE_BINARY=0` cannot carry them).
 - KServe TLS is supported on both transports: HTTPS for the HTTP client (requires an OpenSSL-enabled build) and `grpcs://` for the gRPC client, with optional mTLS via `KSERVE_CLIENT_CERT`/`KSERVE_CLIENT_KEY`. A build without OpenSSL still works over plaintext `http://`, but `https://` endpoints fail fast with a clear error.
 - KServe model management (Model Repository extension: index / load / unload) is implemented on the client API for both transports but is not yet exposed through the CLI, and is only available when the server enables the extension (e.g. Triton `--model-control-mode=explicit`); see [docs/KserveRoadmap.md](docs/KserveRoadmap.md) Phase 5.
 
