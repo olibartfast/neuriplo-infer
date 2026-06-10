@@ -136,6 +136,18 @@ TEST(ParseCommandLineArguments, KServeRemoteDoesNotRequireWeights) {
   EXPECT_TRUE(config.weights.empty());
 }
 
+TEST(ParseCommandLineArguments, MissingSourceForVisionTaskExits) {
+  // A vision task with no --source (and not --export_metadata) must exit(1)
+  // with an actionable message instead of running.
+  const char *argv[] = {"program", "--type=yolov5", "--weights=model.weights"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("model.weights");
+
+  EXPECT_EXIT(CommandLineParser::parseCommandLineArguments(
+                  argc, const_cast<char **>(argv)),
+              ::testing::ExitedWithCode(1), "--source is required");
+}
+
 TEST(ParseCommandLineArguments, KServeModelDefaultsToType) {
   const char *argv[] = {"program", "--type=yolo26", "--source=input.jpg",
                         "--kserve_endpoint=http://127.0.0.1:8080"};
