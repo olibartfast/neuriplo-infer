@@ -190,7 +190,8 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
 
   std::string source = parser.get<std::string>("source");
   if (source.empty() && !is_text_task && !is_metadata_export) {
-    LOG(ERROR) << "Cannot open video stream";
+    LOG(ERROR) << "--source is required: pass an image or video path "
+                  "(or use --export_metadata / a text task).";
     std::exit(1);
   }
 
