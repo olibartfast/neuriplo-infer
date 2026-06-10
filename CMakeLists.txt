@@ -209,7 +209,10 @@ add_subdirectory(app)
 
 # Print final configuration summary
 message(STATUS "=== Build Configuration Summary ===")
-message(STATUS "Backend: ${DEFAULT_BACKEND}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
-
+message(STATUS "KServe runtime: ${NEURIPLO_INFER_ENABLE_KSERVE}")
+message(STATUS "Local backends: ${NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS}")
+if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+    message(STATUS "Backend: ${DEFAULT_BACKEND}")
+endif()
 message(STATUS "=====================================")
