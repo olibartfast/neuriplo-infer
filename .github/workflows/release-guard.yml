@@ -65,9 +65,14 @@ jobs:
         id: notes
         run: |
           notes_file="${RUNNER_TEMP}/release-notes.md"
-          bash scripts/extract_changelog_release_notes.sh "${{ steps.meta.outputs.version }}" > "${notes_file}"
+          version="${{ steps.meta.outputs.version }}"
+          awk -v ver="${version}" '
+            $0 ~ "^## \\[" ver "\\]" { p=1; next }
+            /^## \[/ { if (p) exit }
+            p { print }
+          ' CHANGELOG.md > "${notes_file}"
           if [ ! -s "${notes_file}" ]; then
-            echo "Error: empty CHANGELOG section for [${{ steps.meta.outputs.version }}]" >&2
+            echo "Error: empty CHANGELOG section for [${version}]" >&2
             exit 1
           fi
           echo "path=${notes_file}" >> "${GITHUB_OUTPUT}"
