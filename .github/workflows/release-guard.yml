@@ -1,20 +1,20 @@
 name: Release Guard
 
-# Runs when a neuriplo-infer release tag is pushed. Verifies that
-# versions.env at the tag pins all three sibling repos to the same tag
-# and that each sibling has that tag on its remote. This makes the tag
-# checkout reproducible: future builds at this tag will fetch fixed
-# sibling code rather than sibling master.
-#
-# Note: GitHub does not run workflows *before* a tag is pushed, so a
-# failing run here does not prevent the bad tag from existing. To make
-# this enforcement hard, configure a tag protection rule that requires
-# this check to pass before the tag is considered released.
+# Runs when a semver release tag is pushed (or via workflow_dispatch for backfill).
+# 1. Validates versions.env sibling pins at the tag.
+# 2. Publishes the GitHub Release on /releases from CHANGELOG.md (git tags alone
+#    only appear on /tags).
 
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing semver tag to validate and publish (e.g. v0.5.0)'
+        required: true
+        type: string
 
 jobs:
   validate-sibling-pins:
@@ -22,8 +22,74 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Validate versions.env pins and sibling tags
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ inputs.tag }}"
+          else
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
           bash scripts/validate_release_pins.sh "${tag}"
+
+  publish-github-release:
+    name: Publish GitHub Release
+    needs: validate-sibling-pins
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Resolve tag and version
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ inputs.tag }}"
+          else
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
+          if ! [[ "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: tag must match vX.Y.Z (got '${tag}')" >&2
+            exit 1
+          fi
+          version="${tag#v}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          notes_file="${RUNNER_TEMP}/release-notes.md"
+          bash scripts/extract_changelog_release_notes.sh "${{ steps.meta.outputs.version }}" > "${notes_file}"
+          if [ ! -s "${notes_file}" ]; then
+            echo "Error: empty CHANGELOG section for [${{ steps.meta.outputs.version }}]" >&2
+            exit 1
+          fi
+          echo "path=${notes_file}" >> "${GITHUB_OUTPUT}"
+
+      - name: Skip if GitHub Release already exists
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+            echo "Release ${{ steps.meta.outputs.tag }} already exists — nothing to do."
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Publish GitHub Release
+        if: steps.existing.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag }}
+          body_path: ${{ steps.notes.outputs.path }}
+          generate_release_notes: false
+          make_latest: true
