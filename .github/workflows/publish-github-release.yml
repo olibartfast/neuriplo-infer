@@ -63,20 +63,20 @@ jobs:
           fi
           echo "path=${notes_file}" >> "${GITHUB_OUTPUT}"
 
-      - name: Skip if GitHub Release already exists
+      - name: Check whether GitHub Release already exists
         id: existing
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if gh release view "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
-            echo "skip=true" >> "${GITHUB_OUTPUT}"
-            echo "Release ${{ steps.meta.outputs.tag }} already exists — nothing to do."
+            echo "skip_create=true" >> "${GITHUB_OUTPUT}"
+            echo "Release ${{ steps.meta.outputs.tag }} already exists."
           else
-            echo "skip=false" >> "${GITHUB_OUTPUT}"
+            echo "skip_create=false" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Publish GitHub Release
-        if: steps.existing.outputs.skip != 'true'
+        if: steps.existing.outputs.skip_create != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
@@ -84,3 +84,12 @@ jobs:
           body_path: ${{ steps.notes.outputs.path }}
           generate_release_notes: false
           make_latest: true
+
+      - name: Ensure release is marked Latest on GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          gh release edit "${tag}" --latest --title "${tag}"
+          gh release view "${tag}" --json tagName,isLatest,url \
+            --jq '"\(.tagName) isLatest=\(.isLatest) \(.url)"'
