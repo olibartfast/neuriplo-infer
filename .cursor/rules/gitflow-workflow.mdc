@@ -45,15 +45,16 @@ git commit -m 'release: v<version>'
 git checkout develop && git merge release/<version>
 git branch -d release/<version>
 git push origin master develop --tags
-scripts/publish_github_release.sh <version>   # GitHub Release (not just the git tag)
+# GitHub Release is created automatically by CI on tag push (see github-release.yml)
 ```
 
 Release prep (`scripts/cut_release.sh`, `CHANGELOG.md`, sibling pins in
 `versions.env`) happens on **`release/*`**, not on `develop` or `master`.
 
 Pushing a tag with `git push --tags` does **not** create an entry on
-https://github.com/olibartfast/neuriplo-infer/releases — run
-`scripts/publish_github_release.sh` after the tag is on `origin`.
+https://github.com/olibartfast/neuriplo-infer/releases by itself — CI workflow
+`.github/workflows/github-release.yml` publishes the Release from `CHANGELOG.md`
+when the tag is pushed (use `workflow_dispatch` to backfill older tags).
 
 ## Hotfix workflow
 
@@ -65,7 +66,7 @@ git checkout -b hotfix/<short-name>
 git checkout develop && git merge hotfix/<short-name>
 git branch -d hotfix/<short-name>
 git push origin master develop --tags
-scripts/publish_github_release.sh <patch-version>
+# GitHub Release published by CI (github-release.yml)
 ```
 
 ## Agent constraints

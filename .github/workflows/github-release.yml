@@ -1,0 +1,78 @@
+name: Publish GitHub Release
+
+# Git tags pushed with `git push origin vX.Y.Z` appear on /tags only.
+# This workflow creates the matching GitHub Release on /releases using
+# notes from CHANGELOG.md. Also use workflow_dispatch to backfill a tag
+# that was pushed before this workflow existed (e.g. v0.5.0).
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing semver tag to publish (e.g. v0.5.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish release notes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Resolve tag and version
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ inputs.tag }}"
+          else
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
+          if ! [[ "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: tag must match vX.Y.Z (got '${tag}')" >&2
+            exit 1
+          fi
+          version="${tag#v}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          notes_file="${RUNNER_TEMP}/release-notes.md"
+          bash scripts/extract_changelog_release_notes.sh "${{ steps.meta.outputs.version }}" > "${notes_file}"
+          if [ ! -s "${notes_file}" ]; then
+            echo "Error: empty CHANGELOG section for [${{ steps.meta.outputs.version }}]" >&2
+            exit 1
+          fi
+          echo "path=${notes_file}" >> "${GITHUB_OUTPUT}"
+
+      - name: Skip if GitHub Release already exists
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+            echo "Release ${{ steps.meta.outputs.tag }} already exists — nothing to do."
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Publish GitHub Release
+        if: steps.existing.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag }}
+          body_path: ${{ steps.notes.outputs.path }}
+          generate_release_notes: false
+          make_latest: true

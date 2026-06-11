@@ -54,11 +54,7 @@ fi
 NOTES_FILE="$(mktemp)"
 trap 'rm -f "${NOTES_FILE}"' EXIT
 
-awk -v ver="${VERSION_NUM}" '
-  $0 ~ "^## \\[" ver "\\]" { p=1; next }
-  /^## \[/ { if (p) exit }
-  p { print }
-' CHANGELOG.md > "${NOTES_FILE}"
+bash scripts/extract_changelog_release_notes.sh "${VERSION_NUM}" > "${NOTES_FILE}"
 
 if [ ! -s "${NOTES_FILE}" ]; then
   echo "Error: no CHANGELOG section for [${VERSION_NUM}]" >&2
