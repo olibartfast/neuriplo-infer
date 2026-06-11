@@ -1,0 +1,632 @@
+#!/bin/bash
+# Generic end-to-end workflow: export -> optional TensorRT conversion -> inference.
+#
+# Presets cover the task families currently supported by neuriplo-infer:
+#   - rtdetrv4              Object detection
+#   - owlv2                 Open-vocabulary detection
+#   - torchvision_classifier Classification
+#   - yoloseg               Instance segmentation
+#   - yolov8_executorch     Object detection (YOLOv8n, ExecuTorch backend)
+#   - yolo26s_tflite        Object detection (YOLO26s, LiteRT backend)
+#   - edgecrafter_det       Object detection (EdgeCrafter ecdet_s, ONNX Runtime)
+#   - edgecrafter_seg       Instance segmentation (EdgeCrafter ecseg_s, ONNX Runtime)
+#   - edgecrafter_pose      Pose estimation (EdgeCrafter ecpose_s, ONNX Runtime)
+#       NOTE: the edgecrafter_* presets require a neuriplo-infer image built
+#       against a neuriplo-tasks ref that includes EdgeCrafter task support.
+#       Pinned releases before that point return "Unrecognized model type".
+#   - raft                  Optical flow
+#   - vitpose               Pose estimation
+#   - depth_anything_v2     Depth estimation
+#   - videomae              Video classification
+#   - gemma4                Image understanding (llama.cpp, Gemma 4 E2B IT GGUF)
+#
+# Typical usage:
+#   bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
+#   bash docker_run_inference_e2e_example.sh --preset rtdetrv4
+#   bash docker_run_inference_e2e_example.sh --preset yolov8_executorch
+#   bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
+#   bash docker_run_inference_e2e_example.sh --preset gemma4
+#   bash docker_run_inference_e2e_example.sh --preset gemma4 --text-prompts "Describe the dog in the image."
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$SCRIPT_DIR"
+
+PRESET="rtdetrv4"
+BACKEND=""
+BACKEND_SET=false
+DRY_RUN=false
+SKIP_EXPORT=false
+SKIP_CONVERT=false
+SKIP_INFER=false
+NEURIPLO_TASKS_DIR="${NEURIPLO_TASKS_DIR:-}"
+WEIGHTS_DIR="${ROOT_DIR}/models/e2e"
+DATA_DIR="${ROOT_DIR}/data"
+LABELS_DIR="${ROOT_DIR}/labels"
+DOCKER_IMAGE=""
+NGC_TAG="${NGC_TAG:-25.12}"
+TEXT_PROMPTS="${TEXT_PROMPTS:-cat;dog;bus}"
+GEMMA4_PROMPT="${GEMMA4_PROMPT:-Describe what you see in this image.}"
+
+if command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+else
+    echo "Neither 'python' nor 'python3' was found on PATH." >&2
+    exit 1
+fi
+
+show_help() {
+    cat <<'EOF'
+Generic docker end-to-end workflow for neuriplo-infer examples.
+
+Usage:
+  bash docker_run_inference_e2e_example.sh [options]
+
+Options:
+  --preset <name>            Task preset to run. Default: rtdetrv4
+                             Use --list-presets to see all available presets.
+  --backend <name>           Runtime backend: onnxruntime, tensorrt, litert, executorch, or llamacpp
+  --neuriplo-tasks-dir <path>   Path to a neuriplo-tasks checkout with export tooling
+  --weights-dir <path>       Export/model output directory. Default: ./models/e2e
+  --data-dir <path>          Host data directory to mount. Default: ./data
+  --labels-dir <path>        Host labels directory to mount. Default: ./labels
+  --docker-image <name>      neuriplo-infer image override
+  --text-prompts <value>     Open-vocab prompts for owlv2. Default: cat;dog;bus
+  --prompt <value>           Freeform text prompt for gemma4. Default: "Describe what you see in this image."
+  --dry-run                  Print commands without executing them
+  --skip-export              Skip export step
+  --skip-convert             Skip TensorRT conversion step
+  --skip-infer               Skip inference step
+  --list-presets             Print available presets
+  --help                     Show this help
+EOF
+}
+
+list_presets() {
+    cat <<'EOF'
+rtdetrv4
+owlv2
+torchvision_classifier
+yoloseg
+yolov8_executorch
+yolo26s_tflite
+edgecrafter_det
+edgecrafter_seg
+edgecrafter_pose
+raft
+vitpose
+depth_anything_v2
+videomae
+gemma4
+EOF
+}
+
+print_cmd() {
+    printf '+'
+    for arg in "$@"; do
+        printf ' %q' "$arg"
+    done
+    printf '\n'
+}
+
+run_cmd() {
+    print_cmd "$@"
+    if [[ "$DRY_RUN" == false ]]; then
+        "$@"
+    fi
+}
+
+run_shell_cmd() {
+    local cmd="$1"
+    printf '+ %s\n' "$cmd"
+    if [[ "$DRY_RUN" == false ]]; then
+        bash -lc "$cmd"
+    fi
+}
+
+ensure_dir() {
+    if [[ "$DRY_RUN" == false ]]; then
+        mkdir -p "$1"
+    fi
+}
+
+ensure_file() {
+    if [[ "$DRY_RUN" == false && ! -f "$1" ]]; then
+        echo "Required file not found: $1" >&2
+        exit 1
+    fi
+}
+
+ensure_files() {
+    local path_list="$1"
+    local path=""
+    IFS=',' read -r -a paths <<< "$path_list"
+    for path in "${paths[@]}"; do
+        ensure_file "$path"
+    done
+}
+
+ensure_neuriplo_tasks() {
+    if [[ -z "$NEURIPLO_TASKS_DIR" ]]; then
+        echo "neuriplo-tasks checkout path is required. Pass --neuriplo-tasks-dir or set NEURIPLO_TASKS_DIR." >&2
+        exit 1
+    fi
+    if [[ "$DRY_RUN" == false && ! -d "$NEURIPLO_TASKS_DIR" ]]; then
+        echo "neuriplo-tasks checkout not found: $NEURIPLO_TASKS_DIR" >&2
+        exit 1
+    fi
+}
+
+normalize_preset() {
+    echo "$1" | tr '[:upper:]' '[:lower:]' | tr '-' '_'
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --preset)
+            PRESET="$2"
+            shift 2
+            ;;
+        --backend)
+            BACKEND="$2"
+            BACKEND_SET=true
+            shift 2
+            ;;
+        --neuriplo-tasks-dir)
+            NEURIPLO_TASKS_DIR="$2"
+            shift 2
+            ;;
+        --weights-dir)
+            WEIGHTS_DIR="$2"
+            shift 2
+            ;;
+        --data-dir)
+            DATA_DIR="$2"
+            shift 2
+            ;;
+        --labels-dir)
+            LABELS_DIR="$2"
+            shift 2
+            ;;
+        --docker-image)
+            DOCKER_IMAGE="$2"
+            shift 2
+            ;;
+        --text-prompts)
+            TEXT_PROMPTS="$2"
+            GEMMA4_PROMPT="$2"
+            shift 2
+            ;;
+        --prompt)
+            GEMMA4_PROMPT="$2"
+            shift 2
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --skip-export)
+            SKIP_EXPORT=true
+            shift
+            ;;
+        --skip-convert)
+            SKIP_CONVERT=true
+            shift
+            ;;
+        --skip-infer)
+            SKIP_INFER=true
+            shift
+            ;;
+        --list-presets)
+            list_presets
+            exit 0
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            show_help >&2
+            exit 1
+            ;;
+    esac
+done
+
+PRESET="$(normalize_preset "$PRESET")"
+
+case "$PRESET" in
+    rtdetrv4)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="tensorrt"
+        fi
+        MODEL_TYPE="rtdetr"
+        MODEL_BASENAME="rtv4_hgnetv2_s_model"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        INPUT_SIZES="3,640,640;2"
+        EXPORT_VENV_NAME="rtdetr-pytorch"
+        EXTRA_REQUIREMENTS=()
+        RTDETR_REPO_DIR="${ROOT_DIR}/3rdparty/repositories/pytorch/RT-DETRv4"
+        RTDETR_CONFIG="${RTDETR_REPO_DIR}/configs/rtv4/rtv4_hgnetv2_s_coco.yml"
+        EXPORT_COMMANDS=(
+            "if [[ ! -d \"${NEURIPLO_TASKS_DIR}/environments/${EXPORT_VENV_NAME}\" ]]; then bash \"${NEURIPLO_TASKS_DIR}/export/detection/rtdetr/setup_env.sh\" --env-name \"${EXPORT_VENV_NAME}\" --output-dir \"${NEURIPLO_TASKS_DIR}/environments\"; fi"
+            "source \"${NEURIPLO_TASKS_DIR}/environments/${EXPORT_VENV_NAME}/bin/activate\" && if [[ ! -d \"${RTDETR_REPO_DIR}\" ]]; then bash \"${NEURIPLO_TASKS_DIR}/export/detection/rtdetr/clone_repo.sh\" --version v4 --output-dir \"${ROOT_DIR}/3rdparty/repositories/pytorch\"; fi && if [[ -f \"${RTDETR_REPO_DIR}/requirements.txt\" ]]; then pip install -r \"${RTDETR_REPO_DIR}/requirements.txt\"; fi && pip install onnx onnxscript onnxruntime && bash \"${NEURIPLO_TASKS_DIR}/export/detection/rtdetr/export.sh\" --config \"${RTDETR_CONFIG}\" --checkpoint \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" --repo-dir \"${RTDETR_REPO_DIR}\" --install-deps --download-weights --weights-dir \"${WEIGHTS_DIR}\" --format onnx --output-dir \"${WEIGHTS_DIR}\""
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--input_sizes=${INPUT_SIZES}")
+        ;;
+    owlv2)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="owlv2"
+        MODEL_BASENAME="owlv2"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        TOKENIZER_VOCAB_HOST="${NEURIPLO_TASKS_DIR}/vocab.json"
+        TOKENIZER_MERGES_HOST="${NEURIPLO_TASKS_DIR}/merges.txt"
+        TOKENIZER_VOCAB_IN_CONTAINER="/weights/vocab.json"
+        TOKENIZER_MERGES_IN_CONTAINER="/weights/merges.txt"
+        EXTRA_REQUIREMENTS=("${NEURIPLO_TASKS_DIR}/export/open_vocab_detection/owlv2/requirements.txt")
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/open-vocab-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/open-vocab-export/bin/activate\" && python -m pip install --upgrade pip setuptools wheel && python -m pip install -r \"${NEURIPLO_TASKS_DIR}/export/open_vocab_detection/owlv2/requirements.txt\" && python -m pip install numpy && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/open_vocab_detection/owlv2/export_owlv2_to_onnx.py\" --model google/owlv2-base-patch16-ensemble --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" --image-height 960 --image-width 960 --max-queries 16 --sequence-length 16 --test"
+        )
+        RUNTIME_EXTRA_ARGS=("--text_prompts=${TEXT_PROMPTS}" "--tokenizer_vocab=${TOKENIZER_VOCAB_IN_CONTAINER}" "--tokenizer_merges=${TOKENIZER_MERGES_IN_CONTAINER}" "--min_confidence=0.2")
+        ;;
+    torchvision_classifier)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="torchvisionclassifier"
+        MODEL_BASENAME="resnet50"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/imagenet_labels.txt"
+        HOST_LABELS_PATH="${LABELS_DIR}/imagenet_labels.txt"
+        EXTRA_REQUIREMENTS=("${NEURIPLO_TASKS_DIR}/export/classification/torchvision/requirements.txt")
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/classification-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/classification-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" -r \"${NEURIPLO_TASKS_DIR}/export/classification/torchvision/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/classification/torchvision/export_torchvision_classifier.py\" --library torchvision --model resnet50 --export_format onnx --output_onnx \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}")
+        ;;
+    yoloseg)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="yoloseg"
+        MODEL_BASENAME="yolov8n-seg"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "source \"${NEURIPLO_TASKS_DIR}/environments/yolo-export/bin/activate\" 2>/dev/null || true; bash \"${NEURIPLO_TASKS_DIR}/export/detection/yolo/export.sh\" --model \"${MODEL_BASENAME}.pt\" --format onnx --download-weights --weights-dir \"${WEIGHTS_DIR}\" --output-dir \"${WEIGHTS_DIR}\""
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5" "--mask_threshold=0.5")
+        ;;
+    yolov8_executorch)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="executorch"
+        fi
+        MODEL_TYPE="yolov8"
+        MODEL_BASENAME="yolov8n"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        # Export: ultralytics + executorch Python package; no neuriplo-tasks checkout required.
+        # The ultralytics YOLO() call downloads yolov8n.pt from Ultralytics' servers on first run.
+        EXECUTORCH_VENV="${ROOT_DIR}/environments/yolo-executorch-export"
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${EXECUTORCH_VENV}\""
+            "source \"${EXECUTORCH_VENV}/bin/activate\" && pip install --quiet --upgrade pip && pip install --quiet ultralytics executorch && mkdir -p \"${WEIGHTS_DIR}\" && python -c \"
+from ultralytics import YOLO
+import shutil, pathlib
+m = YOLO('${MODEL_BASENAME}.pt')
+out = pathlib.Path(m.export(format='executorch'))
+# ultralytics creates a directory <name>_executorch_model/ containing model.pte
+pte_candidate = out / 'model.pte'
+src = pte_candidate if pte_candidate.exists() else out
+dest = pathlib.Path('${WEIGHTS_DIR}/${MODEL_BASENAME}.pte')
+shutil.move(str(src), str(dest))
+print('Exported to', dest)
+\""
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
+        ;;
+    yolo26s_tflite)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="litert"
+        fi
+        MODEL_TYPE="yolo26"
+        MODEL_BASENAME="yolo26s"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        # Export: ultralytics TFLite export; no neuriplo-tasks checkout required.
+        # The ultralytics YOLO() call downloads yolo26s.pt from Ultralytics' servers on first run.
+        TFLITE_VENV="${ROOT_DIR}/environments/yolo-tflite-export"
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${TFLITE_VENV}\""
+            "source \"${TFLITE_VENV}/bin/activate\" && pip install --quiet --upgrade pip && pip install --quiet ultralytics tensorflow && mkdir -p \"${WEIGHTS_DIR}\" && python -c \"
+from ultralytics import YOLO
+import shutil, pathlib
+m = YOLO('${MODEL_BASENAME}.pt')
+out = pathlib.Path(m.export(format='tflite'))
+if out.is_dir():
+    candidates = sorted(out.glob('*.tflite'))
+    if not candidates:
+        raise FileNotFoundError(f'No .tflite artifact found in {out}')
+    src = candidates[0]
+else:
+    src = out
+dest = pathlib.Path('${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite')
+shutil.move(str(src), str(dest))
+print('Exported to', dest)
+\""
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
+        ;;
+    edgecrafter_det|edgecrafter_seg|edgecrafter_pose)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        # EdgeCrafter exports two inputs: images [1,3,640,640] + orig_target_sizes int64 [1,2].
+        # The ONNX graph performs top-k selection and rescales boxes/keypoints to the
+        # original image size internally, so the runtime only supplies --input_sizes.
+        EDGECRAFTER_REPO_DIR="${ROOT_DIR}/3rdparty/repositories/pytorch/EdgeCrafter"
+        EDGECRAFTER_VENV="${ROOT_DIR}/environments/edgecrafter-export"
+        INPUT_SIZES="3,640,640;2"
+        EXTRA_REQUIREMENTS=()
+        case "$PRESET" in
+            edgecrafter_det)
+                MODEL_TYPE="ecdet"
+                MODEL_BASENAME="ecdet_s"
+                EC_TASK_DIR="ecdetseg"
+                EC_CONFIG="configs/ecdet/ecdet_s.yml"
+                SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+                LABELS_IN_CONTAINER="/labels/coco.names"
+                HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+                RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5")
+                ;;
+            edgecrafter_seg)
+                MODEL_TYPE="ecseg"
+                MODEL_BASENAME="ecseg_s"
+                EC_TASK_DIR="ecdetseg"
+                EC_CONFIG="configs/ecseg/ecseg_s.yml"
+                SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+                LABELS_IN_CONTAINER="/labels/coco.names"
+                HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+                RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5" "--mask_threshold=0.5")
+                ;;
+            edgecrafter_pose)
+                MODEL_TYPE="ecpose"
+                MODEL_BASENAME="ecpose_s"
+                EC_TASK_DIR="ecpose"
+                EC_CONFIG="configs/ecpose/ecpose_s_coco.yml"
+                SOURCE_IN_CONTAINER="/app/data/person.jpg"
+                HOST_SOURCE_PATH="${DATA_DIR}/person.jpg"
+                RUNTIME_EXTRA_ARGS=("--input_sizes=${INPUT_SIZES}" "--min_confidence=0.5")
+                ;;
+        esac
+        # Self-contained export mirroring neuriplo-tasks/export/<task>/edgecrafter/README.md:
+        # clone EdgeCrafter, install the task requirements, download the checkpoint, run
+        # the upstream export_onnx.py. The ONNX is written next to the checkpoint path.
+        EXPORT_COMMANDS=(
+            "if [[ ! -d \"${EDGECRAFTER_REPO_DIR}/.git\" ]]; then git clone --depth 1 https://github.com/Intellindust-AI-Lab/EdgeCrafter \"${EDGECRAFTER_REPO_DIR}\"; fi"
+            "${PYTHON_BIN} -m venv \"${EDGECRAFTER_VENV}\""
+            "source \"${EDGECRAFTER_VENV}/bin/activate\" && pip install --upgrade pip && pip install -r \"${EDGECRAFTER_REPO_DIR}/${EC_TASK_DIR}/requirements.txt\" onnx onnxsim onnxscript && if [[ ! -f \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" ]]; then curl -L --fail --retry 3 -o \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" \"https://github.com/capsule2077/edgecrafter/releases/download/edgecrafterv1/${MODEL_BASENAME}.pth\"; fi && cd \"${EDGECRAFTER_REPO_DIR}/${EC_TASK_DIR}\" && python tools/deployment/export_onnx.py -c \"${EC_CONFIG}\" -r \"${WEIGHTS_DIR}/${MODEL_BASENAME}.pth\" --check --simplify"
+        )
+        ;;
+    raft)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="raft"
+        MODEL_BASENAME="raft_large"
+        SOURCE_IN_CONTAINER="/app/data/frame_001.png,/app/data/frame_002.png"
+        HOST_SOURCE_PATH="${DATA_DIR}/frame_001.png,${DATA_DIR}/frame_002.png"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/raft-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/raft-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/optical_flow/raft/raft_exporter.py\" --model-type large --output-dir \"${WEIGHTS_DIR}\" --format onnx"
+        )
+        RUNTIME_EXTRA_ARGS=("--input_sizes=3,520,960;3,520,960")
+        ;;
+    vitpose)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="vitpose"
+        MODEL_BASENAME="vitpose"
+        SOURCE_IN_CONTAINER="/app/data/person.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/person.jpg"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/vitpose-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/vitpose-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/pose_estimation/vitpose/export_vitpose_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+        )
+        RUNTIME_EXTRA_ARGS=()
+        ;;
+    depth_anything_v2)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="depth_anything_v2"
+        MODEL_BASENAME="depth_anything_v2"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/depth-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/depth-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/depth_estimation/depth_anything_v2/export_depth_anything_v2_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+        )
+        RUNTIME_EXTRA_ARGS=()
+        ;;
+    videomae)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="videomae"
+        MODEL_BASENAME="videomae"
+        SOURCE_IN_CONTAINER="/app/data/input.mp4"
+        HOST_SOURCE_PATH="${DATA_DIR}/input.mp4"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/video-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/video-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/video_classification/videomae/export_videomae_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+        )
+        RUNTIME_EXTRA_ARGS=("--num_frames=16")
+        ;;
+    gemma4)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="llamacpp"
+        fi
+        MODEL_TYPE="gemma4"
+        MODEL_BASENAME="gemma-4-E2B-it-Q4_K_M"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        EXTRA_REQUIREMENTS=()
+        # No export step: the GGUF is downloaded directly from HuggingFace.
+        EXPORT_COMMANDS=(
+            "mkdir -p \"${WEIGHTS_DIR}\" && wget -q --show-progress -O \"${WEIGHTS_DIR}/${MODEL_BASENAME}.gguf\" \"https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/${MODEL_BASENAME}.gguf\" && echo \"Downloaded ${MODEL_BASENAME}.gguf\""
+        )
+        RUNTIME_EXTRA_ARGS=("--prompt=${GEMMA4_PROMPT}")
+        ;;
+    *)
+        echo "Unsupported preset: $PRESET" >&2
+        echo "Use --list-presets to inspect available values." >&2
+        exit 1
+        ;;
+esac
+
+if [[ -z "$DOCKER_IMAGE" ]]; then
+    if [[ "$BACKEND" == "tensorrt" ]]; then
+        DOCKER_IMAGE="neuriplo-infer:tensorrt"
+    else
+        DOCKER_IMAGE="neuriplo-infer:${BACKEND}"
+    fi
+fi
+
+case "$BACKEND" in
+    onnxruntime)
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.onnx"
+        ;;
+    tensorrt)
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.engine"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.engine"
+        ;;
+    llamacpp)
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.gguf"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.gguf"
+        ;;
+    executorch)
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.pte"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.pte"
+        ;;
+    litert)
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.tflite"
+        ;;
+    *)
+        echo "Unsupported backend: $BACKEND" >&2
+        exit 1
+        ;;
+esac
+
+ensure_dir "$WEIGHTS_DIR"
+
+# These presets handle export without neuriplo-tasks tooling.
+case "$PRESET" in
+    gemma4|yolov8_executorch|yolo26s_tflite|edgecrafter_det|edgecrafter_seg|edgecrafter_pose)
+        ;;
+    *)
+        ensure_neuriplo_tasks
+        ;;
+esac
+
+if [[ "$PRESET" == "owlv2" ]]; then
+    ensure_file "$TOKENIZER_VOCAB_HOST"
+    ensure_file "$TOKENIZER_MERGES_HOST"
+fi
+
+if [[ "${HOST_LABELS_PATH:-}" != "" ]]; then
+    ensure_file "$HOST_LABELS_PATH"
+fi
+
+ensure_files "$HOST_SOURCE_PATH"
+
+if [[ "$SKIP_EXPORT" == false ]]; then
+    echo "=== Step 1: Exporting preset '${PRESET}' ==="
+    for export_cmd in "${EXPORT_COMMANDS[@]}"; do
+        run_shell_cmd "$export_cmd"
+    done
+fi
+
+if [[ "$BACKEND" == "tensorrt" && "$SKIP_CONVERT" == false ]]; then
+    ONNX_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx"
+    echo "=== Step 2: Converting ONNX to TensorRT ==="
+    if [[ "$DRY_RUN" == false ]]; then
+        ensure_file "$ONNX_ARTIFACT"
+    fi
+    run_cmd docker run --rm --gpus=all \
+        -v "${WEIGHTS_DIR}:/weights" \
+        "nvcr.io/nvidia/tensorrt:${NGC_TAG}-py3" \
+        trtexec \
+        "--onnx=/weights/${MODEL_BASENAME}.onnx" \
+        "--saveEngine=/weights/${MODEL_BASENAME}.engine"
+fi
+
+if [[ "$SKIP_INFER" == false ]]; then
+    echo "=== Step 3: Running inference ==="
+    if [[ "$DRY_RUN" == false ]]; then
+        ensure_file "$MODEL_ARTIFACT"
+    fi
+
+    DOCKER_ARGS=(
+        docker run --rm
+        -e GLOG_minloglevel=1
+        -v "${DATA_DIR}:/app/data"
+        -v "${WEIGHTS_DIR}:/weights"
+    )
+
+    if [[ "${HOST_LABELS_PATH:-}" != "" ]]; then
+        DOCKER_ARGS+=(-v "${LABELS_DIR}:/labels")
+    fi
+
+    if [[ "$PRESET" == "owlv2" ]]; then
+        DOCKER_ARGS+=(-v "${TOKENIZER_VOCAB_HOST}:${TOKENIZER_VOCAB_IN_CONTAINER}")
+        DOCKER_ARGS+=(-v "${TOKENIZER_MERGES_HOST}:${TOKENIZER_MERGES_IN_CONTAINER}")
+    fi
+
+    if [[ "$BACKEND" == "tensorrt" ]]; then
+        DOCKER_ARGS+=(--gpus=all)
+    fi
+
+    DOCKER_ARGS+=(
+        "$DOCKER_IMAGE"
+        "--type=${MODEL_TYPE}"
+        "--weights=${MODEL_ARTIFACT_IN_CONTAINER}"
+        "--source=${SOURCE_IN_CONTAINER}"
+    )
+
+    DOCKER_ARGS+=("${RUNTIME_EXTRA_ARGS[@]}")
+
+    run_cmd "${DOCKER_ARGS[@]}"
+fi
+
+echo "=== Workflow completed for preset '${PRESET}' ==="

@@ -1,0 +1,27 @@
+set(SANITIZER "" CACHE STRING "Enable sanitizer instrumentation: address, undefined, address-undefined, thread")
+
+function(enable_target_sanitizers target_name)
+    if(SANITIZER STREQUAL "")
+        return()
+    endif()
+
+    if(MSVC)
+        message(FATAL_ERROR "SANITIZER is only wired for GCC/Clang builds")
+    endif()
+
+    string(TOLOWER "${SANITIZER}" sanitizer_name)
+    if(sanitizer_name STREQUAL "address")
+        set(sanitizer_flags -fsanitize=address -fno-omit-frame-pointer -g)
+    elseif(sanitizer_name STREQUAL "undefined")
+        set(sanitizer_flags -fsanitize=undefined -fno-omit-frame-pointer -g)
+    elseif(sanitizer_name STREQUAL "address-undefined")
+        set(sanitizer_flags -fsanitize=address,undefined -fno-omit-frame-pointer -g)
+    elseif(sanitizer_name STREQUAL "thread")
+        set(sanitizer_flags -fsanitize=thread -fno-omit-frame-pointer -g)
+    else()
+        message(FATAL_ERROR "Unsupported SANITIZER='${SANITIZER}'")
+    endif()
+
+    target_compile_options(${target_name} PRIVATE ${sanitizer_flags})
+    target_link_options(${target_name} PRIVATE ${sanitizer_flags})
+endfunction()

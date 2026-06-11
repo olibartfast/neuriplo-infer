@@ -15,7 +15,9 @@ function(validate_dependency dependency_name dependency_path)
 endfunction()
 
 # Function to validate system dependencies
-function(validate_system_dependencies)
+# Named validate_project_system_dependencies to avoid collision with neuriplo's
+# validate_system_dependencies which gets loaded via FetchContent
+function(validate_project_system_dependencies)
     # OpenCV and glog should already be found before this function is called
     # Just validate versions if they're already found
     if(NOT OpenCV_FOUND)
@@ -40,11 +42,15 @@ endfunction()
 
 # Function to validate fetched dependencies
 function(validate_fetched_dependencies)
-    # Validate neuriplo library
-    if(NOT DEFINED neuriplo_SOURCE_DIR)
-        message(FATAL_ERROR "neuriplo library not found. This should be fetched automatically by CMake.")
+    # Validate neuriplo library (only fetched when local backends are enabled)
+    if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+        if(NOT DEFINED neuriplo_SOURCE_DIR)
+            message(FATAL_ERROR "neuriplo library not found. This should be fetched automatically by CMake.")
+        endif()
+        message(STATUS "✓ neuriplo library found at ${neuriplo_SOURCE_DIR}")
+    else()
+        message(STATUS "✓ neuriplo library skipped (local backends disabled)")
     endif()
-    message(STATUS "✓ neuriplo library found at ${neuriplo_SOURCE_DIR}")
     
     # Validate VideoCapture library
     if(NOT DEFINED VideoCapture_SOURCE_DIR)
@@ -53,13 +59,19 @@ function(validate_fetched_dependencies)
     message(STATUS "✓ VideoCapture library found at ${VideoCapture_SOURCE_DIR}")
 endfunction()
 
+# Note: KServe transport security (HTTPS/OpenSSL, gRPC TLS) is now owned by the
+# neuriplo-kserve-client library, which reports its own HTTPS/gRPC status at
+# configure time (e.g. "neuriplo-kserve-client: HTTPS enabled (...)").
+
 # Function to validate all dependencies for this project
-function(validate_all_dependencies)
+# Named validate_project_dependencies to avoid collision with neuriplo's
+# validate_all_dependencies which gets loaded via FetchContent
+function(validate_project_dependencies)
     message(STATUS "=== Validating Project Dependencies ===")
-    
-    validate_system_dependencies()
+
+    validate_project_system_dependencies()
     validate_fetched_dependencies()
-    
+
     message(STATUS "=== All Project Dependencies Validated Successfully ===")
 endfunction()
 

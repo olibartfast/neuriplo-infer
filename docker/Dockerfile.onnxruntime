@@ -1,4 +1,4 @@
-# docker build --rm -t vision-inference:ort -f Dockerfiles/Dockerfile.onnxruntime .
+# docker build --rm -t neuriplo-infer:ort -f Dockerfiles/Dockerfile.onnxruntime .
 
 # Stage 1: Common dependencies
 ARG UBUNTU_VERSION=24.04
@@ -53,14 +53,14 @@ FROM backend_dependencies AS final
 WORKDIR /app
 
 # Copy the executable
-COPY --from=builder /app/build/app/vision-inference /app/vision-inference
+COPY --from=builder /app/build/app/neuriplo-infer /app/neuriplo-infer
 
 # Copy the shared libraries
 COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
 # Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located
-ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH:-}
 
 # Set the entry point to the compiled executable
-ENTRYPOINT ["./vision-inference"]
+ENTRYPOINT ["./neuriplo-infer"]

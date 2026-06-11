@@ -1,0 +1,71 @@
+name: E2E Example Emulation
+
+on:
+  push:
+    branches: [develop, 'feature/**']
+    paths:
+      - '.github/workflows/e2e-example-emulation.yml'
+      - 'docker_run_inference_e2e_example.sh'
+      - 'docker/**'
+      - 'scripts/**'
+      - 'data/**'
+      - 'labels/**'
+  pull_request:
+    branches: [develop, 'feature/**']
+    paths:
+      - '.github/workflows/e2e-example-emulation.yml'
+      - 'docker_run_inference_e2e_example.sh'
+      - 'docker/**'
+      - 'scripts/**'
+      - 'data/**'
+      - 'labels/**'
+  workflow_dispatch:
+
+jobs:
+  dry-run-presets:
+    name: Dry-run preset (${{ matrix.preset }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        preset:
+          - rtdetrv4
+          - owlv2
+          - torchvision_classifier
+          - yoloseg
+          - yolov8_executorch
+          - yolo26s_tflite
+          - edgecrafter_det
+          - edgecrafter_seg
+          - edgecrafter_pose
+          - raft
+          - vitpose
+          - depth_anything_v2
+          - videomae
+          - gemma4
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check shell syntax
+        run: bash -n docker_run_inference_e2e_example.sh
+
+      - name: Verify preset is advertised
+        run: |
+          bash docker_run_inference_e2e_example.sh --list-presets | grep -Fx "${{ matrix.preset }}"
+
+      - name: Dry-run e2e workflow
+        env:
+          NEURIPLO_TASKS_DIR: /tmp/neuriplo-tasks-placeholder
+        run: |
+          set -o pipefail
+          bash docker_run_inference_e2e_example.sh \
+            --preset "${{ matrix.preset }}" \
+            --neuriplo-tasks-dir "${NEURIPLO_TASKS_DIR}" \
+            --dry-run | tee e2e-dry-run.log
+
+          grep -F "=== Step 1: Exporting preset '${{ matrix.preset }}' ===" e2e-dry-run.log
+          grep -F "=== Step 3: Running inference ===" e2e-dry-run.log
+          grep -F "=== Workflow completed for preset '${{ matrix.preset }}' ===" e2e-dry-run.log
