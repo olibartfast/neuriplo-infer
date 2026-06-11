@@ -114,7 +114,8 @@ void NeuriploInfer::processImage(const std::string &source) {
     std::filesystem::create_directories(processed_path.parent_path());
     if (!cv::imwrite(processed_path.string(), image)) {
       const std::filesystem::path fallback_path =
-          std::filesystem::temp_directory_path() / "neuriplo-infer-processed.png";
+          std::filesystem::temp_directory_path() /
+          "neuriplo-infer-processed.png";
       if (!cv::imwrite(fallback_path.string(), image)) {
         LOG(ERROR) << "Failed to save output image to both "
                    << processed_path.string() << " and "
