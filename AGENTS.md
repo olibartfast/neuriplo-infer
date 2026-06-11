@@ -53,6 +53,9 @@ Release prep on `release/<version>`:
   must move.
 - Run `scripts/validate_release_pins.sh vX.Y.Z` (same check as the pre-push hook
   and `release-guard.yml` CI).
+- After pushing the tag, run `scripts/publish_github_release.sh X.Y.Z` to create
+  the GitHub Release (release notes from `CHANGELOG.md`). A pushed git tag alone
+  does not appear on the Releases page.
 - Without concrete pins, checking out an old neuriplo-infer tag fetches sibling
   `master` at fetch time — builds drift.
 

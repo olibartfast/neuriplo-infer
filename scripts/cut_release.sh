@@ -114,6 +114,7 @@ echo "  2. git commit -m 'release: ${TAG}'"
 echo "  3. Merge release/${VERSION_NUM} → master; tag ${TAG} on master."
 echo "  4. Merge release/${VERSION_NUM} → develop; delete release/${VERSION_NUM}."
 echo "  5. git push origin master develop ${TAG}"
+echo "  6. scripts/publish_github_release.sh ${VERSION_NUM}  # GitHub Release page"
 echo ""
 echo "Current versions.env:"
 cat versions.env
