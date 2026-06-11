@@ -43,7 +43,9 @@ void NeuriploInfer::setupLogging(const std::string &log_folder) {
       }
     }
 
-    google::InitGoogleLogging("object_detection");
+    if (!google::IsGoogleLoggingInitialized()) {
+      google::InitGoogleLogging("object_detection");
+    }
     google::SetLogDestination(google::GLOG_INFO,
                               (log_folder + "/log_info_").c_str());
     google::SetLogDestination(google::GLOG_WARNING,

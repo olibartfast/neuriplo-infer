@@ -115,3 +115,47 @@ TEST(ParseCommandLineArguments, ExportMetadataFlag) {
   EXPECT_TRUE(config.export_metadata);
   EXPECT_TRUE(config.sources.empty());
 }
+
+TEST(ParseCommandLineArguments, KServeRemoteDoesNotRequireWeights) {
+  const char *argv[] = {"program",
+                        "--type=yolo26",
+                        "--source=input.jpg",
+                        "--kserve_endpoint=http://127.0.0.1:8080",
+                        "--kserve_model_name=yolo",
+                        "--kserve_timeout_ms=5000"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_EQ(config.detectorType, "yolo26");
+  EXPECT_EQ(config.kserve_endpoint, "http://127.0.0.1:8080");
+  EXPECT_EQ(config.kserve_model_name, "yolo");
+  EXPECT_EQ(config.kserve_timeout_ms, 5000);
+  EXPECT_TRUE(config.weights.empty());
+}
+
+TEST(ParseCommandLineArguments, MissingSourceForVisionTaskExits) {
+  // A vision task with no --source (and not --export_metadata) must exit(1)
+  // with an actionable message instead of running.
+  const char *argv[] = {"program", "--type=yolov5", "--weights=model.weights"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("model.weights");
+
+  EXPECT_EXIT(CommandLineParser::parseCommandLineArguments(
+                  argc, const_cast<char **>(argv)),
+              ::testing::ExitedWithCode(1), "--source is required");
+}
+
+TEST(ParseCommandLineArguments, KServeModelDefaultsToType) {
+  const char *argv[] = {"program", "--type=yolo26", "--source=input.jpg",
+                        "--kserve_endpoint=http://127.0.0.1:8080"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_EQ(config.kserve_model_name, "yolo26");
+}
