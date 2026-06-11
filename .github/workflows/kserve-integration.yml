@@ -1,0 +1,91 @@
+name: KServe Integration
+
+# Integration coverage for the KServe V2 client against containerized Triton
+# Inference Server and OpenVINO Model Server (OVMS). The dry-run job validates
+# command construction and runs on every relevant push/PR (no docker images or
+# GPUs needed), keeping docs/KserveCompatibility.md honest cheaply. The live job
+# actually starts the servers and runs HTTP+gRPC round-trips; it is gated behind
+# a manual workflow_dispatch so normal CI never pulls multi-GB images.
+
+on:
+  push:
+    branches: [develop, 'feature/**']
+    paths:
+      - '.github/workflows/kserve-integration.yml'
+      - 'app/test/kserve_integration.sh'
+      - 'app/src/Kserve*.cpp'
+      - 'app/inc/Kserve*.hpp'
+      - 'versions.env'
+      - 'docs/KserveCompatibility.md'
+  pull_request:
+    branches: [develop, 'feature/**']
+    paths:
+      - '.github/workflows/kserve-integration.yml'
+      - 'app/test/kserve_integration.sh'
+      - 'app/src/Kserve*.cpp'
+      - 'app/inc/Kserve*.hpp'
+      - 'versions.env'
+      - 'docs/KserveCompatibility.md'
+  workflow_dispatch:
+    inputs:
+      run_live:
+        description: 'Run the LIVE integration (pulls Triton + OVMS images)'
+        type: boolean
+        default: false
+      servers:
+        description: 'Comma-separated servers to test (triton,ovms)'
+        type: string
+        default: 'triton,ovms'
+      transports:
+        description: 'Comma-separated transports (http,grpc)'
+        type: string
+        default: 'http,grpc'
+
+jobs:
+  dry-run:
+    name: Dry-run (command construction)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax check
+        run: bash -n app/test/kserve_integration.sh
+
+      - name: ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shellcheck
+          shellcheck app/test/kserve_integration.sh
+
+      - name: Dry-run integration
+        run: |
+          set -o pipefail
+          bash app/test/kserve_integration.sh --dry-run | tee dry-run.log
+          grep -F "RESULT: PASS" dry-run.log
+
+  live:
+    name: Live (Triton + OVMS round-trip)
+    # Gated: only the manual dispatch with run_live=true ever starts containers.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install client tooling (curl, grpcurl, onnx)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends curl python3-pip
+          python3 -m pip install --quiet onnx
+          GRPCURL_VERSION=1.9.1
+          curl -fsSL \
+            "https://github.com/fullstorydev/grpcurl/releases/download/v${GRPCURL_VERSION}/grpcurl_${GRPCURL_VERSION}_linux_x86_64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin grpcurl
+
+      - name: Live integration (require real round-trips)
+        run: |
+          bash app/test/kserve_integration.sh \
+            --require-live \
+            --servers "${{ inputs.servers }}" \
+            --transports "${{ inputs.transports }}"

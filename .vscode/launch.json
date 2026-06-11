@@ -334,7 +334,7 @@
             "name": "YOLO26 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo26",
                 "--weights=${env:HOME}/yolo26x.onnx",

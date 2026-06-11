@@ -10,7 +10,7 @@ namespace {
 // Helper to convert raw outputs and shapes to neuriplo_tasks::Tensor objects
 template <typename T1, typename T2>
 std::vector<neuriplo_tasks::Tensor> convertToTensors(const T1 &outputs,
-                                                  const T2 &shapes) {
+                                                     const T2 &shapes) {
   std::vector<neuriplo_tasks::Tensor> tensors;
   tensors.reserve(outputs.size());
   for (size_t i = 0; i < outputs.size(); ++i) {

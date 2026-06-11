@@ -61,10 +61,12 @@ fail=0
 NEURIPLO_PIN="$(latest_remote_tag neuriplo)"
 VIDEOCAPTURE_PIN="$(latest_remote_tag videocapture)"
 NEURIPLO_TASKS_PIN="$(latest_remote_tag neuriplo-tasks)"
+NEURIPLO_KSERVE_CLIENT_PIN="$(latest_remote_tag neuriplo-kserve-client)"
 
 for entry in "neuriplo=${NEURIPLO_PIN}" \
              "videocapture=${VIDEOCAPTURE_PIN}" \
-             "neuriplo-tasks=${NEURIPLO_TASKS_PIN}"; do
+             "neuriplo-tasks=${NEURIPLO_TASKS_PIN}" \
+             "neuriplo-kserve-client=${NEURIPLO_KSERVE_CLIENT_PIN}"; do
   repo="${entry%%=*}"
   pin="${entry#*=}"
   if [ -z "${pin}" ]; then
@@ -82,7 +84,7 @@ printf '%s\n' "${VERSION_NUM}" > VERSION
 echo "==> Updating versions.env pins..."
 # Remove any existing pin lines (commented or active) for the three sibling vars.
 awk -v IGNORECASE=0 '
-  /^[[:space:]]*#?[[:space:]]*(NEURIPLO|VIDEOCAPTURE|NEURIPLO_TASKS)_VERSION=/ { next }
+  /^[[:space:]]*#?[[:space:]]*(NEURIPLO|VIDEOCAPTURE|NEURIPLO_TASKS|NEURIPLO_KSERVE_CLIENT)_VERSION=/ { next }
   { print }
 ' versions.env > versions.env.tmp
 # Strip trailing blank lines.
@@ -98,6 +100,7 @@ cat >> versions.env <<EOF
 NEURIPLO_VERSION=${NEURIPLO_PIN}
 VIDEOCAPTURE_VERSION=${VIDEOCAPTURE_PIN}
 NEURIPLO_TASKS_VERSION=${NEURIPLO_TASKS_PIN}
+NEURIPLO_KSERVE_CLIENT_VERSION=${NEURIPLO_KSERVE_CLIENT_PIN}
 EOF
 
 echo "==> Staging changes..."

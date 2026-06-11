@@ -6,6 +6,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-11
+
+### Added
+- KServe V2 remote runtime mode: run task preprocessing/postprocessing locally
+  while sending inference tensors to a KServe V2 endpoint (`--kserve_endpoint`,
+  `--kserve_model_name`, `--kserve_transport`, etc.), with HTTP and optional gRPC
+  transport, TLS/mTLS, bearer auth, retry/backoff, keep-alive, binary tensor
+  extension, readiness probing, and integration tests. See `docs/KserveRuntime.md`
+  and `docs/KserveCompatibility.md`.
+- KServe V2 Model Repository extension on the runtime client (now in
+  `neuriplo-kserve-client`): `IClient` gains `repositoryIndex()` /
+  `loadModel(name)` / `unloadModel(name)` as an optional capability (base methods
+  throw; HTTP and gRPC clients implement them). HTTP POSTs
+  `/v2/repository/index|models/{m}/load|models/{m}/unload`; gRPC adds the
+  `RepositoryIndex` / `RepositoryModelLoad` / `RepositoryModelUnload` RPCs
+  (field numbers matching the official KServe/Triton service). Pure path
+  builders, the neutral `RepositoryModel` result, and `parseRepositoryIndex`
+  are unit-tested; the calls reuse the existing retry/auth/TLS plumbing. See
+  `docs/KserveRuntime.md`.
+
+### Changed
+- Closed out the KServe production roadmap: `feature/neuriplo-kserve-runtime`
+  merged into `develop` (2026-06-09) with all phases complete. The roadmap doc
+  was then transformed into `docs/KserveRuntime.md`, a reference for agents and
+  humans (architecture, capabilities, configuration/env vars, build modes,
+  testing); the historical gap tables and phase checklists were removed
+  (CHANGELOG and git history keep the record). README and
+  `docs/KserveCompatibility.md` updated to match actual capability (FP16/BF16
+  over gRPC via the default raw tensor contents) and now document the
+  `KSERVE_BINARY` and `KSERVE_MAX_RETRIES`/`KSERVE_RETRY_*` environment
+  variables.
+- Extracted the KServe V2 protocol client into a standalone sibling repository,
+  [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client)
+  (the pure, backend-agnostic HTTP/gRPC client + proto + protocol/retry/security
+  unit tests). neuriplo-infer now consumes it via `FetchContent`, pinned by
+  `NEURIPLO_KSERVE_CLIENT_VERSION` in `versions.env` (`v0.1.0`) and governed by
+  the same release tooling as the other siblings. Only the `KserveEngine`
+  adapter (which bridges the client to the neuriplo inference contract) and its
+  test remain in this repo. The library's gRPC-availability signal is the PUBLIC
+  `KSERVE_CLIENT_WITH_GRPC` define (replaces the in-tree `NEURIPLO_INFER_WITH_GRPC`
+  / `NEURIPLO_INFER_WITH_KSERVE_TLS` build flags).
+- Removed the deprecated Acknowledgments section from `README.md`.
+
+### Fixed
+- CLI now exits cleanly when `--source` is missing instead of surfacing a
+  confusing downstream error.
+
 ## [0.4.1] - 2026-06-07
 
 ### Changed

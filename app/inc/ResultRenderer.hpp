@@ -23,6 +23,6 @@ public:
 
 class DefaultResultRenderer : public ResultRenderer {
 public:
-  void render(const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
-              const RenderContext &context) override;
+  void render(const std::vector<neuriplo_tasks::Result> &results,
+              cv::Mat &image, const RenderContext &context) override;
 };

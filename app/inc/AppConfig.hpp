@@ -40,4 +40,9 @@ struct AppConfig {
   std::vector<std::vector<int64_t>> input_sizes;
   int num_frames{
       0}; // Number of frames for video classification (0 = use model default)
+  std::string kserve_endpoint;
+  std::string kserve_model_name;
+  std::string kserve_model_version{"1"};
+  int kserve_timeout_ms{30000};
+  std::string kserve_transport{"http"};
 };
