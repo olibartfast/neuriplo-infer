@@ -1,20 +1,22 @@
 name: Release Guard
 
-# Runs when a neuriplo-infer release tag is pushed. Verifies that
-# versions.env at the tag pins all three sibling repos to the same tag
-# and that each sibling has that tag on its remote. This makes the tag
-# checkout reproducible: future builds at this tag will fetch fixed
-# sibling code rather than sibling master.
+# Runs when a semver release tag is pushed. Verifies versions.env sibling pins
+# at the tag so checkouts rebuild against fixed sibling code.
 #
-# Note: GitHub does not run workflows *before* a tag is pushed, so a
-# failing run here does not prevent the bad tag from existing. To make
-# this enforcement hard, configure a tag protection rule that requires
-# this check to pass before the tag is considered released.
+# GitHub Release publishing is handled separately by publish-github-release.yml
+# (workflow_run after this workflow succeeds) so tags cut before the publish
+# workflow existed still get a Release without retagging.
 
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing semver tag to validate (e.g. v0.5.0)'
+        required: true
+        type: string
 
 jobs:
   validate-sibling-pins:
@@ -22,8 +24,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Validate versions.env pins and sibling tags
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ inputs.tag }}"
+          else
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
           bash scripts/validate_release_pins.sh "${tag}"
