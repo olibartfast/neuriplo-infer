@@ -6,7 +6,6 @@ FROM nvcr.io/nvidia/cuda:${NGC_CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS cu
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
-ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo/master/versions.env
 
 # Install system dependencies with version pinning
 RUN apt-get update && apt-get upgrade -y && \
@@ -19,7 +18,11 @@ RUN apt-get update && apt-get upgrade -y && \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN wget -q -O /tmp/versions.env "${NEURIPLO_VERSIONS_URL}"
+COPY VERSION /tmp/neuriplo-infer.VERSION
+
+RUN dependency_ref=develop && \
+    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi && \
+    wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
 # Stage 2: Install TensorRT dependencies
 FROM cuda_dependencies AS backend_dependencies
@@ -66,7 +69,7 @@ FROM backend_dependencies AS final
 WORKDIR /app
 
 # Copy the executable
-COPY --from=builder /app/build/app/vision-inference /app/vision-inference
+COPY --from=builder /app/build/app/neuriplo-infer /app/neuriplo-infer
 
 # Copy the shared libraries
 COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
@@ -76,4 +79,4 @@ COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 ENV LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
 
 # Set the entry point to the compiled executable
-ENTRYPOINT ["./vision-inference"]
+ENTRYPOINT ["./neuriplo-infer"]

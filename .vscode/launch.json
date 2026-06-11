@@ -5,7 +5,7 @@
             "name": "YOLOv4 OpenCV DNN",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolov4",
                 "--weights=${env:HOME}/Downloads/yolov4.weights",
@@ -19,7 +19,7 @@
             "name": "YOLO NAS onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolonas",
                 "--weights=${env:HOME}/Downloads/weights/yolo_nas_s.onnx",
@@ -32,7 +32,7 @@
             "name": "YOLOv5 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/model_repository/yolov5x_onnx/1/model.onnx",
@@ -46,7 +46,7 @@
             "name": "YOLOv5 libtorch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/repos/yolov5/yolov5s.torchscript",
@@ -60,7 +60,7 @@
             "name": "YOLOv5 openvino",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/model_repository/yolov5s_openvino/1/model.bin",
@@ -73,7 +73,7 @@
             "name": "YOLOv5 libtorch video processing",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/repos/yolov5/yolov5s.torchscript",
@@ -86,7 +86,7 @@
             "name": "YOLOv6 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/model_repository/yolov6l_onnx/1/model.onnx",
@@ -100,7 +100,7 @@
             "name": "YOLOv7 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/model_repository/yolov7_onnx/1/model.onnx",
@@ -114,7 +114,7 @@
             "name": "YOLOv8 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/model_repository/yolov8x_onnx/1/model.onnx",
@@ -128,7 +128,7 @@
             "name": "YOLOv8 libtorch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/repos/ultralytics/yolov8s.torchscript",
@@ -142,7 +142,7 @@
             "name": "YOLOv8 saved model",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/saved_model",
@@ -155,7 +155,7 @@
             "name": "YOLOv9 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/model_repository/yolov9c_onnx/1/model.onnx",
@@ -169,7 +169,7 @@
             "name": "YOLOv10 saved model",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolov10",
                 "--weights=${env:HOME}/yolov10x_saved_model",
@@ -183,7 +183,7 @@
             "name": "YOLOv10 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolov10",
                 "--weights=${env:HOME}/model_repository/yolov10n_onnx/1/model.onnx",
@@ -199,7 +199,7 @@
             "name": "YOLOv10 openvino",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolov10",
                 "--weights=${env:HOME}/yolov10x_openvino_model/yolov10x.bin",
@@ -213,7 +213,7 @@
             "name": "YOLO11 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo11",
                 "--weights=${env:HOME}/yolo11x.onnx",
@@ -227,7 +227,7 @@
             "name": "YOLO11 libtorch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/model_repository/yolo11x_libtorch/1/model.pt",
@@ -241,7 +241,7 @@
             "name": "YOLO12 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/repos/yolov12/yolov12x.onnx",
@@ -254,7 +254,7 @@
             "name": "YOLO12s onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo",
                 "--weights=${env:HOME}/model_repository/yolov12s_onnx/1/model.onnx",
@@ -268,7 +268,7 @@
             "name": "YOLO12 torchscript/libtorch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolov12",
                 "--weights=${env:HOME}/repos/yolov12/yolov12x.torchscript",
@@ -282,7 +282,7 @@
             "name": "rtdetr onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rtdetr",
                 "--weights=${env:HOME}/repos/RT-DETR/rtdetr_pytorch/model.onnx",
@@ -295,7 +295,7 @@
             "name": "rtdetr ultralytics onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rtdetrul",
                 "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.onnx",
@@ -308,7 +308,7 @@
             "name": "rtdetr ultralytics libtorch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rtdetrul",
                 "--weights=${env:HOME}/repos/ultralytics/rtdetr-l.torchscript",
@@ -321,7 +321,7 @@
             "name": "rtdetr v2 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rtdetr",
                 "--weights=${env:HOME}/repos/RT-DETR/rtdetrv2_pytorch/model.onnx",
@@ -334,7 +334,7 @@
             "name": "YOLO26 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/object-detection-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=yolo26",
                 "--weights=${env:HOME}/yolo26x.onnx",
@@ -348,7 +348,7 @@
             "name": "dfine onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rtdetr",
                 "--weights=${env:HOME}/D-FINE/dfine_s_coco.onnx",
@@ -361,7 +361,7 @@
             "name": "DFINE tensorrt",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=dfine",
                 "--weights=model.engine",
@@ -387,7 +387,7 @@
             "name": "DEIM onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rtdetr",
                 "--weights=${env:HOME}/model_repository/deim_dfine_hgnetv2_s_coco_onnx/1/model.onnx",
@@ -413,7 +413,7 @@
             "name": "deim v2 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rtdetr",
                 "--weights=${env:HOME}/model_repository/deimv2_dinov3_s_coco_onnx/1/model.onnx",
@@ -427,7 +427,7 @@
             "name": "rfdetr onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rfdetr",
                 "--weights=${env:HOME}/model_repository/rfdetr_base/1/model.onnx",
@@ -441,7 +441,7 @@
             "name": "rfdetr tensorrt",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rfdetr",
                 "--weights=${env:HOME}/output/exports/model.engine",
@@ -455,10 +455,10 @@
             "name": "rfdetr libtorch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rfdetr",
-                "--weights=${env:HOME}/repos/vision-inference/rfdetr_medium_torchscript.pt",
+                "--weights=${env:HOME}/repos/neuriplo-infer/rfdetr_medium_torchscript.pt",
                 "--source=data/test.jpg",
                 "--input_sizes='3,640,640'",
                 "--labels=labels/coco-labels-91.txt"
@@ -471,7 +471,7 @@
             "name": "rfdetr seg onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rfdetr-seg",
                 "--weights=${env:HOME}/model_repository/rf-detr-seg-preview_onnx/1/model.onnx",
@@ -485,7 +485,7 @@
             "name": "rfdetr seg tensorrt",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=rfdetr-seg",
                 "--weights=${env:HOME}/model_repository/rf-detr-seg-preview_trt/1/model.plan",
@@ -501,7 +501,7 @@
             "name": "raft large onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--source='data/frame_001.png,data/frame_002.png'",
                 "--weights=${env:HOME}/model_repository/raft_large_onnx/1/model.onnx",
@@ -520,7 +520,7 @@
             "name": "raft large trt",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--source='data/frame_001.png,data/frame_002.png'",
                 "--weights=${env:HOME}/model_repository/raft_large_trt/1/model.plan",
@@ -541,7 +541,7 @@
             "name": "Depth Anything V2 onnx",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/app/vision-inference",
+            "program": "${workspaceFolder}/build/app/neuriplo-infer",
             "args": [
                 "--type=depth_anything_v2",
                 "--weights=${env:HOME}/model_repository/depth_anything_v2.onnx",

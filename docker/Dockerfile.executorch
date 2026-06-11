@@ -1,0 +1,127 @@
+# docker build --rm -t neuriplo-infer:executorch -f docker/Dockerfile.executorch .
+# docker run --rm \
+#   -v $(pwd)/models/e2e:/weights \
+#   -v $(pwd)/data:/app/data \
+#   -v $(pwd)/labels:/labels \
+#   neuriplo-infer:executorch \
+#   --type=yolov8 --weights=/weights/yolov8n.pte \
+#   --source=/app/data/dog.jpg --labels=/labels/coco.names
+#
+# NOTE: The ExecuTorch C++ runtime is built from source — expect a long build (~20–40 min).
+# EXECUTORCH_VERSION must match neuriplo's versions.env (EXECUTORCH_VERSION=v1.2.0).
+# Override with: docker build --build-arg EXECUTORCH_VERSION=v1.2.0 ...
+#
+# The .pte model file is NOT baked into the image; mount it at /weights at runtime.
+# Export a YOLOv8n model with:
+#   pip install ultralytics executorch
+#   python -c "from ultralytics import YOLO; YOLO('yolov8n.pt').export(format='executorch')"
+
+ARG UBUNTU_VERSION=24.04
+ARG EXECUTORCH_VERSION=v1.2.0
+
+# ── Stage 1: common system dependencies ──────────────────────────────────────
+FROM ubuntu:${UBUNTU_VERSION} AS base_deps
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/root
+ENV DEPENDENCIES_DIR=${HOME}/dependencies
+ENV EXECUTORCH_DIR=${DEPENDENCIES_DIR}/executorch
+
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y \
+        cmake \
+        build-essential \
+        pkg-config \
+        wget \
+        git \
+        ninja-build \
+        python3 \
+        python3-pip \
+        python3-venv \
+        libopencv-dev \
+        libopencv-contrib-dev \
+        libgoogle-glog-dev \
+        libgtest-dev \
+        libcurl4-openssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Stage 2: build ExecuTorch C++ runtime from source ────────────────────────
+FROM base_deps AS executorch_build
+
+ARG EXECUTORCH_VERSION=v1.2.0
+
+# v1.2.0 requires the checkout directory to be named exactly "executorch"
+RUN git clone \
+        --branch "${EXECUTORCH_VERSION}" \
+        --depth 1 \
+        https://github.com/pytorch/executorch.git \
+        /tmp/executorch && \
+    cd /tmp/executorch && \
+    git submodule sync --recursive && \
+    git submodule update --init --recursive --depth 1
+
+# Python venv for build-time deps (flatbuffers codegen, ExecuTorch Python package)
+RUN python3 -m venv /tmp/executorch-venv && \
+    . /tmp/executorch-venv/bin/activate && \
+    pip install --quiet --upgrade pip && \
+    pip install --quiet tomli zstd setuptools wheel && \
+    bash /tmp/executorch/install_requirements.sh 2>&1 | tail -20
+
+RUN . /tmp/executorch-venv/bin/activate && \
+    cmake -S /tmp/executorch -B /tmp/executorch/cmake-out \
+        -GNinja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_STANDARD=17 \
+        -DCMAKE_INSTALL_PREFIX="${EXECUTORCH_DIR}" \
+        -DEXECUTORCH_BUILD_EXTENSION_MODULE=ON \
+        -DEXECUTORCH_BUILD_EXTENSION_NAMED_DATA_MAP=ON \
+        -DEXECUTORCH_BUILD_EXTENSION_TENSOR=ON \
+        -DEXECUTORCH_BUILD_EXTENSION_DATA_LOADER=ON \
+        -DEXECUTORCH_ENABLE_LOGGING=ON \
+        -DEXECUTORCH_BUILD_TESTS=OFF \
+        -DEXECUTORCH_BUILD_EXAMPLES=OFF \
+        -DPYTHON_EXECUTABLE=/tmp/executorch-venv/bin/python3 && \
+    cmake --build /tmp/executorch/cmake-out --config Release -j"$(nproc)" && \
+    cmake --install /tmp/executorch/cmake-out && \
+    # ExecuTorch v1.2.0: ExecuTorchTargets.cmake contains hardcoded build-tree
+    # paths for targets (e.g. extension_evalue_util) that were not fully relocated
+    # to CMAKE_INSTALL_PREFIX by the cmake install step.  Copy any .a files that
+    # are still only in the build tree, then patch every cmake config file to
+    # replace the build-tree root with the install prefix so find_package() works
+    # after the build directory is removed.
+    find /tmp/executorch/cmake-out/lib -maxdepth 1 -name "*.a" \
+        -exec cp -n {} "${EXECUTORCH_DIR}/lib/" \; && \
+    find "${EXECUTORCH_DIR}/lib/cmake" -name "*.cmake" \
+        -exec sed -i "s|/tmp/executorch/cmake-out|${EXECUTORCH_DIR}|g" {} \; && \
+    rm -rf /tmp/executorch /tmp/executorch-venv
+
+# Verify the install produced the expected artifacts
+RUN test -f "${EXECUTORCH_DIR}/include/executorch/runtime/core/error.h" && \
+    test -f "${EXECUTORCH_DIR}/lib/libexecutorch.a"
+
+# ── Stage 3: build neuriplo-infer with EXECUTORCH backend ──────────────────
+FROM executorch_build AS builder
+
+WORKDIR /src
+COPY . .
+
+RUN cmake -Bbuild \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DDEFAULT_BACKEND=EXECUTORCH \
+        -DEXECUTORCH_DIR="${EXECUTORCH_DIR}" && \
+    cmake --build build -j"$(nproc)"
+
+# ── Stage 4: lean runtime image ──────────────────────────────────────────────
+FROM base_deps AS final
+
+# ExecuTorch static libs are baked into libneuriplo.so at build time,
+# so the runtime image only needs the shared libraries.
+COPY --from=builder /src/build/app/neuriplo-infer      /usr/local/bin/neuriplo-infer
+COPY --from=builder /src/build/_deps/neuriplo-build/libneuriplo.so      /usr/local/lib/
+COPY --from=builder /src/build/_deps/videocapture-build/libVideoCapture.so /usr/local/lib/
+
+RUN ldconfig && \
+    mkdir -p /app/data /weights /labels
+
+ENTRYPOINT ["neuriplo-infer"]
+CMD ["--help"]

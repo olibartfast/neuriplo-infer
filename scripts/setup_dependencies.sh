@@ -108,6 +108,9 @@ fetch_backend_versions() {
     print_status "LibTorch: $PYTORCH_VERSION"
     print_status "OpenVINO: $OPENVINO_VERSION"
     print_status "TensorFlow: $TENSORFLOW_VERSION"
+    if [[ -n "${LITERT_VERSION:-}" ]]; then
+        print_status "LiteRT: $LITERT_VERSION"
+    fi
     print_status "CUDA: $CUDA_VERSION"
 }
 
@@ -460,6 +463,12 @@ EOF
     print_status "Source $env_file to use TensorFlow environment variables"
 }
 
+setup_litert() {
+    local script_dir_here
+    script_dir_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    bash "${script_dir_here}/setup_litert.sh"
+}
+
 # Function to check system dependencies
 check_system_dependencies() {
     print_status "Checking system dependencies..."
@@ -505,7 +514,7 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  --backend <backend>        Specify the inference backend to setup"
-    echo "                             Supported: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, all"
+    echo "                             Supported: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
     echo "                             Default: opencv_dnn (no setup required)"
     echo "  --compute-platform <platform>  For LibTorch: cpu, gpu/cuda, cu118, cu121, rocm6.0"
     echo "                             Default: cpu"
@@ -601,16 +610,28 @@ main() {
         tensorflow)
             setup_tensorflow
             ;;
+        litert)
+            setup_litert
+            ;;
+        executorch)
+            local script_dir_here
+            script_dir_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+            bash "${script_dir_here}/setup_executorch.sh"
+            ;;
         all)
             setup_onnx_runtime
             setup_tensorrt
             setup_libtorch
             setup_openvino
             setup_tensorflow
+            setup_litert
+            local script_dir_here
+            script_dir_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+            bash "${script_dir_here}/setup_executorch.sh"
             ;;
         *)
             print_error "Unknown backend: $backend"
-            print_status "Supported backends: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, all"
+            print_status "Supported backends: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
             exit 1
             ;;
     esac

@@ -2,20 +2,32 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
-    branches: [main, master]
+    branches: [develop, 'feature/**']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 jobs:
   build-opencv-dnn:
     name: Build & Test (OPENCV_DNN)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Install shared dependencies
         uses: ./.github/actions/install-linux-deps
+
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
 
       - name: Cache CMake build
         uses: actions/cache@v4
@@ -26,10 +38,17 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=OPENCV_DNN \
             -DENABLE_APP_TESTS=ON \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Check model-type docs are in sync
+        run: |
+          python3 scripts/sync_supported_model_types.py \
+            --neuriplo-tasks-readme build/_deps/neuriplo-tasks-src/README.md \
+            --check
 
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)
@@ -37,6 +56,106 @@ jobs:
       - name: Test
         working-directory: build
         run: ctest --output-on-failure
+
+  kserve-build-matrix:
+    name: KServe (${{ matrix.label }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: http+grpc
+            enable_kserve: "ON"
+            enable_grpc: "ON"
+            enable_local: "ON"
+            install_grpc: true
+          - label: http-only
+            enable_kserve: "ON"
+            enable_grpc: "OFF"
+            enable_local: "ON"
+            install_grpc: false
+          - label: local-only
+            enable_kserve: "OFF"
+            enable_grpc: "OFF"
+            enable_local: "ON"
+            install_grpc: false
+          - label: kserve-only
+            enable_kserve: "ON"
+            enable_grpc: "OFF"
+            enable_local: "OFF"
+            install_grpc: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shared dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Install gRPC toolchain
+        if: matrix.install_grpc
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            protobuf-compiler protobuf-compiler-grpc \
+            libprotobuf-dev libgrpc++-dev
+
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ matrix.label }}
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DDEFAULT_BACKEND=OPENCV_DNN \
+            -DENABLE_APP_TESTS=ON \
+            -DNEURIPLO_INFER_ENABLE_KSERVE=${{ matrix.enable_kserve }} \
+            -DNEURIPLO_INFER_ENABLE_GRPC=${{ matrix.enable_grpc }} \
+            -DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=${{ matrix.enable_local }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache 2>&1 | tee configure.log
+
+      - name: Assert gRPC KServe client was actually enabled
+        if: matrix.install_grpc
+        shell: bash
+        run: |
+          if ! grep -q "neuriplo-kserve-client: gRPC transport enabled" configure.log; then
+            echo "::error::gRPC requested but not detected; build would silently fall back to HTTP" >&2
+            exit 1
+          fi
+
+      - name: Build
+        run: cmake --build build --config Release --parallel $(nproc)
+
+      - name: Test (KServe unit tests, skip docker e2e)
+        # The pipeline tests assume local backends; the KServe-only build proves
+        # it compiles/links without fetching neuriplo. The pure protocol unit
+        # tests now live in (and are run by) the neuriplo-kserve-client repo;
+        # here ctest covers the KserveEngine adapter + integration dry-run.
+        if: matrix.enable_local != 'OFF'
+        working-directory: build
+        run: ctest --output-on-failure -E docker
+
+      - name: Assert KServe sources are absent in local-only build
+        if: matrix.enable_kserve == 'OFF'
+        shell: bash
+        run: |
+          if find build -name 'Kserve*.cpp.o' | grep -q .; then
+            echo "::error::KServe sources were compiled in a local-only build" >&2
+            find build -name 'Kserve*.cpp.o'
+            exit 1
+          fi
+
+      - name: Assert neuriplo was NOT fetched in kserve-only build
+        if: matrix.enable_local == 'OFF'
+        shell: bash
+        run: |
+          if [ -d build/_deps/neuriplo-src ]; then
+            echo "::error::neuriplo was fetched in a KServe-only build (LOCAL_BACKENDS=OFF)" >&2
+            exit 1
+          fi
 
   build-onnxruntime:
     name: Build (ONNX_RUNTIME)
@@ -65,6 +184,11 @@ jobs:
           tar -xzf onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz -C ~
           rm onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -74,12 +198,13 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=ONNX_RUNTIME \
             -DORT_VERSION=${ORT_VERSION} \
             -DONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-${ORT_VERSION} \
             -DENABLE_APP_TESTS=OFF \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)
@@ -112,6 +237,11 @@ jobs:
           unzip -q libtorch.zip -d ~
           rm libtorch.zip
 
+      - name: Set up ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ github.job }}-${{ runner.os }}
+
       - name: Cache CMake build
         uses: actions/cache@v4
         with:
@@ -121,11 +251,13 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -B build \
+          cmake -B build -G Ninja \
             -DDEFAULT_BACKEND=LIBTORCH \
             -DCMAKE_PREFIX_PATH=$HOME/libtorch \
+            -DLIBTORCH_DIR=$HOME/libtorch \
             -DENABLE_APP_TESTS=OFF \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release --parallel $(nproc)
@@ -140,6 +272,11 @@ jobs:
       - name: Fetch neuriplo versions.env
         uses: ./.github/actions/fetch-neuriplo-versions
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+
       - uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
@@ -148,7 +285,34 @@ jobs:
           context: .
           file: docker/Dockerfile.libtensorflow
           push: false
-          tags: vision-inference:libtensorflow
+          tags: neuriplo-infer:libtensorflow
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-tensorrt:
+    name: Build (TENSORRT)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch neuriplo versions.env
+        uses: ./.github/actions/fetch-neuriplo-versions
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.tensorrt
+          push: false
+          tags: neuriplo-infer:tensorrt
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -162,6 +326,11 @@ jobs:
       - name: Fetch neuriplo versions.env
         uses: ./.github/actions/fetch-neuriplo-versions
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+
       - uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
@@ -170,6 +339,6 @@ jobs:
           context: .
           file: docker/Dockerfile.openvino
           push: false
-          tags: vision-inference:openvino
+          tags: neuriplo-infer:openvino
           cache-from: type=gha
           cache-to: type=gha,mode=max
