@@ -53,8 +53,8 @@ Release prep on `release/<version>`:
   must move.
 - Run `scripts/validate_release_pins.sh vX.Y.Z` (same check as the pre-push hook
   and `release-guard.yml` CI).
-- After pushing the tag, **Release Guard** CI
-  (`.github/workflows/release-guard.yml`) validates pins and publishes the GitHub
+- After pushing the tag, **Release Guard** validates pins; **Publish GitHub Release**
+  CI (`.github/workflows/publish-github-release.yml`) then creates the GitHub
   Release from `CHANGELOG.md`. A pushed git tag alone does not appear on the
   Releases page.
 - Without concrete pins, checking out an old neuriplo-infer tag fetches sibling
