@@ -19,8 +19,9 @@
 # The only hard rule, enforced by validate_release_pins.sh, is that every pin
 # is a concrete vX.Y.Z tag, never a branch like 'master' or 'develop'.
 #
-# After this script, you still need to: update CHANGELOG.md, commit, merge the
-# release branch to master, and tag.
+# After this script, you still need to (GitFlow): update CHANGELOG.md on
+# release/<version>, commit, merge release/<version> to master and tag, merge
+# back to develop, delete the release branch.
 
 set -euo pipefail
 
@@ -107,11 +108,14 @@ echo "==> Staging changes..."
 git add VERSION versions.env
 
 echo ""
-echo "==> Done. Next steps:"
-echo "  1. Update CHANGELOG.md for ${TAG}."
+echo "==> Done. Next steps (GitFlow — see .cursor/rules/gitflow-workflow.mdc):"
+echo "  1. Update CHANGELOG.md for ${TAG} (on release/${VERSION_NUM})."
 echo "  2. git commit -m 'release: ${TAG}'"
-echo "  3. Merge the release branch to master and tag ${TAG}."
-echo "  4. git push origin master ${TAG}"
+echo "  3. Merge release/${VERSION_NUM} → master; tag ${TAG} on master."
+echo "  4. Merge release/${VERSION_NUM} → develop; delete release/${VERSION_NUM}."
+echo "  5. git push origin master develop ${TAG}"
+echo "  6. GitHub Release is published automatically by .github/workflows/github-release.yml"
+echo "     (or run scripts/publish_github_release.sh ${VERSION_NUM} / workflow_dispatch for backfill)"
 echo ""
 echo "Current versions.env:"
 cat versions.env

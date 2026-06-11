@@ -1,0 +1,78 @@
+---
+description: Mandatory GitFlow branching — feature/release/hotfix branches, develop integration, master releases
+alwaysApply: true
+---
+
+# GitFlow workflow (mandatory)
+
+Follow the [Atlassian GitFlow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
+In this repo, GitFlow **`main`** is **`master`**. **`develop`** is the integration branch.
+
+## Branch roles
+
+| GitFlow branch | This repo | Purpose |
+|----------------|-----------|---------|
+| `main` | `master` | Official release history; tag every release here |
+| `develop` | `develop` | Integration branch for completed features |
+| `feature/*` | `feature/*` | New work; parent is always `develop` |
+| `release/*` | `release/*` | Release prep (version, changelog, pins); no new features |
+| `hotfix/*` | `hotfix/*` | Production patches; parent is always `master` |
+
+Never commit feature work directly to `develop` or `master`. Never merge features
+into `master`. Never fork feature branches from `master`.
+
+## Feature workflow
+
+```bash
+git checkout develop && git pull
+git checkout -b feature/<short-name>
+# work, commit, push
+# open PR: feature/<short-name> → develop
+# after merge, delete the feature branch
+```
+
+## Release workflow
+
+When `develop` is ready to ship:
+
+```bash
+git checkout develop && git pull
+git checkout -b release/<version>          # e.g. release/0.5.0
+# bump VERSION, CHANGELOG.md; run scripts/cut_release.sh <version>
+# only release fixes/docs on this branch — no new features
+git commit -m 'release: v<version>'
+# PR or merge: release/<version> → master; tag v<version> on master
+git checkout develop && git merge release/<version>
+git branch -d release/<version>
+git push origin master develop --tags
+# GitHub Release is created automatically by CI on tag push (see github-release.yml)
+```
+
+Release prep (`scripts/cut_release.sh`, `CHANGELOG.md`, sibling pins in
+`versions.env`) happens on **`release/*`**, not on `develop` or `master`.
+
+Pushing a tag with `git push --tags` does **not** create an entry on
+https://github.com/olibartfast/neuriplo-infer/releases by itself — CI workflow
+`.github/workflows/github-release.yml` publishes the Release from `CHANGELOG.md`
+when the tag is pushed (use `workflow_dispatch` to backfill older tags).
+
+## Hotfix workflow
+
+```bash
+git checkout master && git pull
+git checkout -b hotfix/<short-name>
+# fix, bump patch VERSION + CHANGELOG, commit
+# merge hotfix → master; tag v<patch>
+git checkout develop && git merge hotfix/<short-name>
+git branch -d hotfix/<short-name>
+git push origin master develop --tags
+# GitHub Release published by CI (github-release.yml)
+```
+
+## Agent constraints
+
+- Default base branch for new work: **`develop`**.
+- PRs into **`master`** are release or hotfix merges only.
+- Do not suggest trunk-based or `main`-only workflows for this repo.
+- After any release or hotfix merge to `master`, always merge back into `develop`.
+- Delete `feature/*`, `release/*`, and `hotfix/*` branches after they are merged.

@@ -29,20 +29,39 @@ type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
    (`app/src/NeuriploInferTaskRouting.cpp`) must map each type string to the same
    `TaskType` that `neuriplo_tasks::TaskFactory` builds.
 
-## Repository workflow
+## Repository workflow (GitFlow — mandatory)
 
-- `develop` is the protected integration branch.
-- `master` is the protected release-only branch.
-- All normal feature, fix, refactor, docs, and chore work should land through pull requests into `develop`.
-- Pull requests into `master` are release PRs only and should be treated as release-safety checks.
-- Before creating a release, update both `VERSION` and `CHANGELOG.md`.
-- Before tagging a release, pin sibling refs in `versions.env` for reproducibility.
-  - Tag the matching commit in each sibling repo (`neuriplo-tasks`, `neuriplo`, `videocapture`) with the same tag name (e.g. `v0.3.0`) first.
-  - Then run `scripts/cut_release.sh <version>` (e.g. `0.3.0`) to bump `VERSION` and rewrite the `NEURIPLO_VERSION` / `VIDEOCAPTURE_VERSION` / `NEURIPLO_TASKS_VERSION` pins in `versions.env`. The script refuses to proceed if any sibling is missing the matching tag.
-  - `scripts/validate_release_pins.sh <tag>` is the same check used by the pre-push hook and the `release-guard.yml` CI workflow; run it manually if you want to sanity-check before pushing.
-  - Without these pins, checking out an old neuriplo-infer tag fetches sibling `master` at fetch time, which keeps moving — builds drift.
-- After finishing a release, delete any temporary branches created ad hoc for that release.
-- Do not suggest switching this repository to a `main`-centric trunk workflow.
+Agents must follow the [Atlassian GitFlow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
+See `.cursor/rules/gitflow-workflow.mdc` for branch naming and merge order. In this
+repo GitFlow **`main`** is **`master`**; **`develop`** is the integration branch.
+
+- **`feature/*`** — branch from `develop`; merge back to `develop` via PR. Never
+  target `master`.
+- **`release/*`** — branch from `develop` when preparing a version; only release
+  fixes/docs (no new features). Merge to `master`, tag `vX.Y.Z`, then merge the
+  same branch back into `develop` and delete it.
+- **`hotfix/*`** — branch from `master` for production patches; merge to `master`
+  (tag), then merge back into `develop` and delete it.
+- Pull requests into `master` are release or hotfix merges only.
+
+Release prep on `release/<version>`:
+
+- Update `CHANGELOG.md` and run `scripts/cut_release.sh <version>` (bumps
+  `VERSION` and sibling pins in `versions.env`).
+- Tag matching commits in sibling repos (`neuriplo-tasks`, `neuriplo`,
+  `videocapture`, `neuriplo-kserve-client`) before cutting the release if pins
+  must move.
+- Run `scripts/validate_release_pins.sh vX.Y.Z` (same check as the pre-push hook
+  and `release-guard.yml` CI).
+- After pushing the tag, the **Publish GitHub Release** workflow
+  (`.github/workflows/github-release.yml`) creates the GitHub Release from
+  `CHANGELOG.md`. A pushed git tag alone does not appear on the Releases page.
+  For tags pushed before that workflow existed, run the workflow manually
+  (`workflow_dispatch` with the tag) or `scripts/publish_github_release.sh X.Y.Z`.
+- Without concrete pins, checking out an old neuriplo-infer tag fetches sibling
+  `master` at fetch time — builds drift.
+
+Do not suggest trunk-based or `main`-only workflows for this repository.
 
 ## Review focus
 
