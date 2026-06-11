@@ -43,6 +43,12 @@ repo GitFlow **`main`** is **`master`**; **`develop`** is the integration branch
 - **`hotfix/*`** — branch from `master` for production patches; merge to `master`
   (tag), then merge back into `develop` and delete it.
 - Pull requests into `master` are release or hotfix merges only.
+- **Back-merge immediately after every merge into `master`.** The merge commit
+  created on `master` must be merged back into `develop` right away
+  (`git checkout develop && git merge master && git push`), so `master`,
+  `develop`, and the release tag converge on the same commit. `develop` being
+  even one commit behind `master` is a workflow violation — verify with
+  `git rev-list --left-right --count origin/develop...origin/master` (must be `0 0`).
 
 Release prep on `release/<version>`:
 
