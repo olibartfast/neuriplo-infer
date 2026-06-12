@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-12
+
+### Changed
+- Sibling release pins bumped: `neuriplo` v0.5.0 -> v0.6.0 (multi-backend
+  builds, dlopen plugin ABI, raw typed-buffer output API) and
+  `neuriplo-kserve-client` v0.1.0 -> v0.3.0 (proto profiles, gRPC
+  raw-contents conformance). `videocapture` (v0.3.0) and `neuriplo-tasks`
+  (v0.4.0) unchanged.
+- Compatibility matrix: `neuriplo-kserve-runtime` gRPC transport is
+  live-validated against the v0.1.0 runtime release
+  (`raw_output_contents` emitted by default).
+
 ## [0.5.0] - 2026-06-11
 
 ### Added
