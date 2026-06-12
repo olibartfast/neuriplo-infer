@@ -28,7 +28,7 @@ Legend: ✅ exercised live in CI · 🟡 dry-run only (live behind manual dispat
 
 | Server | HTTP | gRPC | Notes |
 |--------|------|------|-------|
-| neuriplo-kserve-runtime | ✅ validated | 🟡 | reference target |
+| neuriplo-kserve-runtime | ✅ validated | ✅ validated | reference target; gRPC live-validated 2026-06-12 via client conformance + infer `KserveEngine` after runtime PR #9 (`raw_output_contents`) |
 | Triton Inference Server | 🟡 (live: dispatch) | 🟡 (live: dispatch) | ONNX backend; `grpcurl` over `proto/kserve_grpc.proto` |
 | OpenVINO Model Server (OVMS) | 🟡 (live: dispatch) | 🟡 (live: dispatch) | same OIP endpoints; serves ONNX directly |
 | TorchServe (OIP) | ⏳ | ⏳ | version routing varies |
@@ -90,6 +90,9 @@ bash app/test/kserve_integration.sh --live
 
 # Narrow it down:
 bash app/test/kserve_integration.sh --live --servers triton --transports http
+
+# Live client <-> neuriplo-kserve-runtime (sibling repo; HTTP + gRPC):
+# ../neuriplo-kserve-client/scripts/runtime_conformance.sh --live
 ```
 
 See [docs/KserveRuntime.md](KserveRuntime.md) for the full KServe runtime
