@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-06-12
+
+### Fixed
+- `InferencePipelineBuilderTest` adapted to the neuriplo v0.6.0 load-failure
+  contract: `setup_inference_engine` no longer lets vendor exceptions
+  (e.g. `cv::Exception`) propagate -- it logs them and returns `nullptr`, so
+  the builder's own `runtime_error` is now the expected failure shape for the
+  intentionally-unparseable YOLO26 model under OpenCV 4.6. Fixes the red
+  `master Release Check` / `develop CI` test jobs after the v0.6.0 release.
+
 ## [0.6.0] - 2026-06-12
 
 ### Changed
