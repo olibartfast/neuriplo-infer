@@ -3,11 +3,55 @@
 #include "VideoCaptureFactory.hpp"
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 
+#include <cctype>
 #include <chrono>
 #include <filesystem>
 #include <iostream>
 
 namespace {
+
+// Replaces characters that are awkward in filenames with '-' so model/backend
+// tags can be embedded in the output image name safely.
+std::string sanitizeForFilename(std::string value) {
+  for (auto &c : value) {
+    if (std::isalnum(static_cast<unsigned char>(c)) == 0) {
+      c = '-';
+    }
+  }
+  return value;
+}
+
+// Short label for the execution backend, used in the output image filename.
+// Remote inference reports "kserve"; local inference reports the compile-time
+// backend selected via DEFAULT_BACKEND.
+std::string backendLabel(const AppConfig &config) {
+  if (!config.kserve_endpoint.empty()) {
+    return "kserve";
+  }
+#if defined(USE_ONNX_RUNTIME)
+  return "onnx_runtime";
+#elif defined(USE_LIBTORCH)
+  return "libtorch";
+#elif defined(USE_TENSORRT)
+  return "tensorrt";
+#elif defined(USE_OPENVINO)
+  return "openvino";
+#elif defined(USE_LIBTENSORFLOW)
+  return "libtensorflow";
+#elif defined(USE_OPENCV_DNN)
+  return "opencv_dnn";
+#elif defined(USE_LITERT)
+  return "litert";
+#else
+  return "local";
+#endif
+}
+
+// data/output/processed_<model>_<backend>.png
+std::string processedImageName(const AppConfig &config) {
+  return "processed_" + sanitizeForFilename(config.detectorType) + "_" +
+         sanitizeForFilename(backendLabel(config)) + ".png";
+}
 
 template <typename T1, typename T2>
 std::vector<neuriplo_tasks::Tensor> convertToTensors(const T1 &outputs,
@@ -75,9 +119,10 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
 
   pipeline.renderResults(results, image);
   std::filesystem::create_directories("data/output");
-  std::string processed_path = "data/output/processed.png";
+  const std::string processed_name = processedImageName(pipeline.config);
+  std::string processed_path = "data/output/" + processed_name;
   if (!cv::imwrite(processed_path, image)) {
-    const std::string fallback_path = "/tmp/neuriplo-infer-processed.png";
+    const std::string fallback_path = "/tmp/neuriplo-infer-" + processed_name;
     if (!cv::imwrite(fallback_path, image)) {
       LOG(ERROR) << "Failed to save output image to both " << processed_path
                  << " and " << fallback_path;
