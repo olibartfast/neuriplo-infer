@@ -91,5 +91,11 @@ jobs:
         run: |
           tag="${{ steps.meta.outputs.tag }}"
           gh release edit "${tag}" --latest --title "${tag}"
-          gh release view "${tag}" --json tagName,isLatest,url \
-            --jq '"\(.tagName) isLatest=\(.isLatest) \(.url)"'
+          # 'isLatest' is not a valid --json field for gh release view on the
+          # runners; verify through the REST API instead.
+          latest="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)"
+          if [ "${latest}" != "${tag}" ]; then
+            echo "::error::expected ${tag} to be Latest, but GitHub reports ${latest}" >&2
+            exit 1
+          fi
+          echo "${tag} is marked Latest"
