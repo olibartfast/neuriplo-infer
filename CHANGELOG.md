@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- KServe output images are tagged with the backend the server actually used to
+  run the model: `processed_<model>_kserve_<backend>.png` (rendered with a
+  filename-safe separator, e.g. `processed_yolo26_kserve-litert.png`). The tag
+  is derived from the KServe V2 metadata `platform` field surfaced by
+  `KserveEngine` (`tensorrt_plan`->`trt`, `onnxruntime_onnx`->`ort`, `openvino`,
+  `neuriplo_litert`->`litert`, ...); falls back to plain `kserve` when the
+  server omits the platform.
+- e2e example (`docker_run_inference_e2e_example.sh`): the EdgeCrafter presets
+  can run on the `litert` backend, lowering the exported ONNX to TFLite via an
+  `onnx2tf` conversion step (parallel to the TensorRT one). New
+  `edgecrafter_det` litert dry-run in the e2e test.
+- KServe + TFLite validated end-to-end locally (2026-06-13): the
+  `neuriplo-kserve-runtime` litert backend serving a `.tflite` model, with the
+  `neuriplo-infer` KServe client producing a rendered image.
+
 ## [0.6.2] - 2026-06-13
 
 ### Added

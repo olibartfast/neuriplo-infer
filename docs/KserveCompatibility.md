@@ -37,6 +37,17 @@ Legend: ✅ exercised live in CI · 🟡 dry-run only (live behind manual dispat
 which is gated behind a manual dispatch so routine CI never pulls multi-GB
 server images. The dry-run path for these servers runs on every PR.
 
+### Model formats
+
+The reference `neuriplo-kserve-runtime` delegates execution to neuriplo
+backends, so it serves whatever format the backend it was built with consumes
+(ONNX, OpenVINO IR, TorchScript, TFLite, ...). It reports the serving backend
+as `platform: neuriplo_<backend>`, which `KserveEngine` surfaces and the CLI
+folds into the output filename (`processed_<model>_kserve_<backend>.png`).
+**TFLite** over the `litert` backend was validated locally on 2026-06-13
+(runtime + `neuriplo-infer` client round-trip on a `.tflite` model); it is not
+yet wired into the CI live job. Triton and OVMS in the matrix above serve ONNX.
+
 ## Datatype coverage
 
 Input datatypes are taken from the server's model metadata (not hardcoded). The
