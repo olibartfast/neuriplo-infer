@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-06-13
+
+### Added
+- CLI output images are named `processed_<model>_<backend>.png` instead of a
+  fixed `processed.png`, making multi-run local output easier to distinguish.
+
+### Changed
+- Sibling release pin bumped: `neuriplo` v0.6.0 -> v0.7.0 (tensor datatype
+  metadata on `InferenceMetadata`). `videocapture` (v0.3.0), `neuriplo-tasks`
+  (v0.4.0), and `neuriplo-kserve-client` (v0.3.0) unchanged.
+- Compatibility matrix: `neuriplo-kserve-runtime` gRPC transport validated
+  against the v0.2.0 runtime release (binary tensor framing and real tensor
+  datatypes in model metadata).
+
+### Removed
+- Auto-publish GitHub Release workflow (`.github/workflows/publish-github-release.yml`);
+  release notes are published manually after Release Guard validates sibling pins.
+
 ## [0.6.1] - 2026-06-12
 
 ### Fixed
@@ -200,8 +218,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.1...HEAD
-[0.4.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.0...v0.4.1
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.1...v0.5.0
 [0.4.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.0...v0.3.1
