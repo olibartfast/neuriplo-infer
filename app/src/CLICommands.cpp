@@ -41,6 +41,12 @@ std::string kservePlatformTag(const std::string &platform) {
   if (lower.find("openvino") != std::string::npos) {
     return "openvino";
   }
+  // Check litert/tflite before the generic tensorflow match: the neuriplo
+  // KServe runtime reports "neuriplo_litert" for TFLite models.
+  if (lower.find("litert") != std::string::npos ||
+      lower.find("tflite") != std::string::npos) {
+    return "litert";
+  }
   if (lower.find("torch") != std::string::npos) {
     return "torch";
   }
