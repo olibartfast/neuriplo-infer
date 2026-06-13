@@ -165,3 +165,7 @@ double KserveEngine::averageInferenceLatencyMs() const noexcept {
 }
 
 uint64_t KserveEngine::inferenceCount() const noexcept { return infer_count_; }
+
+std::string KserveEngine::servingPlatform() const noexcept {
+  return raw_metadata_.platform;
+}
