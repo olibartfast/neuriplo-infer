@@ -36,6 +36,8 @@ std::string backendLabel(const AppConfig &config) {
   return "tensorrt";
 #elif defined(USE_OPENVINO)
   return "openvino";
+#elif defined(USE_EXECUTORCH)
+  return "executorch";
 #elif defined(USE_LIBTENSORFLOW)
   return "libtensorflow";
 #elif defined(USE_OPENCV_DNN)
