@@ -78,7 +78,7 @@ Options:
   --prompt <value>           Freeform text prompt for gemma4. Default: "Describe what you see in this image."
   --dry-run                  Print commands without executing them
   --skip-export              Skip export step
-  --skip-convert             Skip TensorRT conversion step
+  --skip-convert             Skip the TensorRT / LiteRT conversion step
   --skip-infer               Skip inference step
   --list-presets             Print available presets
   --help                     Show this help
@@ -389,6 +389,9 @@ print('Exported to', dest)
         EDGECRAFTER_VENV="${ROOT_DIR}/environments/edgecrafter-export"
         INPUT_SIZES="3,640,640;2"
         EXTRA_REQUIREMENTS=()
+        # EdgeCrafter has no native TFLite exporter, so a litert run lowers the
+        # exported ONNX graph to TFLite via onnx2tf (see the LiteRT convert step).
+        LITERT_CONVERT_FROM_ONNX=true
         case "$PRESET" in
             edgecrafter_det)
                 MODEL_TYPE="ecdet"
@@ -589,6 +592,21 @@ if [[ "$BACKEND" == "tensorrt" && "$SKIP_CONVERT" == false ]]; then
         trtexec \
         "--onnx=/weights/${MODEL_BASENAME}.onnx" \
         "--saveEngine=/weights/${MODEL_BASENAME}.engine"
+fi
+
+if [[ "$BACKEND" == "litert" && "${LITERT_CONVERT_FROM_ONNX:-false}" == true && "$SKIP_CONVERT" == false ]]; then
+    ONNX_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx"
+    LITERT_CONVERT_VENV="${ROOT_DIR}/environments/onnx2tf-convert"
+    TFLITE_OUTPUT_DIR="${WEIGHTS_DIR}/${MODEL_BASENAME}_tflite"
+    echo "=== Step 2: Converting ONNX to LiteRT (TFLite) ==="
+    if [[ "$DRY_RUN" == false ]]; then
+        ensure_file "$ONNX_ARTIFACT"
+    fi
+    # onnx2tf lowers ONNX -> TensorFlow -> TFLite and writes several precision
+    # variants into the output dir (e.g. <model>_float32.tflite); copy the
+    # float32 variant to the path the inference step expects.
+    run_shell_cmd "${PYTHON_BIN} -m venv \"${LITERT_CONVERT_VENV}\""
+    run_shell_cmd "source \"${LITERT_CONVERT_VENV}/bin/activate\" && pip install --quiet --upgrade pip && pip install --quiet onnx onnxruntime onnx-graphsurgeon sng4onnx simple_onnx_processing_tools onnx2tf tensorflow && onnx2tf -i \"${ONNX_ARTIFACT}\" -o \"${TFLITE_OUTPUT_DIR}\" && cp \"${TFLITE_OUTPUT_DIR}/${MODEL_BASENAME}_float32.tflite\" \"${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite\""
 fi
 
 if [[ "$SKIP_INFER" == false ]]; then

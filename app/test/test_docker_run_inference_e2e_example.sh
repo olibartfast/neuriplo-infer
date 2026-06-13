@@ -69,6 +69,29 @@ grep -F -- "--weights=/weights/ecdet_s.onnx" "${OUTPUT_FILE}"
 grep -F -- "--input_sizes=3\\,640\\,640\\;2" "${OUTPUT_FILE}"
 grep -F -- "neuriplo-infer:onnxruntime" "${OUTPUT_FILE}"
 
+# ── edgecrafter_det (litert) dry-run ──────────────────────────────────────────
+OUTPUT_FILE="${TMP_DIR}/edgecrafter_det_litert_dry_run.txt"
+
+bash "${SCRIPT_PATH}" \
+    --preset edgecrafter_det \
+    --backend litert \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --labels-dir "${TMP_DIR}/labels" \
+    --docker-image neuriplo-infer:litert \
+    --dry-run > "${OUTPUT_FILE}"
+
+grep -F -- "Intellindust-AI-Lab/EdgeCrafter" "${OUTPUT_FILE}"
+grep -F -- "tools/deployment/export_onnx.py" "${OUTPUT_FILE}"
+grep -F -- "configs/ecdet/ecdet_s.yml" "${OUTPUT_FILE}"
+grep -F -- "--type=ecdet" "${OUTPUT_FILE}"
+# litert lowers the exported ONNX to TFLite via onnx2tf before inference
+grep -F -- "onnx2tf -i" "${OUTPUT_FILE}"
+grep -F -- "ecdet_s_float32.tflite" "${OUTPUT_FILE}"
+grep -F -- "--weights=/weights/ecdet_s.tflite" "${OUTPUT_FILE}"
+grep -F -- "--input_sizes=3\\,640\\,640\\;2" "${OUTPUT_FILE}"
+grep -F -- "neuriplo-infer:litert" "${OUTPUT_FILE}"
+
 # ── edgecrafter_seg dry-run ───────────────────────────────────────────────────
 OUTPUT_FILE="${TMP_DIR}/edgecrafter_seg_dry_run.txt"
 
