@@ -26,8 +26,11 @@ public:
     kserve::ModelMetadata md;
     md.inputs.push_back({"input", "FP32", {1, 1}});
     md.outputs.push_back({"output", "FP32", {1, 1}});
+    md.platform = platform_;
     return md;
   }
+
+  void setPlatform(std::string platform) { platform_ = std::move(platform); }
 
   std::vector<kserve::InferOutput>
   infer(const std::vector<kserve::InferInput> &inputs) override {
@@ -55,6 +58,7 @@ public:
 private:
   std::chrono::milliseconds infer_delay_;
   int infer_calls_{0};
+  std::string platform_;
 };
 
 std::vector<std::vector<uint8_t>> oneFloatInput() {
@@ -96,6 +100,22 @@ TEST(KserveEngine, AggregatesAcrossRequests) {
   EXPECT_EQ(engine.inferenceCount(), 3U);
   EXPECT_GE(engine.lastInferenceLatencyMs(), 0.0);
   EXPECT_GE(engine.averageInferenceLatencyMs(), 0.0);
+}
+
+TEST(KserveEngine, ServingPlatformEmptyBeforeMetadataFetch) {
+  KserveEngine engine(std::make_unique<FakeClient>());
+  EXPECT_TRUE(engine.servingPlatform().empty());
+}
+
+TEST(KserveEngine, ExposesServingPlatformFromMetadata) {
+  auto client = std::make_unique<FakeClient>();
+  client->setPlatform("tensorrt_plan");
+  KserveEngine engine(std::move(client));
+
+  // Fetching metadata is what populates the served platform.
+  engine.get_inference_metadata();
+
+  EXPECT_EQ(engine.servingPlatform(), "tensorrt_plan");
 }
 
 #endif // NEURIPLO_INFER_WITH_KSERVE
