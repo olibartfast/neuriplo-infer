@@ -44,6 +44,7 @@ git commit -m 'release: v<version>'
 # PR or merge: release/<version> → master; tag v<version> on master
 git checkout develop && git merge release/<version>
 git branch -d release/<version>
+git push origin --delete release/<version>
 git push origin master develop --tags
 # GitHub Release published by publish-github-release.yml after Release Guard
 ```
@@ -65,6 +66,7 @@ git checkout -b hotfix/<short-name>
 # merge hotfix → master; tag v<patch>
 git checkout develop && git merge hotfix/<short-name>
 git branch -d hotfix/<short-name>
+git push origin --delete hotfix/<short-name>
 git push origin master develop --tags
 # GitHub Release published by publish-github-release.yml after Release Guard
 ```
@@ -75,4 +77,5 @@ git push origin master develop --tags
 - PRs into **`master`** are release or hotfix merges only.
 - Do not suggest trunk-based or `main`-only workflows for this repo.
 - After any release or hotfix merge to `master`, always merge back into `develop`.
-- Delete `feature/*`, `release/*`, and `hotfix/*` branches after they are merged.
+- Delete `feature/*`, `release/*`, and `hotfix/*` branches locally **and on
+  `origin`** after they are merged (see `gitflow-release-cleanup.mdc`).
