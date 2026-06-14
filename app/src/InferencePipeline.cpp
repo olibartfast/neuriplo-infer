@@ -235,6 +235,13 @@ void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
 
 void InferencePipelineBuilder::setupTask(InferencePipeline &pipeline) const {
   pipeline.inference_metadata = pipeline.engine->get_inference_metadata();
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+  // get_inference_metadata() above forces the remote metadata fetch, so the
+  // serving platform is now known for KServe engines.
+  if (auto *kserve = dynamic_cast<KserveEngine *>(pipeline.engine.get())) {
+    pipeline.kserve_platform = kserve->servingPlatform();
+  }
+#endif
   pipeline.model_info = buildModelInfo(pipeline.inference_metadata, config_);
   pipeline.task_type = getTaskTypeForModel(config_.detectorType);
 

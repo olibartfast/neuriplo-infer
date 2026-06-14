@@ -37,6 +37,56 @@ Legend: ✅ exercised live in CI · 🟡 dry-run only (live behind manual dispat
 which is gated behind a manual dispatch so routine CI never pulls multi-GB
 server images. The dry-run path for these servers runs on every PR.
 
+### Model formats
+
+The reference `neuriplo-kserve-runtime` delegates execution to neuriplo
+backends, so it serves whatever format the backend it was built with consumes
+(ONNX, OpenVINO IR, TorchScript, TFLite, ...). It reports the serving backend
+as `platform: neuriplo_<backend>`, which `KserveEngine` surfaces and the CLI
+folds into the output filename (`processed_<model>_kserve_<backend>.png`).
+**TFLite** over the `litert` backend was validated locally on 2026-06-13
+(runtime + `neuriplo-infer` client round-trip on a `.tflite` model — YOLO26,
+which serves correctly); it is not yet wired into the CI live job. Triton and
+OVMS in the matrix above serve ONNX.
+
+#### Known-bad conversion: EdgeCrafter `ecdet` (RT-DETR/deformable) → TFLite
+
+> **TL;DR — do not serve `ecdet` as TFLite.** It loads and runs end-to-end but
+> the detections are numerically garbage. The fault is the ONNX→TFLite
+> conversion, not the runtime, the custom ops, or the serving path.
+
+`ecdet_s` is an RT-DETR/D-FINE-style detector (deformable attention +
+transformer: ~38 LayerNorm, ~148 MatMul, ~115 Transpose). Converting it with
+[`onnx2tf`](https://github.com/PINTO0309/onnx2tf) (`flatbuffer_direct` backend,
+the default) produces a `.tflite` that **runs but is numerically wrong**. To
+even get it to run, the `litert` backend had to gain two kernels (see
+`neuriplo/backends/litert/src/LiteRTInfer.cpp`):
+
+- a custom `ONNX_GRIDSAMPLE` kernel (onnx2tf's lowering of ONNX `GridSample`;
+  NCHW, bilinear / `zeros` / `align_corners=false`), and
+- a `SIGN` builtin override that also accepts INT64 (the stock TFLite kernel is
+  float-only; onnx2tf's own evaluator dies on the same node).
+
+The `GridSample` kernel was validated against onnxruntime to `~2e-5`, so it is
+**not** the problem. The problem is conversion fidelity in the transformer body
+(onnx2tf's static shapes in the deformable region are even internally
+inconsistent; the alternative `tf_converter` backend crashes outright on
+NCHW→NHWC layout bugs).
+
+Verified end-to-end through the C++ `neuriplo-infer` client (same pre/post-
+processing, identical `data/dog.jpg` input), conf threshold 0.5:
+
+| Backend (C++ e2e) | Top detections |
+|-------------------|----------------|
+| TensorRT (engine) / ONNX (onnxruntime) | bicycle 0.93, dog 0.92, car 0.74 ✅ |
+| KServe `litert` (this `.tflite`)        | top score ≈0.19, random labels, nonsense boxes ❌ |
+
+**Recommendation:** serve `ecdet` via ONNX/TensorRT/OpenVINO, not TFLite. If
+TFLite is required, the model must be re-exported in a TFLite-friendly form (or
+converted with a fixed onnx2tf) — there is nothing to fix in this repo. Simpler
+CNN detectors (e.g. YOLO26) convert and serve correctly over `litert`; the
+issue is specific to the deformable/transformer architecture.
+
 ## Datatype coverage
 
 Input datatypes are taken from the server's model metadata (not hardcoded). The

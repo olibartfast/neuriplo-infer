@@ -147,6 +147,21 @@ if(NOT _NEURIPLO_TASKS_SIBLING STREQUAL "")
     set(FETCHCONTENT_SOURCE_DIR_NEURIPLO-TASKS "${_NEURIPLO_TASKS_SIBLING}" CACHE PATH "" FORCE)
 endif()
 
+# Prefer a neuriplo sibling checkout during local cross-repo development.
+if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
+    set(_NEURIPLO_SIBLING "")
+    foreach(_candidate IN ITEMS
+        "${CMAKE_CURRENT_SOURCE_DIR}/../neuriplo")
+        if(EXISTS "${_candidate}/CMakeLists.txt")
+            set(_NEURIPLO_SIBLING "${_candidate}")
+            break()
+        endif()
+    endforeach()
+    if(NOT _NEURIPLO_SIBLING STREQUAL "")
+        set(FETCHCONTENT_SOURCE_DIR_NEURIPLO "${_NEURIPLO_SIBLING}" CACHE PATH "" FORCE)
+    endif()
+endif()
+
 # Prefer a neuriplo-kserve-client sibling checkout during local cross-repo dev.
 if(NEURIPLO_INFER_ENABLE_KSERVE)
     set(_KSERVE_CLIENT_SIBLING "")

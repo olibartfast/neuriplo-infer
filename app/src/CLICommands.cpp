@@ -21,12 +21,54 @@ std::string sanitizeForFilename(std::string value) {
   return value;
 }
 
+// Short tag for the backend a KServe server used to run the model, derived from
+// the V2 metadata "platform" string (e.g. "tensorrt_plan" -> "trt"). Returns ""
+// when the platform is unknown so the caller falls back to a plain "kserve".
+std::string kservePlatformTag(const std::string &platform) {
+  std::string lower = platform;
+  for (auto &c : lower) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  if (lower.empty()) {
+    return "";
+  }
+  if (lower.find("tensorrt") != std::string::npos) {
+    return "trt";
+  }
+  if (lower.find("onnx") != std::string::npos) {
+    return "ort";
+  }
+  if (lower.find("openvino") != std::string::npos) {
+    return "openvino";
+  }
+  // Check litert/tflite before the generic tensorflow match: the neuriplo
+  // KServe runtime reports "neuriplo_litert" for TFLite models.
+  if (lower.find("litert") != std::string::npos ||
+      lower.find("tflite") != std::string::npos) {
+    return "litert";
+  }
+  if (lower.find("torch") != std::string::npos) {
+    return "torch";
+  }
+  if (lower.find("tensorflow") != std::string::npos) {
+    return "tf";
+  }
+  if (lower.find("python") != std::string::npos) {
+    return "python";
+  }
+  // Unrecognised but non-empty platform: keep it (sanitised) rather than drop
+  // the information.
+  return sanitizeForFilename(lower);
+}
+
 // Short label for the execution backend, used in the output image filename.
-// Remote inference reports "kserve"; local inference reports the compile-time
+// Remote inference reports "kserve" plus the served backend when the server
+// advertises one (e.g. "kserve_trt"); local inference reports the compile-time
 // backend selected via DEFAULT_BACKEND.
-std::string backendLabel(const AppConfig &config) {
-  if (!config.kserve_endpoint.empty()) {
-    return "kserve";
+std::string backendLabel(const InferencePipeline &pipeline) {
+  if (!pipeline.config.kserve_endpoint.empty()) {
+    const std::string tag = kservePlatformTag(pipeline.kserve_platform);
+    return tag.empty() ? "kserve" : "kserve_" + tag;
   }
 #if defined(USE_ONNX_RUNTIME)
   return "onnx_runtime";
@@ -36,6 +78,8 @@ std::string backendLabel(const AppConfig &config) {
   return "tensorrt";
 #elif defined(USE_OPENVINO)
   return "openvino";
+#elif defined(USE_EXECUTORCH)
+  return "executorch";
 #elif defined(USE_LIBTENSORFLOW)
   return "libtensorflow";
 #elif defined(USE_OPENCV_DNN)
@@ -48,9 +92,9 @@ std::string backendLabel(const AppConfig &config) {
 }
 
 // data/output/processed_<model>_<backend>.png
-std::string processedImageName(const AppConfig &config) {
-  return "processed_" + sanitizeForFilename(config.detectorType) + "_" +
-         sanitizeForFilename(backendLabel(config)) + ".png";
+std::string processedImageName(const InferencePipeline &pipeline) {
+  return "processed_" + sanitizeForFilename(pipeline.config.detectorType) +
+         "_" + sanitizeForFilename(backendLabel(pipeline)) + ".png";
 }
 
 template <typename T1, typename T2>
@@ -119,7 +163,7 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
 
   pipeline.renderResults(results, image);
   std::filesystem::create_directories("data/output");
-  const std::string processed_name = processedImageName(pipeline.config);
+  const std::string processed_name = processedImageName(pipeline);
   std::string processed_path = "data/output/" + processed_name;
   if (!cv::imwrite(processed_path, image)) {
     const std::string fallback_path = "/tmp/neuriplo-infer-" + processed_name;

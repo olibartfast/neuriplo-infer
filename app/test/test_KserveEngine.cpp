@@ -13,6 +13,17 @@
 
 namespace {
 
+template <typename Metadata>
+void setMetadataPlatform(Metadata &metadata, const std::string &platform) {
+  if constexpr (requires { metadata.platform; }) {
+    metadata.platform = platform;
+  }
+}
+
+template <typename Metadata> constexpr bool hasMetadataPlatform() {
+  return requires(Metadata metadata) { metadata.platform; };
+}
+
 // Minimal in-memory KServe protocol client so KserveEngine can be exercised
 // without a real server. Reports a single FP32 input/output and echoes a fixed
 // payload back; infer() optionally sleeps so latency is measurably non-zero.
@@ -26,8 +37,11 @@ public:
     kserve::ModelMetadata md;
     md.inputs.push_back({"input", "FP32", {1, 1}});
     md.outputs.push_back({"output", "FP32", {1, 1}});
+    setMetadataPlatform(md, platform_);
     return md;
   }
+
+  void setPlatform(std::string platform) { platform_ = std::move(platform); }
 
   std::vector<kserve::InferOutput>
   infer(const std::vector<kserve::InferInput> &inputs) override {
@@ -55,6 +69,7 @@ public:
 private:
   std::chrono::milliseconds infer_delay_;
   int infer_calls_{0};
+  std::string platform_;
 };
 
 std::vector<std::vector<uint8_t>> oneFloatInput() {
@@ -96,6 +111,26 @@ TEST(KserveEngine, AggregatesAcrossRequests) {
   EXPECT_EQ(engine.inferenceCount(), 3U);
   EXPECT_GE(engine.lastInferenceLatencyMs(), 0.0);
   EXPECT_GE(engine.averageInferenceLatencyMs(), 0.0);
+}
+
+TEST(KserveEngine, ServingPlatformEmptyBeforeMetadataFetch) {
+  KserveEngine engine(std::make_unique<FakeClient>());
+  EXPECT_TRUE(engine.servingPlatform().empty());
+}
+
+TEST(KserveEngine, ExposesServingPlatformFromMetadata) {
+  auto client = std::make_unique<FakeClient>();
+  client->setPlatform("tensorrt_plan");
+  KserveEngine engine(std::move(client));
+
+  // Fetching metadata is what populates the served platform.
+  engine.get_inference_metadata();
+
+  if constexpr (hasMetadataPlatform<kserve::ModelMetadata>()) {
+    EXPECT_EQ(engine.servingPlatform(), "tensorrt_plan");
+  } else {
+    EXPECT_TRUE(engine.servingPlatform().empty());
+  }
 }
 
 #endif // NEURIPLO_INFER_WITH_KSERVE
