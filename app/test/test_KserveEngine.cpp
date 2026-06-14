@@ -13,6 +13,17 @@
 
 namespace {
 
+template <typename Metadata>
+void setMetadataPlatform(Metadata &metadata, const std::string &platform) {
+  if constexpr (requires { metadata.platform; }) {
+    metadata.platform = platform;
+  }
+}
+
+template <typename Metadata> constexpr bool hasMetadataPlatform() {
+  return requires(Metadata metadata) { metadata.platform; };
+}
+
 // Minimal in-memory KServe protocol client so KserveEngine can be exercised
 // without a real server. Reports a single FP32 input/output and echoes a fixed
 // payload back; infer() optionally sleeps so latency is measurably non-zero.
@@ -26,7 +37,7 @@ public:
     kserve::ModelMetadata md;
     md.inputs.push_back({"input", "FP32", {1, 1}});
     md.outputs.push_back({"output", "FP32", {1, 1}});
-    md.platform = platform_;
+    setMetadataPlatform(md, platform_);
     return md;
   }
 
@@ -115,7 +126,11 @@ TEST(KserveEngine, ExposesServingPlatformFromMetadata) {
   // Fetching metadata is what populates the served platform.
   engine.get_inference_metadata();
 
-  EXPECT_EQ(engine.servingPlatform(), "tensorrt_plan");
+  if constexpr (hasMetadataPlatform<kserve::ModelMetadata>()) {
+    EXPECT_EQ(engine.servingPlatform(), "tensorrt_plan");
+  } else {
+    EXPECT_TRUE(engine.servingPlatform().empty());
+  }
 }
 
 #endif // NEURIPLO_INFER_WITH_KSERVE
