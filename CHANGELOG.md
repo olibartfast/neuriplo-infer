@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-14
+
 ### Added
 - KServe output images are tagged with the backend the server actually used to
   run the model: `processed_<model>_kserve_<backend>.png` (rendered with a
@@ -21,6 +23,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - KServe + TFLite validated end-to-end locally (2026-06-13): the
   `neuriplo-kserve-runtime` litert backend serving a `.tflite` model, with the
   `neuriplo-infer` KServe client producing a rendered image.
+
+### Changed
+- Sibling release pins bumped: `neuriplo` v0.7.0 -> v0.8.0,
+  `neuriplo-tasks` v0.4.0 -> v0.4.1, `neuriplo-kserve-client` v0.3.0 -> v0.4.0.
 
 ## [0.6.2] - 2026-06-13
 
@@ -234,7 +240,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.5.0...v0.6.0
