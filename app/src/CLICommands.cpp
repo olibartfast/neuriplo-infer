@@ -93,8 +93,8 @@ std::string backendLabel(const InferencePipeline &pipeline) {
 
 // data/output/processed_<model>_<backend>.png
 std::string processedImageName(const InferencePipeline &pipeline) {
-  return "processed_" + sanitizeForFilename(pipeline.config.detectorType) + "_" +
-         sanitizeForFilename(backendLabel(pipeline)) + ".png";
+  return "processed_" + sanitizeForFilename(pipeline.config.detectorType) +
+         "_" + sanitizeForFilename(backendLabel(pipeline)) + ".png";
 }
 
 template <typename T1, typename T2>
