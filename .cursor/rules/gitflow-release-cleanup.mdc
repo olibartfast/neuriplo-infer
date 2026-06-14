@@ -1,0 +1,44 @@
+---
+description: Mandatory GitFlow release/hotfix branch cleanup after merge and tag
+alwaysApply: true
+---
+
+# GitFlow release and hotfix branch cleanup
+
+Applies to **coding repos** listed in `ops/policies.yaml` (`neuriplo-tasks`,
+`neuriplo`, `neuriplo-infer`, `neuriplo-kserve-client`, `neuriplo-kserve-runtime`,
+`videocapture`). Not required for `neuriplo-platform`.
+
+## After a release or hotfix is finished
+
+When `release/*` or `hotfix/*` has been merged to `master` (tagged) and
+back-merged to `develop`, **delete the topic branch locally and on `origin`**.
+Do not leave finished release/hotfix branches on the remote.
+
+```bash
+# Example: release/0.7.0 completed on master + develop
+git checkout develop
+git branch -d release/0.7.0
+git push origin --delete release/0.7.0
+```
+
+Same for `hotfix/*` after merge to `master` and `develop`.
+
+## Do not
+
+- Push `release/*` or `hotfix/*` to `origin` and leave them there after the
+  release is complete.
+- Use a lingering remote release branch as the record of a shipped version —
+  the **`master` tag** (`vX.Y.Z`) is the immutable release ref.
+- Push `release/*` only to watch CI when `develop` CI covers the same commits;
+  prefer waiting on `develop`/`master` workflow results unless the user asks
+  to push the release branch for a PR.
+
+## Agent checklist (release complete)
+
+1. Merge `release/X.Y.Z` → `master`; tag `vX.Y.Z`; push `master` and tag.
+2. Merge `release/X.Y.Z` → `develop`; bump dev `VERSION` if the repo does that;
+   push `develop`.
+3. `git branch -d release/X.Y.Z`
+4. `git push origin --delete release/X.Y.Z`
+5. Confirm: `git branch -a | grep release` shows no finished release branch.
