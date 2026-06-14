@@ -39,9 +39,9 @@ repo GitFlow **`main`** is **`master`**; **`develop`** is the integration branch
   target `master`.
 - **`release/*`** — branch from `develop` when preparing a version; only release
   fixes/docs (no new features). Merge to `master`, tag `vX.Y.Z`, then merge the
-  same branch back into `develop` and delete it.
+  same branch back into `develop` and delete it locally and on `origin`.
 - **`hotfix/*`** — branch from `master` for production patches; merge to `master`
-  (tag), then merge back into `develop` and delete it.
+  (tag), then merge back into `develop` and delete it locally and on `origin`.
 - Pull requests into `master` are release or hotfix merges only.
 - **Back-merge immediately after every merge into `master`.** The merge commit
   created on `master` must be merged back into `develop` right away

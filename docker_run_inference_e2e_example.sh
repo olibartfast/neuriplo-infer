@@ -391,6 +391,15 @@ print('Exported to', dest)
         EXTRA_REQUIREMENTS=()
         # EdgeCrafter has no native TFLite exporter, so a litert run lowers the
         # exported ONNX graph to TFLite via onnx2tf (see the LiteRT convert step).
+        #
+        # WARNING (litert/TFLite): the onnx2tf conversion of these RT-DETR/
+        # deformable-attention models is numerically broken. The .tflite loads
+        # and runs end-to-end (the litert backend ships ONNX_GRIDSAMPLE + INT64
+        # SIGN kernels for it) but produces GARBAGE detections (top score ~0.19,
+        # random labels) vs correct ONNX/TensorRT output. The fault is the
+        # conversion, not this pipeline. Serve EdgeCrafter via onnxruntime/
+        # tensorrt/openvino instead. See docs/KserveCompatibility.md
+        # ("Known-bad conversion: EdgeCrafter ecdet -> TFLite").
         LITERT_CONVERT_FROM_ONNX=true
         case "$PRESET" in
             edgecrafter_det)
