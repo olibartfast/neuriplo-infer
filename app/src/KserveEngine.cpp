@@ -76,6 +76,15 @@ std::vector<TensorElement> bytesToElements(const std::vector<uint8_t> &bytes,
   return out;
 }
 
+template <typename Metadata>
+std::string metadataPlatform(const Metadata &metadata) {
+  if constexpr (requires { metadata.platform; }) {
+    return metadata.platform;
+  } else {
+    return {};
+  }
+}
+
 } // namespace
 
 KserveEngine::KserveEngine(std::unique_ptr<kserve::IClient> client)
@@ -167,5 +176,5 @@ double KserveEngine::averageInferenceLatencyMs() const noexcept {
 uint64_t KserveEngine::inferenceCount() const noexcept { return infer_count_; }
 
 std::string KserveEngine::servingPlatform() const noexcept {
-  return raw_metadata_.platform;
+  return metadataPlatform(raw_metadata_);
 }
