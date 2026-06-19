@@ -34,7 +34,7 @@ int NeuriploInfer::run() {
 void NeuriploInfer::setupLogging(const std::string &log_folder) {
   try {
     if (!std::filesystem::exists(log_folder)) {
-      std::filesystem::create_directory(log_folder);
+      std::filesystem::create_directories(log_folder);
     } else {
       std::filesystem::directory_iterator end_itr;
       for (std::filesystem::directory_iterator itr(log_folder); itr != end_itr;

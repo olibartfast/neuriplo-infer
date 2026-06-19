@@ -58,6 +58,13 @@ cmake --build build
 
 Replace `<backend>` with one of the supported inference backends (see [Dependency Management Guide](docs/DependencyManagement.md)).
 
+### Windows Notes
+
+For native Windows builds, use a Visual Studio generator and start with `OPENCV_DNN`.
+The shell setup scripts in `scripts/` are Linux-oriented; on Windows, install OpenCV,
+glog, and any backend SDKs through your preferred package manager or local SDK installs.
+
+
 The KServe V2 protocol client lives in the standalone [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client) repository and is fetched automatically (via `FetchContent`, pinned in `versions.env`) when `NEURIPLO_INFER_ENABLE_KSERVE` is on; neuriplo-infer keeps only the `KserveEngine` adapter. HTTP client support is always available; gRPC client support is optional and enabled only when Protobuf and gRPC are available at configure time, otherwise the build falls back to HTTP.
 
 ### Video Backend Support

@@ -8,26 +8,38 @@ alwaysApply: true
 Follow the [Atlassian GitFlow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
 In this repo, GitFlow **`main`** is **`master`**. **`develop`** is the integration branch.
 
+## Scope
+
+GitFlow is mandatory for this coding repository. `neuriplo-platform` is the
+architecture orchestrator (control plane) where GitFlow does not apply — work
+there lands on `main`. See `neuriplo-platform/ops/policies.yaml`.
+
 ## Branch roles
 
 | GitFlow branch | This repo | Purpose |
 |----------------|-----------|---------|
 | `main` | `master` | Official release history; tag every release here |
 | `develop` | `develop` | Integration branch for completed features |
-| `feature/*` | `feature/*` | New work; parent is always `develop` |
+| `feature/*` / `feat/*` | `feature/*` / `feat/*` | New work; parent is always `develop` |
 | `release/*` | `release/*` | Release prep (version, changelog, pins); no new features |
 | `hotfix/*` | `hotfix/*` | Production patches; parent is always `master` |
 
 Never commit feature work directly to `develop` or `master`. Never merge features
 into `master`. Never fork feature branches from `master`.
 
+## Agent Commit Signing
+
+Every commit by an AI agent MUST include a `Co-authored-by` trailer with the
+agent name, LLM model, and vendor email. See `AGENTS.md` "Agent Commit Signing"
+for the full table of agents and format.
+
 ## Feature workflow
 
 ```bash
 git checkout develop && git pull
-git checkout -b feature/<short-name>
+git checkout -b feat/<short-name>          # or feature/<short-name>
 # work, commit, push
-# open PR: feature/<short-name> → develop
+# open PR: feat/<short-name> → develop
 # after merge, delete the feature branch
 ```
 
@@ -71,11 +83,23 @@ git push origin master develop --tags
 # GitHub Release published by publish-github-release.yml after Release Guard
 ```
 
+## Before Commit, Push, or PR
+
+1. Confirm the current branch matches the change type (feature / release / hotfix).
+2. Confirm the target branch is allowed:
+   - normal work → `develop` (or `feat/*` / `feature/*`)
+   - release / hotfix → `master` via release/hotfix flow only
+3. Never push normal development work directly to `master`.
+4. Never force-push to `master`.
+5. Run owning-repo validation (build/tests) before commit.
+6. Only commit or push when the user explicitly asks.
+7. Include `Co-Authored-By` agent/model trailer in commit body (see Agent Commit Signing above).
+
 ## Agent constraints
 
 - Default base branch for new work: **`develop`**.
 - PRs into **`master`** are release or hotfix merges only.
 - Do not suggest trunk-based or `main`-only workflows for this repo.
 - After any release or hotfix merge to `master`, always merge back into `develop`.
-- Delete `feature/*`, `release/*`, and `hotfix/*` branches locally **and on
+- Delete `feature/*`, `feat/*`, `release/*`, and `hotfix/*` branches locally **and on
   `origin`** after they are merged (see `gitflow-release-cleanup.mdc`).
