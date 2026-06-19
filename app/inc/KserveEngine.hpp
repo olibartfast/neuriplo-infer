@@ -44,6 +44,12 @@ public:
   double averageInferenceLatencyMs() const noexcept;
   uint64_t inferenceCount() const noexcept;
 
+  // Serving backend reported by the KServe server (V2 metadata "platform"
+  // field), e.g. "tensorrt_plan", "onnxruntime_onnx", "openvino". Empty when
+  // metadata has not been fetched yet or the server omits it. Used to tag
+  // rendered output with the backend that actually ran the model.
+  std::string servingPlatform() const noexcept;
+
 private:
   void ensureMetadata();
 

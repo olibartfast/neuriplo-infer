@@ -6,6 +6,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-14
+
+### Added
+- KServe output images are tagged with the backend the server actually used to
+  run the model: `processed_<model>_kserve_<backend>.png` (rendered with a
+  filename-safe separator, e.g. `processed_yolo26_kserve-litert.png`). The tag
+  is derived from the KServe V2 metadata `platform` field surfaced by
+  `KserveEngine` (`tensorrt_plan`->`trt`, `onnxruntime_onnx`->`ort`, `openvino`,
+  `neuriplo_litert`->`litert`, ...); falls back to plain `kserve` when the
+  server omits the platform.
+- e2e example (`docker_run_inference_e2e_example.sh`): the EdgeCrafter presets
+  can run on the `litert` backend, lowering the exported ONNX to TFLite via an
+  `onnx2tf` conversion step (parallel to the TensorRT one). New
+  `edgecrafter_det` litert dry-run in the e2e test.
+- KServe + TFLite validated end-to-end locally (2026-06-13): the
+  `neuriplo-kserve-runtime` litert backend serving a `.tflite` model, with the
+  `neuriplo-infer` KServe client producing a rendered image.
+
+### Changed
+- Sibling release pins bumped: `neuriplo` v0.7.0 -> v0.8.0,
+  `neuriplo-tasks` v0.4.0 -> v0.4.1, `neuriplo-kserve-client` v0.3.0 -> v0.4.0.
+
+## [0.6.2] - 2026-06-13
+
+### Added
+- CLI output images are named `processed_<model>_<backend>.png` instead of a
+  fixed `processed.png`, making multi-run local output easier to distinguish.
+
+### Changed
+- Sibling release pin bumped: `neuriplo` v0.6.0 -> v0.7.0 (tensor datatype
+  metadata on `InferenceMetadata`). `videocapture` (v0.3.0), `neuriplo-tasks`
+  (v0.4.0), and `neuriplo-kserve-client` (v0.3.0) unchanged.
+- Compatibility matrix: `neuriplo-kserve-runtime` gRPC transport validated
+  against the v0.2.0 runtime release (binary tensor framing and real tensor
+  datatypes in model metadata).
+
+### Removed
+- Auto-publish GitHub Release workflow (`.github/workflows/publish-github-release.yml`);
+  release notes are published manually after Release Guard validates sibling pins.
+
+## [0.6.1] - 2026-06-12
+
+### Fixed
+- `InferencePipelineBuilderTest` adapted to the neuriplo v0.6.0 load-failure
+  contract: `setup_inference_engine` no longer lets vendor exceptions
+  (e.g. `cv::Exception`) propagate -- it logs them and returns `nullptr`, so
+  the builder's own `runtime_error` is now the expected failure shape for the
+  intentionally-unparseable YOLO26 model under OpenCV 4.6. Fixes the red
+  `master Release Check` / `develop CI` test jobs after the v0.6.0 release.
+
+## [0.6.0] - 2026-06-12
+
+### Changed
+- Sibling release pins bumped: `neuriplo` v0.5.0 -> v0.6.0 (multi-backend
+  builds, dlopen plugin ABI, raw typed-buffer output API) and
+  `neuriplo-kserve-client` v0.1.0 -> v0.3.0 (proto profiles, gRPC
+  raw-contents conformance). `videocapture` (v0.3.0) and `neuriplo-tasks`
+  (v0.4.0) unchanged.
+- Compatibility matrix: `neuriplo-kserve-runtime` gRPC transport is
+  live-validated against the v0.1.0 runtime release
+  (`raw_output_contents` emitted by default).
+
 ## [0.5.0] - 2026-06-11
 
 ### Added
@@ -178,8 +240,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.1...HEAD
-[0.4.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.0...v0.4.1
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.2...v0.7.0
+[0.6.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.1...v0.5.0
 [0.4.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.0...v0.3.1

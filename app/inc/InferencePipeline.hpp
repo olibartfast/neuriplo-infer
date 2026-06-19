@@ -28,6 +28,10 @@ struct InferencePipeline {
   InferenceMetadata inference_metadata;
   neuriplo_tasks::ModelInfo model_info;
   neuriplo_tasks::TaskType task_type{neuriplo_tasks::TaskType::Detection};
+  // Serving backend reported by a remote KServe server (V2 metadata
+  // "platform", e.g. "tensorrt_plan"). Empty for local engines or when the
+  // server omits it. Used to tag the rendered output filename.
+  std::string kserve_platform;
 
   int getRequiredFrameCount() const;
   void renderResults(const std::vector<neuriplo_tasks::Result> &results,

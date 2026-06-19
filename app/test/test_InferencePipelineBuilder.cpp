@@ -80,9 +80,11 @@ TEST(InferencePipelineBuilderTest, BuildSuccessWithValidYoloModel) {
   InferencePipelineBuilder builder(config);
   builder.source(config.sources).batch(config.batch_size);
 
-  // Under OpenCV 4.6.0 DNN, loading yolo26s.onnx throws cv::Exception due to
-  // its Split layer. However, catching this exception verifies that the builder
-  // successfully found and attempted to load the model file.
+  // Under OpenCV 4.6.0 DNN, loading yolo26s.onnx fails due to its Split
+  // layer. Since neuriplo v0.6.0 setup_inference_engine no longer lets vendor
+  // exceptions (cv::Exception) propagate: it logs them and returns nullptr,
+  // so the builder throws its own runtime_error instead. Either failure shape
+  // verifies that the builder found and attempted to load the model file.
   try {
     InferencePipeline pipeline = builder.build();
     EXPECT_EQ(pipeline.config.detectorType, "yolo26");
@@ -98,7 +100,9 @@ TEST(InferencePipelineBuilderTest, BuildSuccessWithValidYoloModel) {
                  "like YOLO26 under OpenCV 4.6.0): "
               << e.what();
   } catch (const std::exception &e) {
-    FAIL() << "Unexpected exception type thrown: " << e.what();
+    EXPECT_NE(std::string(e.what()).find("Can't setup an inference engine"),
+              std::string::npos)
+        << "Unexpected exception type thrown: " << e.what();
   }
 }
 
@@ -116,6 +120,12 @@ TEST(InferencePipelineBuilderTest, BuildWithCustomRenderer) {
   try {
     builder.build();
   } catch (const cv::Exception &e) {
-    // Expected parser failure under OpenCV 4.6.0
+    // Expected parser failure under OpenCV 4.6.0 (neuriplo < 0.6.0)
+  } catch (const std::runtime_error &e) {
+    // neuriplo >= 0.6.0: vendor load failures surface as the builder's own
+    // runtime_error after setup_inference_engine returns nullptr.
+    EXPECT_NE(std::string(e.what()).find("Can't setup an inference engine"),
+              std::string::npos)
+        << "Unexpected runtime_error: " << e.what();
   }
 }
