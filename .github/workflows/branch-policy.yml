@@ -1,0 +1,37 @@
+name: Branch Policy
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - master
+
+jobs:
+  enforce-branch-policy:
+    name: Enforce Branch Policy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate pull request branches
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${HEAD_REF}" == feature/* && "${BASE_REF}" != "develop" ]]; then
+            echo "feature/* branches must target develop. Got ${HEAD_REF} -> ${BASE_REF}."
+            exit 1
+          fi
+
+          if [[ "${BASE_REF}" == "master" ]]; then
+            case "${HEAD_REF}" in
+              develop|release/*|hotfix/*)
+                ;;
+              *)
+                echo "master only accepts PRs from develop, release/*, or hotfix/*. Got ${HEAD_REF} -> master."
+                exit 1
+                ;;
+            esac
+          fi
+
+          echo "Branch policy check passed for ${HEAD_REF} -> ${BASE_REF}."
