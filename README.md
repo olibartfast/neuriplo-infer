@@ -430,7 +430,7 @@ ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
 ## ⚠️ Known Limitations
 - Windows builds not currently supported
 - Some model/backend combinations may require specific export configurations
-- KServe HTTP mode is validated live against `neuriplo-kserve-runtime`; gRPC support is built only when Protobuf/gRPC are available. Triton/OVMS round-trips run as a CI dry-run on every PR, with live runs behind a manual dispatch — see [docs/KserveCompatibility.md](docs/KserveCompatibility.md). FP16/BF16 inputs over gRPC require raw tensor contents (the default; the typed-`contents` fallback selected by `KSERVE_BINARY=0` cannot carry them).
+- KServe HTTP and gRPC are validated live against `neuriplo-kserve-runtime` (gRPC requires Protobuf/gRPC at build time). Triton/OVMS round-trips run as a CI dry-run on every PR, with live runs behind a manual dispatch — see [docs/KserveCompatibility.md](docs/KserveCompatibility.md). FP16/BF16 inputs over gRPC require raw tensor contents (the default; the typed-`contents` fallback selected by `KSERVE_BINARY=0` cannot carry them).
 - KServe TLS is supported on both transports: HTTPS for the HTTP client (requires an OpenSSL-enabled build) and `grpcs://` for the gRPC client, with optional mTLS via `KSERVE_CLIENT_CERT`/`KSERVE_CLIENT_KEY`. A build without OpenSSL still works over plaintext `http://`, but `https://` endpoints fail fast with a clear error.
 - KServe model management (Model Repository extension: index / load / unload) is implemented on the client API for both transports but is not yet exposed through the CLI, and is only available when the server enables the extension (e.g. Triton `--model-control-mode=explicit`); see [docs/KserveRuntime.md](docs/KserveRuntime.md).
 
