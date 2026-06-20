@@ -28,6 +28,10 @@ type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
 2. **App task routing must match neuriplo-tasks.** `getTaskTypeForModel`
    (`app/src/NeuriploInferTaskRouting.cpp`) must map each type string to the same
    `TaskType` that `neuriplo_tasks::TaskFactory` builds.
+3. **The `## Key Features` bullet in README.md is manual, not synced.** When
+   a new task **category** (not just a new model type within an existing category)
+   is added in neuriplo-tasks, update the parenthesized task list under
+   `## Key Features`. This is step 4 in the full documentation checklist below.
 
 ## Repository workflow (GitFlow — mandatory)
 

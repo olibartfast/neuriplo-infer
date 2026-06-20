@@ -27,7 +27,16 @@ fails CI):
 python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path> --check
 ```
 
-## 2. Keep task routing aligned with neuriplo-tasks TaskFactory
+## 2. Update the `## Key Features` bullet in README.md (manual — not auto-synced)
+
+The task-category list in the `## Key Features` bullet is **not updated by the
+sync script**. When a new task **category** is added in neuriplo-tasks (e.g. a
+brand-new domain like "Gaussian Splatting" or "Image Understanding / VLM"), add
+it to the parenthesized list on the first `## Key Features` bullet in
+`README.md`. New model types within an existing category (e.g. a new detection
+model prefix) do not need this update.
+
+## 3. Keep task routing aligned with neuriplo-tasks TaskFactory
 
 `getTaskTypeForModel` (`app/src/NeuriploInferTaskRouting.cpp`) must map every new
 type string to the same `TaskType` that `neuriplo_tasks::TaskFactory` builds.
@@ -35,7 +44,7 @@ Prefer substring rules that mirror the factory (e.g. `find("pose")`,
 `find("seg")`) so model-family prefixes like `ecpose`/`yolo*pose` route to
 `PoseEstimation`, not the `Detection` default.
 
-## 3. Wire + advertise any new e2e preset
+## 4. Wire + advertise any new e2e preset
 
 If you add a preset to `docker_run_inference_e2e_example.sh`, also add it to
 `list_presets`, the `e2e-example-emulation.yml` CI matrix, and a dry-run block
