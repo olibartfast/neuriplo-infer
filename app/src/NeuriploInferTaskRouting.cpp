@@ -32,9 +32,12 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
   if (normalized == "raft") {
     return neuriplo_tasks::TaskType::OpticalFlow;
   }
-  // Pose estimation: vitpose plus yolo*pose* and EdgeCrafter
-  // ecpose*/edgecrafter*pose*, mirroring neuriplo_tasks::TaskFactory routing.
-  if (normalized == "vitpose" || contains(normalized, "pose")) {
+  // Pose estimation: vitpose, yolo*pose*, EdgeCrafter ecpose*, and RF-DETR
+  // pose/keypoints. Mirrors neuriplo_tasks::TaskFactory RfDetrPose / YoloPose /
+  // EdgeCrafterPose / VitPose routing.
+  if (normalized == "vitpose" || contains(normalized, "pose") ||
+      (startsWith(normalized, "rfdetr") &&
+       (contains(normalized, "keypoint") || contains(normalized, "kpt")))) {
     return neuriplo_tasks::TaskType::PoseEstimation;
   }
   if (contains(normalized, "depthanythingv2")) {
