@@ -180,9 +180,11 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"yolo11pose"`, `"yolo11-pose"` - YOLO11 pose
 - `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
 - `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
+- `"rfdetrpose"`, `"rfdetr-pose"`, `"rfdetrkeypoint"`, `"rfdetr-keypoint"`, `"rfdetrkpt"`, `"rfdetr-kpt"` - RF-DETR keypoint pose (single-stage, returns bbox + 17 coco keypoints with visibility and per-keypoint covariance)
 - `"vitpose"` - ViTPose (top-down, heatmap-based)
 - `"ecpose"` - EdgeCrafter pose estimation (any string starting with `ecpose`, or `edgecrafter` and containing `pose`)
-- `"rfdetr_keypoint"`, `"rfdetr_kpt"` - RF-DETR keypoint pose estimation (starts with `rfdetr`, contains `keypoint` or `kpt`)
+
+RF-DETR keypoint models output per-keypoint visibility and 2×2 pixel covariance (decoded from Cholesky L via the ONNX `log_l11`, `l21`, `log_l22` channels). Keypoints are filtered by an uncertainty-weighted score fusion that discounts high-covariance predictions.
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
@@ -216,18 +218,16 @@ For model download and setup details, see [export/image_understanding/ImageUnder
 - `"grm"` - GRM
 - `"gaussiansplatting"`, any string containing `"splat"` - generic alias
 
-
-EdgeCrafter export and tensor contract details live in the task-specific docs:
-
-- [EdgeCrafter Detection](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md)
-- [EdgeCrafter Segmentation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md)
-- [EdgeCrafter Pose Estimation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md)
-
 <!-- TASKFACTORY_MODEL_LIST:END -->
 
 Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 <!-- SUPPORTED_MODEL_TYPES:END -->
   App-specific routing and validation in `neuriplo-infer` still define the end-to-end supported subset for this repo.
+
+  EdgeCrafter export and tensor contract details live in the task-specific docs:
+  - [EdgeCrafter Detection](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md)
+  - [EdgeCrafter Segmentation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md)
+  - [EdgeCrafter Pose Estimation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md)
 
 - `--source=<input_source>`: Input image, video file, or stream URL (e.g. `rtsp://...`). Omit for text-only image-understanding tasks and for `--export_metadata`.
 - `--weights=<path>`: Path to local model weights. Required for local backend execution and `--export_metadata`; not required when `--kserve_endpoint` is provided.
