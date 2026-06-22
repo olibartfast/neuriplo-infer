@@ -182,6 +182,7 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
 - `"vitpose"` - ViTPose (top-down, heatmap-based)
 - `"ecpose"` - EdgeCrafter pose estimation (any string starting with `ecpose`, or `edgecrafter` and containing `pose`)
+- `"rfdetr_keypoint"`, `"rfdetr_kpt"` - RF-DETR keypoint pose estimation (starts with `rfdetr`, contains `keypoint` or `kpt`)
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
