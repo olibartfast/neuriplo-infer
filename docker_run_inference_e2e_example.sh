@@ -98,6 +98,7 @@ edgecrafter_seg
 edgecrafter_pose
 raft
 vitpose
+rfdetr_keypoint
 depth_anything_v2
 videomae
 gemma4
@@ -470,6 +471,21 @@ print('Exported to', dest)
         EXPORT_COMMANDS=(
             "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/vitpose-export\""
             "source \"${NEURIPLO_TASKS_DIR}/environments/vitpose-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/pose_estimation/vitpose/export_vitpose_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+        )
+        RUNTIME_EXTRA_ARGS=()
+        ;;
+    rfdetr_keypoint)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="rfdetr_keypoint"
+        MODEL_BASENAME="rfdetr-keypoint-preview"
+        SOURCE_IN_CONTAINER="/app/data/person.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/person.jpg"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/rfdetr-keypoint-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/rfdetr-keypoint-export/bin/activate\" && pip install --upgrade pip && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime rfdetr && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/pose_estimation/rfdetr/export_keypoint.py\" --model_type preview --output_dir \"${WEIGHTS_DIR}\" --simplify"
         )
         RUNTIME_EXTRA_ARGS=()
         ;;
