@@ -160,6 +160,13 @@ Use the canonical repo-local commands from `neuriplo-platform/ops/repo-meta/neur
 
 Use the benchmark smoke command from `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml` only when the required weights are available.
 
+## Hyperlink verification
+
+When editing `README.md` or any documentation with hyperlinks:
+- Verify all relative links resolve to existing files in the repo (`ls <path>`).
+- Verify absolute GitHub URLs are reachable (use `curl -sI <url>` or a quick fetch).
+- Prefer absolute GitHub blob/tree URLs over fragile cross-repo relative paths (e.g. `../../../neuriplo/docs/foo.md`).
+
 ## Documentation checklist when wiring a new task type
 
 When a new task type is added end-to-end (neuriplo-tasks → neuriplo → neuriplo-infer), update **all** of the following before closing the work:
