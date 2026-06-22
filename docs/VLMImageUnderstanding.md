@@ -165,7 +165,7 @@ docker run --rm \
 
 ## Troubleshooting
 
-See [neuriplo/docs/TROUBLESHOOTING.md](../../../neuriplo/docs/TROUBLESHOOTING.md) for:
+See [neuriplo/docs/TROUBLESHOOTING.md](https://github.com/olibartfast/neuriplo/blob/master/docs/TROUBLESHOOTING.md) for:
 
 - **Empty/silent response from multimodal inference** — Gemma4 chat template mismatch
 - **`n_ctx` too small** — image tokens require at least 8192 context length
