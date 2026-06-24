@@ -3,14 +3,14 @@
 # This file only includes backend-specific source directories from neuriplo
 
 if (DEFAULT_BACKEND STREQUAL "OPENCV_DNN")
-    target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriploDIR}/backends/opencv-dnn/src)
+    target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriplo_SOURCE_DIR}/backends/opencv-dnn/src)
 elseif (DEFAULT_BACKEND STREQUAL "ONNX_RUNTIME")
     target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriplo_SOURCE_DIR}/backends/onnx-runtime/src)
 elseif (DEFAULT_BACKEND STREQUAL "LIBTORCH")
     target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriplo_SOURCE_DIR}/backends/libtorch/src)
     target_compile_definitions(${NEURIPLO_INFER_EXECUTABLE}  PRIVATE C10_USE_GLOG)
 elseif (DEFAULT_BACKEND STREQUAL "TENSORRT")
-    target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriploDIR}/backends/tensorrt/src)
+    target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriplo_SOURCE_DIR}/backends/tensorrt/src)
 elseif(DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW" )
     target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriplo_SOURCE_DIR}/backends/libtensorflow/src)
 elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")

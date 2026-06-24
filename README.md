@@ -58,6 +58,13 @@ cmake --build build
 
 Replace `<backend>` with one of the supported inference backends (see [Dependency Management Guide](docs/DependencyManagement.md)).
 
+### Windows Notes
+
+For native Windows builds, use a Visual Studio generator and start with `OPENCV_DNN`.
+The shell setup scripts in `scripts/` are Linux-oriented; on Windows, install OpenCV,
+glog, and any backend SDKs through your preferred package manager or local SDK installs.
+
+
 The KServe V2 protocol client lives in the standalone [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client) repository and is fetched automatically (via `FetchContent`, pinned in `versions.env`) when `NEURIPLO_INFER_ENABLE_KSERVE` is on; neuriplo-infer keeps only the `KserveEngine` adapter. HTTP client support is always available; gRPC client support is optional and enabled only when Protobuf and gRPC are available at configure time, otherwise the build falls back to HTTP.
 
 ### Video Backend Support
@@ -83,8 +90,6 @@ The runnable local Docker E2E script remains app-owned:
 ```bash
 bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 ```
-
-Platform-level scenario ownership, compatibility sets, and cross-repo validation expectations live in `neuriplo-platform/examples/e2e-local-inference/README.md`.
 
 ## App Usage
 
@@ -173,8 +178,11 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"yolo11pose"`, `"yolo11-pose"` - YOLO11 pose
 - `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
 - `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
+- `"rfdetrpose"`, `"rfdetr-pose"`, `"rfdetrkeypoint"`, `"rfdetr-keypoint"`, `"rfdetrkpt"`, `"rfdetr-kpt"` - RF-DETR keypoint pose (single-stage, returns bbox + 17 coco keypoints with visibility and per-keypoint covariance)
 - `"vitpose"` - ViTPose (top-down, heatmap-based)
 - `"ecpose"` - EdgeCrafter pose estimation (any string starting with `ecpose`, or `edgecrafter` and containing `pose`)
+
+RF-DETR keypoint models output per-keypoint visibility and 2×2 pixel covariance (decoded from Cholesky L via the ONNX `log_l11`, `l21`, `log_l22` channels). Keypoints are filtered by an uncertainty-weighted score fusion that discounts high-covariance predictions.
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
@@ -208,18 +216,16 @@ For model download and setup details, see [export/image_understanding/ImageUnder
 - `"grm"` - GRM
 - `"gaussiansplatting"`, any string containing `"splat"` - generic alias
 
-
-EdgeCrafter export and tensor contract details live in the task-specific docs:
-
-- [EdgeCrafter Detection](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md)
-- [EdgeCrafter Segmentation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md)
-- [EdgeCrafter Pose Estimation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md)
-
 <!-- TASKFACTORY_MODEL_LIST:END -->
 
 Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 <!-- SUPPORTED_MODEL_TYPES:END -->
   App-specific routing and validation in `neuriplo-infer` still define the end-to-end supported subset for this repo.
+
+  EdgeCrafter export and tensor contract details live in the task-specific docs:
+  - [EdgeCrafter Detection](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md)
+  - [EdgeCrafter Segmentation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md)
+  - [EdgeCrafter Pose Estimation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md)
 
 - `--source=<input_source>`: Input image, video file, or stream URL (e.g. `rtsp://...`). Omit for text-only image-understanding tasks and for `--export_metadata`.
 - `--weights=<path>`: Path to local model weights. Required for local backend execution and `--export_metadata`; not required when `--kserve_endpoint` is provided.
@@ -374,8 +380,6 @@ See [docs/KserveRuntime.md](docs/KserveRuntime.md) for the full KServe runtime r
 - [`docs/VLMImageUnderstanding.md`](docs/VLMImageUnderstanding.md): running VLMs via the llama.cpp backend
 - [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated model-type inventory
 - [`scripts/check_code_quality.sh`](scripts/check_code_quality.sh): optional format / static-analysis / sanitizer helper
-
-Cross-repo control-plane docs (cluster map, policies, repo-meta) live in `neuriplo-platform/ops/`.
 
 ## Docker Deployment
 
