@@ -120,8 +120,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - Slimmed `README.md` and removed deprecated docs (`PROGRESS.md`,
   `docs/Roadmap.md`, `docs/FasterCompilationPlan.md`) and the deprecated local
-  `ops/` compatibility pointer; redirected agent references to
-  `neuriplo-platform/ops`.
+  `ops/` compatibility pointer.
 - Dropped the stale `neuriplo-tasks` branch pin in the OPENCV_DNN CI job.
 
 ### Fixed

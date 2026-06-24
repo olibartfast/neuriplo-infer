@@ -3,13 +3,6 @@
 This document describes dependency behavior owned by `neuriplo-infer`: local
 build inputs, app-level sibling checkout selection, and setup scripts.
 
-Cross-repository dependency ownership and compatibility policy now live in
-`neuriplo-platform`:
-
-- `neuriplo-platform/docs/architecture/dependency-policy.md`
-- `neuriplo-platform/versions.yaml`
-- `neuriplo-platform/ops/CLUSTER_MAP.yaml`
-
 ## Source Of Truth
 
 Repo-local sources:
@@ -20,8 +13,6 @@ Repo-local sources:
   app-level sibling-ref selection.
 - [`versions.env`](../versions.env): repo-owned minimum system dependency
   versions.
-- `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`: canonical configure,
-  build, and test commands for cross-repo maintenance.
 
 External owners:
 
@@ -48,10 +39,8 @@ External owners:
 - Backend linking internals.
 - Video-backend dependency matrices.
 - Upstream task/model contracts.
-- Cross-repository compatibility matrices.
 
-Those belong to `neuriplo`, `videocapture`, `neuriplo-tasks`, and
-`neuriplo-platform` respectively.
+Those belong to `neuriplo`, `videocapture`, and `neuriplo-tasks`.
 
 ## Shared Dependency Ref
 
@@ -65,9 +54,6 @@ ref for the app build:
 - all other branches resolve sibling repos to `develop`.
 
 If explicit per-repo overrides disagree with that derived ref, configure fails.
-
-Platform compatibility sets are tracked separately in
-`neuriplo-platform/versions.yaml`.
 
 ## Setup Scripts
 
@@ -86,15 +72,12 @@ CMake build targets.
 
 ## Recommended Workflow
 
-1. Use the canonical commands in
-   `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`
-   for configure/build/test when doing cross-repo maintenance.
+1. Use the repo's canonical configure/build/test commands for cross-repo
+   maintenance.
 2. Run setup scripts only when a backend dependency is needed locally.
 3. Use [`cmake/versions.cmake`](../cmake/versions.cmake) to understand app-local
    sibling ref selection.
-4. Use `neuriplo-platform/docs/architecture/dependency-policy.md`
-   when reasoning about cross-repo compatibility policy.
-5. For video-backend setup specifics, consult `videocapture` documentation
+4. For video-backend setup specifics, consult `videocapture` documentation
    instead of duplicating those instructions here.
 
 ## Platform Notes

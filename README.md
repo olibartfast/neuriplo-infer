@@ -91,8 +91,6 @@ The runnable local Docker E2E script remains app-owned:
 bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 ```
 
-Platform-level scenario ownership, compatibility sets, and cross-repo validation expectations live in `neuriplo-platform/examples/e2e-local-inference/README.md`.
-
 ## App Usage
 
 ### Command Line Options
@@ -382,8 +380,6 @@ See [docs/KserveRuntime.md](docs/KserveRuntime.md) for the full KServe runtime r
 - [`docs/VLMImageUnderstanding.md`](docs/VLMImageUnderstanding.md): running VLMs via the llama.cpp backend
 - [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated model-type inventory
 - [`scripts/check_code_quality.sh`](scripts/check_code_quality.sh): optional format / static-analysis / sanitizer helper
-
-Cross-repo control-plane docs (cluster map, policies, repo-meta) live in `neuriplo-platform/ops/`.
 
 ## Docker Deployment
 
