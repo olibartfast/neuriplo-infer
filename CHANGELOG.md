@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-24
+
+### Added
+- RF-DETR keypoint pose routing. The CLI/E2E path now routes `rfdetrpose`,
+  `rfdetr-pose`, `rfdetrkeypoint`, `rfdetr-keypoint`, `rfdetrkpt`, and
+  `rfdetr-kpt` to `PoseEstimation`, mirroring the `RfDetrPose` family added in
+  neuriplo-tasks v0.5.0.
+- E2E runner preset for RF-DETR keypoint pose estimation.
+- Windows (MSVC + vcpkg) build support.
+- PR branch-policy workflow.
+
+### Changed
+- KServe remote-runtime client now defaults to the gRPC transport.
+- Sibling pins: neuriplo-tasks v0.5.0, neuriplo v0.8.0,
+  neuriplo-kserve-client v0.4.0, videocapture v0.3.0.
+
 ## [0.7.0] - 2026-06-14
 
 ### Added
@@ -120,8 +136,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - Slimmed `README.md` and removed deprecated docs (`PROGRESS.md`,
   `docs/Roadmap.md`, `docs/FasterCompilationPlan.md`) and the deprecated local
-  `ops/` compatibility pointer; redirected agent references to
-  `neuriplo-platform/ops`.
+  `ops/` compatibility pointer.
 - Dropped the stale `neuriplo-tasks` branch pin in the OPENCV_DNN CI job.
 
 ### Fixed

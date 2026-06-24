@@ -11,8 +11,6 @@
 
 A sibling application repo, [neuriplo-track](https://github.com/olibartfast/neuriplo-track), handles detection + tracking pipelines using the same shared libraries. Another sibling, [tritonic](https://github.com/olibartfast/tritonic), is a Triton Inference Server client for CV tasks that also consumes neuriplo-tasks. Both maintain their own ops control planes independently — neuriplo-infer does not depend on them.
 
-Treat `neuriplo-platform/ops/CLUSTER_MAP.yaml` as the source of truth for repo roles, dependency edges, validation order, and coordinator/worker/verifier responsibilities.
-
 ## Do-not-skip automated steps
 
 Every agent taking ownership of this repo must know these easily-missed steps
@@ -28,6 +26,10 @@ type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
 2. **App task routing must match neuriplo-tasks.** `getTaskTypeForModel`
    (`app/src/NeuriploInferTaskRouting.cpp`) must map each type string to the same
    `TaskType` that `neuriplo_tasks::TaskFactory` builds.
+3. **The `## Key Features` bullet in README.md is manual, not synced.** When
+   a new task **category** (not just a new model type within an existing category)
+   is added in neuriplo-tasks, update the parenthesized task list under
+   `## Key Features`. This is step 4 in the full documentation checklist below.
 
 ## Repository workflow (GitFlow — mandatory)
 
@@ -68,6 +70,27 @@ Release prep on `release/<version>`:
 
 Do not suggest trunk-based or `main`-only workflows for this repository.
 
+## Agent Commit Signing
+
+Every commit produced by an AI agent MUST include a `Co-authored-by` trailer
+that identifies the agent, the LLM model used, and the agent vendor. This makes
+agent contributions visible in GitHub's contribution graph and `git shortlog`.
+
+Format: `Co-Authored-By: <Agent> <Model> <<vendor-email>>`
+
+| Agent | Vendor email | Example trailer |
+|-------|-------------|-----------------|
+| Cursor | `cursoragent@cursor.com` | `Co-authored-by: Cursor <cursoragent@cursor.com>` |
+| Claude Code | `noreply@anthropic.com` | `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` |
+| Opencode | `agent@opencode.ai` | `Co-Authored-By: Opencode via DeepSeek V4 Pro <agent@opencode.ai>` |
+
+The model name MUST match the LLM the agent is powered by (check the system
+prompt). If the model changes across sessions, the trailer must reflect the
+model used for that specific commit.
+
+Place the trailer in the commit body (after the subject line and blank line),
+not the subject.
+
 ## Review focus
 
 Focus on:
@@ -99,20 +122,12 @@ Avoid:
 - Memory copies and synchronization points
 - Backend fallback behavior and logging
 
-## Agentic maintenance assets
-
-- Cluster-level metadata and runbooks live under `neuriplo-platform/ops/`.
-- Use `neuriplo-platform/ops/CLUSTER_MAP.yaml` as the source of truth for repo ownership, dependency edges, and validation order.
-- Use `neuriplo-platform/ops/repo-meta/*.yaml` for repo-specific build, test, benchmark, and API-surface metadata.
-- Use `neuriplo-platform/ops/policies.yaml` before proposing or implementing automated changes; changes outside the allowed classes require human review.
-- Use `neuriplo-platform/ops/runbooks/` for the execution flow for CI triage and cross-repo API migrations.
-
 ## Standard workflow
 
 When operating as an agent in this repo, follow this loop:
 
 1. Observe the task, failing signal, or requested change.
-2. Diagnose the owning repo, dependency edge, and allowed change class using `neuriplo-platform/ops/CLUSTER_MAP.yaml` and `neuriplo-platform/ops/policies.yaml`.
+2. Diagnose the owning repo, dependency edge, and allowed change class from the dependency graph and change policy.
 3. Act with the smallest reviewable change that fixes the issue without widening scope.
 4. Verify using repo-local checks first, then downstream validation when a declared contract edge is affected.
 
@@ -120,7 +135,7 @@ Stop and escalate to a human if the required work falls into a forbidden change 
 
 ## Repo-local entrypoints
 
-Use the canonical repo-local commands from `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml`:
+Use the canonical repo-local commands:
 
 - Configure default build:
   - `cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release`
@@ -133,7 +148,14 @@ Use the canonical repo-local commands from `neuriplo-platform/ops/repo-meta/neur
 - Run tests:
   - `ctest --test-dir build-test --output-on-failure`
 
-Use the benchmark smoke command from `neuriplo-platform/ops/repo-meta/neuriplo-infer.yaml` only when the required weights are available.
+Run the benchmark smoke command only when the required weights are available.
+
+## Hyperlink verification
+
+When editing `README.md` or any documentation with hyperlinks:
+- Verify all relative links resolve to existing files in the repo (`ls <path>`).
+- Verify absolute GitHub URLs are reachable (use `curl -sI <url>` or a quick fetch).
+- Prefer absolute GitHub blob/tree URLs over fragile cross-repo relative paths (e.g. `../../../neuriplo/docs/foo.md`).
 
 ## Documentation checklist when wiring a new task type
 
@@ -164,4 +186,4 @@ For mixed commits (docs + code) where CI is still unnecessary, add `[skip ci]` t
 - Preserve output schema, backend fallback behavior, and latency-sensitive paths.
 - Keep changes small and reviewable.
 - For cross-repo contract work, validate in the declared order: repo-local checks first, then downstream integration, then performance/output checks.
-- PRs produced by agents should include evidence consistent with `neuriplo-platform/ops/PR_EVIDENCE_TEMPLATE.md`.
+- PRs produced by agents should include evidence of validation performed and any cross-repo impact.

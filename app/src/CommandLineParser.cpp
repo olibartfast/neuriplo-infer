@@ -53,7 +53,7 @@ const std::string CommandLineParser::params =
     "--type) }"
     "{ kserve_model_version | 1 | model version for KServe requests }"
     "{ kserve_timeout_ms | 30000 | KServe request timeout in milliseconds }"
-    "{ kserve_transport | http | KServe transport: http (default) or grpc }";
+    "{ kserve_transport | grpc | KServe transport: grpc (default) or http }";
 
 AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   cv::CommandLineParser parser(argc, argv, params);
