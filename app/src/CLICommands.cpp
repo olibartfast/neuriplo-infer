@@ -10,6 +10,24 @@
 
 namespace {
 
+neuriplo_tasks::vision::Image toTaskImage(const cv::Mat &image) {
+  return neuriplo_tasks::vision::opencv::copyFromCvMat(image);
+}
+
+std::vector<neuriplo_tasks::vision::Image>
+toTaskImages(const std::vector<cv::Mat> &images) {
+  std::vector<neuriplo_tasks::vision::Image> converted;
+  converted.reserve(images.size());
+  for (const auto &image : images) {
+    converted.push_back(toTaskImage(image));
+  }
+  return converted;
+}
+
+neuriplo_tasks::vision::Size toTaskSize(const cv::Mat &image) {
+  return {image.cols, image.rows};
+}
+
 // Replaces characters that are awkward in filenames with '-' so model/backend
 // tags can be embedded in the output image name safely.
 std::string sanitizeForFilename(std::string value) {
@@ -149,12 +167,12 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
   LOG(INFO) << "Image dimensions: " << image.rows << "x" << image.cols << "x"
             << image.channels();
 
-  const auto preprocessed = pipeline.task->preprocess({image});
+  const auto preprocessed = pipeline.task->preprocess({toTaskImage(image)});
   const auto [outputs, shapes] =
       pipeline.engine->get_infer_results(preprocessed);
 
   auto tensors = convertToTensors(outputs, shapes);
-  auto results = pipeline.task->postprocess(image.size(), tensors);
+  auto results = pipeline.task->postprocess(toTaskSize(image), tensors);
   auto end = std::chrono::steady_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -195,12 +213,12 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   cv::Mat frame;
   while (videoInterface->readFrame(frame)) {
     auto start = std::chrono::steady_clock::now();
-    const auto preprocessed = pipeline.task->preprocess({frame});
+    const auto preprocessed = pipeline.task->preprocess({toTaskImage(frame)});
     const auto [outputs, shapes] =
         pipeline.engine->get_infer_results(preprocessed);
 
     auto tensors = convertToTensors(outputs, shapes);
-    auto results = pipeline.task->postprocess(frame.size(), tensors);
+    auto results = pipeline.task->postprocess(toTaskSize(frame), tensors);
     auto end = std::chrono::steady_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -245,12 +263,13 @@ void processVideoClassification(InferencePipeline &pipeline,
 
     if (static_cast<int>(frameBuffer.size()) >= requiredFrames) {
       auto start = std::chrono::steady_clock::now();
-      const auto preprocessed = pipeline.task->preprocess(frameBuffer);
+      const auto preprocessed =
+          pipeline.task->preprocess(toTaskImages(frameBuffer));
       const auto [outputs, shapes] =
           pipeline.engine->get_infer_results(preprocessed);
 
       auto tensors = convertToTensors(outputs, shapes);
-      auto results = pipeline.task->postprocess(frame.size(), tensors);
+      auto results = pipeline.task->postprocess(toTaskSize(frame), tensors);
       auto end = std::chrono::steady_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -299,13 +318,13 @@ void processOpticalFlow(InferencePipeline &pipeline) {
     }
 
     auto start = std::chrono::steady_clock::now();
-    const auto preprocessed = pipeline.task->preprocess(images);
+    const auto preprocessed = pipeline.task->preprocess(toTaskImages(images));
     auto [infer_results, infer_shapes] =
         pipeline.engine->get_infer_results(preprocessed);
 
     auto tensors = convertToTensors(infer_results, infer_shapes);
-    auto predictions = pipeline.task->postprocess(
-        cv::Size(images[0].cols, images[0].rows), tensors);
+    auto predictions =
+        pipeline.task->postprocess(toTaskSize(images[0]), tensors);
 
     auto end = std::chrono::steady_clock::now();
     auto diff =
@@ -354,7 +373,7 @@ void processImageUnderstanding(InferencePipeline &pipeline) {
     }
   }
 
-  const auto preprocessed = pipeline.task->preprocess(images);
+  const auto preprocessed = pipeline.task->preprocess(toTaskImages(images));
 
   auto start = std::chrono::steady_clock::now();
   const auto [outputs, shapes] =
@@ -367,7 +386,8 @@ void processImageUnderstanding(InferencePipeline &pipeline) {
 
   auto tensors = convertToTensors(outputs, shapes);
   cv::Mat dummy;
-  auto results = pipeline.task->postprocess(cv::Size{0, 0}, tensors);
+  auto results =
+      pipeline.task->postprocess(neuriplo_tasks::vision::Size{0, 0}, tensors);
   pipeline.renderResults(results, dummy);
 }
 
@@ -417,12 +437,12 @@ WarmupCommand::WarmupCommand(cv::Mat image) : image_(std::move(image)) {}
 
 int WarmupCommand::execute(InferencePipeline &pipeline) {
   for (int i = 0; i < 5; ++i) {
-    const auto preprocessed = pipeline.task->preprocess({image_});
+    const auto preprocessed = pipeline.task->preprocess({toTaskImage(image_)});
     const auto [outputs, shapes] =
         pipeline.engine->get_infer_results(preprocessed);
 
     auto tensors = convertToTensors(outputs, shapes);
-    auto results = pipeline.task->postprocess(image_.size(), tensors);
+    auto results = pipeline.task->postprocess(toTaskSize(image_), tensors);
     (void)results;
   }
   return 0;
@@ -435,12 +455,12 @@ int BenchmarkCommand::execute(InferencePipeline &pipeline) {
   for (int i = 0; i < pipeline.config.benchmark_iterations; ++i) {
     auto start = std::chrono::steady_clock::now();
 
-    const auto preprocessed = pipeline.task->preprocess({image_});
+    const auto preprocessed = pipeline.task->preprocess({toTaskImage(image_)});
     const auto [outputs, shapes] =
         pipeline.engine->get_infer_results(preprocessed);
 
     auto tensors = convertToTensors(outputs, shapes);
-    auto results = pipeline.task->postprocess(image_.size(), tensors);
+    auto results = pipeline.task->postprocess(toTaskSize(image_), tensors);
     (void)results;
 
     auto end = std::chrono::steady_clock::now();
