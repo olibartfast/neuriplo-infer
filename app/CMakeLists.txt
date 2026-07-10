@@ -49,6 +49,7 @@ target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC
     ${OpenCV_LIBS}
     VideoCapture
     neuriplo-tasks
+    neuriplo-tasks::vision-opencv
     nlohmann_json::nlohmann_json
 )
 
