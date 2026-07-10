@@ -87,7 +87,7 @@ buildModelInfo(const InferenceMetadata &inference_metadata,
 
   setInputFormat(model_info);
   if (!model_info.input_types.empty()) {
-    model_info.input_types[0] = CV_32F;
+    model_info.input_types[0] = neuriplo_tasks::vision::PixelType::Float32;
   }
   return model_info;
 }
