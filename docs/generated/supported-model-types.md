@@ -25,12 +25,16 @@ The TaskFactory supports the following model type strings. Matching normalizes s
 - `"ecdet"` - EdgeCrafter detection (any string starting with `ecdet`)
 - `"edgecrafter"`, `"edgecrafter-det"` - EdgeCrafter detection unless the normalized string contains `seg` or `pose`
 
+For EdgeCrafter detection export details, see [export/detection/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md).
+
 **Instance Segmentation:**
 - `"ecseg"` - EdgeCrafter segmentation (any string starting with `ecseg` or `edgecrafter` and containing `seg`)
 - `"yoloseg"`, `"yolo-seg"`, `"yolov8-seg"` - YOLOv5/YOLOv8/YOLO11-style segmentation
 - `"yolov10seg"`- YOLOv10
 - `"yolo26seg"` - YOLO26
 - `"rfdetrseg"` - RF-DETR
+
+For EdgeCrafter segmentation export details, see [export/segmentation/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md).
 
 **Classification:**
 - `"torchvision-classifier"` - Torchvision models (ResNet, EfficientNet, etc.)
@@ -55,6 +59,8 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"rfdetrpose"`, `"rfdetr-pose"`, `"rfdetrkeypoint"`, `"rfdetr-keypoint"`, `"rfdetrkpt"`, `"rfdetr-kpt"` - RF-DETR keypoint pose (single-stage, returns bbox + 17 coco keypoints with visibility and per-keypoint covariance)
 - `"vitpose"` - ViTPose (top-down, heatmap-based)
 - `"ecpose"` - EdgeCrafter pose estimation (any string starting with `ecpose`, or `edgecrafter` and containing `pose`)
+
+For EdgeCrafter pose-estimation export details, see [export/pose_estimation/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md).
 
 RF-DETR keypoint models output per-keypoint visibility and 2×2 pixel covariance (decoded from Cholesky L via the ONNX `log_l11`, `l21`, `log_l22` channels). Keypoints are filtered by an uncertainty-weighted score fusion that discounts high-covariance predictions.
 
