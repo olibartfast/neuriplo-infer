@@ -145,6 +145,7 @@ endif()
 # Disable subproject tests and sample apps when fetched as dependencies.
 set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(NEURIPLO_TASKS_WITH_OPENCV ON CACHE BOOL "" FORCE)
 
 # Prefer a sibling checkout during local cross-repo development.
 set(_NEURIPLO_TASKS_SIBLING "")
