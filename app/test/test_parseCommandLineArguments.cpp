@@ -53,6 +53,34 @@ TEST(ParseCommandLineArguments, ThresholdFlags) {
   EXPECT_FLOAT_EQ(config.confidenceThreshold, 0.3f);
   EXPECT_FLOAT_EQ(config.nmsThreshold, 0.6f);
   EXPECT_FLOAT_EQ(config.maskThreshold, 0.7f);
+  // Mask stays the default representation when the flag is absent.
+  EXPECT_EQ(config.segmentationOutput, "mask");
+}
+
+TEST(ParseCommandLineArguments, SegmentationOutputFlag) {
+  const char *argv[] = {"program", "--type=yoloseg", "--source=input.mp4",
+                        "--weights=model.weights",
+                        "--segmentation_output=Polygon"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_EQ(config.segmentationOutput, "polygon");
+}
+
+TEST(ParseCommandLineArguments, InvalidSegmentationOutputExits) {
+  const char *argv[] = {"program", "--type=yoloseg", "--source=input.mp4",
+                        "--weights=model.weights",
+                        "--segmentation_output=contours"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  touchFile("model.weights");
+
+  EXPECT_EXIT(CommandLineParser::parseCommandLineArguments(
+                  argc, const_cast<char **>(argv)),
+              ::testing::ExitedWithCode(1), "--segmentation_output must be");
 }
 
 TEST(ParseCommandLineArguments, OpenVocabFlags) {
@@ -158,4 +186,143 @@ TEST(ParseCommandLineArguments, KServeModelDefaultsToType) {
       argc, const_cast<char **>(argv));
 
   EXPECT_EQ(config.kserve_model_name, "yolo26");
+}
+
+// --- Server-side ensemble flags ----------------------------------------------
+
+TEST(ParseCommandLineArguments, EnsembleFlagDefaults) {
+  const char *argv[] = {"program", "--type=yolo26", "--source=input.jpg",
+                        "--weights=model.weights"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+  touchFile("model.weights");
+
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_EQ(config.input_mode, "preprocessed");
+  EXPECT_EQ(config.postprocess_mode, "cpu");
+  EXPECT_TRUE(config.task_model.empty());
+}
+
+TEST(ParseCommandLineArguments, EncodedImageModeParses) {
+  const char *argv[] = {"program",
+                        "--type=yolo26",
+                        "--source=input.jpg",
+                        "--kserve_endpoint=http://127.0.0.1:8080",
+                        "--kserve_model_name=yolo_ensemble",
+                        "--input_mode=Encoded-Image",
+                        "--task_model=yolo",
+                        "--postprocess_mode=GPU"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_EQ(config.input_mode, "encoded-image");
+  EXPECT_EQ(config.task_model, "yolo");
+  EXPECT_EQ(config.postprocess_mode, "gpu");
+}
+
+// The ensemble's own metadata describes an encoded image, so without an inner
+// model there is nothing to build the task from.
+TEST(ParseCommandLineArguments, EncodedImageWithoutTaskModelExits) {
+  const char *argv[] = {"program", "--type=yolo26", "--source=input.jpg",
+                        "--kserve_endpoint=http://127.0.0.1:8080",
+                        "--input_mode=encoded-image"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+
+  EXPECT_EXIT(CommandLineParser::parseCommandLineArguments(
+                  argc, const_cast<char **>(argv)),
+              ::testing::ExitedWithCode(1), "--task_model is required");
+}
+
+TEST(ParseCommandLineArguments, EncodedImageWithoutKserveEndpointExits) {
+  const char *argv[] = {"program",
+                        "--type=yolo26",
+                        "--source=input.jpg",
+                        "--weights=model.weights",
+                        "--input_mode=encoded-image",
+                        "--task_model=yolo"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+  touchFile("model.weights");
+
+  EXPECT_EXIT(CommandLineParser::parseCommandLineArguments(
+                  argc, const_cast<char **>(argv)),
+              ::testing::ExitedWithCode(1), "requires --kserve_endpoint");
+}
+
+// Server-side postprocessing only exists on the ensemble path.
+TEST(ParseCommandLineArguments, GpuPostprocessWithoutEncodedImageExits) {
+  const char *argv[] = {"program", "--type=yolo26", "--source=input.jpg",
+                        "--weights=model.weights", "--postprocess_mode=gpu"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+  touchFile("model.weights");
+
+  EXPECT_EXIT(CommandLineParser::parseCommandLineArguments(
+                  argc, const_cast<char **>(argv)),
+              ::testing::ExitedWithCode(1), "--postprocess_mode=gpu requires");
+}
+
+TEST(ParseCommandLineArguments, InvalidInputModeExits) {
+  const char *argv[] = {"program", "--type=yolo26", "--source=input.jpg",
+                        "--weights=model.weights", "--input_mode=telepathy"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+  touchFile("model.weights");
+
+  EXPECT_EXIT(CommandLineParser::parseCommandLineArguments(
+                  argc, const_cast<char **>(argv)),
+              ::testing::ExitedWithCode(1), "--input_mode must be");
+}
+
+// Warmup and benchmark used to preprocess locally and hand the result to the
+// engine, which sends a dense float tensor to an ensemble whose input is an
+// encoded UINT8 image. These pin that both flags are accepted in encoded-image
+// mode; they route through inferFrame, so the transport is whatever the mode
+// selects.
+TEST(ParseCommandLineArguments, EncodedImageAcceptsWarmupAndBenchmark) {
+  const char *argv[] = {"program",
+                        "--type=yolo26seg",
+                        "--source=input.jpg",
+                        "--kserve_endpoint=http://127.0.0.1:8080",
+                        "--kserve_model_name=yolo_ens",
+                        "--input_mode=encoded-image",
+                        "--task_model=yolo",
+                        "--warmup",
+                        "--benchmark"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_EQ(config.input_mode, "encoded-image");
+  EXPECT_TRUE(config.enable_warmup);
+  EXPECT_TRUE(config.enable_benchmark);
+}
+
+TEST(ParseCommandLineArguments, TaskModelVersionDefaultsAndParses) {
+  const char *argv[] = {"program",
+                        "--type=yolo26seg",
+                        "--source=input.jpg",
+                        "--kserve_endpoint=http://127.0.0.1:8080",
+                        "--kserve_model_name=yolo_ens",
+                        "--kserve_model_version=3",
+                        "--input_mode=encoded-image",
+                        "--task_model=yolo",
+                        "--task_model_version=7"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  // The inner model's version is independent of the ensemble's.
+  EXPECT_EQ(config.kserve_model_version, "3");
+  EXPECT_EQ(config.task_model_version, "7");
 }

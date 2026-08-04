@@ -76,6 +76,38 @@ std::vector<TensorElement> bytesToElements(const std::vector<uint8_t> &bytes,
   return out;
 }
 
+// Metadata shapes may carry a negative (dynamic) dimension; the wire needs a
+// concrete one. Encoded-image inputs are the case that forces this: the byte
+// length is different for every request, so it can only come from the payload.
+std::vector<int64_t> concreteInputShape(const kserve::TensorSpec &spec,
+                                        size_t byte_count) {
+  std::vector<int64_t> shape = spec.shape;
+  const auto width = kserve::datatypeByteWidth(spec.datatype);
+  if (width == 0) {
+    return shape;
+  }
+
+  int64_t fixed = 1;
+  size_t dynamic_axes = 0;
+  size_t dynamic_index = 0;
+  for (size_t i = 0; i < shape.size(); ++i) {
+    if (shape[i] < 0) {
+      ++dynamic_axes;
+      dynamic_index = i;
+    } else {
+      fixed *= shape[i];
+    }
+  }
+  // Only a single dynamic axis can be inferred from the byte count alone.
+  if (dynamic_axes != 1 || fixed <= 0) {
+    return shape;
+  }
+
+  const auto elements = static_cast<int64_t>(byte_count / width);
+  shape[dynamic_index] = elements / fixed;
+  return shape;
+}
+
 template <typename Metadata>
 std::string metadataPlatform(const Metadata &metadata) {
   if constexpr (requires { metadata.platform; }) {
@@ -133,10 +165,14 @@ KserveEngine::get_infer_results(
   }
 
   std::vector<kserve::InferInput> inputs;
+  std::vector<std::vector<int64_t>> shapes;
   inputs.reserve(input_tensors.size());
+  shapes.reserve(input_tensors.size());
   for (size_t i = 0; i < input_tensors.size(); ++i) {
     const auto &spec = raw_metadata_.inputs[i];
-    inputs.push_back({spec.name, spec.datatype, spec.shape, &input_tensors[i]});
+    shapes.push_back(concreteInputShape(spec, input_tensors[i].size()));
+    inputs.push_back(
+        {spec.name, spec.datatype, shapes.back(), &input_tensors[i]});
   }
 
   const auto start = std::chrono::steady_clock::now();
@@ -157,6 +193,9 @@ KserveEngine::get_infer_results(
     output_shapes.push_back(output.shape);
     output_data.push_back(bytesToElements(output.data, output.datatype));
   }
+  // Kept so an ensemble caller can decode the result envelope by tensor name;
+  // the typed tuple above drops names, and the envelope is name-addressed.
+  last_raw_outputs_ = results;
 
   return {std::move(output_data), std::move(output_shapes)};
 }
@@ -177,4 +216,14 @@ uint64_t KserveEngine::inferenceCount() const noexcept { return infer_count_; }
 
 std::string KserveEngine::servingPlatform() const noexcept {
   return metadataPlatform(raw_metadata_);
+}
+
+const std::vector<kserve::InferOutput> &
+KserveEngine::lastRawOutputs() const noexcept {
+  return last_raw_outputs_;
+}
+
+const kserve::ModelMetadata &KserveEngine::rawMetadata() noexcept {
+  ensureMetadata();
+  return raw_metadata_;
 }
