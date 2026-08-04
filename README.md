@@ -117,6 +117,7 @@ bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
   [--min_confidence=<threshold>] \
   [--nms_threshold=<threshold>] \
   [--mask_threshold=<threshold>] \
+  [--segmentation_output|-so=<mask|polygon>] \
   [--batch|-b=<batch_size>] \
   [--input_sizes|-is='<input_sizes>'] \
   [--use-gpu] \
@@ -192,6 +193,7 @@ RF-DETR keypoint models output per-keypoint visibility and 2×2 pixel covariance
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
+- `"yolo-depth"`, `"yolo26n-depth"` - Ultralytics YOLO26 depth models; any YOLO-prefixed model type containing `depth` routes here
 
 **Open-Vocabulary Detection:**
 - `"owlv2"` - OWLv2 open-vocabulary detection
@@ -246,6 +248,18 @@ Use these flags to run preprocessing/postprocessing in `neuriplo-infer` while se
 - `--kserve_model_version=<version>`: KServe model version to call. Defaults to `1`.
 - `--kserve_transport=<http|grpc>`: Transport selection. Defaults to `http` (the validated path). `grpc` requires a build with Protobuf/gRPC available.
 - `--kserve_timeout_ms=<milliseconds>`: Request timeout. Must be greater than zero; default is `30000`.
+- `--input_mode | -im=<preprocessed|encoded-image>`: Where preprocessing runs. `preprocessed` (default) sends a dense tensor this client preprocessed. `encoded-image` sends the encoded file and lets a server-side ensemble preprocess; it requires `--kserve_endpoint`, `--task_model`, `--batch=1`, and no `--input_sizes`.
+- `--task_model | -tm=<model>`: The inner model whose metadata drives task construction in encoded-image mode. An ensemble's own metadata only describes an encoded image, so the shapes must come from the model inside it.
+- `--postprocess_mode | -pm=<cpu|gpu>`: Where postprocessing runs (default `cpu`). `gpu` decodes the server's result envelope instead of running local postprocessing, and requires `--input_mode=encoded-image`.
+
+Example, running a video's frames through a segmentation ensemble that preprocesses and postprocesses on the server:
+
+```bash
+neuriplo-infer --type=yolo26seg --source=frame.jpg --labels=labels/coco.names \
+  --kserve_endpoint=http://127.0.0.1:8080 \
+  --kserve_model_name=yolo26seg_ens --task_model=yolo26seg \
+  --input_mode=encoded-image --postprocess_mode=gpu
+```
 
 Tensor datatypes are taken from the server's model metadata (no longer hardcoded to `FP32`), so models with `UINT8`/`INT*`/`FP16`/etc. inputs work against KServe, Triton Inference Server, and OpenVINO Model Server. Set a bearer token via the `KSERVE_BEARER_TOKEN` environment variable to authenticate (sent as `Authorization: Bearer …` on HTTP and as gRPC call metadata).
 
@@ -283,6 +297,7 @@ See [docs/KserveRuntime.md](docs/KserveRuntime.md) for the full KServe runtime r
 - `--min_confidence=<v>`: Minimum detection confidence (default `0.25`).
 - `--nms_threshold=<v>`: IoU threshold for NMS in YOLO detectors/segmenters (default `0.45`).
 - `--mask_threshold=<v>`: Mask binarization threshold for instance segmentation (default `0.50`).
+- `--segmentation_output | -so=<mask|polygon>`: Instance-segmentation representation (default `mask`). `polygon` returns framework-neutral polygon exteriors and holes instead of a dense mask, and renders them as filled outlines.
 - `--batch | -b=<n>`: Batch size (default `1`; batches > 1 not currently supported).
 - `--input_sizes | -is='<CHW;...>'`: Input sizes for models with dynamic axes or backends that can't report input shapes (e.g. OpenCV DNN). E.g. `'3,224,224'`, or `'3,640,640;2'` for RT-DETR/D-FINE/DEIM.
 - `--use-gpu`: Enable GPU inference (default `false`).

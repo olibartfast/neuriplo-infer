@@ -35,6 +35,8 @@ const std::string CommandLineParser::params =
     "detectors/segmenters) }"
     "{ mask_threshold | 0.50   | Mask binarization threshold (instance "
     "segmentation) }"
+    "{ segmentation_output so | mask | segmentation representation: mask or "
+    "polygon }"
     "{ batch b | 1 | Batch size}"
     "{ input_sizes is | | Input sizes for each model input. Format: "
     "CHW;CHW;... (e.g., '3,224,224' for single input or '3,224,224;3,224,224' "
@@ -53,7 +55,70 @@ const std::string CommandLineParser::params =
     "--type) }"
     "{ kserve_model_version | 1 | model version for KServe requests }"
     "{ kserve_timeout_ms | 30000 | KServe request timeout in milliseconds }"
-    "{ kserve_transport | grpc | KServe transport: grpc (default) or http }";
+    "{ kserve_transport | grpc | KServe transport: grpc (default) or http }"
+    "{ input_mode im | preprocessed | input transport: preprocessed or "
+    "encoded-image }"
+    "{ task_model tm | | inner model used for task metadata in encoded-image "
+    "mode }"
+    "{ postprocess_mode pm | cpu | postprocessing placement: cpu or gpu }"
+    "{ task_model_version tmv | 1 | version of --task_model }";
+
+namespace {
+
+std::string lowered(const std::string &value) {
+  std::string result = value;
+  std::transform(
+      result.begin(), result.end(), result.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return result;
+}
+
+// Guard rails for the server-side ensemble path, mirroring tritonic's rules.
+// Each one exists because the combination it rejects cannot work: the encoded
+// image carries no tensor shape, the server decides batching, and GPU
+// postprocessing only exists on the ensemble path.
+void validateEnsembleArguments(const cv::CommandLineParser &parser) {
+  const std::string inputMode = lowered(parser.get<std::string>("input_mode"));
+  if (inputMode != "preprocessed" && inputMode != "encoded-image") {
+    LOG(ERROR)
+        << "--input_mode must be either 'preprocessed' or 'encoded-image'";
+    std::exit(1);
+  }
+
+  const std::string postprocessMode =
+      lowered(parser.get<std::string>("postprocess_mode"));
+  if (postprocessMode != "cpu" && postprocessMode != "gpu") {
+    LOG(ERROR) << "--postprocess_mode must be either 'cpu' or 'gpu'";
+    std::exit(1);
+  }
+
+  if (inputMode == "encoded-image") {
+    if (parser.get<std::string>("kserve_endpoint").empty()) {
+      LOG(ERROR) << "--input_mode=encoded-image requires --kserve_endpoint";
+      std::exit(1);
+    }
+    if (parser.get<std::string>("task_model").empty()) {
+      LOG(ERROR) << "--task_model is required when --input_mode=encoded-image";
+      std::exit(1);
+    }
+    if (parser.get<int>("batch") != 1) {
+      LOG(ERROR) << "--input_mode=encoded-image currently requires --batch=1";
+      std::exit(1);
+    }
+    if (parser.has("input_sizes")) {
+      LOG(ERROR) << "--input_sizes must not be set with "
+                    "--input_mode=encoded-image";
+      std::exit(1);
+    }
+  }
+
+  if (postprocessMode == "gpu" && inputMode != "encoded-image") {
+    LOG(ERROR) << "--postprocess_mode=gpu requires --input_mode=encoded-image";
+    std::exit(1);
+  }
+}
+
+} // namespace
 
 AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   cv::CommandLineParser parser(argc, argv, params);
@@ -78,6 +143,11 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   config.confidenceThreshold = parser.get<float>("min_confidence");
   config.nmsThreshold = parser.get<float>("nms_threshold");
   config.maskThreshold = parser.get<float>("mask_threshold");
+  config.segmentationOutput = parser.get<std::string>("segmentation_output");
+  std::transform(
+      config.segmentationOutput.begin(), config.segmentationOutput.end(),
+      config.segmentationOutput.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   config.detectorType = parser.get<std::string>("type");
   config.weights = parser.get<std::string>("weights");
   config.labelsPath = parser.get<std::string>("labels");
@@ -160,6 +230,19 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   config.kserve_transport = parser.get<std::string>("kserve_transport");
   std::transform(config.kserve_transport.begin(), config.kserve_transport.end(),
                  config.kserve_transport.begin(), [](unsigned char c) {
+                   return static_cast<char>(std::tolower(c));
+                 });
+
+  config.input_mode = parser.get<std::string>("input_mode");
+  config.task_model = parser.get<std::string>("task_model");
+  config.postprocess_mode = parser.get<std::string>("postprocess_mode");
+  config.task_model_version = parser.get<std::string>("task_model_version");
+  std::transform(config.input_mode.begin(), config.input_mode.end(),
+                 config.input_mode.begin(), [](unsigned char c) {
+                   return static_cast<char>(std::tolower(c));
+                 });
+  std::transform(config.postprocess_mode.begin(), config.postprocess_mode.end(),
+                 config.postprocess_mode.begin(), [](unsigned char c) {
                    return static_cast<char>(std::tolower(c));
                  });
 
@@ -308,6 +391,19 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
     LOG(ERROR) << "--output_format must be either 'text' or 'json'";
     std::exit(1);
   }
+
+  std::string segmentationOutput =
+      parser.get<std::string>("segmentation_output");
+  std::transform(segmentationOutput.begin(), segmentationOutput.end(),
+                 segmentationOutput.begin(), [](unsigned char c) {
+                   return static_cast<char>(std::tolower(c));
+                 });
+  if (segmentationOutput != "mask" && segmentationOutput != "polygon") {
+    LOG(ERROR) << "--segmentation_output must be either 'mask' or 'polygon'";
+    std::exit(1);
+  }
+
+  validateEnsembleArguments(parser);
 
   if (sampleStride < 0) {
     LOG(ERROR) << "--sample_stride must be >= 0";

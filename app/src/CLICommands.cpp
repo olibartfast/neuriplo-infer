@@ -2,11 +2,16 @@
 
 #include "VideoCaptureFactory.hpp"
 #include "neuriplo/tasks/core/opencv_interop.hpp"
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+#include "KserveEngine.hpp"
+#endif
 
 #include <cctype>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 
 namespace {
 
@@ -140,6 +145,61 @@ extractInputDims(const std::vector<int64_t> &shape) {
       "Invalid input shape: expected 3D (CHW) or 4D (NCHW) tensor");
 }
 
+// Runs one frame through the configured path and returns task results.
+//
+// Three shapes, chosen by configuration:
+//   preprocessed            local preprocess -> infer -> local postprocess
+//   encoded-image, cpu      encoded bytes -> server preprocess+infer -> local
+//   postprocess encoded-image, gpu      encoded bytes -> server does everything
+//   -> decode envelope
+//
+// The two encoded modes send the compressed file instead of a dense float
+// tensor, which is the whole point: a 640x640x3 FP32 tensor is ~4.9 MB, a JPEG
+// of the same frame is a few dozen KB.
+std::vector<neuriplo_tasks::Result>
+inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
+           const std::vector<uint8_t> *encoded_source) {
+  if (!pipeline.encoded_image) {
+    const auto preprocessed = pipeline.task->preprocess({toTaskImage(frame)});
+    const auto [outputs, shapes] =
+        pipeline.engine->get_infer_results(preprocessed);
+    auto tensors = convertToTensors(outputs, shapes);
+    return pipeline.task->postprocess(toTaskSize(frame), tensors);
+  }
+
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+  // Video frames arrive decoded, so they are re-encoded here; still image
+  // sources pass their original file bytes through untouched.
+  std::vector<uint8_t> encoded;
+  if (encoded_source != nullptr) {
+    encoded = *encoded_source;
+  } else if (!cv::imencode(".jpg", frame, encoded)) {
+    throw std::runtime_error("Could not JPEG-encode a frame for the ensemble");
+  }
+
+  const std::vector<std::vector<uint8_t>> request = {std::move(encoded)};
+  const auto [outputs, shapes] = pipeline.engine->get_infer_results(request);
+
+  if (!pipeline.server_postprocess) {
+    auto tensors = convertToTensors(outputs, shapes);
+    return pipeline.task->postprocess(toTaskSize(frame), tensors);
+  }
+
+  auto *kserve = dynamic_cast<KserveEngine *>(pipeline.engine.get());
+  if (kserve == nullptr) {
+    throw std::runtime_error(
+        "server-side postprocessing requires the KServe engine");
+  }
+  return neuriplo_infer::decodeEnvelope(kserve->lastRawOutputs(),
+                                        pipeline.envelope_variant, frame.cols,
+                                        frame.rows);
+#else
+  (void)encoded_source;
+  throw std::runtime_error(
+      "--input_mode=encoded-image needs a build with KServe support");
+#endif
+}
+
 bool hasImageSources(const std::vector<std::string> &sources) {
   for (const auto &src : sources) {
     if (src.find(".jpg") != std::string::npos ||
@@ -167,12 +227,19 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
   LOG(INFO) << "Image dimensions: " << image.rows << "x" << image.cols << "x"
             << image.channels();
 
-  const auto preprocessed = pipeline.task->preprocess({toTaskImage(image)});
-  const auto [outputs, shapes] =
-      pipeline.engine->get_infer_results(preprocessed);
+  // In encoded-image mode the original file bytes go on the wire, so the source
+  // is never decoded and re-encoded.
+  std::vector<uint8_t> source_bytes;
+  if (pipeline.encoded_image) {
+    std::ifstream stream(source, std::ios::binary);
+    if (!stream.is_open()) {
+      throw std::runtime_error("Could not open encoded image: " + source);
+    }
+    source_bytes.assign(std::istreambuf_iterator<char>(stream), {});
+  }
 
-  auto tensors = convertToTensors(outputs, shapes);
-  auto results = pipeline.task->postprocess(toTaskSize(image), tensors);
+  auto results = inferFrame(pipeline, image,
+                            pipeline.encoded_image ? &source_bytes : nullptr);
   auto end = std::chrono::steady_clock::now();
   auto duration =
       std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -213,12 +280,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   cv::Mat frame;
   while (videoInterface->readFrame(frame)) {
     auto start = std::chrono::steady_clock::now();
-    const auto preprocessed = pipeline.task->preprocess({toTaskImage(frame)});
-    const auto [outputs, shapes] =
-        pipeline.engine->get_infer_results(preprocessed);
-
-    auto tensors = convertToTensors(outputs, shapes);
-    auto results = pipeline.task->postprocess(toTaskSize(frame), tensors);
+    auto results = inferFrame(pipeline, frame, nullptr);
     auto end = std::chrono::steady_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -436,13 +498,11 @@ void printLayerList(const char *label, const std::vector<LayerInfo> &layers) {
 WarmupCommand::WarmupCommand(cv::Mat image) : image_(std::move(image)) {}
 
 int WarmupCommand::execute(InferencePipeline &pipeline) {
+  // Goes through inferFrame so warmup exercises the configured transport. In
+  // encoded-image mode the server expects a UINT8 IMAGE, and preprocessing
+  // locally here would send it a dense float tensor instead.
   for (int i = 0; i < 5; ++i) {
-    const auto preprocessed = pipeline.task->preprocess({toTaskImage(image_)});
-    const auto [outputs, shapes] =
-        pipeline.engine->get_infer_results(preprocessed);
-
-    auto tensors = convertToTensors(outputs, shapes);
-    auto results = pipeline.task->postprocess(toTaskSize(image_), tensors);
+    auto results = inferFrame(pipeline, image_, nullptr);
     (void)results;
   }
   return 0;
@@ -455,12 +515,7 @@ int BenchmarkCommand::execute(InferencePipeline &pipeline) {
   for (int i = 0; i < pipeline.config.benchmark_iterations; ++i) {
     auto start = std::chrono::steady_clock::now();
 
-    const auto preprocessed = pipeline.task->preprocess({toTaskImage(image_)});
-    const auto [outputs, shapes] =
-        pipeline.engine->get_infer_results(preprocessed);
-
-    auto tensors = convertToTensors(outputs, shapes);
-    auto results = pipeline.task->postprocess(toTaskSize(image_), tensors);
+    auto results = inferFrame(pipeline, image_, nullptr);
     (void)results;
 
     auto end = std::chrono::steady_clock::now();

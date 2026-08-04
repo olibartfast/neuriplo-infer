@@ -88,3 +88,22 @@ TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
   EXPECT_EQ(getTaskTypeForModel("imageunderstanding"),
             neuriplo_tasks::TaskType::ImageUnderstanding);
 }
+
+// neuriplo-tasks v0.8.0 routes any YOLO-prefixed model type containing `depth`
+// to its YOLO26 depth family; before the pin bump these fell through to
+// Detection and a depth model silently ran as a detector.
+TEST(TaskRouting, RoutesYoloDepthFamilyToDepthEstimation) {
+  EXPECT_EQ(getTaskTypeForModel("yolo-depth"),
+            neuriplo_tasks::TaskType::DepthEstimation);
+  EXPECT_EQ(getTaskTypeForModel("yolo26n-depth"),
+            neuriplo_tasks::TaskType::DepthEstimation);
+  EXPECT_EQ(getTaskTypeForModel("depthanythingv2"),
+            neuriplo_tasks::TaskType::DepthEstimation);
+
+  // The seg and pose branches still win over the broader depth match.
+  EXPECT_EQ(getTaskTypeForModel("yolo11-seg"),
+            neuriplo_tasks::TaskType::InstanceSegmentation);
+  EXPECT_EQ(getTaskTypeForModel("vitpose"),
+            neuriplo_tasks::TaskType::PoseEstimation);
+  EXPECT_EQ(getTaskTypeForModel("yolo26"), neuriplo_tasks::TaskType::Detection);
+}

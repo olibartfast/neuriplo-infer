@@ -36,6 +36,8 @@ struct AppConfig {
   float confidenceThreshold;
   float nmsThreshold{0.45f};
   float maskThreshold{0.50f};
+  // Instance-segmentation representation: "mask" (default) or "polygon".
+  std::string segmentationOutput{"mask"};
   int batch_size;
   std::vector<std::vector<int64_t>> input_sizes;
   int num_frames{
@@ -45,4 +47,14 @@ struct AppConfig {
   std::string kserve_model_version{"1"};
   int kserve_timeout_ms{30000};
   std::string kserve_transport{"http"};
+  // Server-side ensemble path. "preprocessed" sends a dense tensor the client
+  // preprocessed; "encoded-image" sends the encoded file and lets the server
+  // preprocess. task_model names the inner model whose metadata drives task
+  // construction, since the ensemble's own metadata only describes an image.
+  std::string input_mode{"preprocessed"};
+  std::string task_model;
+  // Version of --task_model. Separate from kserve_model_version because a graph
+  // may reference an inner model version other than the ensemble's own.
+  std::string task_model_version{"1"};
+  std::string postprocess_mode{"cpu"};
 };
