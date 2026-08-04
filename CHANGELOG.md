@@ -6,6 +6,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- YOLO26 depth estimation routing. `yolo-depth`, `yolo26n-depth`, and any
+  YOLO-prefixed model type containing `depth` now route to `DepthEstimation`,
+  mirroring the family added in neuriplo-tasks v0.8.0. Previously these fell
+  through to `Detection` and a depth model was rendered as a detector.
+- `--segmentation_output` / `-so` (`mask` or `polygon`, default `mask`),
+  wiring `TaskConfig::segmentation_output` from neuriplo-tasks v0.7.0. Polygon
+  results are rendered as closed perimeter outlines (see Fixed below); the
+  mask path is unchanged when the flag is absent.
+
+- Server-side ensemble building blocks, ported from tritonic v0.4.0 and
+  retargeted onto `kserve::ModelMetadata` / `kserve::InferOutput`:
+  - `--input_mode=preprocessed|encoded-image`, `--task_model`, and
+    `--postprocess_mode=cpu|gpu`, with tritonic's guard rails (encoded-image
+    needs a KServe endpoint, a task model, and `--batch=1`, and forbids
+    `--input_sizes`; GPU postprocessing requires encoded-image).
+  - `app/inc/EncodedImage.hpp`: JPEG dimension reader, encoded-image request
+    builder, and validation of the ensemble against the inner task model.
+  - `app/inc/KserveEnvelope.hpp`: decoders for the detection, packed-mask, and
+    polygon envelopes back into neuriplo-tasks results, including rejection of
+    a truncated offset array on a detection-free frame.
+
+  - Wired through the image and video paths in `CLICommands.cpp`: a single
+    `inferFrame` helper selects local preprocessing, server-side preprocessing,
+    or server-side pre- and postprocessing. Still images send their original
+    file bytes untouched; video frames are re-encoded per frame.
+  - The task is built from the inner model's metadata in encoded-image mode,
+    fetched over a second client, since the ensemble's own metadata only
+    describes an encoded image.
+
+- `--task_model_version` (default `1`): the inner model's version,
+  independent of the ensemble's own `--kserve_model_version`, since a graph
+  may reference a different inner version.
+
+### Fixed
+- Polygon segmentation rendering filled the exteriors and alpha-blended them,
+  which is visually indistinguishable from the mask overlay and never drew the
+  perimeter. Polygon results now stroke closed outline contours only
+  (exteriors thickness 2, holes 1, anti-aliased).
+- `--postprocess_mode=gpu` silently fell back to client-side CPU
+  postprocessing when the model's metadata declared no decoded envelope,
+  quietly changing execution placement. It is now a configuration error
+  naming the model and pointing at `--postprocess_mode=cpu`.
+- Warmup and benchmark bypassed the configured transport: both preprocessed
+  locally and sent a dense float tensor even in encoded-image mode, where the
+  server expects a UINT8 IMAGE. Both now route through the same per-frame
+  path as normal inference.
+- KServe requests sent the model's declared input shape verbatim, so a model
+  with a dynamic (negative) dimension produced an invalid request. The extent
+  is now derived from the payload when exactly one axis is dynamic. Encoded
+  images are the first inputs to need it: their byte length varies per request.
+- Decoded mask envelopes produced no visible masks. The envelope carries
+  box-sized masks, and the renderer resizes whatever image it is given to the
+  frame, so a box-sized mask was stretched across the entire picture. Masks are
+  now expanded into a frame-sized image at the detection's box origin, matching
+  what the local postprocessor produces.
+
+### Changed
+- Pinned neuriplo-tasks to `v0.8.0` (was `v0.6.1`), picking up polygon
+  segmentation output, the YOLO26 depth task, and the vision preprocessing
+  fast paths.
+
 ## [0.9.1] - 2026-07-16
 
 ### Fixed

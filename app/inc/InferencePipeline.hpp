@@ -19,6 +19,10 @@
 #include <string>
 #include <vector>
 
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+#include "KserveEnvelope.hpp"
+#endif
+
 struct InferencePipeline {
   AppConfig config;
   std::unique_ptr<InferenceInterface> engine;
@@ -32,6 +36,17 @@ struct InferencePipeline {
   // "platform", e.g. "tensorrt_plan"). Empty for local engines or when the
   // server omits it. Used to tag the rendered output filename.
   std::string kserve_platform;
+
+  // Server-side ensemble mode. When encoded_image is set, frames go to the
+  // server as encoded bytes instead of a preprocessed tensor. When
+  // server_postprocess is also set, the server returns a decoded result
+  // envelope and local postprocessing is skipped entirely.
+  bool encoded_image{false};
+  bool server_postprocess{false};
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+  neuriplo_infer::EnvelopeVariant envelope_variant{
+      neuriplo_infer::EnvelopeVariant::Detection};
+#endif
 
   int getRequiredFrameCount() const;
   void renderResults(const std::vector<neuriplo_tasks::Result> &results,
