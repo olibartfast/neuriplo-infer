@@ -50,12 +50,21 @@ public:
   // rendered output with the backend that actually ran the model.
   std::string servingPlatform() const noexcept;
 
+  // Raw outputs of the most recent infer(), kept because the typed tuple
+  // returned by get_infer_results() drops tensor names and an ensemble result
+  // envelope is addressed by name. Empty before the first call.
+  const std::vector<kserve::InferOutput> &lastRawOutputs() const noexcept;
+
+  // Model metadata exactly as the server reported it.
+  const kserve::ModelMetadata &rawMetadata() noexcept;
+
 private:
   void ensureMetadata();
 
   std::unique_ptr<kserve::IClient> client_;
   bool metadata_loaded_{false};
   kserve::ModelMetadata raw_metadata_;
+  std::vector<kserve::InferOutput> last_raw_outputs_;
   InferenceMetadata cached_metadata_;
 
   double last_latency_ms_{0.0};

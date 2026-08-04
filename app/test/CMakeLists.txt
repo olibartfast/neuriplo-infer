@@ -35,6 +35,7 @@ add_executable(${PROJECT_NAME_TEST}
     # The pure KServe protocol/retry/security suites live in the
     # neuriplo-kserve-client repo; only the adapter test stays here.
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveEngine.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_KserveEnvelope.cpp
 )
 
 include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
