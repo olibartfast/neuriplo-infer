@@ -297,7 +297,7 @@ See [docs/KserveRuntime.md](docs/KserveRuntime.md) for the full KServe runtime r
 - `--min_confidence=<v>`: Minimum detection confidence (default `0.25`).
 - `--nms_threshold=<v>`: IoU threshold for NMS in YOLO detectors/segmenters (default `0.45`).
 - `--mask_threshold=<v>`: Mask binarization threshold for instance segmentation (default `0.50`).
-- `--segmentation_output | -so=<mask|polygon>`: Instance-segmentation representation (default `mask`). `polygon` returns framework-neutral polygon exteriors and holes instead of a dense mask, and renders them as filled outlines.
+- `--segmentation_output | -so=<mask|polygon>`: Instance-segmentation representation (default `mask`). `polygon` returns framework-neutral polygon exteriors and holes instead of a dense mask, and renders them as closed perimeter outlines (holes stroked thinner), never filled. Note the polygons are convex hulls of each instance, not tight contours.
 - `--batch | -b=<n>`: Batch size (default `1`; batches > 1 not currently supported).
 - `--input_sizes | -is='<CHW;...>'`: Input sizes for models with dynamic axes or backends that can't report input shapes (e.g. OpenCV DNN). E.g. `'3,224,224'`, or `'3,640,640;2'` for RT-DETR/D-FINE/DEIM.
 - `--use-gpu`: Enable GPU inference (default `false`).

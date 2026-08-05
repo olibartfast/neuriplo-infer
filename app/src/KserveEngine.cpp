@@ -223,7 +223,7 @@ KserveEngine::lastRawOutputs() const noexcept {
   return last_raw_outputs_;
 }
 
-const kserve::ModelMetadata &KserveEngine::rawMetadata() noexcept {
+const kserve::ModelMetadata &KserveEngine::rawMetadata() {
   ensureMetadata();
   return raw_metadata_;
 }

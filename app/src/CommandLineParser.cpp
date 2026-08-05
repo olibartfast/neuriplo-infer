@@ -73,7 +73,7 @@ std::string lowered(const std::string &value) {
   return result;
 }
 
-// Guard rails for the server-side ensemble path, mirroring tritonic's rules.
+// Guard rails for the server-side ensemble path.
 // Each one exists because the combination it rejects cannot work: the encoded
 // image carries no tensor shape, the server decides batching, and GPU
 // postprocessing only exists on the ensemble path.

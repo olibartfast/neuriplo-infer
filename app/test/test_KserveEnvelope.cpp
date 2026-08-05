@@ -159,8 +159,8 @@ TEST(KserveEnvelope, DecodesPackedMasks) {
 }
 
 // A server that shortens MASK_OFFSETS on a detection-free frame aborts video
-// processing on the first empty frame. That defect shipped in tritonic; the
-// client refuses the payload rather than reading past the end.
+// processing on the first empty frame. The client refuses the payload rather
+// than reading past the end.
 TEST(KserveEnvelope, RejectsTruncatedMaskOffsets) {
   auto outputs = detectionEnvelope(0, {}, {}, {});
   std::vector<uint8_t> short_offsets;
