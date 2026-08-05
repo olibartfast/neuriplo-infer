@@ -3,9 +3,8 @@
 // Decoder for the ensemble result envelope: turns the fixed tensor set a
 // server-side postprocessing ensemble returns back into neuriplo-tasks results.
 //
-// Ported from tritonic v0.4.0 (include/tritonic/core/gpu_segmentation.hpp) and
-// retargeted onto kserve::InferOutput, whose payloads are raw little-endian
-// bytes. Shapes and datatypes come from the platform ensemble contract.
+// Works on kserve::InferOutput, whose payloads are raw little-endian bytes.
+// Shapes and datatypes come from the platform ensemble contract.
 //
 // This lives here, not in neuriplo-kserve-client: the client is a pure protocol
 // peer with no task types. Interpreting the envelope is the adapter's job.
@@ -160,14 +159,10 @@ decodeDetectionEnvelope(const std::vector<kserve::InferOutput> &outputs) {
   for (int i = 0; i < count; ++i) {
     const auto index = static_cast<size_t>(i);
     neuriplo_tasks::Detection detection;
-    detection.bbox.x =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4));
-    detection.bbox.y =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 1));
-    detection.bbox.width =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 2));
-    detection.bbox.height =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 3));
+    detection.bbox.x = envelopeValueAt<int32_t>(*boxes, index * 4);
+    detection.bbox.y = envelopeValueAt<int32_t>(*boxes, index * 4 + 1);
+    detection.bbox.width = envelopeValueAt<int32_t>(*boxes, index * 4 + 2);
+    detection.bbox.height = envelopeValueAt<int32_t>(*boxes, index * 4 + 3);
     detection.class_confidence = envelopeValueAt<float>(*scores, index);
     detection.class_id =
         static_cast<float>(envelopeValueAt<int32_t>(*classes, index));
@@ -202,14 +197,10 @@ decodeMaskEnvelope(const std::vector<kserve::InferOutput> &outputs,
   for (int i = 0; i < count; ++i) {
     const auto index = static_cast<size_t>(i);
     neuriplo_tasks::InstanceSegmentation segmentation;
-    segmentation.bbox.x =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4));
-    segmentation.bbox.y =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 1));
-    segmentation.bbox.width =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 2));
-    segmentation.bbox.height =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 3));
+    segmentation.bbox.x = envelopeValueAt<int32_t>(*boxes, index * 4);
+    segmentation.bbox.y = envelopeValueAt<int32_t>(*boxes, index * 4 + 1);
+    segmentation.bbox.width = envelopeValueAt<int32_t>(*boxes, index * 4 + 2);
+    segmentation.bbox.height = envelopeValueAt<int32_t>(*boxes, index * 4 + 3);
     segmentation.class_confidence = envelopeValueAt<float>(*scores, index);
     segmentation.class_id =
         static_cast<float>(envelopeValueAt<int32_t>(*classes, index));
@@ -319,14 +310,10 @@ decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs) {
   for (int i = 0; i < count; ++i) {
     const auto index = static_cast<size_t>(i);
     neuriplo_tasks::InstanceSegmentation segmentation;
-    segmentation.bbox.x =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4));
-    segmentation.bbox.y =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 1));
-    segmentation.bbox.width =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 2));
-    segmentation.bbox.height =
-        static_cast<float>(envelopeValueAt<int32_t>(*boxes, index * 4 + 3));
+    segmentation.bbox.x = envelopeValueAt<int32_t>(*boxes, index * 4);
+    segmentation.bbox.y = envelopeValueAt<int32_t>(*boxes, index * 4 + 1);
+    segmentation.bbox.width = envelopeValueAt<int32_t>(*boxes, index * 4 + 2);
+    segmentation.bbox.height = envelopeValueAt<int32_t>(*boxes, index * 4 + 3);
     segmentation.class_confidence = envelopeValueAt<float>(*scores, index);
     segmentation.class_id =
         static_cast<float>(envelopeValueAt<int32_t>(*classes, index));
@@ -361,16 +348,19 @@ decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs) {
             "Envelope polygon ring has fewer than three points");
       }
       // The first ring of a detection is its exterior; later rings that fall
-      // inside an existing exterior are its holes.
-      bool placed = false;
+      // inside an existing exterior are its holes. The owning polygon is
+      // resolved before the ring is moved, so the move happens exactly once
+      // down either path.
+      neuriplo_tasks::SegmentationPolygon *container = nullptr;
       for (auto &polygon : segmentation.polygons) {
         if (pointInsideRing(polygon.exterior, ring_points.front())) {
-          polygon.holes.push_back(std::move(ring_points));
-          placed = true;
+          container = &polygon;
           break;
         }
       }
-      if (!placed) {
+      if (container != nullptr) {
+        container->holes.push_back(std::move(ring_points));
+      } else {
         neuriplo_tasks::SegmentationPolygon polygon;
         polygon.exterior = std::move(ring_points);
         segmentation.polygons.push_back(std::move(polygon));

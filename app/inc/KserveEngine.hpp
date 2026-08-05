@@ -55,8 +55,9 @@ public:
   // envelope is addressed by name. Empty before the first call.
   const std::vector<kserve::InferOutput> &lastRawOutputs() const noexcept;
 
-  // Model metadata exactly as the server reported it.
-  const kserve::ModelMetadata &rawMetadata() noexcept;
+  // Model metadata exactly as the server reported it. Not noexcept: the first
+  // call fetches from the server and throws when the model is not ready.
+  const kserve::ModelMetadata &rawMetadata();
 
 private:
   void ensureMetadata();

@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Server-side ensemble building blocks, ported from tritonic v0.4.0 and
   retargeted onto `kserve::ModelMetadata` / `kserve::InferOutput`:
   - `--input_mode=preprocessed|encoded-image`, `--task_model`, and
-    `--postprocess_mode=cpu|gpu`, with tritonic's guard rails (encoded-image
+    `--postprocess_mode=cpu|gpu`, with strict guard rails (encoded-image
     needs a KServe endpoint, a task model, and `--batch=1`, and forbids
     `--input_sizes`; GPU postprocessing requires encoded-image).
   - `app/inc/EncodedImage.hpp`: JPEG dimension reader, encoded-image request

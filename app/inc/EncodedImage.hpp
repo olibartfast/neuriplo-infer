@@ -2,10 +2,9 @@
 
 // Encoded-image request path for server-side ensembles.
 //
-// Ported from tritonic v0.4.0 (include/tritonic/core/encoded_image.hpp) and
-// retargeted from Triton's ModelInfo onto kserve::ModelMetadata, so the same
-// application code works against our runtime and a Triton deployment. The wire
-// surface is the platform ensemble contract.
+// Built against kserve::ModelMetadata so the same application code works
+// against neuriplo-kserve-runtime and a Triton deployment. The wire surface is
+// the platform ensemble contract.
 
 #include "KserveTypes.hpp"
 
