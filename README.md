@@ -140,7 +140,7 @@ separate explicit extension registry rather than growing the internal table
 indefinitely.
 
 <!-- TASKFACTORY_MODEL_LIST:START -->
-The TaskFactory supports the following model type strings. Matching normalizes strings by lowercasing and stripping whitespace, hyphens, and underscores, so `YOLO-V8`, `yolo_v8`, and ` yolo v8 ` route identically. Specific segmentation and pose aliases are checked before generic detection aliases.
+The TaskFactory supports the following model type strings. Matching normalizes strings by lowercasing and stripping whitespace, hyphens, and underscores, so `YOLO-V8`, `yolo_v8`, and ` yolo v8 ` route identically. Specific segmentation, pose, and depth aliases are checked before generic detection aliases.
 
 **Object Detection:**
 
@@ -162,6 +162,8 @@ For EdgeCrafter detection export details, see [export/detection/edgecrafter/READ
 - `"rfdetrseg"` - RF-DETR
 
 For EdgeCrafter segmentation export details, see [export/segmentation/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md).
+
+Instance-segmentation tasks return masks by default. Set `TaskConfig::segmentation_output` to `SegmentationOutput::Polygon` to return full-image exterior rings and holes instead; see [instance-segmentation output representations](docs/segmentation_outputs.md).
 
 **Classification:**
 - `"torchvision-classifier"` - Torchvision models (ResNet, EfficientNet, etc.)
@@ -194,6 +196,8 @@ RF-DETR keypoint models output per-keypoint visibility and 2×2 pixel covariance
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
 - `"yolo-depth"`, `"yolo26n-depth"` - Ultralytics YOLO26 depth models; any YOLO-prefixed model type containing `depth` routes here
+
+YOLO26 depth expects RGB NCHW float input normalized to `[0,1]` with YOLO letterboxing. Its exported output is an unbounded metric-depth map shaped `[B,1,H,W]`; postprocessing removes letterbox padding and resizes the map to the original frame. See the [YOLO depth export guide](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/depth_estimation/yolo_depth/README.md).
 
 **Open-Vocabulary Detection:**
 - `"owlv2"` - OWLv2 open-vocabulary detection

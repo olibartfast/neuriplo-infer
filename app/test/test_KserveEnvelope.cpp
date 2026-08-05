@@ -1,3 +1,7 @@
+// Both headers include KserveTypes.hpp from neuriplo-kserve-client, which is
+// not fetched in a local-only build. Guarded like test_KserveEngine.cpp.
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+
 #include "EncodedImage.hpp"
 #include "KserveEnvelope.hpp"
 
@@ -270,3 +274,5 @@ TEST(EncodedImage, ReadsJpegDimensionsFromStartOfFrame) {
   EXPECT_EQ(width, 640);
   EXPECT_EQ(height, 480);
 }
+
+#endif // NEURIPLO_INFER_WITH_KSERVE
