@@ -33,13 +33,13 @@ struct AppConfig {
   bool enable_benchmark{false};
   bool export_metadata{false};
   bool no_gif{false};
-  int benchmark_iterations;
-  float confidenceThreshold;
+  int benchmark_iterations{10};
+  float confidenceThreshold{0.25f};
   float nmsThreshold{0.45f};
   float maskThreshold{0.50f};
   // Instance-segmentation representation: "mask" (default) or "polygon".
   std::string segmentationOutput{"mask"};
-  int batch_size;
+  int batch_size{1};
   std::vector<std::vector<int64_t>> input_sizes;
   int num_frames{
       0}; // Number of frames for video classification (0 = use model default)
