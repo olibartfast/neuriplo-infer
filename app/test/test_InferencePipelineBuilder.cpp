@@ -69,6 +69,10 @@ TEST(InferencePipelineBuilderTest, FailsOnInvalidDetectorType) {
 }
 
 TEST(InferencePipelineBuilderTest, BuildSuccessWithValidYoloModel) {
+#ifndef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+  GTEST_SKIP() << "Requires a compiled local inference backend";
+#endif
+
   AppConfig config;
   config.detectorType = "yolo26";
   config.weights = getWeightsPath();
@@ -107,6 +111,10 @@ TEST(InferencePipelineBuilderTest, BuildSuccessWithValidYoloModel) {
 }
 
 TEST(InferencePipelineBuilderTest, BuildWithCustomRenderer) {
+#ifndef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+  GTEST_SKIP() << "Requires a compiled local inference backend";
+#endif
+
   AppConfig config;
   config.detectorType = "yolo26";
   config.weights = getWeightsPath();

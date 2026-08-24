@@ -17,6 +17,7 @@
 #include <type_traits> // for std::remove_pointer
 
 struct AppConfig {
+  bool show_capabilities{false};
   std::string detectorType;
   std::vector<std::string> sources;
   std::string labelsPath;

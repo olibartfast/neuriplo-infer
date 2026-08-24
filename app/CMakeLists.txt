@@ -1,4 +1,5 @@
 set(APP_LIB_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Capabilities.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
@@ -21,6 +22,9 @@ set(NEURIPLO_INFER_LIBRARY neuriplo-infer)
 set(NEURIPLO_INFER_EXECUTABLE neuriplo-infer-cli)
 
 add_library(${NEURIPLO_INFER_LIBRARY} STATIC ${APP_LIB_SOURCES})
+
+target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PUBLIC
+    NEURIPLO_INFER_VERSION="${PROJECT_VERSION}")
 
 target_include_directories(${NEURIPLO_INFER_LIBRARY} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
@@ -56,7 +60,8 @@ target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC
 if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
     target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC neuriplo)
     target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PUBLIC
-                               NEURIPLO_INFER_WITH_LOCAL_BACKENDS)
+        NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+        NEURIPLO_INFER_LOCAL_BACKEND="${DEFAULT_BACKEND}")
 endif()
 
 if(NEURIPLO_INFER_ENABLE_KSERVE)
