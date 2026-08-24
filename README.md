@@ -97,7 +97,7 @@ bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
 
 ```bash
 ./neuriplo-infer \
-  [--help | -h] \
+  [--help | -h | --capabilities] \
   --type=<model_type> \
   --source=<input_source> \
   [--weights=<model_weights>] \
@@ -106,6 +106,10 @@ bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
   [--kserve_model_version=<version>] \
   [--kserve_transport=<http|grpc>] \
   [--kserve_timeout_ms=<milliseconds>] \
+  [--input_mode=<preprocessed|encoded-image>] \
+  [--task_model=<model>] \
+  [--task_model_version=<version>] \
+  [--postprocess_mode=<cpu|gpu>] \
   [--labels=<labels_file>] \
   [--text_prompts='<prompt_a;prompt_b;...>'] \
   [--prompt='<freeform_prompt>'] \
@@ -127,6 +131,20 @@ bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
   [--no_gif] \
   [--iterations=<number>]
 ```
+
+Use `--capabilities` without run arguments to print the versioned, build-specific
+JSON contract consumed by tools such as Neuriplo UI:
+
+```bash
+./neuriplo-infer --capabilities
+```
+
+The response reports task/model selectors, source and parameter requirements,
+the local backend compiled into the executable, and the client-server protocols
+and transports available in the current build. Local and client-server
+execution are separate workflows. Enum defaults are build-specific when an
+optional transport is compiled. The schema is documented in
+[`docs/capabilities.schema.json`](docs/capabilities.schema.json).
 
 #### Required Parameters
 

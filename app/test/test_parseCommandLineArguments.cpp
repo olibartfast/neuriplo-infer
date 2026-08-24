@@ -36,6 +36,18 @@ TEST(ParseCommandLineArguments, Basic) {
   EXPECT_FLOAT_EQ(config.maskThreshold, 0.50f);
 }
 
+TEST(ParseCommandLineArguments, CapabilitiesDoesNotRequireRunArguments) {
+  const char *argv[] = {"program", "--capabilities"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+
+  const AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_TRUE(config.show_capabilities);
+  EXPECT_TRUE(config.sources.empty());
+  EXPECT_TRUE(config.weights.empty());
+}
+
 TEST(ParseCommandLineArguments, ThresholdFlags) {
   const char *argv[] = {"program",
                         "--type=yoloseg",

@@ -28,6 +28,7 @@ set(PROJECT_NAME_TEST runUnitTests)
 # Add test executable
 add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_Capabilities.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
@@ -107,6 +108,14 @@ target_link_libraries(${PROJECT_NAME_TEST} PUBLIC
 
 # Discover and run tests
 gtest_discover_tests(${PROJECT_NAME_TEST})
+
+add_test(
+    NAME capabilities_cli_contract
+    COMMAND $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}> --capabilities
+)
+set_tests_properties(capabilities_cli_contract PROPERTIES
+    PASS_REGULAR_EXPRESSION "\"schema_version\": 1"
+)
 
 add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run

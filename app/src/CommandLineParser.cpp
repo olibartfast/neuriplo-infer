@@ -7,6 +7,8 @@
 
 const std::string CommandLineParser::params =
     "{ help h   |   | print help message }"
+    "{ capabilities | false | print machine-readable capabilities JSON and "
+    "exit }"
     "{ type     |  yolov10 | Object Detection: yolo, yolov4, yolov7e2e, "
     "yolov10, yolonas, rtdetr, rtdetrul, rfdetr, owlv2 | Classification: "
     "torchvisionclassifier, tensorflowclassifier, vitclassifier, timesformer | "
@@ -127,6 +129,16 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   if (parser.has("help")) {
     printHelpMessage(parser);
     std::exit(1);
+  }
+
+  if (parser.get<bool>("capabilities")) {
+    if (!parser.check()) {
+      parser.printErrors();
+      std::exit(1);
+    }
+    AppConfig config;
+    config.show_capabilities = true;
+    return config;
   }
 
   validateArguments(parser);

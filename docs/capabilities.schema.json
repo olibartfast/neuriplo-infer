@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/olibartfast/neuriplo-infer/blob/develop/docs/capabilities.schema.json",
+  "title": "Neuriplo Infer Capabilities",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "producer",
+    "execution",
+    "source_types",
+    "parameters",
+    "tasks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "neuriplo-infer" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflows"],
+      "properties": {
+        "workflows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/workflow" },
+          "minItems": 1
+        }
+      }
+    },
+    "source_types": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sourceType" },
+      "minItems": 1
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/parameter" }
+    },
+    "tasks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/task" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "parameterSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "optional"],
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "optional": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "required": ["cli_flag", "value_type"],
+      "properties": {
+        "cli_flag": { "type": "string", "minLength": 1 },
+        "value_type": {
+          "enum": [
+            "boolean",
+            "enum",
+            "integer",
+            "number",
+            "path",
+            "shape_list",
+            "string",
+            "string_list",
+            "url"
+          ]
+        },
+        "default": {},
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "separator": { "type": "string" },
+        "values": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "transports"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "transports": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "backends", "protocols", "parameters"],
+      "properties": {
+        "id": { "enum": ["local", "client_server"] },
+        "backends": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "protocols": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/protocol" }
+        },
+        "parameters": { "$ref": "#/$defs/parameterSelection" }
+      }
+    },
+    "sourceType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "input"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "input": { "enum": ["file_path"] }
+      }
+    },
+    "sourceSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["types", "min_items", "max_items"],
+      "properties": {
+        "types": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "min_items": { "type": "integer", "minimum": 0 },
+        "max_items": {
+          "type": "integer",
+          "description": "-1 means no fixed upper bound.",
+          "minimum": -1
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "aliases", "patterns", "parameters"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "patterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "parameters": { "$ref": "#/$defs/parameterSelection" }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "models", "sources", "parameters"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "models": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/model" },
+          "minItems": 1
+        },
+        "sources": { "$ref": "#/$defs/sourceSelection" },
+        "parameters": { "$ref": "#/$defs/parameterSelection" }
+      }
+    }
+  }
+}
