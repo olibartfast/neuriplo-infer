@@ -46,6 +46,9 @@ TEST(ParseCommandLineArguments, CapabilitiesDoesNotRequireRunArguments) {
   EXPECT_TRUE(config.show_capabilities);
   EXPECT_TRUE(config.sources.empty());
   EXPECT_TRUE(config.weights.empty());
+  EXPECT_EQ(config.benchmark_iterations, 10);
+  EXPECT_FLOAT_EQ(config.confidenceThreshold, 0.25f);
+  EXPECT_EQ(config.batch_size, 1);
 }
 
 TEST(ParseCommandLineArguments, ThresholdFlags) {
