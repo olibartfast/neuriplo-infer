@@ -23,6 +23,10 @@ const json &findById(const json &items, const std::string &id) {
   return *found;
 }
 
+bool containsString(const json &values, const std::string &expected) {
+  return std::find(values.begin(), values.end(), expected) != values.end();
+}
+
 neuriplo_tasks::TaskType taskTypeForId(const std::string &id) {
   using neuriplo_tasks::TaskType;
   if (id == "object_detection") {
@@ -84,6 +88,26 @@ TEST(CapabilitiesContract, AdvertisedModelSelectorsMatchAppRouting) {
       }
     }
   }
+}
+
+TEST(CapabilitiesContract, AdvertisesRoutedAliasesAndFamilies) {
+  const json tasks = buildCapabilities().at("tasks");
+
+  const json &detection = findById(tasks, "object_detection");
+  const json &rtdetr = findById(detection.at("models"), "rtdetr");
+  for (const char *alias : {"rtdetrv2", "dfine", "deim", "deimv2"}) {
+    EXPECT_TRUE(containsString(rtdetr.at("aliases"), alias)) << alias;
+  }
+  EXPECT_TRUE(containsString(rtdetr.at("patterns"), "deim*"));
+
+  const json &edgecrafter = findById(detection.at("models"), "ecdet");
+  EXPECT_TRUE(containsString(edgecrafter.at("patterns"), "edgecrafter*det*"));
+
+  const json &pose = findById(tasks, "pose_estimation");
+  const json &yolo_pose = findById(pose.at("models"), "yolov8pose");
+  EXPECT_TRUE(containsString(yolo_pose.at("patterns"), "yolo*pose*"));
+  const json &rfdetr_pose = findById(pose.at("models"), "rfdetrpose");
+  EXPECT_TRUE(containsString(rfdetr_pose.at("patterns"), "rfdetr*pose*"));
 }
 
 TEST(CapabilitiesContract, ParameterReferencesResolve) {
