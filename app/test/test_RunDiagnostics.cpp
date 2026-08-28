@@ -4,12 +4,14 @@
 
 #include "neuriplo/tasks/core/task_interface.hpp"
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <thread>
 
 /**
  * Proves the instrumentation is wired where the work happens.
@@ -38,11 +40,17 @@ public:
   get_infer_results(
       const std::vector<std::vector<uint8_t>> & /*inputs*/) override {
     ++calls;
+    if (delay.count() > 0) {
+      std::this_thread::sleep_for(delay);
+    }
     std::vector<TensorElement> values(8, TensorElement{0.0F});
     return {{values}, {{1, 8}}};
   }
 
   int calls{0};
+  /// Makes an ignored call cost measurable time, so a test can tell whether
+  /// that time was counted.
+  std::chrono::milliseconds delay{0};
 };
 
 class FakeTask : public neuriplo_tasks::TaskInterface {
@@ -204,6 +212,104 @@ TEST_F(RunDiagnostics, AnUnreadableSourceFailsAtTheSourceStage) {
   const json stages = document.at("metrics").at("stages_ms");
   EXPECT_TRUE(stages.at("inference").is_null());
   EXPECT_TRUE(stages.at("render").is_null());
+}
+
+TEST_F(RunDiagnostics, OpticalFlowTimesItsOwnStages) {
+  // Optical flow never goes through inferFrame, so it is the case where a
+  // timer in one place silently leaves another path unmeasured.
+  const auto second = directory_ / "fixture-b.png";
+  ASSERT_TRUE(cv::imwrite(second.string(),
+                          cv::Mat(64, 64, CV_8UC3, cv::Scalar(160, 90, 20))));
+
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {source_.string(), second.string()};
+  pipeline.task_type = neuriplo_tasks::TaskType::OpticalFlow;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  const json metrics = report().at("metrics");
+  EXPECT_EQ(metrics.at("samples"), 1) << "a processed pair is one sample";
+  const json stages = metrics.at("stages_ms");
+  for (const char *stage :
+       {"preprocess", "inference", "postprocess", "render"}) {
+    EXPECT_FALSE(stages.at(stage).is_null()) << stage << " was not timed";
+  }
+}
+
+TEST_F(RunDiagnostics, ImageUnderstandingTimesItsOwnStages) {
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.task_type = neuriplo_tasks::TaskType::ImageUnderstanding;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  const json metrics = report().at("metrics");
+  EXPECT_EQ(metrics.at("samples"), 1);
+  const json stages = metrics.at("stages_ms");
+  for (const char *stage :
+       {"preprocess", "inference", "postprocess", "render"}) {
+    EXPECT_FALSE(stages.at(stage).is_null()) << stage << " was not timed";
+  }
+}
+
+TEST_F(RunDiagnostics, AFailedOpticalFlowRunIsAttributedToTheStageItRanIn) {
+  const auto second = directory_ / "fixture-b.png";
+  ASSERT_TRUE(cv::imwrite(second.string(),
+                          cv::Mat(64, 64, CV_8UC3, cv::Scalar(160, 90, 20))));
+
+  class ThrowingTask : public FakeTask {
+  public:
+    using FakeTask::FakeTask;
+    std::vector<std::vector<uint8_t>>
+    preprocess(const std::vector<neuriplo_tasks::Image> & /*images*/) override {
+      throw std::runtime_error("preprocess refused the pair");
+    }
+  };
+
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {source_.string(), second.string()};
+  pipeline.task_type = neuriplo_tasks::TaskType::OpticalFlow;
+  neuriplo_tasks::ModelInfo model_info;
+  model_info.addInput("images", {1, 3, 64, 64}, 1);
+  model_info.addOutput("output", {1, 8}, 1);
+  pipeline.task = std::make_unique<ThrowingTask>(model_info);
+
+  try {
+    RunInferenceCommand().execute(pipeline);
+    FAIL() << "the pipeline must not swallow the failure";
+  } catch (const std::exception &e) {
+    collected.fail(collected.currentStage(), e.what());
+  }
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  // Without a timer on this path the stage would still read model_load.
+  EXPECT_EQ(report().at("error").at("stage"), "preprocess");
+}
+
+TEST_F(RunDiagnostics, WarmupAndBenchmarkTimeStaysOutOfTheStageTotals) {
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.enable_warmup = true; // five ignored inferences
+  pipeline.config.enable_benchmark = true;
+  pipeline.config.benchmark_iterations = 3;
+
+  auto *engine = dynamic_cast<FakeEngine *>(pipeline.engine.get());
+  ASSERT_NE(engine, nullptr);
+  engine->delay = std::chrono::milliseconds(10);
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  const json metrics = report().at("metrics");
+  EXPECT_EQ(engine->calls, 9) << "warmup and benchmark did run";
+  EXPECT_EQ(metrics.at("samples"), 1);
+  // Eight of the nine calls produced no sample. Counting their 80 ms would
+  // inflate the stage total and divide the sample count by it.
+  EXPECT_LT(metrics.at("stages_ms").at("inference").get<double>(), 60.0);
 }
 
 TEST_F(RunDiagnostics, APipelineWithoutACollectorStillRuns) {

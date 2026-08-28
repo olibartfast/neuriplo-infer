@@ -198,6 +198,72 @@ TEST_F(RunReportFile, AnUnwritableReportNeverThrows) {
   std::filesystem::create_directories(path_);
 
   EXPECT_NO_THROW(neuriplo_infer::writeRunReport(report, path_));
+  EXPECT_FALSE(neuriplo_infer::writeRunReport(report, path_));
+}
+
+TEST_F(RunReportFile, AWriteThatCannotBeFlushedIsReported) {
+  // Opening succeeds on /dev/full and every write fails on flush, which is
+  // what a full disk does. Checking only is_open() would report success over
+  // truncated JSON.
+  if (!std::filesystem::exists("/dev/full")) {
+    GTEST_SKIP() << "no /dev/full on this platform";
+  }
+  RunReport report;
+  report.addSample();
+
+  EXPECT_FALSE(neuriplo_infer::writeRunReport(report, "/dev/full"));
+  EXPECT_TRUE(neuriplo_infer::writeRunReport(report, path_));
+}
+
+TEST_F(RunReportFile, SuspendedTimingKeepsAttributionAndDropsDuration) {
+  RunReport report;
+  {
+    StageTimer measured(&report, RunStage::Inference);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+  {
+    // What warmup and benchmark do: the same stage, repeatedly, with no
+    // result to show for it.
+    neuriplo_infer::TimingSuspension untimed(&report);
+    StageTimer ignored(&report, RunStage::Inference);
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+  }
+
+  neuriplo_infer::writeRunReport(report, path_);
+  const json document = readReport(path_);
+  const double inference =
+      document.at("metrics").at("stages_ms").at("inference").get<double>();
+  EXPECT_GE(inference, 4.0);
+  EXPECT_LT(inference, 30.0) << "suspended time was accumulated";
+  // Attribution is not suspended: the run was still in inference.
+  EXPECT_EQ(document.at("stage"), "inference");
+}
+
+TEST_F(RunReportFile, SuspensionNestsAndAlwaysResumes) {
+  RunReport report;
+  {
+    neuriplo_infer::TimingSuspension outer(&report);
+    {
+      neuriplo_infer::TimingSuspension inner(&report);
+      report.addStageMs(RunStage::Render, 50.0);
+    }
+    // Still suspended: the outer scope has not ended.
+    report.addStageMs(RunStage::Render, 50.0);
+  }
+  report.addStageMs(RunStage::Render, 7.0);
+
+  neuriplo_infer::writeRunReport(report, path_);
+  EXPECT_DOUBLE_EQ(readReport(path_)
+                       .at("metrics")
+                       .at("stages_ms")
+                       .at("render")
+                       .get<double>(),
+                   7.0);
+}
+
+TEST_F(RunReportFile, SuspendingWithoutACollectorIsANoOp) {
+  EXPECT_NO_FATAL_FAILURE(
+      { neuriplo_infer::TimingSuspension untimed(nullptr); });
 }
 
 } // namespace

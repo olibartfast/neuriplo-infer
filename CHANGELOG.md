@@ -77,6 +77,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   what the local postprocessor produces.
 
 ### Changed
+- **Breaking:** the capabilities document is now `schema_version` 2. It gained
+  the required `diagnostics` section, and because the schema forbids unknown
+  properties that is breaking in both directions; version 1 is preserved as
+  `docs/capabilities.schema.v1.json`. Consumers should accept both and treat a
+  version 1 document as a build that publishes no run report.
+- Run diagnostics now cover the paths that do not go through `inferFrame`.
+  Optical flow and image understanding time their own preprocess, inference,
+  postprocess, and render stages and count their samples; video frame reads are
+  attributed to the source stage and video rendering to the render stage; a
+  completed video and a processed optical-flow pair each count as one sample.
+- Warmup and benchmark iterations no longer contribute to the reported stage
+  timings. They repeat inference without producing a sample, so their time
+  inflated every stage total and collapsed `throughput_per_second`.
+- A failure while constructing the application (log setup) now writes a
+  configuration-stage report, like a failure while parsing arguments.
+- A run report that cannot be flushed to disk is now detected and logged;
+  `writeRunReport` returns whether the complete document was written. Only the
+  open was checked before, so a full disk left truncated JSON behind silently.
 - An unreadable image source now fails with an explicit error attributed to the
   source stage, instead of surfacing later as a confusing downstream failure.
 - Pinned neuriplo-tasks to `v0.8.0` (was `v0.6.1`), picking up polygon

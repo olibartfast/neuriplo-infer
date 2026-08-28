@@ -67,7 +67,7 @@ neuriplo_tasks::TaskType taskTypeForId(const std::string &id) {
 TEST(CapabilitiesContract, HasStableTopLevelShape) {
   const json capabilities = buildCapabilities();
 
-  EXPECT_EQ(capabilities.at("schema_version"), 1);
+  EXPECT_EQ(capabilities.at("schema_version"), 2);
   EXPECT_EQ(capabilities.at("producer").at("name"), "neuriplo-infer");
   EXPECT_TRUE(capabilities.at("producer").at("version").is_string());
   EXPECT_TRUE(capabilities.at("execution").at("workflows").is_array());

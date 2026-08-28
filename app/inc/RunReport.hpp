@@ -24,7 +24,9 @@
  *   stages_ms.<stage>     sum of every measured interval attributed to that
  *                         stage across the whole run, in milliseconds. A stage
  *                         that was never measured is absent, never zero.
- *   samples               number of sources processed to completion.
+ *   samples               number of sources processed to completion: one
+ *                         still image, one video read to its end, one
+ *                         optical-flow pair, one image-understanding request.
  *   frames                number of video frames processed, absent for a run
  *                         with no video source.
  *   throughput_per_second frames (or samples, when no frames were read)
@@ -71,6 +73,15 @@ public:
   void addFrames(std::int64_t frames);
 
   /**
+   * Stops and resumes timing accumulation, keeping stage attribution. Warmup
+   * and benchmark iterations repeat inference to measure the engine, not to
+   * produce a result: counting their time without counting their work would
+   * inflate every stage total and collapse the reported throughput.
+   */
+  void suspendTiming();
+  void resumeTiming();
+
+  /**
    * Records a failure at an explicit stage, keeping the producer message. An
    * empty message means the producer said it on stderr and nowhere else, which
    * is reported as null rather than as an invented sentence.
@@ -90,6 +101,7 @@ private:
   std::optional<double> inference_ms_;
   std::optional<double> postprocess_ms_;
   std::optional<double> render_ms_;
+  int timing_suspended_{0};
   std::int64_t samples_{0};
   std::int64_t frames_{0};
   bool saw_frames_{false};
@@ -101,11 +113,14 @@ private:
 };
 
 /**
- * Writes the report, creating parent directories as needed. Never throws: a
- * diagnostics document that cannot be written must not turn a successful run
- * into a failed one, so a write error is logged and swallowed.
+ * Writes the report, creating parent directories as needed, and returns whether
+ * the complete document reached the disk. A short write leaves truncated JSON
+ * that a consumer would reject, so the stream is flushed and checked rather
+ * than only opened. Never throws: a diagnostics document that cannot be written
+ * must not turn a successful run into a failed one, so a write error is logged
+ * and reported through the return value.
  */
-void writeRunReport(const RunReport &report, const std::filesystem::path &path);
+bool writeRunReport(const RunReport &report, const std::filesystem::path &path);
 
 /** Convenience for a failure that happened before a pipeline existed. */
 void writeConfigurationFailureReport(const std::string &message,
@@ -126,6 +141,19 @@ void disarmConfigurationExitReport();
  * keeps instrumentation at the call sites to one line and keeps every existing
  * test, which builds pipelines without a report, working unchanged.
  */
+/** Suspends timing for a scope; a null report makes it a no-op. */
+class TimingSuspension {
+public:
+  explicit TimingSuspension(RunReport *report);
+  ~TimingSuspension();
+
+  TimingSuspension(const TimingSuspension &) = delete;
+  TimingSuspension &operator=(const TimingSuspension &) = delete;
+
+private:
+  RunReport *report_;
+};
+
 class StageTimer {
 public:
   StageTimer(RunReport *report, RunStage stage);
