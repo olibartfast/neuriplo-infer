@@ -1,4 +1,5 @@
 #include "Capabilities.hpp"
+#include "RunReport.hpp"
 #include "TaskRouting.hpp"
 
 #include "neuriplo/tasks/core/result_types.hpp"
@@ -73,6 +74,31 @@ TEST(CapabilitiesContract, HasStableTopLevelShape) {
   EXPECT_TRUE(capabilities.at("tasks").is_array());
   EXPECT_TRUE(capabilities.at("parameters").is_object());
   EXPECT_TRUE(capabilities.at("source_types").is_array());
+}
+
+TEST(CapabilitiesContract, AdvertisesWhereRunDiagnosticsAreWritten) {
+  const json run_report =
+      buildCapabilities().at("diagnostics").at("run_report");
+
+  // A consumer must be able to find the document without knowing its name, and
+  // must be able to tell which stage vocabulary it will see.
+  EXPECT_EQ(run_report.at("schema_version"),
+            neuriplo_infer::RunReport::kSchemaVersion);
+  EXPECT_EQ(run_report.at("path"), neuriplo_infer::RunReport::kDefaultPath);
+
+  const json stages = run_report.at("stages");
+  ASSERT_TRUE(stages.is_array());
+  for (const auto stage :
+       {neuriplo_infer::RunStage::Configuration,
+        neuriplo_infer::RunStage::ModelLoad, neuriplo_infer::RunStage::Source,
+        neuriplo_infer::RunStage::Preprocess,
+        neuriplo_infer::RunStage::Inference,
+        neuriplo_infer::RunStage::Postprocess,
+        neuriplo_infer::RunStage::Render, neuriplo_infer::RunStage::Unknown}) {
+    EXPECT_TRUE(containsString(stages, std::string(toString(stage))))
+        << toString(stage);
+  }
+  EXPECT_EQ(stages.size(), 8u);
 }
 
 TEST(CapabilitiesContract, AdvertisedModelSelectorsMatchAppRouting) {

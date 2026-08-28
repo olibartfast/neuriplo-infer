@@ -1,5 +1,7 @@
 #include "Capabilities.hpp"
 
+#include "RunReport.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <nlohmann/json.hpp>
@@ -329,6 +331,16 @@ nlohmann::json buildCapabilities() {
   return {{"schema_version", 1},
           {"producer",
            {{"name", "neuriplo-infer"}, {"version", NEURIPLO_INFER_VERSION}}},
+          // Where a run leaves its machine-readable diagnostics, so a consumer
+          // discovers the document instead of hard-coding its name. The path
+          // is relative to the working directory the run executes in.
+          {"diagnostics",
+           {{"run_report",
+             {{"schema_version", neuriplo_infer::RunReport::kSchemaVersion},
+              {"path", neuriplo_infer::RunReport::kDefaultPath},
+              {"stages",
+               {"configuration", "model_load", "source", "preprocess",
+                "inference", "postprocess", "render", "unknown"}}}}}},
           {"execution", {{"workflows", executionWorkflows()}}},
           {"source_types",
            {{{"id", "image"}, {"input", "file_path"}},
