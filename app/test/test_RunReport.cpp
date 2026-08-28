@@ -24,11 +24,11 @@ json readReport(const std::filesystem::path &path) {
 class RunReportFile : public ::testing::Test {
 protected:
   void SetUp() override {
-    directory_ = std::filesystem::temp_directory_path() /
-                 ("neuriplo-run-report-" +
-                  std::to_string(::testing::UnitTest::GetInstance()
-                                     ->current_test_info()
-                                     ->line()));
+    directory_ =
+        std::filesystem::temp_directory_path() /
+        ("neuriplo-run-report-" +
+         std::to_string(
+             ::testing::UnitTest::GetInstance()->current_test_info()->line()));
     std::filesystem::remove_all(directory_);
     path_ = directory_ / "run_report.json";
   }
@@ -85,18 +85,14 @@ TEST_F(RunReportFile, ThroughputNeedsBothBoundaries) {
   RunReport counted_only;
   counted_only.addFrames(8);
   neuriplo_infer::writeRunReport(counted_only, path_);
-  EXPECT_TRUE(readReport(path_)
-                  .at("metrics")
-                  .at("throughput_per_second")
-                  .is_null());
+  EXPECT_TRUE(
+      readReport(path_).at("metrics").at("throughput_per_second").is_null());
 
   RunReport timed_only;
   timed_only.addStageMs(RunStage::Inference, 100.0);
   neuriplo_infer::writeRunReport(timed_only, path_);
-  EXPECT_TRUE(readReport(path_)
-                  .at("metrics")
-                  .at("throughput_per_second")
-                  .is_null());
+  EXPECT_TRUE(
+      readReport(path_).at("metrics").at("throughput_per_second").is_null());
 
   RunReport both;
   both.addFrames(8);
@@ -131,7 +127,8 @@ TEST_F(RunReportFile, FailureIsAttributedToTheStageItReached) {
   EXPECT_EQ(document.at("status"), "failed");
   EXPECT_EQ(document.at("stage"), "model_load");
   EXPECT_EQ(document.at("error").at("stage"), "model_load");
-  EXPECT_EQ(document.at("error").at("message"), "Can't setup an inference engine");
+  EXPECT_EQ(document.at("error").at("message"),
+            "Can't setup an inference engine");
 }
 
 TEST_F(RunReportFile, FirstFailureWins) {
@@ -182,9 +179,7 @@ TEST_F(RunReportFile, StageTimerMeasuresItsScopeAndMarksTheStage) {
 TEST_F(RunReportFile, StageTimerWithoutACollectorIsANoOp) {
   // Library users and existing tests build pipelines with no report; the
   // instrumentation must not require one.
-  EXPECT_NO_FATAL_FAILURE({
-    StageTimer timer(nullptr, RunStage::Inference);
-  });
+  EXPECT_NO_FATAL_FAILURE({ StageTimer timer(nullptr, RunStage::Inference); });
 }
 
 TEST_F(RunReportFile, WritingCreatesMissingParentDirectories) {

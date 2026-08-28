@@ -93,8 +93,8 @@ TEST(CapabilitiesContract, AdvertisesWhereRunDiagnosticsAreWritten) {
         neuriplo_infer::RunStage::ModelLoad, neuriplo_infer::RunStage::Source,
         neuriplo_infer::RunStage::Preprocess,
         neuriplo_infer::RunStage::Inference,
-        neuriplo_infer::RunStage::Postprocess,
-        neuriplo_infer::RunStage::Render, neuriplo_infer::RunStage::Unknown}) {
+        neuriplo_infer::RunStage::Postprocess, neuriplo_infer::RunStage::Render,
+        neuriplo_infer::RunStage::Unknown}) {
     EXPECT_TRUE(containsString(stages, std::string(toString(stage))))
         << toString(stage);
   }
