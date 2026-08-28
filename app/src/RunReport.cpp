@@ -91,7 +91,7 @@ void RunReport::fail(RunStage stage, std::string message) {
   if (failure_.has_value()) {
     return; // The first failure is the one that ended the run.
   }
-  failure_ = Failure{stage, std::move(message)};
+  failure_ = Failure{.stage = stage, .message = std::move(message)};
 }
 
 namespace {
