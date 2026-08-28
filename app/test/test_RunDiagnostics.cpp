@@ -60,10 +60,9 @@ public:
     return {{0, 1, 2, 3}};
   }
 
-  std::vector<neuriplo_tasks::Result>
-  postprocess(const neuriplo_tasks::Size & /*frame_size*/,
-              const std::vector<neuriplo_tasks::Tensor> & /*tensors*/)
-      override {
+  std::vector<neuriplo_tasks::Result> postprocess(
+      const neuriplo_tasks::Size & /*frame_size*/,
+      const std::vector<neuriplo_tasks::Tensor> & /*tensors*/) override {
     ++postprocess_calls;
     return {};
   }
@@ -75,8 +74,7 @@ public:
 class CountingRenderer : public ResultRenderer {
 public:
   void render(const std::vector<neuriplo_tasks::Result> & /*results*/,
-              cv::Mat & /*image*/,
-              const RenderContext & /*context*/) override {
+              cv::Mat & /*image*/, const RenderContext & /*context*/) override {
     ++calls;
   }
 

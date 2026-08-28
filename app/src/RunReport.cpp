@@ -117,9 +117,7 @@ void armConfigurationExitReport(std::filesystem::path path) {
   }
 }
 
-void disarmConfigurationExitReport() {
-  g_configuration_report_armed = false;
-}
+void disarmConfigurationExitReport() { g_configuration_report_armed = false; }
 
 double RunReport::elapsedMs() const {
   const auto now = std::chrono::steady_clock::now();
@@ -153,8 +151,8 @@ json RunReport::toJson() const {
   json document = {
       {"schema_version", kSchemaVersion},
       {"status", failure_.has_value() ? "failed" : "success"},
-      {"stage", std::string(toString(failure_.has_value() ? failure_->stage
-                                                          : stage_))},
+      {"stage",
+       std::string(toString(failure_.has_value() ? failure_->stage : stage_))},
       {"metrics", std::move(metrics)},
   };
 
@@ -208,8 +206,8 @@ StageTimer::~StageTimer() {
   }
   const auto now = std::chrono::steady_clock::now();
   report_->addStageMs(
-      stage_, std::chrono::duration<double, std::milli>(now - started_at_)
-                  .count());
+      stage_,
+      std::chrono::duration<double, std::milli>(now - started_at_).count());
 }
 
 } // namespace neuriplo_infer
