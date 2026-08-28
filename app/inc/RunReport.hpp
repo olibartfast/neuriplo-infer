@@ -38,7 +38,7 @@
 namespace neuriplo_infer {
 
 /** Where a run was when it ended. Also used to attribute a failure. */
-enum class RunStage {
+enum class RunStage : std::uint8_t {
   Configuration,
   ModelLoad,
   Source,
@@ -62,7 +62,7 @@ public:
 
   /** Marks what the run is doing, so a throw can be attributed to it. */
   void beginStage(RunStage stage);
-  RunStage currentStage() const { return stage_; }
+  [[nodiscard]] RunStage currentStage() const { return stage_; }
 
   /** Accumulates a measured interval into a stage. */
   void addStageMs(RunStage stage, double milliseconds);
@@ -76,12 +76,12 @@ public:
    * is reported as null rather than as an invented sentence.
    */
   void fail(RunStage stage, std::string message);
-  bool failed() const { return failure_.has_value(); }
+  [[nodiscard]] bool failed() const { return failure_.has_value(); }
 
-  nlohmann::json toJson() const;
+  [[nodiscard]] nlohmann::json toJson() const;
 
 private:
-  double elapsedMs() const;
+  [[nodiscard]] double elapsedMs() const;
 
   std::chrono::steady_clock::time_point started_at_;
   RunStage stage_{RunStage::Configuration};
