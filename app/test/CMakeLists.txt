@@ -29,6 +29,8 @@ set(PROJECT_NAME_TEST runUnitTests)
 add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_Capabilities.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_RunReport.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_RunDiagnostics.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
@@ -116,6 +118,20 @@ add_test(
 set_tests_properties(capabilities_cli_contract PROPERTIES
     PASS_REGULAR_EXPRESSION "\"schema_version\": 1"
 )
+
+# The published schema forbids unknown properties, so an emitter that grows a
+# section without updating docs/capabilities.schema.json breaks consumers that
+# validate. Skips itself when the validator is not installed.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME capabilities_schema_contract
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/validate_capabilities_schema.py
+            $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
+            ${CMAKE_SOURCE_DIR}/docs/capabilities.schema.json
+    )
+endif()
 
 add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run

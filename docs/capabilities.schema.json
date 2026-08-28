@@ -7,6 +7,7 @@
   "required": [
     "schema_version",
     "producer",
+    "diagnostics",
     "execution",
     "source_types",
     "parameters",
@@ -23,6 +24,14 @@
       "properties": {
         "name": { "const": "neuriplo-infer" },
         "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_report"],
+      "properties": {
+        "run_report": { "$ref": "#/$defs/runReport" }
       }
     },
     "execution": {
@@ -53,6 +62,22 @@
     }
   },
   "$defs": {
+    "runReport": {
+      "description": "Where a run writes its machine-readable diagnostics, and the stage vocabulary that document uses. The path is relative to the working directory the run executes in.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "path", "stages"],
+      "properties": {
+        "schema_version": { "type": "integer", "minimum": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
     "parameterSelection": {
       "type": "object",
       "additionalProperties": false,

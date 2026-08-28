@@ -11,6 +11,7 @@
 #include "InferenceMetadata.hpp"
 #endif
 #include "ResultRenderer.hpp"
+#include "RunReport.hpp"
 #include "TaskRouting.hpp"
 #include "neuriplo/tasks/core/model_info.hpp"
 #include "neuriplo/tasks/core/task_interface.hpp"
@@ -37,6 +38,10 @@ struct InferencePipeline {
   // server omits it. Used to tag the rendered output filename.
   std::string kserve_platform;
 
+  // Diagnostics collector for this run, owned by the caller. Null when nobody
+  // is collecting, which is what keeps tests and library users unaffected.
+  neuriplo_infer::RunReport *report{nullptr};
+
   // Server-side ensemble mode. When encoded_image is set, frames go to the
   // server as encoded bytes instead of a preprocessed tensor. When
   // server_postprocess is also set, the server returns a decoded result
@@ -60,12 +65,14 @@ public:
   InferencePipelineBuilder &source(const std::vector<std::string> &sources);
   InferencePipelineBuilder &batch(int batch_size);
   InferencePipelineBuilder &renderer(std::unique_ptr<ResultRenderer> renderer);
+  InferencePipelineBuilder &report(neuriplo_infer::RunReport &report);
 
   InferencePipeline build();
 
 private:
   AppConfig config_;
   std::unique_ptr<ResultRenderer> renderer_;
+  neuriplo_infer::RunReport *report_{nullptr};
 
   // Staged helpers for auditable pipeline construction
   void logPipelineConfig() const;

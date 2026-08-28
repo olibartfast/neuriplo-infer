@@ -159,10 +159,22 @@ extractInputDims(const std::vector<int64_t> &shape) {
 std::vector<neuriplo_tasks::Result>
 inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
            const std::vector<uint8_t> *encoded_source) {
+  using neuriplo_infer::RunStage;
+  using neuriplo_infer::StageTimer;
+
   if (!pipeline.encoded_image) {
-    const auto preprocessed = pipeline.task->preprocess({toTaskImage(frame)});
-    const auto [outputs, shapes] =
-        pipeline.engine->get_infer_results(preprocessed);
+    // Each stage is timed where it happens; the lambdas keep the deduced
+    // contract types out of this file.
+    const auto preprocessed = [&] {
+      StageTimer timer(pipeline.report, RunStage::Preprocess);
+      return pipeline.task->preprocess({toTaskImage(frame)});
+    }();
+    const auto inferred = [&] {
+      StageTimer timer(pipeline.report, RunStage::Inference);
+      return pipeline.engine->get_infer_results(preprocessed);
+    }();
+    const auto &[outputs, shapes] = inferred;
+    StageTimer timer(pipeline.report, RunStage::Postprocess);
     auto tensors = convertToTensors(outputs, shapes);
     return pipeline.task->postprocess(toTaskSize(frame), tensors);
   }
@@ -178,8 +190,13 @@ inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
   }
 
   const std::vector<std::vector<uint8_t>> request = {std::move(encoded)};
-  const auto [outputs, shapes] = pipeline.engine->get_infer_results(request);
+  const auto inferred = [&] {
+    StageTimer timer(pipeline.report, RunStage::Inference);
+    return pipeline.engine->get_infer_results(request);
+  }();
+  const auto &[outputs, shapes] = inferred;
 
+  StageTimer postprocess_timer(pipeline.report, RunStage::Postprocess);
   if (!pipeline.server_postprocess) {
     auto tensors = convertToTensors(outputs, shapes);
     return pipeline.task->postprocess(toTaskSize(frame), tensors);
@@ -211,7 +228,17 @@ bool hasImageSources(const std::vector<std::string> &sources) {
 }
 
 void processImage(InferencePipeline &pipeline, const std::string &source) {
-  cv::Mat image = cv::imread(source);
+  cv::Mat image;
+  {
+    neuriplo_infer::StageTimer timer(pipeline.report,
+                                     neuriplo_infer::RunStage::Source);
+    image = cv::imread(source);
+    // Reading nothing used to surface as a confusing failure further down the
+    // pipeline; saying so here also attributes it to the source stage.
+    if (image.empty()) {
+      throw std::runtime_error("Could not read the image source: " + source);
+    }
+  }
   if (pipeline.config.enable_warmup) {
     LOG(INFO) << "Warmup...";
     WarmupCommand warmup(image);
@@ -246,21 +273,31 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
           .count();
   LOG(INFO) << "Inference time: " << duration << " ms";
 
-  pipeline.renderResults(results, image);
-  std::filesystem::create_directories("data/output");
-  const std::string processed_name = processedImageName(pipeline);
-  std::string processed_path = "data/output/" + processed_name;
-  if (!cv::imwrite(processed_path, image)) {
-    const std::string fallback_path = "/tmp/neuriplo-infer-" + processed_name;
-    if (!cv::imwrite(fallback_path, image)) {
-      LOG(ERROR) << "Failed to save output image to both " << processed_path
-                 << " and " << fallback_path;
+  {
+    // Drawing the results and writing the image are one stage: both exist only
+    // to produce the artifact, and the benchmark below must stay out of it.
+    neuriplo_infer::StageTimer render_timer(pipeline.report,
+                                            neuriplo_infer::RunStage::Render);
+    pipeline.renderResults(results, image);
+    std::filesystem::create_directories("data/output");
+    const std::string processed_name = processedImageName(pipeline);
+    std::string processed_path = "data/output/" + processed_name;
+    if (!cv::imwrite(processed_path, image)) {
+      const std::string fallback_path = "/tmp/neuriplo-infer-" + processed_name;
+      if (!cv::imwrite(fallback_path, image)) {
+        LOG(ERROR) << "Failed to save output image to both " << processed_path
+                   << " and " << fallback_path;
+      } else {
+        LOG(WARNING) << "Could not write " << processed_path
+                     << ", saved output to " << fallback_path;
+      }
     } else {
-      LOG(WARNING) << "Could not write " << processed_path
-                   << ", saved output to " << fallback_path;
+      LOG(INFO) << "Saved processed image to: " << processed_path;
     }
-  } else {
-    LOG(INFO) << "Saved processed image to: " << processed_path;
+  }
+
+  if (pipeline.report != nullptr) {
+    pipeline.report->addSample();
   }
 
   if (pipeline.config.enable_benchmark) {
@@ -272,15 +309,22 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
 void processVideo(InferencePipeline &pipeline, const std::string &source) {
   std::unique_ptr<VideoCaptureInterface> videoInterface =
       createVideoInterface();
-  if (!videoInterface->initialize(source)) {
-    throw std::runtime_error("Failed to initialize video capture for input: " +
-                             source);
+  {
+    neuriplo_infer::StageTimer timer(pipeline.report,
+                                     neuriplo_infer::RunStage::Source);
+    if (!videoInterface->initialize(source)) {
+      throw std::runtime_error(
+          "Failed to initialize video capture for input: " + source);
+    }
   }
 
   cv::Mat frame;
   while (videoInterface->readFrame(frame)) {
     auto start = std::chrono::steady_clock::now();
     auto results = inferFrame(pipeline, frame, nullptr);
+    if (pipeline.report != nullptr) {
+      pipeline.report->addFrames(1);
+    }
     auto end = std::chrono::steady_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -307,9 +351,13 @@ void processVideoClassification(InferencePipeline &pipeline,
                                 const std::string &source) {
   std::unique_ptr<VideoCaptureInterface> videoInterface =
       createVideoInterface();
-  if (!videoInterface->initialize(source)) {
-    throw std::runtime_error("Failed to initialize video capture for input: " +
-                             source);
+  {
+    neuriplo_infer::StageTimer timer(pipeline.report,
+                                     neuriplo_infer::RunStage::Source);
+    if (!videoInterface->initialize(source)) {
+      throw std::runtime_error(
+          "Failed to initialize video capture for input: " + source);
+    }
   }
 
   const int requiredFrames = pipeline.getRequiredFrameCount();
@@ -325,13 +373,28 @@ void processVideoClassification(InferencePipeline &pipeline,
 
     if (static_cast<int>(frameBuffer.size()) >= requiredFrames) {
       auto start = std::chrono::steady_clock::now();
-      const auto preprocessed =
-          pipeline.task->preprocess(toTaskImages(frameBuffer));
-      const auto [outputs, shapes] =
-          pipeline.engine->get_infer_results(preprocessed);
+      const auto preprocessed = [&] {
+        neuriplo_infer::StageTimer timer(pipeline.report,
+                                         neuriplo_infer::RunStage::Preprocess);
+        return pipeline.task->preprocess(toTaskImages(frameBuffer));
+      }();
+      const auto inferred = [&] {
+        neuriplo_infer::StageTimer timer(pipeline.report,
+                                         neuriplo_infer::RunStage::Inference);
+        return pipeline.engine->get_infer_results(preprocessed);
+      }();
+      const auto &[outputs, shapes] = inferred;
 
-      auto tensors = convertToTensors(outputs, shapes);
-      auto results = pipeline.task->postprocess(toTaskSize(frame), tensors);
+      auto results = [&] {
+        neuriplo_infer::StageTimer timer(pipeline.report,
+                                         neuriplo_infer::RunStage::Postprocess);
+        auto tensors = convertToTensors(outputs, shapes);
+        return pipeline.task->postprocess(toTaskSize(frame), tensors);
+      }();
+      // One inference consumes the whole accumulated window.
+      if (pipeline.report != nullptr) {
+        pipeline.report->addFrames(requiredFrames);
+      }
       auto end = std::chrono::steady_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start)

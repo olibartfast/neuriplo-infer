@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Machine-readable run diagnostics. Every run now writes a versioned report
+  (`data/output/run_report.json`, advertised by `--capabilities` under
+  `diagnostics.run_report`) carrying per-stage timings, sample/frame counts,
+  throughput, and the stage a failure was attributed to
+  (`configuration`, `model_load`, `source`, `preprocess`, `inference`,
+  `postprocess`, `render`, `unknown`). Unmeasured values are `null` rather than
+  zero, so a consumer never renders a measurement that was not taken.
+  Configuration failures, which exit before anything unwinds, and backends that
+  throw non-`std::exception` types are both attributed. Writing the report
+  cannot change a run's outcome or exit code.
+- `capabilities_schema_contract` test: `--capabilities` output is now validated
+  against `docs/capabilities.schema.json`, which previously could drift from
+  the emitter unnoticed.
 - YOLO26 depth estimation routing. `yolo-depth`, `yolo26n-depth`, and any
   YOLO-prefixed model type containing `depth` now route to `DepthEstimation`,
   mirroring the family added in neuriplo-tasks v0.8.0. Previously these fell
@@ -64,6 +77,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   what the local postprocessor produces.
 
 ### Changed
+- An unreadable image source now fails with an explicit error attributed to the
+  source stage, instead of surfacing later as a confusing downstream failure.
 - Pinned neuriplo-tasks to `v0.8.0` (was `v0.6.1`), picking up polygon
   segmentation output, the YOLO26 depth task, and the vision preprocessing
   fast paths.

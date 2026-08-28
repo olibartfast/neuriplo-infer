@@ -146,6 +146,53 @@ execution are separate workflows. Enum defaults are build-specific when an
 optional transport is compiled. The schema is documented in
 [`docs/capabilities.schema.json`](docs/capabilities.schema.json).
 
+#### Run diagnostics
+
+Every run writes a versioned JSON report next to its output, at the path the
+capabilities document advertises under `diagnostics.run_report` (currently
+`data/output/run_report.json`, relative to the working directory):
+
+```json
+{
+  "schema_version": 1,
+  "status": "failed",
+  "stage": "model_load",
+  "metrics": {
+    "wall_time_ms": 546.9,
+    "samples": 0,
+    "frames": null,
+    "throughput_per_second": null,
+    "stages_ms": {
+      "model_load": 546.7,
+      "preprocess": null,
+      "inference": null,
+      "postprocess": null,
+      "render": null
+    }
+  },
+  "error": { "stage": "model_load", "message": "..." }
+}
+```
+
+It exists so a caller can tell *where* a run failed and *how long each stage
+took* without parsing log text. Three rules make it safe to consume:
+
+- **Absent is not zero.** A stage nobody measured is `null`, never `0`, and
+  `throughput_per_second` appears only when both a processed count and the
+  inference time it belongs to were measured.
+- **`stages_ms` values are sums** over the whole run, in milliseconds;
+  `wall_time_ms` is measured inside `main`, so it is always smaller than the
+  caller's own process wall time.
+- **The stage is recorded, not inferred.** A failure is attributed to the stage
+  the run had reached — `configuration`, `model_load`, `source`, `preprocess`,
+  `inference`, `postprocess`, `render`, or `unknown` — and the message stays
+  the producer's own. A backend that throws a non-`std::exception` (some ONNX
+  graphs abort inside OpenCV DNN) still leaves an attributed report before the
+  process dies.
+
+Writing the report never changes the outcome it describes: a report that cannot
+be written is logged and dropped.
+
 #### Required Parameters
 
 - `--type=<model_type>`: Specifies the type of vision model to use. Supported categories:

@@ -1,5 +1,6 @@
 set(APP_LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Capabilities.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RunReport.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
