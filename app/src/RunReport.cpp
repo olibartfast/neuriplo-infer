@@ -50,7 +50,7 @@ RunReport::RunReport() : started_at_(std::chrono::steady_clock::now()) {}
 void RunReport::beginStage(RunStage stage) { stage_ = stage; }
 
 void RunReport::addStageMs(RunStage stage, double milliseconds) {
-  if (milliseconds < 0.0) {
+  if (milliseconds < 0.0 || timing_suspended_ > 0) {
     return;
   }
   switch (stage) {
@@ -74,6 +74,14 @@ void RunReport::addStageMs(RunStage stage, double milliseconds) {
   case RunStage::Unknown:
     // Not timed stages: attribution only.
     return;
+  }
+}
+
+void RunReport::suspendTiming() { ++timing_suspended_; }
+
+void RunReport::resumeTiming() {
+  if (timing_suspended_ > 0) {
+    --timing_suspended_;
   }
 }
 
@@ -167,7 +175,7 @@ json RunReport::toJson() const {
   return document;
 }
 
-void writeRunReport(const RunReport &report,
+bool writeRunReport(const RunReport &report,
                     const std::filesystem::path &path) {
   try {
     if (path.has_parent_path()) {
@@ -176,12 +184,22 @@ void writeRunReport(const RunReport &report,
     std::ofstream stream(path, std::ios::trunc);
     if (!stream.is_open()) {
       LOG(WARNING) << "Could not write the run report to " << path;
-      return;
+      return false;
     }
     stream << report.toJson().dump(2) << '\n';
+    // An ofstream does not throw on a failed write by default, so a full disk
+    // or a short write would otherwise leave truncated JSON behind silently.
+    // close() flushes, and the stream carries the verdict.
+    stream.close();
+    if (!stream) {
+      LOG(WARNING) << "Could not write the run report completely to " << path;
+      return false;
+    }
+    return true;
   } catch (const std::exception &e) {
     // Diagnostics must never change the outcome they describe.
     LOG(WARNING) << "Could not write the run report: " << e.what();
+    return false;
   }
 }
 
@@ -190,6 +208,18 @@ void writeConfigurationFailureReport(const std::string &message,
   RunReport report;
   report.fail(RunStage::Configuration, message);
   writeRunReport(report, path);
+}
+
+TimingSuspension::TimingSuspension(RunReport *report) : report_(report) {
+  if (report_ != nullptr) {
+    report_->suspendTiming();
+  }
+}
+
+TimingSuspension::~TimingSuspension() {
+  if (report_ != nullptr) {
+    report_->resumeTiming();
+  }
 }
 
 StageTimer::StageTimer(RunReport *report, RunStage stage)

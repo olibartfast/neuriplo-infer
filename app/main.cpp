@@ -5,6 +5,7 @@
 
 #include <glog/logging.h>
 #include <iostream>
+#include <memory>
 
 int main(int argc, char *argv[]) {
   // Initialize logging before argument parsing so validation errors are
@@ -33,9 +34,25 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  // Construction happens before run() can collect anything, so a failure there
+  // owes the caller its own report; run() writes its own from the stage it
+  // reached.
+  std::unique_ptr<NeuriploInfer> app;
   try {
-    NeuriploInfer app(config);
-    return app.run();
+    app = std::make_unique<NeuriploInfer>(config);
+  } catch (const std::exception &e) {
+    LOG(ERROR) << "Error: " << e.what();
+    neuriplo_infer::writeConfigurationFailureReport(
+        e.what(), neuriplo_infer::RunReport::kDefaultPath);
+    return 1;
+  } catch (...) {
+    neuriplo_infer::writeConfigurationFailureReport(
+        {}, neuriplo_infer::RunReport::kDefaultPath);
+    throw;
+  }
+
+  try {
+    return app->run();
   } catch (const std::exception &e) {
     // run() has already written its report with the failing stage.
     LOG(ERROR) << "Error: " << e.what();

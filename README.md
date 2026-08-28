@@ -144,7 +144,12 @@ the local backend compiled into the executable, and the client-server protocols
 and transports available in the current build. Local and client-server
 execution are separate workflows. Enum defaults are build-specific when an
 optional transport is compiled. The schema is documented in
-[`docs/capabilities.schema.json`](docs/capabilities.schema.json).
+[`docs/capabilities.schema.json`](docs/capabilities.schema.json), currently at
+`schema_version` 2. Version 2 added the required `diagnostics` section; because
+the schema forbids unknown properties, that is a breaking change in both
+directions, so version 1 stays published as
+[`docs/capabilities.schema.v1.json`](docs/capabilities.schema.v1.json) for
+documents produced by an older binary.
 
 #### Run diagnostics
 
@@ -182,7 +187,12 @@ took* without parsing log text. Three rules make it safe to consume:
   inference time it belongs to were measured.
 - **`stages_ms` values are sums** over the whole run, in milliseconds;
   `wall_time_ms` is measured inside `main`, so it is always smaller than the
-  caller's own process wall time.
+  caller's own process wall time. Warmup and benchmark iterations are excluded:
+  they repeat inference without producing a sample, and counting them would
+  inflate every stage total and collapse `throughput_per_second`.
+- **`samples` counts completed sources** — one still image, one video read to
+  its end, one optical-flow pair, one image-understanding request — while
+  `frames` counts video frames and stays `null` for a run with no video.
 - **The stage is recorded, not inferred.** A failure is attributed to the stage
   the run had reached — `configuration`, `model_load`, `source`, `preprocess`,
   `inference`, `postprocess`, `render`, or `unknown` — and the message stays
