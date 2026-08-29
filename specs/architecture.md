@@ -1,4 +1,8 @@
-# Project Architecture
+# Architecture
+
+Part of the project constitution (see [`README.md`](README.md)): the existing
+structure a feature plan has to fit. Boundaries and rules that govern *choices*
+live in [`tech-stack.md`](tech-stack.md); this file describes what is already here.
 
 This repo is the application layer in the `vision-stack` cluster. It owns CLI parsing,
 app configuration, runtime wiring, visualization, and end-to-end execution flow.
