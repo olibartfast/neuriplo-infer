@@ -191,6 +191,12 @@ InferencePipelineBuilder::renderer(std::unique_ptr<ResultRenderer> renderer) {
   return *this;
 }
 
+InferencePipelineBuilder &
+InferencePipelineBuilder::report(neuriplo_infer::RunReport &report) {
+  report_ = &report;
+  return *this;
+}
+
 void InferencePipelineBuilder::logPipelineConfig() const {
   LOG(INFO) << "Sources: ";
   for (const auto &src : config_.sources) {
@@ -351,11 +357,18 @@ void InferencePipelineBuilder::setupPresentation(InferencePipeline &pipeline) {
 InferencePipeline InferencePipelineBuilder::build() {
   InferencePipeline pipeline;
   pipeline.config = config_;
+  pipeline.report = report_;
 
   logPipelineConfig();
   loadLabels(pipeline);
-  setupBackend(pipeline);
-  setupTask(pipeline);
+  {
+    // Engine construction and task setup are what "loading the model" means
+    // here: both read weights or remote metadata before a frame is touched.
+    neuriplo_infer::StageTimer timer(report_,
+                                     neuriplo_infer::RunStage::ModelLoad);
+    setupBackend(pipeline);
+    setupTask(pipeline);
+  }
   setupPresentation(pipeline);
 
   return pipeline;

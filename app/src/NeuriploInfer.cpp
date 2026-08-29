@@ -16,17 +16,34 @@ int NeuriploInfer::run() {
                         .source(config.sources)
                         .batch(config.batch_size)
                         .renderer(std::make_unique<DefaultResultRenderer>())
+                        .report(report)
                         .build();
 
-    if (config.export_metadata) {
-      ExportMetadataCommand command;
-      return command.execute(pipeline);
+    const int code = config.export_metadata
+                         ? ExportMetadataCommand().execute(pipeline)
+                         : RunInferenceCommand().execute(pipeline);
+    if (code != 0) {
+      report.fail(report.currentStage(),
+                  "neuriplo-infer exited with code " + std::to_string(code));
     }
-
-    RunInferenceCommand command;
-    return command.execute(pipeline);
+    neuriplo_infer::writeRunReport(report,
+                                   neuriplo_infer::RunReport::kDefaultPath);
+    return code;
   } catch (const std::exception &e) {
     LOG(ERROR) << "Error: " << e.what();
+    // The stage the run had reached is the stage that failed; nothing here
+    // classifies the message, which stays the producer's own.
+    report.fail(report.currentStage(), e.what());
+    neuriplo_infer::writeRunReport(report,
+                                   neuriplo_infer::RunReport::kDefaultPath);
+    throw;
+  } catch (...) {
+    // Backends do throw non-std types (OpenCV DNN throws `const char *` on
+    // some ONNX graphs), which terminates the process. Termination stays the
+    // behavior; the stage it died in is recorded on the way out.
+    report.fail(report.currentStage(), {});
+    neuriplo_infer::writeRunReport(report,
+                                   neuriplo_infer::RunReport::kDefaultPath);
     throw;
   }
 }

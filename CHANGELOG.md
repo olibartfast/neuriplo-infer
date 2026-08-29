@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Machine-readable run diagnostics. Every run now writes a versioned report
+  (`data/output/run_report.json`, advertised by `--capabilities` under
+  `diagnostics.run_report`) carrying per-stage timings, sample/frame counts,
+  throughput, and the stage a failure was attributed to
+  (`configuration`, `model_load`, `source`, `preprocess`, `inference`,
+  `postprocess`, `render`, `unknown`). Unmeasured values are `null` rather than
+  zero, so a consumer never renders a measurement that was not taken.
+  Configuration failures, which exit before anything unwinds, and backends that
+  throw non-`std::exception` types are both attributed. Writing the report
+  cannot change a run's outcome or exit code.
+- `capabilities_schema_contract` test: `--capabilities` output is now validated
+  against `docs/capabilities.schema.json`, which previously could drift from
+  the emitter unnoticed.
 - YOLO26 depth estimation routing. `yolo-depth`, `yolo26n-depth`, and any
   YOLO-prefixed model type containing `depth` now route to `DepthEstimation`,
   mirroring the family added in neuriplo-tasks v0.8.0. Previously these fell
@@ -64,9 +77,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   what the local postprocessor produces.
 
 ### Changed
+- **Breaking:** the capabilities document is now `schema_version` 2. It gained
+  the required `diagnostics` section, and because the schema forbids unknown
+  properties that is breaking in both directions; version 1 is preserved as
+  `docs/capabilities.schema.v1.json`. Consumers should accept both and treat a
+  version 1 document as a build that publishes no run report.
+- Run diagnostics now cover the paths that do not go through `inferFrame`.
+  Optical flow and image understanding time their own preprocess, inference,
+  postprocess, and render stages and count their samples; video frame reads are
+  attributed to the source stage and video rendering to the render stage; a
+  completed video and a processed optical-flow pair each count as one sample.
+- Warmup and benchmark iterations no longer contribute to the reported stage
+  timings. They repeat inference without producing a sample, so their time
+  inflated every stage total and collapsed `throughput_per_second`.
+- A failure while constructing the application (log setup) now writes a
+  configuration-stage report, like a failure while parsing arguments.
+- A run report that cannot be flushed to disk is now detected and logged;
+  `writeRunReport` returns whether the complete document was written. Only the
+  open was checked before, so a full disk left truncated JSON behind silently.
+- An unreadable image source now fails with an explicit error attributed to the
+  source stage, instead of surfacing later as a confusing downstream failure.
+  This now includes an optical-flow pair with an unreadable half, which was
+  logged and skipped: the run exited 0 and reported success with no samples and
+  no artifact, which a consumer cannot distinguish from having nothing to do.
+- `throughput_per_second` is now `null` on a failed run. Counts are added only
+  after work succeeds while the stage timer still records the attempt that
+  threw, so the numerator and the denominator covered different work — the same
+  mismatch already excluded for warmup and benchmark. The counts and the stage
+  sums are still published; only the ratio is withheld.
+- A video stopped early with `q` or Escape no longer counts as a completed
+  sample. `samples` is documented as sources processed to completion, and an
+  interrupted video is not one. Its frames still count, because they ran.
+- `capabilities_cli_contract` now parses the emitted document and asserts the
+  top-level `schema_version`. It matched a regular expression before, which the
+  nested `diagnostics.run_report.schema_version` satisfied on its own, so the
+  test would have passed whatever the capabilities version said.
 - Pinned neuriplo-tasks to `v0.8.0` (was `v0.6.1`), picking up polygon
   segmentation output, the YOLO26 depth task, and the vision preprocessing
   fast paths.
+
+### Removed
+- `app/src/NeuriploInferProcessing.cpp` and `app/src/NeuriploInferRendering.cpp`,
+  leftovers from the command refactor. They held second copies of the image,
+  video, optical-flow, and image-understanding paths and of the per-task
+  renderers, but were in no build target, referenced nowhere, and no longer
+  compiled against their own headers. Their live counterparts are
+  `CLICommands.cpp` and `ResultRenderer.cpp`. Uncompiled, they were invisible
+  to every gate — formatting, lint, warnings, tests — while still reading like
+  the code that runs, so a fix to one of these paths could land in the copy
+  nothing executes. The run diagnostics were the concrete case: none of that
+  duplicate processing code was instrumented.
+- New `no_orphan_sources` test: a source under `app/src` that is named nowhere
+  in `app/CMakeLists.txt` now fails the suite. Being excluded from a particular
+  build (KServe, a backend) stays fine; being in no build at all does not.
 
 ## [0.9.1] - 2026-07-16
 

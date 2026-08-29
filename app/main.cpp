@@ -1,9 +1,11 @@
 #include "Capabilities.hpp"
 #include "CommandLineParser.hpp"
 #include "NeuriploInfer.hpp"
+#include "RunReport.hpp"
 
 #include <glog/logging.h>
 #include <iostream>
+#include <memory>
 
 int main(int argc, char *argv[]) {
   // Initialize logging before argument parsing so validation errors are
@@ -11,17 +13,49 @@ int main(int argc, char *argv[]) {
   if (!google::IsGoogleLoggingInitialized()) {
     google::InitGoogleLogging(argv[0]);
   }
+  AppConfig config;
+  // Argument validation exits the process directly, so the report for that
+  // stage is armed here rather than written from a catch block.
+  neuriplo_infer::armConfigurationExitReport(
+      neuriplo_infer::RunReport::kDefaultPath);
   try {
-    AppConfig config = CommandLineParser::parseCommandLineArguments(argc, argv);
+    config = CommandLineParser::parseCommandLineArguments(argc, argv);
+    neuriplo_infer::disarmConfigurationExitReport();
     if (config.show_capabilities) {
       printCapabilities(std::cout);
       return 0;
     }
-    NeuriploInfer app(config);
-    return app.run();
   } catch (const std::exception &e) {
+    // A run that never started still owes the caller an attributable reason.
+    neuriplo_infer::disarmConfigurationExitReport();
+    LOG(ERROR) << "Error: " << e.what();
+    neuriplo_infer::writeConfigurationFailureReport(
+        e.what(), neuriplo_infer::RunReport::kDefaultPath);
+    return 1;
+  }
+
+  // Construction happens before run() can collect anything, so a failure there
+  // owes the caller its own report; run() writes its own from the stage it
+  // reached.
+  std::unique_ptr<NeuriploInfer> app;
+  try {
+    app = std::make_unique<NeuriploInfer>(config);
+  } catch (const std::exception &e) {
+    LOG(ERROR) << "Error: " << e.what();
+    neuriplo_infer::writeConfigurationFailureReport(
+        e.what(), neuriplo_infer::RunReport::kDefaultPath);
+    return 1;
+  } catch (...) {
+    neuriplo_infer::writeConfigurationFailureReport(
+        {}, neuriplo_infer::RunReport::kDefaultPath);
+    throw;
+  }
+
+  try {
+    return app->run();
+  } catch (const std::exception &e) {
+    // run() has already written its report with the failing stage.
     LOG(ERROR) << "Error: " << e.what();
     return 1;
   }
-  return 0;
 }
