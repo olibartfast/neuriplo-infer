@@ -255,6 +255,30 @@ TEST_F(RunDiagnostics, ImageUnderstandingTimesItsOwnStages) {
   }
 }
 
+TEST_F(RunDiagnostics, AnUnreadableOpticalFlowPairFailsRatherThanSkips) {
+  // Skipping the pair returned 0 and wrote status "success" with no samples
+  // and no artifact, which a consumer cannot tell apart from a run that had
+  // nothing to do.
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {source_.string(),
+                             (directory_ / "missing.png").string()};
+  pipeline.task_type = neuriplo_tasks::TaskType::OpticalFlow;
+
+  try {
+    RunInferenceCommand().execute(pipeline);
+    FAIL() << "an unreadable half of the pair must not report success";
+  } catch (const std::exception &e) {
+    collected.fail(collected.currentStage(), e.what());
+  }
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  const json document = report();
+  EXPECT_EQ(document.at("status"), "failed");
+  EXPECT_EQ(document.at("error").at("stage"), "source");
+  EXPECT_EQ(document.at("metrics").at("samples"), 0);
+}
+
 TEST_F(RunDiagnostics, AFailedOpticalFlowRunIsAttributedToTheStageItRanIn) {
   const auto second = directory_ / "fixture-b.png";
   ASSERT_TRUE(cv::imwrite(second.string(),

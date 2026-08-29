@@ -319,6 +319,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   }
 
   cv::Mat frame;
+  bool read_to_end = false;
   while (true) {
     bool read_frame = false;
     {
@@ -330,6 +331,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
       read_frame = videoInterface->readFrame(frame);
     }
     if (!read_frame) {
+      read_to_end = true;
       break;
     }
 
@@ -364,8 +366,10 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   }
 
   videoInterface->release();
-  // One video source consumed is one sample, however many frames it held.
-  if (pipeline.report != nullptr) {
+  // One video read to its end is one sample, however many frames it held. A
+  // video the operator stopped early was not processed to completion, and
+  // counting it would report a source the run never finished.
+  if (read_to_end && pipeline.report != nullptr) {
     pipeline.report->addSample();
   }
 }
@@ -391,6 +395,7 @@ void processVideoClassification(InferencePipeline &pipeline,
   std::vector<cv::Mat> frameBuffer;
   frameBuffer.reserve(static_cast<size_t>(requiredFrames));
 
+  bool read_to_end = false;
   while (true) {
     bool read_frame = false;
     {
@@ -399,6 +404,7 @@ void processVideoClassification(InferencePipeline &pipeline,
       read_frame = videoInterface->readFrame(frame);
     }
     if (!read_frame) {
+      read_to_end = true;
       break;
     }
     frameBuffer.push_back(frame.clone());
@@ -456,7 +462,8 @@ void processVideoClassification(InferencePipeline &pipeline,
   }
 
   videoInterface->release();
-  if (pipeline.report != nullptr) {
+  // Same rule as processVideo: only a video read to its end is a sample.
+  if (read_to_end && pipeline.report != nullptr) {
     pipeline.report->addSample();
   }
 }
@@ -474,15 +481,14 @@ void processOpticalFlow(InferencePipeline &pipeline) {
       for (const auto &name : flowInputs) {
         cv::Mat img = cv::imread(name);
         if (img.empty()) {
-          LOG(ERROR) << "Could not open or read the image: " << name;
-          continue;
+          // A source the run was asked for and could not read is a failed run,
+          // not a quiet skip: continuing here returned success with no samples
+          // and no artifact, which is indistinguishable from having nothing to
+          // do. Throwing inside the source scope attributes it to `source`.
+          throw std::runtime_error("Could not open or read the image: " + name);
         }
         images.push_back(img);
       }
-    }
-
-    if (images.size() != 2) {
-      continue;
     }
 
     auto start = std::chrono::steady_clock::now();

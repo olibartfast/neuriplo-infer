@@ -103,6 +103,28 @@ TEST_F(RunReportFile, ThroughputNeedsBothBoundaries) {
   EXPECT_DOUBLE_EQ(metrics.at("throughput_per_second").get<double>(), 80.0);
 }
 
+TEST_F(RunReportFile, AFailedRunPublishesNoThroughput) {
+  // A video that processed three frames and then died in the fourth: the
+  // stage timer accumulated the failed attempt while unwinding, but the frame
+  // it was working on was never counted. Dividing one by the other would
+  // report a rate for work that did not happen.
+  RunReport report;
+  report.addFrames(3);
+  report.addStageMs(RunStage::Inference, 100.0);
+  report.addStageMs(RunStage::Inference, 25.0); // the attempt that threw
+  report.fail(RunStage::Inference, "the engine refused the fourth frame");
+
+  neuriplo_infer::writeRunReport(report, path_);
+  const json metrics = readReport(path_).at("metrics");
+
+  EXPECT_TRUE(metrics.at("throughput_per_second").is_null());
+  // The counts and the timings stay: only the rate derived from both is
+  // withheld, because only the rate claims they describe the same work.
+  EXPECT_EQ(metrics.at("frames"), 3);
+  EXPECT_DOUBLE_EQ(metrics.at("stages_ms").at("inference").get<double>(),
+                   125.0);
+}
+
 TEST_F(RunReportFile, StillImageRunReportsNoFrameCount) {
   RunReport report;
   report.addSample();

@@ -142,9 +142,16 @@ json RunReport::toJson() const {
 
   // Throughput needs both boundaries measured, so it stays absent unless a
   // processed count and the inference time it belongs to are both known.
+  //
+  // A failed run cannot satisfy that. Counts are added only after work
+  // succeeds, while the stage timer accumulates the failed attempt as it
+  // unwinds, so the numerator and the denominator describe different sets of
+  // work — the same mismatch that keeps warmup and benchmark iterations out of
+  // the totals. Declining to publish a rate is the honest answer.
   const std::int64_t processed = saw_frames_ ? frames_ : samples_;
   json throughput = nullptr;
-  if (processed > 0 && inference_ms_.has_value() && *inference_ms_ > 0.0) {
+  if (!failure_.has_value() && processed > 0 && inference_ms_.has_value() &&
+      *inference_ms_ > 0.0) {
     throughput = static_cast<double>(processed) / (*inference_ms_ / 1000.0);
   }
 
