@@ -113,10 +113,10 @@ gtest_discover_tests(${PROJECT_NAME_TEST})
 
 add_test(
     NAME capabilities_cli_contract
-    COMMAND $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}> --capabilities
-)
-set_tests_properties(capabilities_cli_contract PROPERTIES
-    PASS_REGULAR_EXPRESSION "\"schema_version\": 1"
+    COMMAND ${CMAKE_COMMAND}
+        -DNEURIPLO_INFER_BIN=$<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
+        -DEXPECTED_VERSION=2
+        -P ${CMAKE_CURRENT_LIST_DIR}/check_capabilities_cli.cmake
 )
 
 # The published schema forbids unknown properties, so an emitter that grows a

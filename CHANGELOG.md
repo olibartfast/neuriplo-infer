@@ -97,6 +97,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   open was checked before, so a full disk left truncated JSON behind silently.
 - An unreadable image source now fails with an explicit error attributed to the
   source stage, instead of surfacing later as a confusing downstream failure.
+  This now includes an optical-flow pair with an unreadable half, which was
+  logged and skipped: the run exited 0 and reported success with no samples and
+  no artifact, which a consumer cannot distinguish from having nothing to do.
+- `throughput_per_second` is now `null` on a failed run. Counts are added only
+  after work succeeds while the stage timer still records the attempt that
+  threw, so the numerator and the denominator covered different work — the same
+  mismatch already excluded for warmup and benchmark. The counts and the stage
+  sums are still published; only the ratio is withheld.
+- A video stopped early with `q` or Escape no longer counts as a completed
+  sample. `samples` is documented as sources processed to completion, and an
+  interrupted video is not one. Its frames still count, because they ran.
+- `capabilities_cli_contract` now parses the emitted document and asserts the
+  top-level `schema_version`. It matched a regular expression before, which the
+  nested `diagnostics.run_report.schema_version` satisfied on its own, so the
+  test would have passed whatever the capabilities version said.
 - Pinned neuriplo-tasks to `v0.8.0` (was `v0.6.1`), picking up polygon
   segmentation output, the YOLO26 depth task, and the vision preprocessing
   fast paths.

@@ -180,11 +180,15 @@ capabilities document advertises under `diagnostics.run_report` (currently
 ```
 
 It exists so a caller can tell *where* a run failed and *how long each stage
-took* without parsing log text. Three rules make it safe to consume:
+took* without parsing log text. Five rules make it safe to consume:
 
 - **Absent is not zero.** A stage nobody measured is `null`, never `0`, and
   `throughput_per_second` appears only when both a processed count and the
-  inference time it belongs to were measured.
+  inference time it belongs to were measured. It is also `null` on a failed
+  run: counts are added after work succeeds while the stage timer still records
+  the attempt that threw, so a rate computed from both would describe work that
+  did not happen. The counts and the stage sums stay; only the ratio is
+  withheld.
 - **`stages_ms` values are sums** over the whole run, in milliseconds;
   `wall_time_ms` is measured inside `main`, so it is always smaller than the
   caller's own process wall time. Warmup and benchmark iterations are excluded:
@@ -192,7 +196,12 @@ took* without parsing log text. Three rules make it safe to consume:
   inflate every stage total and collapse `throughput_per_second`.
 - **`samples` counts completed sources** — one still image, one video read to
   its end, one optical-flow pair, one image-understanding request — while
-  `frames` counts video frames and stays `null` for a run with no video.
+  `frames` counts video frames and stays `null` for a run with no video. A
+  video the operator stopped with `q` or Escape is not a completed source and
+  is not counted; its frames still are, because they were processed.
+- **A source that cannot be read is a failure, not a skip.** An optical-flow
+  pair with an unreadable half ends the run at `source` instead of returning
+  success with no samples and no artifact.
 - **The stage is recorded, not inferred.** A failure is attributed to the stage
   the run had reached — `configuration`, `model_load`, `source`, `preprocess`,
   `inference`, `postprocess`, `render`, or `unknown` — and the message stays

@@ -31,7 +31,9 @@
  *                         with no video source.
  *   throughput_per_second frames (or samples, when no frames were read)
  *                         divided by the accumulated inference seconds. It is
- *                         absent unless both boundaries were measured.
+ *                         absent unless both boundaries were measured, and
+ *                         always absent on a failed run, whose counts and
+ *                         accumulated time cover different work.
  *
  * Absent is not zero: a consumer must render nothing for a value it was not
  * given rather than report a measurement that was never taken.
