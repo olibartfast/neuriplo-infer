@@ -119,6 +119,16 @@ add_test(
         -P ${CMAKE_CURRENT_LIST_DIR}/check_capabilities_cli.cmake
 )
 
+# A source no build compiles is invisible to every other gate here: it is not
+# formatted, linted, warned about, or tested, and it drifts until it no longer
+# builds while still reading like the code that runs.
+add_test(
+    NAME no_orphan_sources
+    COMMAND ${CMAKE_COMMAND}
+        -DAPP_DIR=${CMAKE_CURRENT_LIST_DIR}/..
+        -P ${CMAKE_CURRENT_LIST_DIR}/check_no_orphan_sources.cmake
+)
+
 # The published schema forbids unknown properties, so an emitter that grows a
 # section without updating docs/capabilities.schema.json breaks consumers that
 # validate. Skips itself when the validator is not installed.
