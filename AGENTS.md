@@ -135,12 +135,28 @@ Stop and escalate to a human if the required work falls into a forbidden change 
 
 ## Specifications
 
-Agent-facing specifications live in [`specs/`](specs/): ownership boundaries and
-runtime flow in [`specs/architecture.md`](specs/architecture.md), and the
-GitFlow merge procedure in
-[`specs/feature-merge-roadmap.md`](specs/feature-merge-roadmap.md). `docs/` is
-for people using or building the project; put a plan or a boundary rule in
-`specs/`, and a user-facing guide in `docs/`.
+This repo uses spec-driven development. [`specs/`](specs/) holds the agent-facing
+specifications; read [`specs/README.md`](specs/README.md) for the loop, and read
+the constitution before planning any non-trivial change:
+
+- [`specs/mission.md`](specs/mission.md) — why the app exists, for whom, what counts as success.
+- [`specs/tech-stack.md`](specs/tech-stack.md) — technical boundaries and the explicit non-choices.
+- [`specs/roadmap.md`](specs/roadmap.md) — the remaining delivery order, with status.
+- [`specs/architecture.md`](specs/architecture.md) — ownership boundaries and runtime flow.
+- [`specs/procedures/merge-feature-branch.md`](specs/procedures/merge-feature-branch.md) — GitFlow merge mechanics.
+
+Work that carries ambiguity, risk, handoff cost, or multi-step implementation gets
+a feature packet: take the next incomplete phase from `specs/roadmap.md`, branch
+`feature/<name>` from `develop`, create `specs/YYYY-MM-DD-<feature-name>/`, and
+fill [`specs/templates/`](specs/templates/) in order — `requirements.md`, then
+`plan.md`, then `validation.md`, with validation written before implementation.
+Interview the maintainer about scope, decisions, and context first; do not commit
+an assumption to code that could materially change the feature. When a discovery
+changes the requirement, update the spec in the same branch as the code, and merge
+spec and code together. A typo or one-line fix needs no packet.
+
+`docs/` is for people using or building the project; put a plan or a boundary rule
+in `specs/`, and a user-facing guide in `docs/`.
 
 ## Repo-local entrypoints
 
