@@ -7,7 +7,7 @@ app configuration, runtime wiring, visualization, and end-to-end execution flow.
 
 - [`CMakeLists.txt`](../CMakeLists.txt): actual build requirements, backend options, and fetched dependencies
 - [`cmake/versions.cmake`](../cmake/versions.cmake): dependency-ref derivation and version-loading behavior
-- [`docs/generated/supported-model-types.md`](generated/supported-model-types.md): generated upstream TaskFactory model-type inventory
+- [`docs/generated/supported-model-types.md`](../docs/generated/supported-model-types.md): generated upstream TaskFactory model-type inventory
 
 ## Repo Boundaries
 
@@ -33,7 +33,7 @@ Those contracts live in sibling repos and should not be redefined here in hand-m
 
 ## Model Types
 
-The generated list in [`docs/generated/supported-model-types.md`](generated/supported-model-types.md)
+The generated list in [`docs/generated/supported-model-types.md`](../docs/generated/supported-model-types.md)
 reflects the upstream `neuriplo-tasks` TaskFactory inventory.
 
 That list is broader than the guarantees made by this application repo. End-to-end behavior
