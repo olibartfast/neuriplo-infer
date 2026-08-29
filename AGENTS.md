@@ -133,6 +133,15 @@ When operating as an agent in this repo, follow this loop:
 
 Stop and escalate to a human if the required work falls into a forbidden change class or changes inference semantics rather than mechanical wiring.
 
+## Specifications
+
+Agent-facing specifications live in [`specs/`](specs/): ownership boundaries and
+runtime flow in [`specs/architecture.md`](specs/architecture.md), and the
+GitFlow merge procedure in
+[`specs/feature-merge-roadmap.md`](specs/feature-merge-roadmap.md). `docs/` is
+for people using or building the project; put a plan or a boundary rule in
+`specs/`, and a user-facing guide in `docs/`.
+
 ## Repo-local entrypoints
 
 Use the canonical repo-local commands:
