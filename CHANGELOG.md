@@ -116,6 +116,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   segmentation output, the YOLO26 depth task, and the vision preprocessing
   fast paths.
 
+### Removed
+- `app/src/NeuriploInferProcessing.cpp` and `app/src/NeuriploInferRendering.cpp`,
+  leftovers from the command refactor. They held second copies of the image,
+  video, optical-flow, and image-understanding paths and of the per-task
+  renderers, but were in no build target, referenced nowhere, and no longer
+  compiled against their own headers. Their live counterparts are
+  `CLICommands.cpp` and `ResultRenderer.cpp`. Uncompiled, they were invisible
+  to every gate — formatting, lint, warnings, tests — while still reading like
+  the code that runs, so a fix to one of these paths could land in the copy
+  nothing executes. The run diagnostics were the concrete case: none of that
+  duplicate processing code was instrumented.
+- New `no_orphan_sources` test: a source under `app/src` that is named nowhere
+  in `app/CMakeLists.txt` now fails the suite. Being excluded from a particular
+  build (KServe, a backend) stays fine; being in no build at all does not.
+
 ## [0.9.1] - 2026-07-16
 
 ### Fixed
