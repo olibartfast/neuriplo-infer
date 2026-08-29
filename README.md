@@ -144,7 +144,73 @@ the local backend compiled into the executable, and the client-server protocols
 and transports available in the current build. Local and client-server
 execution are separate workflows. Enum defaults are build-specific when an
 optional transport is compiled. The schema is documented in
-[`docs/capabilities.schema.json`](docs/capabilities.schema.json).
+[`docs/capabilities.schema.json`](docs/capabilities.schema.json), currently at
+`schema_version` 2. Version 2 added the required `diagnostics` section; because
+the schema forbids unknown properties, that is a breaking change in both
+directions, so version 1 stays published as
+[`docs/capabilities.schema.v1.json`](docs/capabilities.schema.v1.json) for
+documents produced by an older binary.
+
+#### Run diagnostics
+
+Every run writes a versioned JSON report next to its output, at the path the
+capabilities document advertises under `diagnostics.run_report` (currently
+`data/output/run_report.json`, relative to the working directory):
+
+```json
+{
+  "schema_version": 1,
+  "status": "failed",
+  "stage": "model_load",
+  "metrics": {
+    "wall_time_ms": 546.9,
+    "samples": 0,
+    "frames": null,
+    "throughput_per_second": null,
+    "stages_ms": {
+      "model_load": 546.7,
+      "preprocess": null,
+      "inference": null,
+      "postprocess": null,
+      "render": null
+    }
+  },
+  "error": { "stage": "model_load", "message": "..." }
+}
+```
+
+It exists so a caller can tell *where* a run failed and *how long each stage
+took* without parsing log text. Five rules make it safe to consume:
+
+- **Absent is not zero.** A stage nobody measured is `null`, never `0`, and
+  `throughput_per_second` appears only when both a processed count and the
+  inference time it belongs to were measured. It is also `null` on a failed
+  run: counts are added after work succeeds while the stage timer still records
+  the attempt that threw, so a rate computed from both would describe work that
+  did not happen. The counts and the stage sums stay; only the ratio is
+  withheld.
+- **`stages_ms` values are sums** over the whole run, in milliseconds;
+  `wall_time_ms` is measured inside `main`, so it is always smaller than the
+  caller's own process wall time. Warmup and benchmark iterations are excluded:
+  they repeat inference without producing a sample, and counting them would
+  inflate every stage total and collapse `throughput_per_second`.
+- **`samples` counts completed sources** — one still image, one video read to
+  its end, one optical-flow pair, one image-understanding request — while
+  `frames` counts video frames and stays `null` for a run with no video. A
+  video the operator stopped with `q` or Escape is not a completed source and
+  is not counted; its frames still are, because they were processed.
+- **A source that cannot be read is a failure, not a skip.** An optical-flow
+  pair with an unreadable half ends the run at `source` instead of returning
+  success with no samples and no artifact.
+- **The stage is recorded, not inferred.** A failure is attributed to the stage
+  the run had reached — `configuration`, `model_load`, `source`, `preprocess`,
+  `inference`, `postprocess`, `render`, or `unknown` — and the message stays
+  the producer's own. A backend that throws a non-`std::exception` (some ONNX
+  graphs abort inside OpenCV DNN) still leaves an attributed report before the
+  process dies.
+
+Writing the report never changes the outcome it describes: a report that cannot
+be written is logged and dropped.
 
 #### Required Parameters
 

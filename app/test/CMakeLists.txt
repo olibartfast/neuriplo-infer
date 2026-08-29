@@ -29,6 +29,8 @@ set(PROJECT_NAME_TEST runUnitTests)
 add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_Capabilities.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_RunReport.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_RunDiagnostics.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
@@ -111,11 +113,35 @@ gtest_discover_tests(${PROJECT_NAME_TEST})
 
 add_test(
     NAME capabilities_cli_contract
-    COMMAND $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}> --capabilities
+    COMMAND ${CMAKE_COMMAND}
+        -DNEURIPLO_INFER_BIN=$<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
+        -DEXPECTED_VERSION=2
+        -P ${CMAKE_CURRENT_LIST_DIR}/check_capabilities_cli.cmake
 )
-set_tests_properties(capabilities_cli_contract PROPERTIES
-    PASS_REGULAR_EXPRESSION "\"schema_version\": 1"
+
+# A source no build compiles is invisible to every other gate here: it is not
+# formatted, linted, warned about, or tested, and it drifts until it no longer
+# builds while still reading like the code that runs.
+add_test(
+    NAME no_orphan_sources
+    COMMAND ${CMAKE_COMMAND}
+        -DAPP_DIR=${CMAKE_CURRENT_LIST_DIR}/..
+        -P ${CMAKE_CURRENT_LIST_DIR}/check_no_orphan_sources.cmake
 )
+
+# The published schema forbids unknown properties, so an emitter that grows a
+# section without updating docs/capabilities.schema.json breaks consumers that
+# validate. Skips itself when the validator is not installed.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME capabilities_schema_contract
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/validate_capabilities_schema.py
+            $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
+            ${CMAKE_SOURCE_DIR}/docs/capabilities.schema.json
+    )
+endif()
 
 add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run

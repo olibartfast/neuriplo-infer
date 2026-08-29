@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AppConfig.hpp"
+#include "RunReport.hpp"
 
 #include <string>
 
@@ -13,4 +14,5 @@ private:
   void setupLogging(const std::string &log_folder = "./logs");
 
   AppConfig config;
+  neuriplo_infer::RunReport report;
 };

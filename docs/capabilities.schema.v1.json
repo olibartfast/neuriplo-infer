@@ -1,14 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/olibartfast/neuriplo-infer/blob/develop/docs/capabilities.schema.json",
-  "title": "Neuriplo Infer Capabilities",
-  "description": "Version 2 adds the required diagnostics section. Because this document forbids unknown properties, adding it is a breaking change in both directions: a version 1 document has no diagnostics and a version 2 document does not validate against docs/capabilities.schema.v1.json.",
+  "$id": "https://github.com/olibartfast/neuriplo-infer/blob/develop/docs/capabilities.schema.v1.json",
+  "title": "Neuriplo Infer Capabilities (schema version 1)",
+  "description": "Frozen. Version 1 forbids unknown properties, so the diagnostics section added in version 2 does not validate against it. Kept so a consumer can still validate a document from a binary built before that change.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "producer",
-    "diagnostics",
     "execution",
     "source_types",
     "parameters",
@@ -16,7 +15,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": 2
+      "const": 1
     },
     "producer": {
       "type": "object",
@@ -25,14 +24,6 @@
       "properties": {
         "name": { "const": "neuriplo-infer" },
         "version": { "type": "string", "minLength": 1 }
-      }
-    },
-    "diagnostics": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["run_report"],
-      "properties": {
-        "run_report": { "$ref": "#/$defs/runReport" }
       }
     },
     "execution": {
@@ -63,22 +54,6 @@
     }
   },
   "$defs": {
-    "runReport": {
-      "description": "Where a run writes its machine-readable diagnostics, and the stage vocabulary that document uses. The path is relative to the working directory the run executes in.",
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["schema_version", "path", "stages"],
-      "properties": {
-        "schema_version": { "type": "integer", "minimum": 1 },
-        "path": { "type": "string", "minLength": 1 },
-        "stages": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
-        }
-      }
-    },
     "parameterSelection": {
       "type": "object",
       "additionalProperties": false,
