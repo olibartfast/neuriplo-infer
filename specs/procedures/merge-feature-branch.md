@@ -1,6 +1,9 @@
-# Feature Branch Merge Roadmap
+# Procedure — Merge a Feature Branch into `develop`
 
-Atomic step-by-step plan to merge `feature/*` or `feat/*` → `develop` (GitFlow).
+Stage 7 of the [spec-driven workflow](../README.md#the-loop): the atomic
+step-by-step mechanics of landing a `feature/*` or `feat/*` branch on `develop`
+under GitFlow. Merge the feature packet under `specs/YYYY-MM-DD-<feature-name>/`
+in the same PR as the code.
 
 ---
 

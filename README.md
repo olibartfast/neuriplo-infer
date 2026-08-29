@@ -477,8 +477,10 @@ See [docs/KserveRuntime.md](docs/KserveRuntime.md) for the full KServe runtime r
 agent-facing specifications for changing it.
 
 - [`AGENTS.md`](AGENTS.md): workflow, review focus, and repo-local entrypoints
+- [`specs/README.md`](specs/README.md): the spec-driven development loop used in this repo
+- [`specs/mission.md`](specs/mission.md), [`specs/tech-stack.md`](specs/tech-stack.md), [`specs/roadmap.md`](specs/roadmap.md): project constitution — purpose, technical boundaries, delivery order
 - [`specs/architecture.md`](specs/architecture.md): ownership boundaries and runtime flow
-- [`specs/feature-merge-roadmap.md`](specs/feature-merge-roadmap.md): GitFlow procedure for landing a feature branch
+- [`specs/procedures/merge-feature-branch.md`](specs/procedures/merge-feature-branch.md): GitFlow procedure for landing a feature branch
 - [`docs/KserveRuntime.md`](docs/KserveRuntime.md): KServe remote-runtime reference (architecture, capabilities, configuration, build modes)
 - [`docs/KserveCompatibility.md`](docs/KserveCompatibility.md): CI-backed KServe server/transport/datatype matrix
 - [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version sources
