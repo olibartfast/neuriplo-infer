@@ -104,6 +104,10 @@ Packet: [`2026-08-31-opencv-free-app/`](2026-08-31-opencv-free-app/requirements.
 
 Real, observed, small enough not to need a packet until someone picks one up:
 
+- Consume the video-writer sink once `videocapture` ships it, so annotated
+  output can be a file rather than a directory of stills. Costs nothing extra in
+  an `-DUSE_FFMPEG=ON` build, since the codecs are already linked for capture.
+  Blocked on that sibling release; not this repo's work to start.
 - `versions.env` has accumulated a duplicated pin-comment block on every release;
   `scripts/cut_release.sh` appends instead of replacing it.
 - FP16/BF16 over gRPC works only with raw tensor contents; the `KSERVE_BINARY=0`
