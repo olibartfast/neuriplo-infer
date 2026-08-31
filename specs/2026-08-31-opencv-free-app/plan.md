@@ -103,32 +103,53 @@ OpenCV stays linked throughout this group; each task is independently revertible
     regression net — run them before and after and diff `--help` output byte for
     byte.
 
-## Group 6 — the display decision
+## Group 6 — the preview window
 
-15. **Implement the option the maintainer picks** for `cv::imshow` /
-    `cv::waitKey` (Open Question 1 in `requirements.md`). Whichever it is, it
-    carries a `CHANGELOG.md` entry, because the video loops' observable
-    behaviour changes. This group is the only one that cannot start before that
-    answer.
+15. **Add `NEURIPLO_INFER_WITH_DISPLAY` (default OFF)** and move the two video
+    loops' `cv::imshow` / `cv::waitKey` behind an SDL2 presenter. The presenter
+    takes an `Image`, owns the window, the texture, and the keypress that ends
+    the loop; the loops must not learn which library is behind it, so a later
+    swap stays a one-file change. SDL2 is discovered only when the flag is ON —
+    a default build must not `find_package(SDL2)` at all, or the dependency
+    becomes required in practice while looking optional.
+
+16. **Make the flag's absence a first-class state.** With the flag OFF, no
+    preview is advertised in `--help` or `--capabilities`, and asking for one
+    fails fast naming the flag and how to rebuild — the repo forbids silent CLI
+    breakage. The default build no longer opens a window, which is a
+    user-visible change and needs a `CHANGELOG.md` entry.
+
+17. **A display build must still run headless.** `NEURIPLO_INFER_WITH_DISPLAY=ON`
+    is a compile-time capability, not a promise that a display exists: the same
+    binary gets run over SSH, in a container, and under CI, where `DISPLAY` is
+    unset and `SDL_Init(SDL_INIT_VIDEO)` fails. That must log once and continue
+    processing without a window, never abort the run — today `cv::imshow` in the
+    same situation throws and takes the whole video with it. This is the one
+    behaviour a compile-time-only flag cannot express on its own.
+
+18. **Verify no headless image gained SDL2.** The +237 MB closure reaching a
+    serving container is the way this feature would quietly undo itself while
+    every build still looked correct; check each `Dockerfile` that does not
+    enable the flag.
 
 ## Group 7 — flip the dependency
 
-16. **Remove `find_package(OpenCV REQUIRED)`** from `CMakeLists.txt`, drop the
+19. **Remove `find_package(OpenCV REQUIRED)`** from `CMakeLists.txt`, drop the
     `neuriplo-tasks::vision-opencv` link and `${OpenCV_LIBS}` / `${OpenCV_INCLUDE_DIRS}`
     from `app/CMakeLists.txt` and `app/test/CMakeLists.txt`, and leave
     `NEURIPLO_TASKS_WITH_OPENCV` at its default `OFF`.
 
-17. **Slim the images.** Drop `libopencv-dev` from every `docker/Dockerfile.*`
+20. **Slim the images.** Drop `libopencv-dev` from every `docker/Dockerfile.*`
     except the `OPENCV_DNN` one, which keeps it because `neuriplo` requires it
     for that backend. Record the image size delta.
 
 ## Group 8 — contract and documentation
 
-18. Update `specs/tech-stack.md` — the "OpenCV ≥ 4.6 and glog are system
+21. Update `specs/tech-stack.md` — the "OpenCV ≥ 4.6 and glog are system
     dependencies" line is what this feature falsifies, and that file requires
     amendment in the same branch as the change. Update `README.md` build
     prerequisites, `CHANGELOG.md`, and the phase status in `../roadmap.md`.
 
-19. Execute [`validation.md`](validation.md) from the file, not from memory.
+22. Execute [`validation.md`](validation.md) from the file, not from memory.
 
 > Commit by group — this is higher-risk work touching every rendering path.
