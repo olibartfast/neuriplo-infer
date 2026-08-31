@@ -94,8 +94,9 @@ Packet: [`2026-08-31-opencv-free-app/`](2026-08-31-opencv-free-app/requirements.
 - Done when: a non-`OPENCV_DNN` image builds and runs with no OpenCV package
   installed, `ldd` on its binary lists no `libopencv_*`, and the rendered output
   is unchanged for every task type.
-- Blocked on: a maintainer decision about the live preview window
-  (`cv::imshow`), which has no in-family replacement — see Open Question 1.
+- The live preview survives as SDL2 behind `NEURIPLO_INFER_WITH_DISPLAY`,
+  default OFF — an approved, bounded exception to the no-new-dependency rule,
+  so no headless image pays for it.
 
 ---
 

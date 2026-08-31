@@ -19,7 +19,16 @@ secondary to that one.
       developer machine proves nothing, because OpenCV is installed there and
       a stray `find_package` would silently succeed.
 - [ ] `ldd` on the built binary lists **no `libopencv_*`** for
-      `ONNX_RUNTIME`, `TENSORRT`, `LIBTORCH`, and KServe-only builds.
+      `ONNX_RUNTIME`, `TENSORRT`, `LIBTORCH`, and KServe-only builds — and no
+      `libSDL2` unless `NEURIPLO_INFER_WITH_DISPLAY=ON`.
+- [ ] A `NEURIPLO_INFER_WITH_DISPLAY=ON` build opens a window and ends on `q`
+      or Esc, on a real video, with the overlay drawn — the feature this
+      exception was granted for actually works.
+- [ ] The **same** `NEURIPLO_INFER_WITH_DISPLAY=ON` binary, run with `DISPLAY`
+      unset, processes the whole video to the end without a window and without
+      failing — `env -u DISPLAY ./neuriplo-infer --source <video> …`. A display
+      build that dies on a headless host is the predictable way this flag
+      becomes a support burden.
 - [ ] `ldd` on an `OPENCV_DNN` build **does** list OpenCV, reached only through
       `neuriplo` — confirming the dependency moved rather than vanished.
 - [ ] `grep -rn "cv::\|opencv2" app/` returns nothing outside whatever the
@@ -88,8 +97,15 @@ secondary to that one.
 - [ ] Nothing in *Out of Scope* was implemented anyway — in particular, no
       rendering *policy* changed: no new colours, no re-laid-out labels, no
       "improved" skeleton.
-- [ ] Open Question 1 (the display decision) was answered by the maintainer and
-      the answer is recorded in `requirements.md`, not inferred from the code.
+- [ ] **No headless image gained SDL2.** For every `Dockerfile` built without
+      `NEURIPLO_INFER_WITH_DISPLAY`, the measured image-size delta versus today
+      is negative, and neither `libsdl2` nor its GL stack (`libgl1`,
+      `mesa-libgallium`, `libllvm20`) appears in `dpkg -l`. SDL2's closure is
+      +237 MB; leaking it into a serving container would cancel most of this
+      feature's benefit while every build still looked correct.
+- [ ] A default build does **not** call `find_package(SDL2)` — grep the
+      configure log. An optional dependency that is always discovered is a
+      required one with extra steps.
 - [ ] `neuriplo-tasks` is released and pinned to a concrete `vX.Y.Z` tag in
       `versions.env` before this branch is released
       (`scripts/validate_release_pins.sh` passes).

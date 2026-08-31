@@ -39,7 +39,7 @@ requires this work — it is entirely an application-layer concern.
 | `cv::CommandLineParser` | 4 | hand-rolled parser | contract-guarded by existing tests |
 | `cv::cuda` GPU probe | 3 | delete | filesystem fallbacks already exist below it |
 | `cv::imencode(".jpg")` | 1 | `encodeImage` | **gap** — tasks has decode, not encode |
-| Display (`imshow`/`waitKey`) | 4 | see Open Questions | the one unresolved decision |
+| Display (`imshow`/`waitKey`) | 4 | SDL2 behind `NEURIPLO_INFER_WITH_DISPLAY` | default OFF; see Decision 3 |
 
 ## In Scope
 
@@ -92,11 +92,51 @@ requires this work — it is entirely an application-layer concern.
    different-looking result. Glyph data is vendored under `3rdparty/`, as stb
    already is, with its provenance notice.
 
-3. **No SDL2.** `specs/tech-stack.md` forbids a new third-party runtime
-   dependency without maintainer approval and states *"No GUI, no server, no
-   daemon. This is a CLI."* `videocapture` v0.4.0 chose SDL2, but for a
-   top-level sample application, which is a different constraint. See Open
-   Questions — this is the one decision this packet does not make.
+3. **The live preview is kept, backed by SDL2, behind
+   `NEURIPLO_INFER_WITH_DISPLAY` (default OFF).** `cv::imshow` / `cv::waitKey`
+   is the only OpenCV use with no in-family replacement, and the maintainer
+   chose to keep the capability rather than lose it: SDL2 hands over a window,
+   an event loop, and `SDL_UpdateTexture` + `SDL_RenderCopy`, and it is the
+   choice `videocapture` v0.4.0 already made for the same problem.
+
+   This is a deliberate, approved exception to *"No new third-party runtime
+   dependency without maintainer approval"* in `specs/tech-stack.md`. It is
+   narrow on purpose: the flag defaults OFF, so no headless or serving image
+   acquires SDL2 or anything it pulls, and the exception is recorded here rather
+   than left implicit in a CMake option.
+
+   Measured before deciding, installed-size delta with `--no-install-recommends`,
+   on `ubuntu:24.04` and on `nvcr.io/nvidia/cuda:13.0.0-devel-ubuntu24.04` (the
+   TensorRT base). The two agree within 1 MB, so the CUDA image carries no GL of
+   its own:
+
+   | Option | Added | What dominates |
+   |---|---:|---|
+   | Raw X11 (`libx11-6` + `libxext6`) | +4 MB | nothing — no GL at all |
+   | GLFW · sokol via GLX · `libgl1` alone | +225 MB | `libllvm20` 137 MB + `mesa-libgallium` 42 MB |
+   | sokol via GLES3/EGL | +224 MB | `libegl1` + `libgles2` |
+   | **SDL2 — chosen** | **+237 MB** | the same GL stack; SDL2 itself is 1.9 MB |
+   | OpenCV highgui | +433 MB | Qt5 — Ubuntu builds highgui against Qt5, not GTK |
+   | `libopencv-dev`, installed today | +1088 MB | the full OpenCV stack |
+
+   SDL2 is 4.6x lighter than the highgui it replaces and 4.6x lighter again than
+   what the Dockerfiles install today. It is on record that 225 of its 237 MB is
+   a Mesa/LLVM GL stack a BGR blit never uses, and that raw X11 `XShmPutImage`
+   would be +4 MB — the maintainer weighed that against ~150 lines of
+   hand-written X11 window and event code and chose the library. Because the
+   flag defaults OFF, the difference is paid only by someone who asked for a
+   preview.
+
+   **sokol was evaluated and rejected**, recorded so it is not revisited from
+   scratch. It is a vendored single header under a permissive license, adding no
+   package and fitting the pattern stb and the Hershey data already fit — but it
+   needs a GL context, so it pays GLFW's +225 MB rather than nothing; its Linux
+   window and GL code is, by its own header, *"taken from GLFW"*; and
+   `sokol_app` is an application wrapper that supplies the entry point and
+   drives the program through `init_cb` / `frame_cb`, inverting control away
+   from a CLI that owns its own frame loop. Displaying a frame would also mean a
+   texture upload and a fullscreen quad. It is GLFW's runtime cost, more code
+   than SDL2, plus a header to maintain.
 
 4. **The replacement is validated against OpenCV, while OpenCV is still there.**
    `neuriplo-tasks` already builds both ways (`build-ocv` / `build-no-ocv`), so
@@ -116,8 +156,9 @@ requires this work — it is entirely an application-layer concern.
   dependencies."** This feature changes that rule, so tech-stack.md is updated
   in this branch — the file's own instruction.
 - **"No new third-party runtime dependency without maintainer approval."**
-  Honoured: Hershey glyph data is vendored public-domain data, not a dependency,
-  and no library is added. Only the display question could violate this.
+  SDL2 is that dependency, and Decision 3 records the approval and its bounds:
+  optional, default OFF, display only. Nothing else is added — Hershey glyph
+  data is vendored public-domain data, not a dependency.
 - **"No silent CLI breakage."** Any change to the live preview is a reviewed
   contract change with a `CHANGELOG.md` entry.
 - **The `--capabilities` contract is unaffected.** Neither `Capabilities.cpp`
@@ -142,69 +183,12 @@ requires this work — it is entirely an application-layer concern.
 
 ## Open Questions
 
-1. **What replaces the live preview window?** `cv::imshow` / `cv::waitKey` in
-   the two video loops is the only OpenCV use with no in-family replacement.
-   **Undecided.** Measured evidence, installed-size delta with
-   `--no-install-recommends`, taken on both `ubuntu:24.04` and
-   `nvcr.io/nvidia/cuda:13.0.0-devel-ubuntu24.04` (the TensorRT base) — the two
-   bases agree to within 1 MB, so the CUDA image carries no GL of its own and
-   there is no free lunch there:
-
-   | Option | Added | What dominates |
-   |---|---:|---|
-   | Raw X11 (`libx11-6` + `libxext6`) | **+4 MB** | nothing — no GL at all |
-   | sokol / GLFW X11 libs, without GL | +4 MB | `X11`, `Xi`, `Xcursor` |
-   | GLFW (`libglfw3`) | +225 MB | the GL stack; GLFW itself ≈ 0 |
-   | sokol with `SOKOL_GLCORE` (GLX) | +225 MB | `libgl1` |
-   | sokol with `SOKOL_GLES3` (EGL) | +224 MB | `libegl1` + `libgles2` |
-   | `libgl1` alone, for reference | +225 MB | `libllvm20` 137 MB + `mesa-libgallium` 42 MB |
-   | SDL2 (`libsdl2-2.0-0`) | +237 MB | the same GL stack; SDL2 itself is 1.9 MB |
-   | OpenCV highgui | +433 MB | Qt5 — Ubuntu builds highgui against Qt5, not GTK |
-   | `libopencv-dev`, installed today | +1088 MB | the full OpenCV stack |
-
-   The shape of the table matters more than any single row. **Every GL-based
-   option costs the same ~225 MB**, because Mesa's software GL pulls
-   `libllvm20`. SDL2 is not lighter because SDL2 is small — it is 1.9 MB; 225 of
-   its 237 MB is a GL stack that a window blitting a BGR buffer never uses.
-   The only option that escapes the GL tax is the one that never asks for a
-   context.
-
-   Candidates:
-
-   - **Drop the preview.** Write annotated frames or a video file instead. No
-     dependency at all, and it is what *"No GUI, no server, no daemon. This is a
-     CLI."* in `specs/tech-stack.md` already says. Loses live monitoring; a CLI
-     contract change.
-   - **Raw X11 `XShmPutImage`.** +4 MB, ~60x lighter than SDL2's closure.
-     Create a window, blit a BGRA buffer, read one keypress. ~150 lines,
-     X11-only (works under XWayland). Cheapest by two orders of magnitude and
-     the only option whose cost is proportional to the feature.
-   - **SDL2.** +237 MB. Most batteries included — `SDL_UpdateTexture` +
-     `SDL_RenderCopy`, window and event loop handled — and the precedent
-     `videocapture` v0.4.0 set. Needs approval as a new runtime dependency.
-   - **sokol (`sokol_app` + `sokol_gfx`).** Rejected on evaluation, recorded so
-     it is not revisited from scratch. Attractive because it is a vendored
-     single header under a permissive license, adding no package and fitting the
-     pattern stb and the Hershey data already fit. But three things count
-     against it here: it needs a GL context, so the runtime cost is GLFW's
-     +225 MB and not zero; its Linux window and GL code is, by its own header,
-     *"taken from GLFW"*, so it is GLFW-as-a-header rather than something
-     lighter; and `sokol_app` is an application wrapper that **provides the
-     entry point and drives the program through `init_cb` / `frame_cb`**, which
-     inverts control away from a CLI that owns its own frame loop. Showing a
-     frame also means a texture upload and a fullscreen quad, more code than
-     SDL2's blit and far more than X11's. It is the GL cost of GLFW, more code
-     than SDL2, plus a vendored header to maintain.
-
-   Everything else in this packet is independent of this answer, so the other
-   groups can proceed while it is open.
-
-2. **What pixel tolerance counts as parity** for the anti-aliased primitives?
+1. **What pixel tolerance counts as parity** for the anti-aliased primitives?
    Exact match with OpenCV is not a goal and not achievable — OpenCV's AA uses
    its own fixed-point coverage model. Proposal: assert per-pixel |Δ| ≤ 8 on
    ≥ 99% of pixels for AA strokes and exact match for un-AA fills, plus layout
    invariants for text rather than pixel equality.
 
-3. **Does `neuriplo-tasks::vision-opencv` survive?** After this, the app is its
+2. **Does `neuriplo-tasks::vision-opencv` survive?** After this, the app is its
    only consumer. Keeping it costs nothing and helps external adopters; removing
    it deletes the last `cv::Mat` interop in the family. Not urgent either way.
