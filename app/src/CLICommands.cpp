@@ -8,6 +8,7 @@
 
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -306,6 +307,51 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
   }
 }
 
+// Per-inference latency, one row per inference, opened only when asked for.
+// The run report already carries per-stage totals and throughput; what it
+// cannot show is the distribution -- a run whose mean is fine because a slow
+// first frame is averaged away by four hundred quick ones looks identical to a
+// uniformly quick run. That distinction is the reason to record frames
+// individually, so this writes alongside the report rather than duplicating it.
+class FrameTimingsCsv {
+public:
+  // Opened before the first frame, not lazily: a run that cannot write its
+  // measurements should fail before spending minutes producing them.
+  explicit FrameTimingsCsv(const std::string &path) {
+    if (path.empty()) {
+      return;
+    }
+    const std::filesystem::path csv_path(path);
+    if (csv_path.has_parent_path()) {
+      std::filesystem::create_directories(csv_path.parent_path());
+    }
+    out_.open(csv_path);
+    if (!out_.is_open()) {
+      throw std::runtime_error("Could not open timings CSV for writing: " +
+                               path);
+    }
+    path_ = path;
+    out_ << "frame,latency_us\n";
+  }
+
+  void add(std::size_t frame_index, std::int64_t latency_us) {
+    if (out_.is_open()) {
+      out_ << frame_index << ',' << latency_us << '\n';
+    }
+  }
+
+  void finish() {
+    if (out_.is_open()) {
+      out_.close();
+      LOG(INFO) << "Saved per-inference timings to: " << path_;
+    }
+  }
+
+private:
+  std::ofstream out_;
+  std::string path_;
+};
+
 void processVideo(InferencePipeline &pipeline, const std::string &source) {
   std::unique_ptr<VideoCaptureInterface> videoInterface =
       createVideoInterface();
@@ -318,7 +364,10 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     }
   }
 
+  FrameTimingsCsv timings(pipeline.config.timings_csv);
+
   cv::Mat frame;
+  std::size_t frame_index = 0;
   bool read_to_end = false;
   while (true) {
     bool read_frame = false;
@@ -341,10 +390,15 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
       pipeline.report->addFrames(1);
     }
     auto end = std::chrono::steady_clock::now();
-    auto duration =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+    // Microseconds, not milliseconds: a frame faster than 1 ms truncated to
+    // zero, and the overlay then divided by it -- inf FPS on exactly the
+    // backends worth measuring.
+    const auto latency_us =
+        std::chrono::duration_cast<std::chrono::microseconds>(end - start)
             .count();
-    double fps = 1000.0 / static_cast<double>(duration);
+    timings.add(frame_index, latency_us);
+    const double fps =
+        latency_us > 0 ? 1e6 / static_cast<double>(latency_us) : 0.0;
     std::string fpsText = "FPS: " + std::to_string(fps);
 
     {
@@ -355,16 +409,25 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
       cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX,
                   1, cv::Scalar(0, 255, 0), 2);
       pipeline.renderResults(results, frame);
-      cv::imshow("opencv feed", frame);
+      if (!pipeline.config.no_display) {
+        cv::imshow("opencv feed", frame);
+      }
     }
 
-    const int key = cv::waitKey(1);
-    if (key == 27 || key == 'q') {
-      LOG(INFO) << "Exit requested";
-      break;
+    ++frame_index;
+
+    // Only a shown window can be asked to close. Without one there is no
+    // keypress to read, and cv::waitKey would spin the loop for nothing.
+    if (!pipeline.config.no_display) {
+      const int key = cv::waitKey(1);
+      if (key == 27 || key == 'q') {
+        LOG(INFO) << "Exit requested";
+        break;
+      }
     }
   }
 
+  timings.finish();
   videoInterface->release();
   // One video read to its end is one sample, however many frames it held. A
   // video the operator stopped early was not processed to completion, and
@@ -391,10 +454,17 @@ void processVideoClassification(InferencePipeline &pipeline,
   LOG(INFO) << "Video classification mode: accumulating " << requiredFrames
             << " frames";
 
+  FrameTimingsCsv timings(pipeline.config.timings_csv);
+
   cv::Mat frame;
   std::vector<cv::Mat> frameBuffer;
   frameBuffer.reserve(static_cast<size_t>(requiredFrames));
 
+  // Counts frames read, so a row's index refers to the frame the window closed
+  // on. One inference here consumes a whole window, so rows are sparser than in
+  // processVideo -- which is why the column is the frame index and not a row
+  // counter that would silently mean something different per mode.
+  std::size_t frame_index = 0;
   bool read_to_end = false;
   while (true) {
     bool read_frame = false;
@@ -408,6 +478,7 @@ void processVideoClassification(InferencePipeline &pipeline,
       break;
     }
     frameBuffer.push_back(frame.clone());
+    ++frame_index;
 
     if (static_cast<int>(frameBuffer.size()) >= requiredFrames) {
       auto start = std::chrono::steady_clock::now();
@@ -434,10 +505,12 @@ void processVideoClassification(InferencePipeline &pipeline,
         pipeline.report->addFrames(requiredFrames);
       }
       auto end = std::chrono::steady_clock::now();
-      auto duration =
-          std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+      const auto latency_us =
+          std::chrono::duration_cast<std::chrono::microseconds>(end - start)
               .count();
-      double fps = 1000.0 / static_cast<double>(duration);
+      timings.add(frame_index - 1, latency_us);
+      const double fps =
+          latency_us > 0 ? 1e6 / static_cast<double>(latency_us) : 0.0;
       std::string fpsText = "FPS: " + std::to_string(fps);
 
       {
@@ -448,19 +521,24 @@ void processVideoClassification(InferencePipeline &pipeline,
                     cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
 
         pipeline.renderResults(results, displayFrame);
-        cv::imshow("opencv feed", displayFrame);
+        if (!pipeline.config.no_display) {
+          cv::imshow("opencv feed", displayFrame);
+        }
       }
 
       frameBuffer.erase(frameBuffer.begin());
     }
 
-    const int key = cv::waitKey(1);
-    if (key == 27 || key == 'q') {
-      LOG(INFO) << "Exit requested";
-      break;
+    if (!pipeline.config.no_display) {
+      const int key = cv::waitKey(1);
+      if (key == 27 || key == 'q') {
+        LOG(INFO) << "Exit requested";
+        break;
+      }
     }
   }
 
+  timings.finish();
   videoInterface->release();
   // Same rule as processVideo: only a video read to its end is a sample.
   if (read_to_end && pipeline.report != nullptr) {
