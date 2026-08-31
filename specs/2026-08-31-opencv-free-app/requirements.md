@@ -69,6 +69,13 @@ requires this work — it is entirely an application-layer concern.
 - **`neuriplo-track`, `tritonic`, `object-detection-inference`.** They can adopt
   `vision::draw` once it exists; that is their own work.
 - **GPU-accelerated drawing.** The rasterizer is scalar CPU code.
+- **Video output.** Annotated results stay per-frame stills here. A writer is
+  going into `videocapture` as a sink mirroring `readFrame`, which is where the
+  repo boundary puts it — `specs/tech-stack.md` states *"No video-backend
+  selection policy here. `videocapture` owns priority and source semantics"* —
+  and where the FFmpeg integration already exists, so with `-DUSE_FFMPEG=ON` it
+  costs nothing new. This branch must not grow an encoder, and must not link
+  FFmpeg: consuming that sink is a later, separate change here.
 - **Removing OpenCV from the `OPENCV_DNN` image.** That backend *is* OpenCV;
   it keeps it, `PRIVATE`, via `neuriplo`. This feature makes that the only
   place it appears.
