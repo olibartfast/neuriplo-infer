@@ -219,11 +219,12 @@ message(STATUS "neuriplo-tasks_SOURCE_DIR: ${neuriplo-tasks_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
 
-# Configure VideoCapture target with OpenCV after it's been fetched
-if(TARGET VideoCapture)
-    target_include_directories(VideoCapture PRIVATE ${OpenCV_INCLUDE_DIRS})
-    target_link_libraries(VideoCapture PRIVATE ${OpenCV_LIBS})
-endif()
+# VideoCapture is deliberately not given OpenCV here. Up to v0.3.0 it expected
+# its consumer to supply OpenCV, because cv::Mat was in its public frame API.
+# Since v0.4.0 the frame API is videocapture::Frame and OpenCV is an internal
+# detail of the OpenCV capture backend alone -- which discovers and links it
+# itself. Injecting OpenCV into the target from here would put it back into the
+# FFmpeg and GStreamer builds, which that release exists to keep free of it.
 
 # Validate all dependencies after they have been fetched
 validate_project_dependencies()
