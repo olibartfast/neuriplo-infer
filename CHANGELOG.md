@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `--timings_csv <path>` writes one row per inference (`frame,latency_us`) for
+  a video run. The run report carries per-stage totals and throughput but not
+  the distribution, so a run whose mean is fine because one slow frame was
+  averaged away by four hundred quick ones is indistinguishable from a
+  uniformly quick one. The file is opened before the first frame, so a run that
+  cannot write its measurements fails before spending minutes producing them,
+  and parent directories are created.
+- `--no_display` suppresses the preview window. This is not only a convenience:
+  with no `DISPLAY`, `cv::imshow` aborts the process on its Qt platform plugin,
+  so before this flag a headless or benchmark run could not complete at all.
+  Verified on a 404-frame 1280x720 clip through the ONNX Runtime backend --
+  404 rows written and the run finished, where the same command without the
+  flag dumps core.
 - Machine-readable run diagnostics. Every run now writes a versioned report
   (`data/output/run_report.json`, advertised by `--capabilities` under
   `diagnostics.run_report`) carrying per-stage timings, sample/frame counts,
@@ -54,6 +67,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   may reference a different inner version.
 
 ### Fixed
+- Video FPS overlay no longer divides by zero. It measured in whole
+  milliseconds, so any inference faster than 1 ms truncated to zero and the
+  overlay reported `inf` -- on exactly the fast backends worth measuring. The
+  measurement is now in microseconds.
 - Polygon segmentation rendering filled the exteriors and alpha-blended them,
   which is visually indistinguishable from the mask overlay and never drew the
   perimeter. Polygon results now stroke closed outline contours only
