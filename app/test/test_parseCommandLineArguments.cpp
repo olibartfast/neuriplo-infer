@@ -341,3 +341,38 @@ TEST(ParseCommandLineArguments, TaskModelVersionDefaultsAndParses) {
   EXPECT_EQ(config.kserve_model_version, "3");
   EXPECT_EQ(config.task_model_version, "7");
 }
+
+TEST(ParseCommandLineArguments, VideoRunArtifactFlagsDefaultToOff) {
+  // A run that asks for neither must behave exactly as before: no CSV path and
+  // a preview window, since --no_display is opt-in.
+  const char *argv[] = {"program", "--type=yolov5", "--source=input.mp4",
+                        "--weights=model.weights", "--labels=labels.txt"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  touchFile("labels.txt");
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_TRUE(config.timings_csv.empty());
+  EXPECT_FALSE(config.no_display);
+}
+
+TEST(ParseCommandLineArguments, VideoRunArtifactFlagsAreParsed) {
+  const char *argv[] = {"program",
+                        "--type=yolov5",
+                        "--source=input.mp4",
+                        "--weights=model.weights",
+                        "--labels=labels.txt",
+                        "--timings_csv=out/frames.csv",
+                        "--no_display"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  touchFile("labels.txt");
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_EQ(config.timings_csv, "out/frames.csv");
+  EXPECT_TRUE(config.no_display);
+}

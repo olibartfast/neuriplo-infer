@@ -58,4 +58,11 @@ struct AppConfig {
   // may reference an inner model version other than the ensemble's own.
   std::string task_model_version{"1"};
   std::string postprocess_mode{"cpu"};
+  // Video run artifacts. timings_csv records per-inference latency so two
+  // transport or backend configurations can be compared without re-running
+  // them; the run report covers per-stage totals but not the frame-by-frame
+  // distribution. no_display suppresses the preview window, which a headless
+  // or benchmark run neither needs nor can open.
+  std::string timings_csv;
+  bool no_display{false};
 };
