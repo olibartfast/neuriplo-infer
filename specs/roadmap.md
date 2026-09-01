@@ -80,10 +80,34 @@ is therefore only as fresh as the last manual run.
 
 ---
 
+## Phase 6 — OpenCV-free application layer · not started
+
+`neuriplo` confines OpenCV to its `OPENCV_DNN` backend, `neuriplo-tasks` makes it
+an optional adapter (default off), and `videocapture` v0.4.0 took `cv::Mat` out
+of its frame API. This repo is the last holdout: `find_package(OpenCV REQUIRED)`
+is unconditional, so a TensorRT or KServe-only build still needs OpenCV that no
+sibling asked for. The blocker is rendering — ~70 of the ~140 `cv::` uses in
+`app/` draw overlays, and nothing in the family draws.
+
+Packet: [`2026-08-31-opencv-free-app/`](2026-08-31-opencv-free-app/requirements.md).
+
+- Done when: a non-`OPENCV_DNN` image builds and runs with no OpenCV package
+  installed, `ldd` on its binary lists no `libopencv_*`, and the rendered output
+  is unchanged for every task type.
+- The live preview survives as SDL2 behind `NEURIPLO_INFER_WITH_DISPLAY`,
+  default OFF — an approved, bounded exception to the no-new-dependency rule,
+  so no headless image pays for it.
+
+---
+
 ## Candidates — not scheduled
 
 Real, observed, small enough not to need a packet until someone picks one up:
 
+- Consume the video-writer sink once `videocapture` ships it, so annotated
+  output can be a file rather than a directory of stills. Costs nothing extra in
+  an `-DUSE_FFMPEG=ON` build, since the codecs are already linked for capture.
+  Blocked on that sibling release; not this repo's work to start.
 - `versions.env` has accumulated a duplicated pin-comment block on every release;
   `scripts/cut_release.sh` appends instead of replacing it.
 - FP16/BF16 over gRPC works only with raw tensor contents; the `KSERVE_BINARY=0`
