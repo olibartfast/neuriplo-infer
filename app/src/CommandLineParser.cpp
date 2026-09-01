@@ -63,7 +63,10 @@ const std::string CommandLineParser::params =
     "{ task_model tm | | inner model used for task metadata in encoded-image "
     "mode }"
     "{ postprocess_mode pm | cpu | postprocessing placement: cpu or gpu }"
-    "{ task_model_version tmv | 1 | version of --task_model }";
+    "{ task_model_version tmv | 1 | version of --task_model }"
+    "{ timings_csv | | write per-inference latency measurements to this CSV "
+    "path }"
+    "{ no_display | false | do not open the preview window }";
 
 namespace {
 
@@ -257,6 +260,9 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
                  config.postprocess_mode.begin(), [](unsigned char c) {
                    return static_cast<char>(std::tolower(c));
                  });
+
+  config.timings_csv = parser.get<std::string>("timings_csv");
+  config.no_display = parser.get<bool>("no_display");
 
   if (!config.kserve_endpoint.empty() && config.kserve_model_name.empty()) {
     config.kserve_model_name = config.detectorType;
