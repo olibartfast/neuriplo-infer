@@ -94,6 +94,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   what the local postprocessor produces.
 
 ### Changed
+- Pinned `videocapture` to `v0.4.0` (was `v0.3.0`), a breaking release for
+  consumers: `VideoCaptureInterface::readFrame()` now fills a
+  `videocapture::Frame` instead of a `cv::Mat`. `Frame` is dependency-free and
+  carries an explicit pixel format, per-plane row strides, a presentation
+  timestamp, and a sequence number. Video capture also no longer hangs at end
+  of stream on the GStreamer backend, and `GStreamerOpenCV` was renamed to
+  `GStreamerPipeline`.
+  - Frames are bridged to OpenCV in one place, `neuriplo_infer::toBgrMat()`
+    (`app/inc/FrameConversion.hpp`), rather than teaching every pipeline stage
+    a second image type. For packed BGR8 -- what all three capture backends
+    produce today -- the returned `cv::Mat` aliases the frame's own storage, so
+    the common path copies nothing and the rendered overlay still lands in the
+    frame's buffer. Other formats, including planar NV12 and YUV420P, are
+    converted; a 4:2:0 frame whose layout is not the canonical packed one is
+    rejected rather than reinterpreted.
+  - The app no longer injects OpenCV into the fetched `VideoCapture` target.
+    Up to v0.3.0 that was required, because `cv::Mat` was in the library's
+    public API; since v0.4.0 OpenCV is internal to its OpenCV capture backend,
+    which finds and links it itself. Keeping the injection would have put
+    OpenCV back into the FFmpeg and GStreamer builds that release exists to
+    free of it.
 - **Breaking:** the capabilities document is now `schema_version` 2. It gained
   the required `diagnostics` section, and because the schema forbids unknown
   properties that is breaking in both directions; version 1 is preserved as

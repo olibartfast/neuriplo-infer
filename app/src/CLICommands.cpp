@@ -1,5 +1,6 @@
 #include "CLICommands.hpp"
 
+#include "FrameConversion.hpp"
 #include "VideoCaptureFactory.hpp"
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 #ifdef NEURIPLO_INFER_WITH_KSERVE
@@ -366,7 +367,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
 
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
-  cv::Mat frame;
+  videocapture::Frame frame;
   std::size_t frame_index = 0;
   bool read_to_end = false;
   while (true) {
@@ -384,8 +385,12 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
       break;
     }
 
+    // Bridged per read, not once outside the loop: the Mat aliases the
+    // frame's storage, which readFrame may reallocate.
+    cv::Mat image = neuriplo_infer::toBgrMat(frame);
+
     auto start = std::chrono::steady_clock::now();
-    auto results = inferFrame(pipeline, frame, nullptr);
+    auto results = inferFrame(pipeline, image, nullptr);
     if (pipeline.report != nullptr) {
       pipeline.report->addFrames(1);
     }
@@ -406,11 +411,11 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
       // way the written PNG is for a still image.
       neuriplo_infer::StageTimer render_timer(pipeline.report,
                                               neuriplo_infer::RunStage::Render);
-      cv::putText(frame, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX,
+      cv::putText(image, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX,
                   1, cv::Scalar(0, 255, 0), 2);
-      pipeline.renderResults(results, frame);
+      pipeline.renderResults(results, image);
       if (!pipeline.config.no_display) {
-        cv::imshow("opencv feed", frame);
+        cv::imshow("opencv feed", image);
       }
     }
 
@@ -456,7 +461,7 @@ void processVideoClassification(InferencePipeline &pipeline,
 
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
-  cv::Mat frame;
+  videocapture::Frame frame;
   std::vector<cv::Mat> frameBuffer;
   frameBuffer.reserve(static_cast<size_t>(requiredFrames));
 
@@ -477,7 +482,10 @@ void processVideoClassification(InferencePipeline &pipeline,
       read_to_end = true;
       break;
     }
-    frameBuffer.push_back(frame.clone());
+    // clone(): the window outlives the next read, and on the packed-BGR8
+    // path the bridged Mat is only a view onto storage that read reuses.
+    cv::Mat image = neuriplo_infer::toBgrMat(frame);
+    frameBuffer.push_back(image.clone());
     ++frame_index;
 
     if (static_cast<int>(frameBuffer.size()) >= requiredFrames) {
@@ -498,7 +506,7 @@ void processVideoClassification(InferencePipeline &pipeline,
         neuriplo_infer::StageTimer timer(pipeline.report,
                                          neuriplo_infer::RunStage::Postprocess);
         auto tensors = convertToTensors(outputs, shapes);
-        return pipeline.task->postprocess(toTaskSize(frame), tensors);
+        return pipeline.task->postprocess(toTaskSize(image), tensors);
       }();
       // One inference consumes the whole accumulated window.
       if (pipeline.report != nullptr) {
