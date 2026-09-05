@@ -412,7 +412,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
-std::unique_ptr<OutputVideoSink> output_sink;
+  std::unique_ptr<OutputVideoSink> output_sink;
 #endif
 
   videocapture::Frame frame;
@@ -523,7 +523,7 @@ void processVideoClassification(InferencePipeline &pipeline,
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
-std::unique_ptr<OutputVideoSink> output_sink;
+  std::unique_ptr<OutputVideoSink> output_sink;
 #endif
 
   videocapture::Frame frame;

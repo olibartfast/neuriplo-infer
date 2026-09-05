@@ -124,9 +124,10 @@ void validateEnsembleArguments(const cv::CommandLineParser &parser) {
   }
 }
 
-// A source the writer sink cannot serve. Mirrors the still-image paths: the
-// run routes by extension, and these extensions end in processImage or one of
-// the per-image tasks, none of which produce frames a video writer could take.
+// A source the writer sink cannot serve. Deliberately wider than the router's
+// still-image predicate (.jpg/.png): any common still-image extension is
+// refused here, since none of those paths produce frames a video writer could
+// take, and a still routed to the video loop by accident is not a video either.
 bool isStillImageSource(const std::string &path) {
   const std::string extension = lowered(getFileExtension(path));
   return extension == "jpg" || extension == "jpeg" || extension == "png" ||
