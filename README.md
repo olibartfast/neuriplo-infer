@@ -393,6 +393,10 @@ See [docs/KserveRuntime.md](docs/KserveRuntime.md) for the full KServe runtime r
 - `--benchmark` / `--iterations=<n>`: Run repeated inference and report average time; image sources only (default `10` iterations).
 - `--export_metadata`: Print model type, routed task, and input/output layers, then exit. Requires `--weights`, not `--source`.
 - `--no_gif`: Reserved output flag; current paths emit no GIFs (default `false`).
+- `--output_video <path>`: Writes the annotated video output to a file — fixed
+  30 fps, codec auto-selected, container inferred from the file extension.
+  Only available in builds configured with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`;
+  image sources are rejected (they already write still results).
 
 ### To check all available options:
 

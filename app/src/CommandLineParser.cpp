@@ -66,6 +66,7 @@ const std::string CommandLineParser::params =
     "{ task_model_version tmv | 1 | version of --task_model }"
     "{ timings_csv | | write per-inference latency measurements to this CSV "
     "path }"
+    "{ output_video | | write annotated output video to this path }"
     "{ no_display | false | do not open the preview window }";
 
 namespace {
@@ -121,6 +122,16 @@ void validateEnsembleArguments(const cv::CommandLineParser &parser) {
     LOG(ERROR) << "--postprocess_mode=gpu requires --input_mode=encoded-image";
     std::exit(1);
   }
+}
+
+// A source the writer sink cannot serve. Deliberately wider than the router's
+// still-image predicate (.jpg/.png): any common still-image extension is
+// refused here, since none of those paths produce frames a video writer could
+// take, and a still routed to the video loop by accident is not a video either.
+bool isStillImageSource(const std::string &path) {
+  const std::string extension = lowered(getFileExtension(path));
+  return extension == "jpg" || extension == "jpeg" || extension == "png" ||
+         extension == "bmp" || extension == "tiff";
 }
 
 } // namespace
@@ -262,6 +273,7 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
                  });
 
   config.timings_csv = parser.get<std::string>("timings_csv");
+  config.output_video = parser.get<std::string>("output_video");
   config.no_display = parser.get<bool>("no_display");
 
   if (!config.kserve_endpoint.empty() && config.kserve_model_name.empty()) {
@@ -431,5 +443,25 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
   if (maxFrames < 0) {
     LOG(ERROR) << "--max_frames must be >= 0";
     std::exit(1);
+  }
+
+  const std::string outputVideo = parser.get<std::string>("output_video");
+  if (!outputVideo.empty()) {
+    // An image source never enters the frame loops, so the writer would sit
+    // unused while the run reports success -- reject it up front instead.
+    for (const auto &src : split(source, ',')) {
+      if (isStillImageSource(src)) {
+        LOG(ERROR) << "--output_video applies to video sources only; image "
+                      "sources write still results";
+        std::exit(1);
+      }
+    }
+#ifndef VIDEOCAPTURE_WITH_WRITER
+    // Not a silent-ignore path: without the writer module there is nowhere for
+    // the frames to go, and a run that asked for a file must not get none.
+    LOG(ERROR) << "--output_video requires a build with "
+                  "-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON";
+    std::exit(1);
+#endif
   }
 }

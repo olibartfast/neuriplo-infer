@@ -2,6 +2,10 @@
 
 #include "FrameConversion.hpp"
 #include "VideoCaptureFactory.hpp"
+#ifdef VIDEOCAPTURE_WITH_WRITER
+#include "VideoWriterConfig.hpp"
+#include "VideoWriterFactory.hpp"
+#endif
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 #ifdef NEURIPLO_INFER_WITH_KSERVE
 #include "KserveEngine.hpp"
@@ -353,6 +357,46 @@ private:
   std::string path_;
 };
 
+#ifdef VIDEOCAPTURE_WITH_WRITER
+// RAII over the videocapture writer: creates and initializes exactly once
+// and guarantees release() on every exit path, so the destination is a
+// complete playable file even when the run stops early.
+class OutputVideoSink {
+public:
+  OutputVideoSink(const std::string &destination, int width, int height) {
+    videocapture::VideoWriterConfig config;
+    config.width = width;
+    config.height = height;
+    config.frameRate = 30.0;
+    config.codec = videocapture::VideoCodec::Auto;
+    writer_ = createVideoWriter();
+    if (!writer_) {
+      throw std::runtime_error(
+          "--output_video: no writer backend available for destination: " +
+          destination);
+    }
+    if (!writer_->initialize(destination, config)) {
+      throw std::runtime_error(
+          "--output_video: could not initialize the video writer for " +
+          destination);
+    }
+  }
+  ~OutputVideoSink() { writer_->release(); }
+  OutputVideoSink(const OutputVideoSink &) = delete;
+  OutputVideoSink &operator=(const OutputVideoSink &) = delete;
+  // writeFrame false is a failed run, not a skippable frame.
+  void write(videocapture::Frame frame, std::size_t frame_index) {
+    if (!writer_->writeFrame(frame)) {
+      throw std::runtime_error(
+          "--output_video: video writer failed to write frame " +
+          std::to_string(frame_index));
+    }
+  }
+private:
+  std::unique_ptr<VideoWriterInterface> writer_;
+};
+#endif
+
 void processVideo(InferencePipeline &pipeline, const std::string &source) {
   std::unique_ptr<VideoCaptureInterface> videoInterface =
       createVideoInterface();
@@ -366,6 +410,10 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   }
 
   FrameTimingsCsv timings(pipeline.config.timings_csv);
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+  std::unique_ptr<OutputVideoSink> output_sink;
+#endif
 
   videocapture::Frame frame;
   std::size_t frame_index = 0;
@@ -388,6 +436,14 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     // Bridged per read, not once outside the loop: the Mat aliases the
     // frame's storage, which readFrame may reallocate.
     cv::Mat image = neuriplo_infer::toBgrMat(frame);
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+    // Configured once from the first frame: video sources have fixed dims.
+    if (!pipeline.config.output_video.empty() && !output_sink) {
+      output_sink = std::make_unique<OutputVideoSink>(
+          pipeline.config.output_video, image.cols, image.rows);
+    }
+#endif
 
     auto start = std::chrono::steady_clock::now();
     auto results = inferFrame(pipeline, image, nullptr);
@@ -414,6 +470,11 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
       cv::putText(image, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX,
                   1, cv::Scalar(0, 255, 0), 2);
       pipeline.renderResults(results, image);
+#ifdef VIDEOCAPTURE_WITH_WRITER
+      if (output_sink) {
+        output_sink->write(neuriplo_infer::toFrame(image), frame_index);
+      }
+#endif
       if (!pipeline.config.no_display) {
         cv::imshow("opencv feed", image);
       }
@@ -461,6 +522,10 @@ void processVideoClassification(InferencePipeline &pipeline,
 
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
+#ifdef VIDEOCAPTURE_WITH_WRITER
+  std::unique_ptr<OutputVideoSink> output_sink;
+#endif
+
   videocapture::Frame frame;
   std::vector<cv::Mat> frameBuffer;
   frameBuffer.reserve(static_cast<size_t>(requiredFrames));
@@ -485,6 +550,13 @@ void processVideoClassification(InferencePipeline &pipeline,
     // clone(): the window outlives the next read, and on the packed-BGR8
     // path the bridged Mat is only a view onto storage that read reuses.
     cv::Mat image = neuriplo_infer::toBgrMat(frame);
+#ifdef VIDEOCAPTURE_WITH_WRITER
+    // Configured once from the first frame: video sources have fixed dims.
+    if (!pipeline.config.output_video.empty() && !output_sink) {
+      output_sink = std::make_unique<OutputVideoSink>(
+          pipeline.config.output_video, image.cols, image.rows);
+    }
+#endif
     frameBuffer.push_back(image.clone());
     ++frame_index;
 
@@ -529,6 +601,14 @@ void processVideoClassification(InferencePipeline &pipeline,
                     cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
 
         pipeline.renderResults(results, displayFrame);
+#ifdef VIDEOCAPTURE_WITH_WRITER
+        if (output_sink) {
+          // The accumulator's rendered window is the last read frame, so the
+          // writer row follows the timings index.
+          output_sink->write(neuriplo_infer::toFrame(displayFrame),
+                             frame_index - 1);
+        }
+#endif
         if (!pipeline.config.no_display) {
           cv::imshow("opencv feed", displayFrame);
         }

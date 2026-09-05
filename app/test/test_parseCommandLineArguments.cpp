@@ -376,3 +376,79 @@ TEST(ParseCommandLineArguments, VideoRunArtifactFlagsAreParsed) {
   EXPECT_EQ(config.timings_csv, "out/frames.csv");
   EXPECT_TRUE(config.no_display);
 }
+
+TEST(ParseCommandLineArguments, OutputVideoDefaultsToEmpty) {
+  const char *argv[] = {"program", "--type=yolov5", "--source=input.mp4",
+                        "--weights=model.weights", "--labels=labels.txt"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  touchFile("labels.txt");
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  EXPECT_TRUE(config.output_video.empty());
+}
+
+TEST(ParseCommandLineArguments, OutputVideoIsRejectedForStillImageSources) {
+  const char *argv[] = {"program",
+                        "--type=yolov5",
+                        "--source=input.jpg",
+                        "--weights=model.weights",
+                        "--labels=labels.txt",
+                        "--output_video=out.mp4"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.jpg");
+  touchFile("model.weights");
+  touchFile("labels.txt");
+  EXPECT_EXIT(
+      {
+        AppConfig config = CommandLineParser::parseCommandLineArguments(
+            argc, const_cast<char **>(argv));
+        (void)config;
+      },
+      ::testing::ExitedWithCode(1), "applies to video sources only");
+}
+
+#ifndef VIDEOCAPTURE_WITH_WRITER
+TEST(ParseCommandLineArguments, OutputVideoRequiresWriterBuild) {
+  const char *argv[] = {"program",
+                        "--type=yolov5",
+                        "--source=input.mp4",
+                        "--weights=model.weights",
+                        "--labels=labels.txt",
+                        "--output_video=out.mp4"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  touchFile("labels.txt");
+  EXPECT_EXIT(
+      {
+        AppConfig config = CommandLineParser::parseCommandLineArguments(
+            argc, const_cast<char **>(argv));
+        (void)config;
+      },
+      ::testing::ExitedWithCode(1), "NEURIPLO_INFER_WITH_VIDEOWRITER");
+}
+#endif
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+TEST(ParseCommandLineArguments, OutputVideoIsParsedForVideoSources) {
+  const char *argv[] = {"program",
+                        "--type=yolov5",
+                        "--source=input.mp4",
+                        "--weights=model.weights",
+                        "--labels=labels.txt",
+                        "--output_video=out.mp4"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  touchFile("labels.txt");
+  AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+  // Reader-side frames are written fresh; the parse path only records the
+  // destination.
+  EXPECT_EQ(config.output_video, "out.mp4");
+}
+#endif
