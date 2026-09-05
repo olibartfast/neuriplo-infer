@@ -201,7 +201,8 @@ TEST(FrameConversionTest, ToFrameRejectsNonPackedBgr8) {
     FAIL() << "CV_8UC1 Mats must be rejected";
   } catch (const std::invalid_argument &error) {
     EXPECT_NE(std::strstr(error.what(), "bridged"), nullptr)
-        << "rejection should name the toFrame bridging context: " << error.what();
+        << "rejection should name the toFrame bridging context: "
+        << error.what();
   }
 
   cv::Mat floatBgr(4, 3, CV_32FC3);
@@ -210,7 +211,8 @@ TEST(FrameConversionTest, ToFrameRejectsNonPackedBgr8) {
     FAIL() << "CV_32FC3 Mats must be rejected";
   } catch (const std::invalid_argument &error) {
     EXPECT_NE(std::strstr(error.what(), "bridged"), nullptr)
-        << "rejection should name the toFrame bridging context: " << error.what();
+        << "rejection should name the toFrame bridging context: "
+        << error.what();
   }
 }
 
@@ -224,14 +226,13 @@ TEST(FrameConversionTest, ToFrameFromEmptyMatGivesEmptyFrame) {
 TEST(FrameConversionTest, ToFrameRoundTripWritesAndReadsBackAVideo) {
   const std::filesystem::path destination =
       std::filesystem::temp_directory_path() /
-      ("neuriplo_infer_writer_roundtrip_" +
-       std::to_string(::getpid()) + ".avi");
+      ("neuriplo_infer_writer_roundtrip_" + std::to_string(::getpid()) +
+       ".avi");
   const int width = 64;
   const int height = 48;
   const int expectedFrames = 4;
 
-  std::unique_ptr<VideoWriterInterface> writer =
-      createVideoWriter();
+  std::unique_ptr<VideoWriterInterface> writer = createVideoWriter();
   ASSERT_TRUE(writer);
   videocapture::VideoWriterConfig writerConfig;
   writerConfig.width = width;
