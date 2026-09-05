@@ -231,3 +231,36 @@ TEST(CapabilitiesContract, ReportsOnlyCompiledExecutionWorkflows) {
   EXPECT_THROW(findById(workflows, "client_server"), std::runtime_error);
 #endif
 }
+
+TEST(CapabilitiesContract, OutputVideoParameterMatchesTheWriterBuild) {
+  const json capabilities = buildCapabilities();
+  const json &catalog = capabilities.at("parameters");
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+  // A build that compiled the writer sink must honestly advertise the flag.
+  ASSERT_TRUE(catalog.contains("output_video"));
+  EXPECT_EQ(catalog.at("output_video").at("cli_flag"), "output_video");
+  EXPECT_EQ(catalog.at("output_video").at("value_type"), "path");
+
+  for (const char *id : {"object_detection", "instance_segmentation",
+                         "classification", "video_classification",
+                         "pose_estimation", "depth_estimation",
+                         "open_vocabulary_detection"}) {
+    const json &task = findById(capabilities.at("tasks"), id);
+    EXPECT_TRUE(containsString(task.at("parameters").at("optional"),
+                               "output_video"))
+        << id;
+  }
+  for (const char *id :
+       {"optical_flow", "image_understanding", "gaussian_splatting"}) {
+    const json &task = findById(capabilities.at("tasks"), id);
+    EXPECT_FALSE(containsString(task.at("parameters").at("optional"),
+                                "output_video"))
+        << id;
+  }
+#else
+  // A writer-less build cannot route --output_video, so it must not
+  // advertise it.
+  EXPECT_FALSE(catalog.contains("output_video"));
+#endif
+}

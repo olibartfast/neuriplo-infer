@@ -82,6 +82,10 @@ ctest --test-dir build-test-writer --output-on-failure
       **both** builds, with **no `schema_version` bump**.
 - [ ] `no_orphan_sources` passes (no new unclaimed `app/src/*.cpp`).
 - [ ] `pre-commit run --all-files` (clang-format, cppcheck) is clean.
+  > Deviation: `pre-commit` is not installed in this environment (`command not
+  > found`); the same hooks did not run here. Both full suites (108 default /
+  > 109 writer tests) and formatting-sensitive compilation under -DWERROR-style
+  > builds stand in this run; run pre-commit before the next release cut.
 - [ ] Generated docs are in sync:
       `python3 scripts/sync_supported_model_types.py --check` (no model type
       moved; expected no diff).

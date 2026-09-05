@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `--output_video <path>` writes the annotated video output of a video run to a
+  playable file (fixed 30 fps, codec auto-selected, container inferred from the
+  extension). Opt-in: build with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`.
+  Image sources are rejected, and a writer-less build exits fast naming that
+  flag; the parameter is advertised in `--capabilities` only when built in.
 - `--timings_csv <path>` writes one row per inference (`frame,latency_us`) for
   a video run. The run report carries per-stage totals and throughput but not
   the distribution, so a run whose mean is fine because one slow frame was
@@ -94,6 +99,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   what the local postprocessor produces.
 
 ### Changed
+- Pinned `videocapture` to `v0.5.0` (was `v0.4.0`), which adds the optional
+  video writer sink module (`-DUSE_VIDEOWRITER=ON`); the `Frame` capture API is
+  unchanged.
 - Pinned `videocapture` to `v0.4.0` (was `v0.3.0`), a breaking release for
   consumers: `VideoCaptureInterface::readFrame()` now fills a
   `videocapture::Frame` instead of a `cv::Mat`. `Frame` is dependency-free and

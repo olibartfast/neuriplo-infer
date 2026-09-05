@@ -109,9 +109,6 @@ Packet: [`2026-08-31-opencv-free-app/`](2026-08-31-opencv-free-app/requirements.
 
 Real, observed, small enough not to need a packet until someone picks one up:
 
-- Packet assigned, moved out of the candidate list: consume the
-  `videocapture` v0.5.0 video-writer sink so annotated output can be a file —
-  see [`2026-09-05-video-writer-sink/`](2026-09-05-video-writer-sink/requirements.md).
 - `versions.env` has accumulated a duplicated pin-comment block on every release;
   `scripts/cut_release.sh` appends instead of replacing it.
 - FP16/BF16 over gRPC works only with raw tensor contents; the `KSERVE_BINARY=0`
