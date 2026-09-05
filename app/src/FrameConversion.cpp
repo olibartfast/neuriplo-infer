@@ -94,14 +94,22 @@ namespace {
 std::string cvMatTypeDescription(int type) {
   const int depth = CV_MAT_DEPTH(type);
   switch (depth) {
-  case CV_8U: return "CV_8U";
-  case CV_8S: return "CV_8S";
-  case CV_16U: return "CV_16U";
-  case CV_16S: return "CV_16S";
-  case CV_32S: return "CV_32S";
-  case CV_32F: return "CV_32F";
-  case CV_64F: return "CV_64F";
-  default: return "unknown";
+  case CV_8U:
+    return "CV_8U";
+  case CV_8S:
+    return "CV_8S";
+  case CV_16U:
+    return "CV_16U";
+  case CV_16S:
+    return "CV_16S";
+  case CV_32S:
+    return "CV_32S";
+  case CV_32F:
+    return "CV_32F";
+  case CV_64F:
+    return "CV_64F";
+  default:
+    return "unknown";
   }
 }
 
@@ -173,9 +181,11 @@ videocapture::Frame toFrame(const cv::Mat &mat) {
   // Frame's canonical BGR8 row stride is width*3 and the Mat is continuous
   // packed BGR8, so the rows copy byte-identically.
   for (int y = 0; y < height; ++y) {
-    const std::uint8_t *source = mat.data + y * width * 3;
-    std::memcpy(frame.data() + y * frame.rowStride(), source,
-                static_cast<std::size_t>(width) * 3);
+    const std::uint8_t *source =
+        mat.data +
+        static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 3;
+    std::memcpy(frame.data() + static_cast<std::size_t>(y) * frame.rowStride(),
+                source, static_cast<std::size_t>(width) * 3);
   }
   return frame;
 }
