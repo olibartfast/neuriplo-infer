@@ -1,12 +1,20 @@
 #include "FrameConversion.hpp"
+#include "VideoCaptureFactory.hpp"
 
 #include <gtest/gtest.h>
 #include <opencv2/imgproc.hpp>
 
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <stdexcept>
+#include <unistd.h>
 #include <vector>
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+#include "VideoWriterConfig.hpp"
+#include "VideoWriterFactory.hpp"
+#endif
 
 using neuriplo_infer::toBgrMat;
 using neuriplo_infer::toFrame;
@@ -211,3 +219,50 @@ TEST(FrameConversionTest, ToFrameFromEmptyMatGivesEmptyFrame) {
   EXPECT_TRUE(frame.empty());
   EXPECT_EQ(frame.storageSizeBytes(), 0u);
 }
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+TEST(FrameConversionTest, ToFrameRoundTripWritesAndReadsBackAVideo) {
+  const std::filesystem::path destination =
+      std::filesystem::temp_directory_path() /
+      ("neuriplo_infer_writer_roundtrip_" +
+       std::to_string(::getpid()) + ".avi");
+  const int width = 64;
+  const int height = 48;
+  const int expectedFrames = 4;
+
+  std::unique_ptr<VideoWriterInterface> writer =
+      createVideoWriter();
+  ASSERT_TRUE(writer);
+  videocapture::VideoWriterConfig writerConfig;
+  writerConfig.width = width;
+  writerConfig.height = height;
+  writerConfig.frameRate = 30.0;
+  writerConfig.codec = videocapture::VideoCodec::Auto;
+  if (!writer->initialize(destination.string(), writerConfig)) {
+    // Some runners lack any usable encoder; the absence of the codec is an
+    // environment property, not a defect in the bridge under test.
+    GTEST_SKIP() << "no usable video writer backend on this runner";
+  }
+  for (int i = 0; i < expectedFrames; ++i) {
+    cv::Mat mat(height, width, CV_8UC3);
+    // Deterministic per-frame pixels so a corruption is visible on re-read.
+    cv::randu(mat, cv::Scalar(i, i, i), cv::Scalar(i + 1, i + 1, i + 1));
+    EXPECT_TRUE(writer->writeFrame(neuriplo_infer::toFrame(mat)));
+  }
+  writer->release();
+
+  std::unique_ptr<VideoCaptureInterface> reader = createVideoInterface();
+  ASSERT_TRUE(reader);
+  ASSERT_TRUE(reader->initialize(destination.string()));
+  videocapture::Frame frame;
+  int readFrames = 0;
+  while (reader->readFrame(frame) && !frame.empty()) {
+    EXPECT_EQ(frame.width(), width);
+    EXPECT_EQ(frame.height(), height);
+    ++readFrames;
+  }
+  reader->release();
+  EXPECT_EQ(readFrames, expectedFrames);
+  std::filesystem::remove(destination);
+}
+#endif
