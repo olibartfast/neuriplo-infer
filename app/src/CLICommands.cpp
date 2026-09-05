@@ -392,6 +392,7 @@ public:
           std::to_string(frame_index));
     }
   }
+
 private:
   std::unique_ptr<VideoWriterInterface> writer_;
 };
