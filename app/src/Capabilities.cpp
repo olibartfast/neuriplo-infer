@@ -74,6 +74,13 @@ std::vector<std::string> kserveTransports() {
   return transports;
 }
 
+std::vector<std::string> withWriterOutputVideo(std::vector<std::string> params) {
+#ifdef VIDEOCAPTURE_WITH_WRITER
+  params.emplace_back("output_video");
+#endif
+  return params;
+}
+
 std::string defaultKserveTransport() {
 #ifdef KSERVE_CLIENT_WITH_GRPC
   return "grpc";
@@ -191,6 +198,9 @@ json parameterCatalog() {
         {"value_type", "enum"},
         {"default", "cpu"},
         {"values", {"cpu", "gpu"}}}},
+#ifdef VIDEOCAPTURE_WITH_WRITER
+      {"output_video", {{"cli_flag", "output_video"}, {"value_type", "path"}}},
+#endif
   };
 }
 
@@ -247,8 +257,9 @@ json taskCapabilities() {
                         {},
                         {}}},
                       image_or_video, 1, 1,
-                      {"labels", "min_confidence", "nms_threshold", "batch",
-                       "input_sizes"}),
+                      withWriterOutputVideo({"labels", "min_confidence",
+                                             "nms_threshold", "batch",
+                                             "input_sizes"})),
        taskCapability("instance_segmentation",
                       {{"yoloseg",
                         {"yolo-seg", "yolov8-seg", "yolov10seg", "yolo26seg"},
@@ -258,20 +269,24 @@ json taskCapabilities() {
                        {"rfdetrseg", {}, {}, {}, {}},
                        {"ecseg", {}, {"ecseg*", "edgecrafter*seg*"}, {}, {}}},
                       image_or_video, 1, 1,
-                      {"labels", "min_confidence", "nms_threshold",
-                       "mask_threshold", "segmentation_output", "batch",
-                       "input_sizes"}),
+                      withWriterOutputVideo(
+                          {"labels", "min_confidence", "nms_threshold",
+                           "mask_threshold", "segmentation_output", "batch",
+                           "input_sizes"})),
        taskCapability("classification",
                       {{"torchvision-classifier", {}, {"resnet*"}, {}, {}},
                        {"tensorflow-classifier", {}, {"*tensorflow*"}, {}, {}},
                        {"vit-classifier", {}, {}, {}, {}}},
-                      image_or_video, 1, 1, {"labels", "batch", "input_sizes"}),
+                      image_or_video, 1, 1,
+                      withWriterOutputVideo(
+                          {"labels", "batch", "input_sizes"})),
        taskCapability("video_classification",
                       {{"videomae", {}, {}, {}, {}},
                        {"vivit", {}, {}, {}, {}},
                        {"timesformer", {}, {}, {}, {}}},
                       {"video"}, 1, 1,
-                      {"labels", "num_frames", "batch", "input_sizes"}),
+                      withWriterOutputVideo(
+                          {"labels", "num_frames", "batch", "input_sizes"})),
        taskCapability("optical_flow", {{"raft", {}, {}, {}, {}}}, {"image"}, 2,
                       -1, {"input_sizes"}),
        taskCapability(
@@ -289,13 +304,14 @@ json taskCapabilities() {
              {}},
             {"ecpose", {}, {"ecpose*", "edgecrafter*pose*"}, {}, {}}},
            image_or_video, 1, 1,
-           {"labels", "min_confidence", "nms_threshold", "batch",
-            "input_sizes"}),
+           withWriterOutputVideo({"labels", "min_confidence", "nms_threshold",
+                                  "batch", "input_sizes"})),
        taskCapability(
            "depth_estimation",
            {{"depth_anything_v2", {"depth-anything-v2"}, {}, {}, {}},
             {"yolo-depth", {"yolo26n-depth"}, {"yolo*depth*"}, {}, {}}},
-           image_or_video, 1, 1, {"batch", "input_sizes"}),
+           image_or_video, 1, 1,
+           withWriterOutputVideo({"batch", "input_sizes"})),
        taskCapability(
            "open_vocabulary_detection",
            {{"owlv2",
@@ -309,7 +325,8 @@ json taskCapabilities() {
              {"text_prompts", "bert_tokenizer_vocab"},
              {}}},
            image_or_video, 1, 1,
-           {"min_confidence", "nms_threshold", "batch", "input_sizes"}),
+           withWriterOutputVideo(
+               {"min_confidence", "nms_threshold", "batch", "input_sizes"})),
        taskCapability("image_understanding",
                       {{"gemma4",
                         {"gemma", "llama", "llamacpp", "imageunderstanding"},
