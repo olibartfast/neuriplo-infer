@@ -3,11 +3,13 @@
 #include <gtest/gtest.h>
 #include <opencv2/imgproc.hpp>
 
+#include <cstdint>
 #include <cstring>
 #include <stdexcept>
 #include <vector>
 
 using neuriplo_infer::toBgrMat;
+using neuriplo_infer::toFrame;
 using videocapture::Frame;
 using videocapture::PixelFormat;
 
@@ -148,4 +150,64 @@ TEST(FrameConversionTest, OddSized420FrameIsRejectedRatherThanMisread) {
   // handing back a plausible-looking picture built from misaligned bytes.
   Frame frame(7, 6, PixelFormat::NV12);
   EXPECT_THROW(toBgrMat(frame), std::invalid_argument);
+}
+
+TEST(FrameConversionTest, ToFrameFromBgr8MatIsByteIdentical) {
+  // A deterministic per-pixel pattern so a stride, size, or channel mix-up
+  // cannot pass unnoticed the way a solid color might.
+  cv::Mat mat(7, 8, CV_8UC3);
+  ASSERT_TRUE(mat.isContinuous());
+  for (int y = 0; y < mat.rows; ++y) {
+    for (int x = 0; x < mat.cols; ++x) {
+      mat.at<cv::Vec3b>(y, x) =
+          cv::Vec3b(static_cast<std::uint8_t>(17 + x + 2 * y),
+                    static_cast<std::uint8_t>(53 + x + 3 * y),
+                    static_cast<std::uint8_t>(91 + x + 5 * y));
+    }
+  }
+
+  const videocapture::Frame frame = toFrame(mat);
+  ASSERT_FALSE(frame.empty());
+  EXPECT_EQ(frame.width(), 8);
+  EXPECT_EQ(frame.height(), 7);
+  EXPECT_EQ(frame.format(), PixelFormat::BGR8);
+  EXPECT_EQ(frame.rowStride(), static_cast<std::size_t>(8 * 3));
+  // Tight-packed storage holds exactly the Mat's bytes.
+  EXPECT_EQ(frame.rowStride() * frame.height(),
+            static_cast<std::size_t>(mat.total()) * mat.elemSize());
+  EXPECT_EQ(frame.storageSizeBytes(),
+            static_cast<std::size_t>(mat.total()) * mat.elemSize());
+
+  for (int y = 0; y < mat.rows; ++y) {
+    EXPECT_EQ(0, std::memcmp(frame.data() + y * frame.rowStride(),
+                             mat.data + y * mat.cols * 3,
+                             static_cast<std::size_t>(mat.cols) * 3))
+        << "row " << y << " differs from the source Mat";
+  }
+}
+
+TEST(FrameConversionTest, ToFrameRejectsNonPackedBgr8) {
+  cv::Mat gray(4, 3, CV_8UC1);
+  try {
+    toFrame(gray);
+    FAIL() << "CV_8UC1 Mats must be rejected";
+  } catch (const std::invalid_argument &error) {
+    EXPECT_NE(std::strstr(error.what(), "bridged"), nullptr)
+        << "rejection should name the toFrame bridging context: " << error.what();
+  }
+
+  cv::Mat floatBgr(4, 3, CV_32FC3);
+  try {
+    toFrame(floatBgr);
+    FAIL() << "CV_32FC3 Mats must be rejected";
+  } catch (const std::invalid_argument &error) {
+    EXPECT_NE(std::strstr(error.what(), "bridged"), nullptr)
+        << "rejection should name the toFrame bridging context: " << error.what();
+  }
+}
+
+TEST(FrameConversionTest, ToFrameFromEmptyMatGivesEmptyFrame) {
+  const videocapture::Frame frame = toFrame(cv::Mat{});
+  EXPECT_TRUE(frame.empty());
+  EXPECT_EQ(frame.storageSizeBytes(), 0u);
 }

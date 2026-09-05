@@ -36,4 +36,15 @@ namespace neuriplo_infer {
 // reinterpreting the bytes as something they are not.
 cv::Mat toBgrMat(videocapture::Frame &frame);
 
+// Inverse of toBgrMat, the writer bridge: hands a rendered Mat to videocapture
+// APIs that consume Frame instead of cv::Mat, e.g. a video writer sink.
+// Always returns a Frame that owns its own storage (a copy of the Mat's
+// bytes) -- unlike the packed-BGR8 path back from a Frame, there is no alias.
+//
+// The Mat must already be continuous packed BGR8 (CV_8UC3), which is what the
+// renderer produces. An empty Mat yields an empty Frame; anything else --
+// other depths, other channel counts, non-contiguous storage -- throws
+// std::invalid_argument naming the actual type and state.
+videocapture::Frame toFrame(const cv::Mat &mat);
+
 } // namespace neuriplo_infer
