@@ -93,6 +93,11 @@ include(FetchContent)
 # A KServe-only build (LOCAL_BACKENDS OFF, KSERVE ON) fetches neither neuriplo
 # nor any external contract library; it uses the app-local contract headers in
 # app/inc/contract. See docs/KserveRuntime.md.
+# Video writer sink: opt-in, so the default build does not grow the writer
+# module or any codec dependency. Maps onto videocapture's USE_VIDEOWRITER.
+option(NEURIPLO_INFER_WITH_VIDEOWRITER
+       "Build the annotated-video writer sink (videocapture USE_VIDEOWRITER)" OFF)
+
 option(NEURIPLO_INFER_ENABLE_KSERVE "Build KServe remote-runtime client" ON)
 option(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS
        "Build local inference backends (fetches/builds neuriplo)" ON)
@@ -193,6 +198,14 @@ endif()
 if(NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS)
     FetchContent_MakeAvailable(neuriplo)
 endif()
+# The writer sink is opt-in: only a writer build turns on videocapture's
+# USE_VIDEOWRITER, which builds the writer module and publishes the PUBLIC
+# VIDEOCAPTURE_WITH_WRITER define on the VideoCapture target. Forced before
+# MakeAvailable so the option reaches videocapture's configure.
+if(NEURIPLO_INFER_WITH_VIDEOWRITER)
+    set(USE_VIDEOWRITER ON CACHE BOOL "" FORCE)
+endif()
+
 FetchContent_MakeAvailable(VideoCapture neuriplo-tasks nlohmann_json)
 
 # KServe transport knobs. The actual gRPC/Protobuf and OpenSSL detection now

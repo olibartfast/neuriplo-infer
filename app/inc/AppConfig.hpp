@@ -62,7 +62,10 @@ struct AppConfig {
   // transport or backend configurations can be compared without re-running
   // them; the run report covers per-stage totals but not the frame-by-frame
   // distribution. no_display suppresses the preview window, which a headless
-  // or benchmark run neither needs nor can open.
+  // or benchmark run neither needs nor can open. output_video names the file
+  // the rendered annotated video is written to; empty leaves no video artifact
+  // behind (see --output_video, which requires the writer-built videocapture).
   std::string timings_csv;
+  std::string output_video;
   bool no_display{false};
 };

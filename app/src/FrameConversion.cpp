@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -86,6 +87,26 @@ cv::Mat planarLumaChromaHeader(Frame &frame,
 
 } // namespace
 
+namespace {
+
+// Describes a Mat's pixel type the way toBgrMat's rejection messages do, so
+// the failure names the actual state rather than just "unsupported".
+std::string cvMatTypeDescription(int type) {
+  const int depth = CV_MAT_DEPTH(type);
+  switch (depth) {
+  case CV_8U: return "CV_8U";
+  case CV_8S: return "CV_8S";
+  case CV_16U: return "CV_16U";
+  case CV_16S: return "CV_16S";
+  case CV_32S: return "CV_32S";
+  case CV_32F: return "CV_32F";
+  case CV_64F: return "CV_64F";
+  default: return "unknown";
+  }
+}
+
+} // namespace
+
 cv::Mat toBgrMat(Frame &frame) {
   if (frame.empty()) {
     return {};
@@ -125,6 +146,38 @@ cv::Mat toBgrMat(Frame &frame) {
 
   throw std::invalid_argument("videocapture::Frame carries an unrecognized "
                               "pixel format and cannot be converted to BGR");
+}
+
+videocapture::Frame toFrame(const cv::Mat &mat) {
+  if (mat.empty()) {
+    return {};
+  }
+
+  if (mat.type() != CV_8UC3) {
+    throw std::invalid_argument(
+        "cv::Mat of type " + cvMatTypeDescription(mat.type()) +
+        " cannot be bridged to a BGR8 videocapture::Frame; packed CV_8UC3 "
+        "is required");
+  }
+
+  if (!mat.isContinuous()) {
+    throw std::invalid_argument(
+        "cv::Mat bridged to a videocapture::Frame must be continuous; the "
+        "renderer produces tightly packed rows, so clone the Mat before "
+        "calling toFrame");
+  }
+
+  const int width = mat.cols;
+  const int height = mat.rows;
+  videocapture::Frame frame(width, height, videocapture::PixelFormat::BGR8);
+  // Frame's canonical BGR8 row stride is width*3 and the Mat is continuous
+  // packed BGR8, so the rows copy byte-identically.
+  for (int y = 0; y < height; ++y) {
+    const std::uint8_t *source = mat.data + y * width * 3;
+    std::memcpy(frame.data() + y * frame.rowStride(), source,
+                static_cast<std::size_t>(width) * 3);
+  }
+  return frame;
 }
 
 } // namespace neuriplo_infer
