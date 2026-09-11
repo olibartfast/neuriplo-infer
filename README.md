@@ -13,7 +13,7 @@ an image or video, and get annotated results — on the backend of your choice.
 - **Multiple Computer Vision Tasks**: Supported via [neuriplo-tasks library](https://github.com/olibartfast/neuriplo-tasks/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO, TensorFlow, LiteRT, ExecuTorch, llama.cpp (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Images, Video Files, and Streams**: via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
-- **A Docker Image per Backend**: no local SDK installs needed
+- **A Docker Image for Most Backends**: no local SDK installs needed (the default `OPENCV_DNN` backend has no image; build it from source)
 - **Remote KServe Mode**: keep pre/postprocessing here and send tensors to Triton, OpenVINO Model Server, KServe, or `neuriplo-kserve-runtime`
 
 ## Quickstart (Docker)
@@ -53,7 +53,7 @@ presets are in [docs/Deployment.md](docs/Deployment.md).
 Ubuntu 24.04, ONNX Runtime backend, with the model from step 1 of the quickstart:
 
 ```bash
-sudo apt install -y cmake build-essential git wget curl libopencv-dev libgoogle-glog-dev
+sudo apt install -y cmake build-essential git wget curl unzip libopencv-dev libgoogle-glog-dev
 ./scripts/setup_dependencies.sh --backend onnx_runtime   # installs under ~/dependencies
 
 cmake -S . -B build -DDEFAULT_BACKEND=ONNX_RUNTIME -DCMAKE_BUILD_TYPE=Release

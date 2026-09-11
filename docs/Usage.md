@@ -28,6 +28,8 @@ neuriplo-infer --capabilities
 - **Image source (detection, segmentation, pose, classification, depth):** the
   annotated image is written to `data/output/processed_<type>_<mode>.png` (for
   example `processed_yolo_local.png`), relative to the working directory.
+- **Optical flow:** the flow visualization is written next to the source image at
+  `<source-dir>/output/processed_frame_optical_flow.jpg`, not under `data/output/`.
 - **Image understanding (`--type=gemma4` and other vision-language models):** the
   model's response is written to standard output; no annotated image is produced.
   The run report is still written.
