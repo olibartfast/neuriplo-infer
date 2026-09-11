@@ -124,6 +124,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   normalization, and YOLO NMS-free detection now detects normalized vs
   input-pixel coordinates. Detector outputs on those model types change as a
   result of the pin.
+- The README is now a plug-and-play entry point — a Docker quickstart and a
+  build-from-source quickstart, both run as written on Ubuntu 24.04 with ONNX
+  Runtime, plus platform support — and links to new user guides instead of
+  embedding reference material (#38, #39). `docs/Usage.md` holds the full CLI
+  reference, examples, `--capabilities`, and the run report, and now covers flags
+  the README never listed (`--no_display`, `--timings_csv`, `--num_frames`,
+  `--mmproj`, `--bert_tokenizer_vocab`, `--task_model_version`).
+  `docs/Deployment.md` covers platforms, every backend and Docker image, GPU
+  runs, the end-to-end presets, native builds, and build options. The KServe
+  flags moved to `docs/KserveRuntime.md`, which also corrects the documented
+  `--kserve_transport` default to `grpc` (HTTP in builds without gRPC).
+- `scripts/sync_supported_model_types.py` writes only
+  `docs/generated/supported-model-types.md`; the README links to it instead of
+  embedding the list. Relative links in the upstream block are rewritten to
+  absolute neuriplo-tasks URLs, fixing a broken segmentation-outputs link.
+- `.dockerignore` excludes `models/`, `environments/`, and `build-*/`: after an
+  end-to-end preset run they sent gigabytes of host artifacts to every
+  `docker build`.
 - Pinned `videocapture` to `v0.5.0` (was `v0.4.0`), which adds the optional
   video writer sink module (`-DUSE_VIDEOWRITER=ON`); the `Frame` capture API is
   unchanged.

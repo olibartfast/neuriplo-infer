@@ -82,9 +82,10 @@ dependency would make one task convenient:
   OpenVINO, TensorFlow, and CUDA versions are owned by `neuriplo`.
 - **No video-backend selection policy here.** `videocapture` owns priority and
   source semantics; this repo only passes the flags through.
-- **No hand-editing generated documentation.** The `<!-- SUPPORTED_MODEL_TYPES -->`
-  block in `README.md` and `docs/generated/supported-model-types.md` come from
-  `scripts/sync_supported_model_types.py`; CI fails on a stale block.
+- **No hand-editing generated documentation.**
+  `docs/generated/supported-model-types.md` comes from
+  `scripts/sync_supported_model_types.py`; CI fails on a stale page. The README
+  links to it rather than embedding it.
 - **No GUI, no server, no daemon.** This is a CLI. Serving belongs to
   `neuriplo-kserve-runtime`; the UI belongs to `neuriplo-ui`.
 - **No trunk-based or `main`-only workflow.** Do not propose one.
