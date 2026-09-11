@@ -2,37 +2,37 @@
 
 ## Automated — neuriplo-tasks
 
-- [ ] `find src include tests -name '*.cpp' -o -name '*.hpp' | xargs clang-format-18 --dry-run --Werror`
-- [ ] `cppcheck --enable=warning --std=c++17 --error-exitcode=1 --suppress=missingIncludeSystem --suppress=unmatchedSuppression --suppress=*:3rdparty/stb/* -I include src/`
-- [ ] clang-tidy-18 over `src/` with `-DNEURIPLO_TASKS_WITH_OPENCV=ON` compile commands
-- [ ] `-DWERROR=ON -DBUILD_TESTS=ON` builds; `ctest` passes (with and without OpenCV)
-- [ ] New tests: `UInt8` raw output (NCHW, NHWC, letterbox), `Float32` byte-identical,
+- [x] `find src include tests -name '*.cpp' -o -name '*.hpp' | xargs clang-format-18 --dry-run --Werror`
+- [x] `cppcheck --enable=warning --std=c++17 --error-exitcode=1 --suppress=missingIncludeSystem --suppress=unmatchedSuppression --suppress=*:3rdparty/stb/* -I include src/`
+- [x] clang-tidy-18 over `src/` with `-DNEURIPLO_TASKS_WITH_OPENCV=ON` compile commands
+- [x] `-DWERROR=ON -DBUILD_TESTS=ON` builds; `ctest` passes (with and without OpenCV)
+- [x] New tests: `UInt8` raw output (NCHW, NHWC, letterbox), `Float32` byte-identical,
       `Int32` rejected, `UInt8` on RAFT / video rejected, TensorFlow classifier unchanged.
 
 ## Automated — neuriplo-infer
 
-- [ ] Format check, cppcheck, clang-tidy exactly as `lint.yml`
-- [ ] `-DWERROR=ON -DENABLE_APP_TESTS=ON` build against the neuriplo-tasks branch; all tests pass
-- [ ] KServe-only build (`-DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF`) configures and builds
-- [ ] New tests: metadata datatype propagation; byte-count guard accepts FP32 / UINT8 /
+- [x] Format check, cppcheck, clang-tidy exactly as `lint.yml`
+- [x] `-DWERROR=ON -DENABLE_APP_TESTS=ON` build against the neuriplo-tasks branch; all tests pass
+- [x] KServe-only build (`-DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF`) configures and builds
+- [x] New tests: metadata datatype propagation; byte-count guard accepts FP32 / UINT8 /
       INT64 size / dynamic encoded input and rejects INT8 / BOOL / UINT8 / FP16 mislabels
       before `infer()`; setup-time rejection names input and datatype; `encoded-image` exempt.
 
 ## Manual — end to end
 
-- [ ] `neuriplo-kserve-runtime` built against neuriplo v0.9.1 serves `UINT8`, `INT8`,
+- [x] `neuriplo-kserve-runtime` built against neuriplo v0.9.1 serves `UINT8`, `INT8`,
       `BOOL` image-input classifiers.
-- [ ] `UINT8`: `neuriplo-infer` run exits 0 with a classification result.
-- [ ] `INT8`, `BOOL`: run exits non-zero at setup; message names the input and datatype;
+- [x] `UINT8`: `neuriplo-infer` run exits 0 with a classification result.
+- [x] `INT8`, `BOOL`: run exits non-zero at setup; message names the input and datatype;
       no inference request reaches the runtime.
-- [ ] A local ONNX Runtime run of an FP32 model is unchanged (regression).
+- [x] A local ONNX Runtime run of an FP32 model is unchanged (regression).
 
 ## Definition of Done
 
-- [ ] Every requirement implemented or explicitly deferred.
-- [ ] Nothing in *Out of Scope* implemented.
-- [ ] Deviations recorded below.
-- [ ] Both `CHANGELOG.md` files updated; pins moved to tags; lint green before every push.
+- [x] Every requirement implemented or explicitly deferred.
+- [x] Nothing in *Out of Scope* implemented.
+- [x] Deviations recorded below.
+- [x] Both `CHANGELOG.md` files updated; pins moved to tags; lint green before every push.
 
 ## Results
 
