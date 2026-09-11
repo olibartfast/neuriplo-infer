@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include <gtest/gtest.h>
+#include <limits>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -152,6 +153,19 @@ TEST(KserveEngine, SendsBytesThatFitTheAdvertisedDatatype) {
                             std::vector<uint8_t>(1234), floatBytes(8)});
 
   EXPECT_EQ(fake->inferCalls(), 1);
+}
+
+TEST(KserveEngine, RefusesAShapeWhoseByteCountOverflows) {
+  auto client = std::make_unique<FakeClient>();
+  const FakeClient *fake = client.get();
+  // The static dimensions overflow size_t when multiplied by the FP32 width,
+  // so the guard must reject the metadata instead of wrapping to a small value.
+  client->setInputs(
+      {{"images", "FP32", {1, 1, std::numeric_limits<int64_t>::max(), 2}}});
+  KserveEngine engine(std::move(client));
+
+  EXPECT_THROW(engine.get_infer_results({floatBytes(1)}), std::runtime_error);
+  EXPECT_EQ(fake->inferCalls(), 0);
 }
 
 TEST(KserveEngine, LatencyStartsAtZero) {

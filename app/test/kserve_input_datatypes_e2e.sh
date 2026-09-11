@@ -169,6 +169,9 @@ if [[ "${DRY_RUN}" == false ]]; then
     skip_or_fail "neuriplo-kserve-runtime binary not set or not executable (--runtime-bin / NEURIPLO_KSERVE_RUNTIME_BIN)"
   [[ -n "${INFER_BIN}" && -x "${INFER_BIN}" ]] ||
     skip_or_fail "neuriplo-infer binary not set or not executable (--infer-bin / NEURIPLO_INFER_BIN)"
+  # run_case changes into WORK_DIR, so both binaries must be absolute.
+  INFER_BIN="$(realpath "${INFER_BIN}")"
+  RUNTIME_BIN="$(realpath "${RUNTIME_BIN}")"
   command -v curl >/dev/null 2>&1 || skip_or_fail "curl not available"
   python3 -c 'import onnx' >/dev/null 2>&1 ||
     skip_or_fail "python3 'onnx' package not available to build the test models"

@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <cstring>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -54,9 +55,16 @@ void validateInputBytes(const kserve::TensorSpec &spec, size_t byte_count) {
   for (const auto dim : spec.shape) {
     if (dim < 0) {
       dynamic = true;
-    } else {
-      fixed_bytes *= static_cast<size_t>(dim);
+      continue;
     }
+    const size_t extent = static_cast<size_t>(dim);
+    if (extent != 0 &&
+        fixed_bytes > std::numeric_limits<size_t>::max() / extent) {
+      throw std::runtime_error("KServe input '" + spec.name +
+                               "' has a shape whose element count overflows "
+                               "the expected byte count");
+    }
+    fixed_bytes *= extent;
   }
   const bool fits = dynamic
                         ? (fixed_bytes == 0 || byte_count % fixed_bytes == 0)
@@ -154,6 +162,10 @@ std::vector<int64_t> concreteInputShape(const kserve::TensorSpec &spec,
       ++dynamic_axes;
       dynamic_index = i;
     } else {
+      if (shape[i] != 0 &&
+          fixed > std::numeric_limits<int64_t>::max() / shape[i]) {
+        return shape; // Overflow: leave the dynamic axis uninferred.
+      }
       fixed *= shape[i];
     }
   }
