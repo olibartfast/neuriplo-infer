@@ -242,20 +242,20 @@ TEST(CapabilitiesContract, OutputVideoParameterMatchesTheWriterBuild) {
   EXPECT_EQ(catalog.at("output_video").at("cli_flag"), "output_video");
   EXPECT_EQ(catalog.at("output_video").at("value_type"), "path");
 
-  for (const char *id : {"object_detection", "instance_segmentation",
-                         "classification", "video_classification",
-                         "pose_estimation", "depth_estimation",
-                         "open_vocabulary_detection"}) {
+  for (const char *id :
+       {"object_detection", "instance_segmentation", "classification",
+        "video_classification", "pose_estimation", "depth_estimation",
+        "open_vocabulary_detection"}) {
     const json &task = findById(capabilities.at("tasks"), id);
-    EXPECT_TRUE(containsString(task.at("parameters").at("optional"),
-                               "output_video"))
+    EXPECT_TRUE(
+        containsString(task.at("parameters").at("optional"), "output_video"))
         << id;
   }
   for (const char *id :
        {"optical_flow", "image_understanding", "gaussian_splatting"}) {
     const json &task = findById(capabilities.at("tasks"), id);
-    EXPECT_FALSE(containsString(task.at("parameters").at("optional"),
-                                "output_video"))
+    EXPECT_FALSE(
+        containsString(task.at("parameters").at("optional"), "output_video"))
         << id;
   }
 #else
