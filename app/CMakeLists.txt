@@ -9,6 +9,7 @@ set(APP_LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInferTaskRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineParser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ModelInputTypes.cpp
 )
 
 if(NEURIPLO_INFER_ENABLE_KSERVE)

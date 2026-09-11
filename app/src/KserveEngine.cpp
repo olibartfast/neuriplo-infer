@@ -18,6 +18,65 @@ size_t batchSize(const std::vector<int64_t> &shape) {
   return 1;
 }
 
+// The metadata enum has no FP16 / FP64 / INT16 / UINT16+ members; those keep
+// the Float32 default here, and a caller that must tell them apart reads
+// rawMetadata().
+TensorDataType toTensorDataType(const std::string &datatype) {
+  if (datatype == "INT32") {
+    return TensorDataType::Int32;
+  }
+  if (datatype == "INT64") {
+    return TensorDataType::Int64;
+  }
+  if (datatype == "UINT8") {
+    return TensorDataType::UInt8;
+  }
+  if (datatype == "INT8") {
+    return TensorDataType::Int8;
+  }
+  if (datatype == "BOOL") {
+    return TensorDataType::Bool;
+  }
+  return TensorDataType::Float32;
+}
+
+// Refuses a tensor whose bytes cannot be whole `spec.datatype` elements of
+// `spec.shape`, so bytes preprocessed as one type are never sent labelled as
+// another. A negative (dynamic) dimension accepts any extent.
+void validateInputBytes(const kserve::TensorSpec &spec, size_t byte_count) {
+  const size_t width = kserve::datatypeByteWidth(spec.datatype);
+  if (width == 0) {
+    return; // BYTES and unknown tags have no fixed element width.
+  }
+
+  size_t fixed_bytes = width;
+  bool dynamic = false;
+  for (const auto dim : spec.shape) {
+    if (dim < 0) {
+      dynamic = true;
+    } else {
+      fixed_bytes *= static_cast<size_t>(dim);
+    }
+  }
+  const bool fits = dynamic
+                        ? (fixed_bytes == 0 || byte_count % fixed_bytes == 0)
+                        : byte_count == fixed_bytes;
+  if (fits) {
+    return;
+  }
+
+  std::string dims;
+  for (const auto dim : spec.shape) {
+    dims += (dims.empty() ? "" : ",") + std::to_string(dim);
+  }
+  throw std::runtime_error(
+      "KServe input '" + spec.name + "' is " + spec.datatype + " [" + dims +
+      "] and expects " + (dynamic ? "a multiple of " : "") +
+      std::to_string(fixed_bytes) + " bytes, but the request contains " +
+      std::to_string(byte_count) +
+      "; the model's input datatype does not match the supplied bytes");
+}
+
 // Reads raw little-endian bytes as `T` and appends each value, projected to a
 // TensorElement alternative, to `out`.
 template <typename T, typename Proj>
@@ -140,11 +199,13 @@ void KserveEngine::ensureMetadata() {
   }
   raw_metadata_ = client_->modelMetadata();
   for (const auto &input : raw_metadata_.inputs) {
-    cached_metadata_.addInput(input.name, input.shape, batchSize(input.shape));
+    cached_metadata_.addInput(input.name, input.shape, batchSize(input.shape),
+                              toTensorDataType(input.datatype));
   }
   for (const auto &output : raw_metadata_.outputs) {
     cached_metadata_.addOutput(output.name, output.shape,
-                               batchSize(output.shape));
+                               batchSize(output.shape),
+                               toTensorDataType(output.datatype));
   }
   metadata_loaded_ = true;
 }
@@ -170,6 +231,7 @@ KserveEngine::get_infer_results(
   shapes.reserve(input_tensors.size());
   for (size_t i = 0; i < input_tensors.size(); ++i) {
     const auto &spec = raw_metadata_.inputs[i];
+    validateInputBytes(spec, input_tensors[i].size());
     shapes.push_back(concreteInputShape(spec, input_tensors[i].size()));
     inputs.push_back(
         {spec.name, spec.datatype, shapes.back(), &input_tensors[i]});

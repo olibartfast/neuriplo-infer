@@ -72,6 +72,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   may reference a different inner version.
 
 ### Fixed
+- A model's advertised input datatypes now reach preprocessing instead of the
+  first input being forced to `Float32` (#44). Over KServe, `Float32` bytes were
+  labelled with whatever datatype the server advertised, so a `UINT8`, `INT8`,
+  or `BOOL` input was rejected or misread by the server. Now an image input
+  advertised as `UINT8` receives raw 0–255 pixels and runs; an image input whose
+  datatype preprocessing cannot produce (`INT8`, `BOOL`, `INT64`, `FP16`, ...)
+  fails at pipeline setup with an error naming the input, its datatype, and
+  `--input_mode=encoded-image` as the way out; and `KserveEngine` refuses any
+  input whose byte count does not fit its advertised datatype and shape before
+  sending the request. `encoded-image` mode is unaffected. The KServe adapter
+  also records each input and output datatype in `InferenceMetadata`, and the
+  KServe-only contract gains `LayerInfo::datatype`.
 - Video FPS overlay no longer divides by zero. It measured in whole
   milliseconds, so any inference faster than 1 ms truncated to zero and the
   overlay reported `inf` -- on exactly the fast backends worth measuring. The
@@ -99,6 +111,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   what the local postprocessor produces.
 
 ### Changed
+- Pinned `neuriplo` to `v0.9.1` (was `v0.8.0`). Its `LayerInfo::datatype` carries
+  the input datatypes the #44 fix reads, and it advertises `INT8` / `BOOL` DALI
+  inputs instead of reporting them as `Float32`. neuriplo 0.9.0 also changed two
+  consumer contracts — TensorRT reports batch-inclusive shapes, and public headers
+  no longer include OpenCV transitively; this app builds and passes its full test
+  suite against the new pin.
+- Pinned `neuriplo-tasks` to `v0.8.2` (was `v0.8.0`), which carries the image-input
+  pixel-type handling the #44 fix depends on (`Preprocessor::applyImageInputType`,
+  `isImageInputShape`). The pin also pulls in the `v0.8.1` preprocessing changes:
+  RT-DETR / RT-DETRv2 / D-FINE / DEIM no longer apply ImageNet mean/std
+  normalization, and YOLO NMS-free detection now detects normalized vs
+  input-pixel coordinates. Detector outputs on those model types change as a
+  result of the pin.
 - Pinned `videocapture` to `v0.5.0` (was `v0.4.0`), which adds the optional
   video writer sink module (`-DUSE_VIDEOWRITER=ON`); the `Frame` capture API is
   unchanged.

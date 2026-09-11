@@ -230,7 +230,8 @@ The TaskFactory supports the following model type strings. Matching normalizes s
 
 - `"yolo"`, `"yolov7e2e"`, `"yolov10"`, `"yolo26"`, `"yolov4"` - YOLO-based variants
 - `"yolonas"` - YOLO-NAS
-- `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
+- `"rtdetr"`, `"rtdetrv2"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3)
+- `"dfine"`, `"deim"`, `"deimv2"` - D-FINE and DEIM; same export signature and postprocessing as RT-DETR, matched by prefix so later revisions resolve too
 - `"rtdetrul"`, `"rtdetrultralytics"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
 - `"ecdet"` - EdgeCrafter detection (any string starting with `ecdet`)
@@ -349,7 +350,7 @@ neuriplo-infer --type=yolo26seg --source=frame.jpg --labels=labels/coco.names \
   --input_mode=encoded-image --postprocess_mode=gpu
 ```
 
-Tensor datatypes are taken from the server's model metadata (no longer hardcoded to `FP32`), so models with `UINT8`/`INT*`/`FP16`/etc. inputs work against KServe, Triton Inference Server, and OpenVINO Model Server. Set a bearer token via the `KSERVE_BEARER_TOKEN` environment variable to authenticate (sent as `Authorization: Bearer …` on HTTP and as gRPC call metadata).
+Tensor datatypes are taken from the server's model metadata (no longer hardcoded to `FP32`). Non-image inputs accept any advertised datatype. Image inputs in `preprocessed` mode must be `FP32` or `UINT8` (`UINT8` receives raw 0–255 pixels); any other image-input datatype (`INT8`, `BOOL`, `INT64`, `FP16`, …) fails at pipeline setup, naming the input — serve such models with `--input_mode=encoded-image` so a server-side ensemble preprocesses instead. Works against KServe, Triton Inference Server, and OpenVINO Model Server. Set a bearer token via the `KSERVE_BEARER_TOKEN` environment variable to authenticate (sent as `Authorization: Bearer …` on HTTP and as gRPC call metadata).
 
 Security/TLS environment variables (secrets are sourced from env/file, never the command line):
 

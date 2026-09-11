@@ -13,8 +13,12 @@ on:
     paths:
       - '.github/workflows/kserve-integration.yml'
       - 'app/test/kserve_integration.sh'
+      - 'app/test/kserve_input_datatypes_e2e.sh'
       - 'app/src/Kserve*.cpp'
       - 'app/inc/Kserve*.hpp'
+      - 'app/inc/contract/**'
+      - 'app/src/ModelInputTypes.cpp'
+      - 'app/inc/ModelInputTypes.hpp'
       - 'versions.env'
       - 'docs/KserveCompatibility.md'
   pull_request:
@@ -22,8 +26,12 @@ on:
     paths:
       - '.github/workflows/kserve-integration.yml'
       - 'app/test/kserve_integration.sh'
+      - 'app/test/kserve_input_datatypes_e2e.sh'
       - 'app/src/Kserve*.cpp'
       - 'app/inc/Kserve*.hpp'
+      - 'app/inc/contract/**'
+      - 'app/src/ModelInputTypes.cpp'
+      - 'app/inc/ModelInputTypes.hpp'
       - 'versions.env'
       - 'docs/KserveCompatibility.md'
   workflow_dispatch:
@@ -50,19 +58,28 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Shell syntax check
-        run: bash -n app/test/kserve_integration.sh
+        run: |
+          bash -n app/test/kserve_integration.sh
+          bash -n app/test/kserve_input_datatypes_e2e.sh
 
       - name: ShellCheck
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends shellcheck
           shellcheck app/test/kserve_integration.sh
+          shellcheck app/test/kserve_input_datatypes_e2e.sh
 
       - name: Dry-run integration
         run: |
           set -o pipefail
           bash app/test/kserve_integration.sh --dry-run | tee dry-run.log
           grep -F "RESULT: PASS" dry-run.log
+
+      - name: Dry-run input datatypes e2e
+        run: |
+          set -o pipefail
+          bash app/test/kserve_input_datatypes_e2e.sh --dry-run | tee datatypes-dry-run.log
+          grep -F "RESULT: PASS" datatypes-dry-run.log
 
   live:
     name: Live (Triton + OVMS round-trip)

@@ -1,4 +1,5 @@
 #include "InferencePipeline.hpp"
+#include "ModelInputTypes.hpp"
 
 #ifdef NEURIPLO_INFER_WITH_KSERVE
 #include "EncodedImage.hpp"
@@ -57,9 +58,30 @@ void setInputFormat(neuriplo_tasks::ModelInfo &model_info) {
   }
 }
 
+// One KServe datatype tag per model input. A KServe server's own tags are used
+// as-is: neuriplo's metadata enum cannot represent FP16 and friends, and a
+// rejection should name the datatype the server actually advertised.
+std::vector<std::string> inputDatatypes(const InferencePipeline &pipeline) {
+  std::vector<std::string> datatypes;
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+  if (auto *kserve = dynamic_cast<KserveEngine *>(pipeline.engine.get());
+      kserve != nullptr && !pipeline.encoded_image) {
+    for (const auto &input : kserve->rawMetadata().inputs) {
+      datatypes.push_back(input.datatype);
+    }
+    return datatypes;
+  }
+#endif
+  for (const auto &input : pipeline.inference_metadata.getInputs()) {
+    datatypes.push_back(neuriplo_infer::datatypeTag(input.datatype));
+  }
+  return datatypes;
+}
+
 neuriplo_tasks::ModelInfo
 buildModelInfo(const InferenceMetadata &inference_metadata,
-               const AppConfig &config) {
+               const AppConfig &config,
+               const std::vector<std::string> &input_datatypes) {
   neuriplo_tasks::ModelInfo model_info;
   for (size_t i = 0; i < inference_metadata.getInputs().size(); i++) {
     const auto &input = inference_metadata.getInputs()[i];
@@ -87,9 +109,8 @@ buildModelInfo(const InferenceMetadata &inference_metadata,
   }
 
   setInputFormat(model_info);
-  if (!model_info.input_types.empty()) {
-    model_info.input_types[0] = neuriplo_tasks::vision::PixelType::Float32;
-  }
+  neuriplo_infer::applyInputDatatypes(model_info, input_datatypes,
+                                      config.input_mode == "encoded-image");
   return model_info;
 }
 
@@ -338,7 +359,8 @@ void InferencePipelineBuilder::setupTask(InferencePipeline &pipeline) const {
     }
   }
 #endif
-  pipeline.model_info = buildModelInfo(pipeline.inference_metadata, config_);
+  pipeline.model_info = buildModelInfo(pipeline.inference_metadata, config_,
+                                       inputDatatypes(pipeline));
   pipeline.task_type = getTaskTypeForModel(config_.detectorType);
 
   LOG(INFO) << "Using neuriplo-tasks model type: " << config_.detectorType;

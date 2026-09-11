@@ -127,8 +127,16 @@ per-backend runtimes. `neuriplo-tasks` does not depend on `neuriplo`.
 ## Constraints
 
 - `InferenceMetadata` / `LayerInfo` come from the external `neuriplo` backend
-  library and carry no datatype field, so datatypes are captured and held
-  inside the KServe clients.
+  library (the app-local contract in KServe-only builds). `LayerInfo::datatype`
+  holds `FP32`, `INT32`, `INT64`, `UINT8`, `INT8`, or `BOOL`; datatypes it cannot
+  represent (`FP16`, `FP64`, `INT16`, unsigned wider than 8 bits) keep the
+  `Float32` default there, and the server's own tags stay available through
+  `KserveEngine::rawMetadata()`.
+- An image input must be `FP32` or `UINT8` in `preprocessed` mode (`UINT8`
+  receives raw 0–255 pixels); any other image-input datatype fails at pipeline
+  setup, naming the input. Before each request, every input's byte count is
+  checked against its advertised datatype and shape, so mislabelled bytes are
+  never sent. `encoded-image` mode is exempt from the image-input check.
 - `TensorElement` is `std::variant<float, int32_t, int64_t, uint8_t>`; output
   decoding is bounded to those four C++ types, with wider server datatypes
   widened/narrowed into them.

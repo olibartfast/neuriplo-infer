@@ -108,6 +108,15 @@ The integration harness round-trips **FP32** end-to-end (the datatype shared by
 the tiny model on both servers); the wider datatype decoding is covered by the
 `KserveProtocol` / `KserveEngine` unit tests.
 
+Image **inputs** are a narrower contract: preprocessing produces `FP32` or raw
+`UINT8` pixels, so an image input advertised as anything else is refused at
+pipeline setup, and every input's byte count is checked against its advertised
+datatype before a request is sent. `app/test/kserve_input_datatypes_e2e.sh`
+proves this against `neuriplo-kserve-runtime` — `UINT8` and `FP32` image inputs
+run, `INT8` and `BOOL` are refused with no request reaching the server. CTest
+runs it as `kserve_input_datatypes_e2e_dry_run`; `--live` needs the runtime and
+`neuriplo-infer` binaries.
+
 ## Authentication & transport security
 
 - Bearer token via `KSERVE_BEARER_TOKEN` (HTTP `Authorization: Bearer …`, gRPC
