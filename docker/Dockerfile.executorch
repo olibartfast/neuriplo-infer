@@ -114,6 +114,8 @@ RUN cmake -Bbuild \
 # ── Stage 4: lean runtime image ──────────────────────────────────────────────
 FROM base_deps AS final
 
+WORKDIR /app
+
 # ExecuTorch static libs are baked into libneuriplo.so at build time,
 # so the runtime image only needs the shared libraries.
 COPY --from=builder /src/build/app/neuriplo-infer      /usr/local/bin/neuriplo-infer

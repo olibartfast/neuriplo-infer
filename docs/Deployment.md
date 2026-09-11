@@ -153,7 +153,7 @@ bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
 | `yolo26s_tflite` | `yolo26` | LiteRT | no |
 | `yolov8_executorch` | `yolov8` | ExecuTorch | no |
 | `edgecrafter_det` / `_seg` / `_pose` | `ecdet` / `ecseg` / `ecpose` | ONNX Runtime | no |
-| `gemma4` | `gemma4` | llama.cpp | no (downloads the GGUF) |
+| `gemma4` | `gemma4` | llama.cpp | no (downloads the GGUF and its mmproj projector) |
 | `rtdetrv4` | `rtdetr` | TensorRT | yes |
 | `owlv2` | `owlv2` | ONNX Runtime | yes (also its `vocab.json` / `merges.txt`) |
 | `torchvision_classifier` | `torchvisionclassifier` | ONNX Runtime | yes (and `labels/imagenet_labels.txt`) |

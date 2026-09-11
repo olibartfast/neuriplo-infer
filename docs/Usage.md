@@ -25,9 +25,12 @@ neuriplo-infer --capabilities
 
 ## Outputs
 
-- **Image source:** the annotated image is written to
-  `data/output/processed_<type>_<mode>.png` (for example
-  `processed_yolo_local.png`), relative to the working directory.
+- **Image source (detection, segmentation, pose, classification, depth):** the
+  annotated image is written to `data/output/processed_<type>_<mode>.png` (for
+  example `processed_yolo_local.png`), relative to the working directory.
+- **Image understanding (`--type=gemma4` and other vision-language models):** the
+  model's response is written to standard output; no annotated image is produced.
+  The run report is still written.
 - **Video or stream source:** frames are shown in a preview window. Pass
   `--no_display` wherever there is no screen — a container, SSH, CI — because
   the window aborts the process without one. `--output_video` writes the
