@@ -36,7 +36,7 @@ For EdgeCrafter detection export details, see [export/detection/edgecrafter/READ
 
 For EdgeCrafter segmentation export details, see [export/segmentation/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md).
 
-Instance-segmentation tasks return masks by default. Set `TaskConfig::segmentation_output` to `SegmentationOutput::Polygon` to return full-image exterior rings and holes instead; see [instance-segmentation output representations](docs/segmentation_outputs.md).
+Instance-segmentation tasks return masks by default. Set `TaskConfig::segmentation_output` to `SegmentationOutput::Polygon` to return full-image exterior rings and holes instead; see [instance-segmentation output representations](https://github.com/olibartfast/neuriplo-tasks/blob/master/docs/segmentation_outputs.md).
 
 **Classification:**
 - `"torchvision-classifier"` - Torchvision models (ResNet, EfficientNet, etc.)

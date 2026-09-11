@@ -525,14 +525,17 @@ print('Exported to', dest)
         fi
         MODEL_TYPE="gemma4"
         MODEL_BASENAME="gemma-4-E2B-it-Q4_K_M"
+        MMPROJ_BASENAME="mmproj-F16"
         SOURCE_IN_CONTAINER="/app/data/dog.jpg"
         HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
         EXTRA_REQUIREMENTS=()
-        # No export step: the GGUF is downloaded directly from HuggingFace.
+        # No export step: the GGUF and its vision projector come from HuggingFace.
+        # The projector is required for the image to be seen; without --mmproj,
+        # llama.cpp runs text-only and ignores the source image.
         EXPORT_COMMANDS=(
-            "mkdir -p \"${WEIGHTS_DIR}\" && wget -q --show-progress -O \"${WEIGHTS_DIR}/${MODEL_BASENAME}.gguf\" \"https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/${MODEL_BASENAME}.gguf\" && echo \"Downloaded ${MODEL_BASENAME}.gguf\""
+            "mkdir -p \"${WEIGHTS_DIR}\" && wget -q --show-progress -O \"${WEIGHTS_DIR}/${MODEL_BASENAME}.gguf\" \"https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/${MODEL_BASENAME}.gguf\" && wget -q --show-progress -O \"${WEIGHTS_DIR}/${MMPROJ_BASENAME}.gguf\" \"https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/${MMPROJ_BASENAME}.gguf\" && echo \"Downloaded ${MODEL_BASENAME}.gguf and ${MMPROJ_BASENAME}.gguf\""
         )
-        RUNTIME_EXTRA_ARGS=("--prompt=${GEMMA4_PROMPT}")
+        RUNTIME_EXTRA_ARGS=("--mmproj=/weights/${MMPROJ_BASENAME}.gguf" "--prompt=${GEMMA4_PROMPT}")
         ;;
     *)
         echo "Unsupported preset: $PRESET" >&2

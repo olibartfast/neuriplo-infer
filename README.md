@@ -3,553 +3,127 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++20](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/std/the-standard)
 
-Local inference application for computer vision tasks, supporting multiple task types and deep learning backends.
+Command-line inference for computer vision models: pick a task, a model file, and
+an image or video, and get annotated results — on the backend of your choice.
 
 > 🚧 Status: Under Development — expect frequent updates.
+
 ## Key Features
 
 - **Multiple Computer Vision Tasks**: Supported via [neuriplo-tasks library](https://github.com/olibartfast/neuriplo-tasks/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM)
-- **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, Libtorch, OpenVINO, Libtensorflow (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
-- **Real-time Video Processing**: Multiple video backends via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
-- **Docker Deployment Ready**: Multi-backend container support
-- **Remote KServe Runtime Mode**: Send preprocessed tensors to a KServe V2 endpoint, including `neuriplo-kserve-runtime`, while keeping task preprocessing, postprocessing, and rendering in this app
+- **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO, TensorFlow, LiteRT, ExecuTorch, llama.cpp (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
+- **Images, Video Files, and Streams**: via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
+- **A Docker Image for Most Backends**: no local SDK installs needed (the default `OPENCV_DNN` backend has no image; build it from source)
+- **Remote KServe Mode**: keep pre/postprocessing here and send tensors to Triton, OpenVINO Model Server, KServe, or `neuriplo-kserve-runtime`
 
-## Requirements
+## Quickstart (Docker)
 
-### Core Dependencies
-- CMake (≥ 3.24)
-- C++20 compiler
-- OpenCV (≥ 4.6)
-  ```bash
-  apt install libopencv-dev
-  ```
-- Google Logging (glog)
-  ```bash
-  apt install libgoogle-glog-dev
-  ```
-
-### Dependency Management
-
-This project automatically fetches:
-1. [neuriplo-tasks](https://github.com/olibartfast/neuriplo-tasks) - Contains pre/post-processing and model logic.
-2. [neuriplo](https://github.com/olibartfast/neuriplo) - Provides inference backend abstractions and version management.
-3. [videocapture](https://github.com/olibartfast/videocapture) - Handles video I/O.
-
-## Development Workflow
-
-`develop` is the integration branch; `master` is release-only. Use short-lived topic branches (`feat/...`, `fix/...`, `docs/...`, `chore/...`) and open PRs into `develop`. See [`AGENTS.md`](AGENTS.md) for the full workflow.
-
-## Setup
-
-Install dependencies for the backends you need:
+Needs Linux, Docker, and Python 3 with `venv` (`sudo apt install python3-venv` on
+Ubuntu). Runs on CPU; no GPU required.
 
 ```bash
-./scripts/setup_dependencies.sh --backend <onnx_runtime|tensorrt|libtorch|openvino|tensorflow|all>
+git clone https://github.com/olibartfast/neuriplo-infer.git
+cd neuriplo-infer
+
+# 1. Get a model: export YOLO11n to ONNX
+python3 -m venv environments/export && . environments/export/bin/activate
+pip install ultralytics
+mkdir -p models && (cd models && yolo export model=yolo11n.pt format=onnx)
+
+# 2. Build the ONNX Runtime image
+docker build -t neuriplo-infer:onnxruntime -f docker/Dockerfile.onnxruntime .
+
+# 3. Detect objects in the sample image
+docker run --rm \
+  -v "$PWD/data:/app/data" -v "$PWD/models:/weights" -v "$PWD/labels:/labels" \
+  neuriplo-infer:onnxruntime \
+  --type=yolo --weights=/weights/yolo11n.onnx \
+  --source=/app/data/dog.jpg --labels=/labels/coco.names
 ```
 
-LibTorch also accepts `--compute-platform cpu` or `--compute-platform cuda` (CUDA version is read from `versions.neuriplo.env`). See [docs/DependencyManagement.md](docs/DependencyManagement.md) for details.
+The annotated image is written to `data/output/processed_yolo_local.png`, next to
+a `run_report.json` with per-stage timings. The container writes them as root.
 
-## Building
+For a video source, add `--no_display`: a container has no screen, and the preview
+window would abort the run. Other backends, GPU images, and ready-made end-to-end
+presets are in [docs/Deployment.md](docs/Deployment.md).
+
+## Build from Source
+
+Ubuntu 24.04, ONNX Runtime backend, with the model from step 1 of the quickstart:
+
 ```bash
-# Default build
-cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+sudo apt install -y cmake build-essential git wget curl unzip libopencv-dev libgoogle-glog-dev
+./scripts/setup_dependencies.sh --backend onnx_runtime   # installs under ~/dependencies
+
+cmake -S . -B build -DDEFAULT_BACKEND=ONNX_RUNTIME -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j"$(nproc)"
+
+./build/app/neuriplo-infer --type=yolo --weights=models/yolo11n.onnx \
+  --source=data/dog.jpg --labels=labels/coco.names
 ```
 
-Replace `<backend>` with one of the supported inference backends (see [Dependency Management Guide](docs/DependencyManagement.md)).
+The default backend, `OPENCV_DNN`, needs no setup script, but Ubuntu's OpenCV 4.6
+cannot load current Ultralytics ONNX exports — prefer ONNX Runtime for a first run.
+Other backends, CMake options, and video backends: [docs/Deployment.md](docs/Deployment.md).
 
-### Windows Notes
+## Platform Support
 
-For native Windows builds, use a Visual Studio generator and start with `OPENCV_DNN`.
-The shell setup scripts in `scripts/` are Linux-oriented; on Windows, install OpenCV,
-glog, and any backend SDKs through your preferred package manager or local SDK installs.
+| Platform | Status |
+|----------|--------|
+| Ubuntu 24.04 (x86_64) | Supported — CI and the Docker images run on it |
+| Other Linux distributions | Expected to work; untested |
+| Windows (native) | Best-effort, `OPENCV_DNN` only, untested |
+| macOS | Untested |
 
+GPU inference needs an NVIDIA driver and, for containers, the NVIDIA Container
+Toolkit. Details per backend: [docs/Deployment.md § Platform support](docs/Deployment.md#platform-support).
 
-The KServe V2 protocol client lives in the standalone [`neuriplo-kserve-client`](https://github.com/olibartfast/neuriplo-kserve-client) repository and is fetched automatically (via `FetchContent`, pinned in `versions.env`) when `NEURIPLO_INFER_ENABLE_KSERVE` is on; neuriplo-infer keeps only the `KserveEngine` adapter. HTTP client support is always available; gRPC client support is optional and enabled only when Protobuf and gRPC are available at configure time, otherwise the build falls back to HTTP.
+## Supported Models
 
-### Video Backend Support
+Pass the model family with `--type` — for example `yolo`, `rtdetr`, `yoloseg`,
+`owlv2`, `raft`, `vitpose`, `depth_anything_v2`, or `gemma4`. The complete list,
+with aliases and input contracts, is in
+[docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
+To produce model files, see [docs/ExportInstructions.md](docs/ExportInstructions.md)
+and the [neuriplo-tasks export tools](https://github.com/olibartfast/neuriplo-tasks/tree/master/export).
 
-The VideoCapture library picks a video backend by priority: **FFmpeg** (`-DUSE_FFMPEG=ON`, widest codec support) > **GStreamer** (`-DUSE_GSTREAMER=ON`) > **OpenCV** (default). Add the desired flag(s) at configure time, e.g.:
+## Documentation
 
-```bash
-cmake -S . -B build -DDEFAULT_BACKEND=<backend> -DUSE_FFMPEG=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-```
+| Guide | Read it for |
+|-------|-------------|
+| [Usage](docs/Usage.md) | Every CLI flag, examples, `--capabilities`, the run report |
+| [Deployment](docs/Deployment.md) | Platforms, all backends, Docker and GPU, end-to-end presets, build options |
+| [KServe runtime](docs/KserveRuntime.md) | Remote inference against Triton, OVMS, KServe, `neuriplo-kserve-runtime` |
+| [KServe compatibility](docs/KserveCompatibility.md) | Tested server / transport / datatype matrix |
+| [Supported model types](docs/generated/supported-model-types.md) | Every `--type` string and its task |
+| [Export instructions](docs/ExportInstructions.md) | Producing model files for each backend |
+| [VLM image understanding](docs/VLMImageUnderstanding.md) | Vision-language models via llama.cpp |
+| [Detector architectures](docs/DetectorArchitectures.md) | Object-detection model families |
+| [Dependency management](docs/DependencyManagement.md), [Versioning](docs/Versioning.md) | Dependency ownership, releases |
 
-### Test Build
+## Known Limitations
+
+- Windows is best-effort only (see [Platform Support](#platform-support)).
+- Batch sizes greater than 1 are not supported.
+- Some model/backend combinations need specific export settings; see the export guides.
+- KServe model management (index / load / unload) is not exposed through the CLI; see [docs/KserveRuntime.md](docs/KserveRuntime.md).
+
+## Contributing
+
+`develop` is the integration branch and `master` is release-only: branch
+`feature/*` from `develop` and open pull requests into `develop`. Run the tests with:
+
 ```bash
 cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build build-test
 ctest --test-dir build-test --output-on-failure
 ```
 
-## End-to-End Examples
-
-The runnable local Docker E2E script remains app-owned:
-
-```bash
-bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run
-```
-
-## App Usage
-
-### Command Line Options
-
-```bash
-./neuriplo-infer \
-  [--help | -h | --capabilities] \
-  --type=<model_type> \
-  --source=<input_source> \
-  [--weights=<model_weights>] \
-  [--kserve_endpoint=<url>] \
-  [--kserve_model_name=<name>] \
-  [--kserve_model_version=<version>] \
-  [--kserve_transport=<http|grpc>] \
-  [--kserve_timeout_ms=<milliseconds>] \
-  [--input_mode=<preprocessed|encoded-image>] \
-  [--task_model=<model>] \
-  [--task_model_version=<version>] \
-  [--postprocess_mode=<cpu|gpu>] \
-  [--labels=<labels_file>] \
-  [--text_prompts='<prompt_a;prompt_b;...>'] \
-  [--prompt='<freeform_prompt>'] \
-  [--output_format=<text|json>] \
-  [--sample_stride=<n>] \
-  [--max_frames=<n>] \
-  [--tokenizer_vocab=<vocab_json_path>] \
-  [--tokenizer_merges=<merges_txt_path>] \
-  [--min_confidence=<threshold>] \
-  [--nms_threshold=<threshold>] \
-  [--mask_threshold=<threshold>] \
-  [--segmentation_output|-so=<mask|polygon>] \
-  [--batch|-b=<batch_size>] \
-  [--input_sizes|-is='<input_sizes>'] \
-  [--use-gpu] \
-  [--warmup] \
-  [--benchmark] \
-  [--export_metadata] \
-  [--no_gif] \
-  [--iterations=<number>]
-```
-
-Use `--capabilities` without run arguments to print the versioned, build-specific
-JSON contract consumed by tools such as Neuriplo UI:
-
-```bash
-./neuriplo-infer --capabilities
-```
-
-The response reports task/model selectors, source and parameter requirements,
-the local backend compiled into the executable, and the client-server protocols
-and transports available in the current build. Local and client-server
-execution are separate workflows. Enum defaults are build-specific when an
-optional transport is compiled. The schema is documented in
-[`docs/capabilities.schema.json`](docs/capabilities.schema.json), currently at
-`schema_version` 2. Version 2 added the required `diagnostics` section; because
-the schema forbids unknown properties, that is a breaking change in both
-directions, so version 1 stays published as
-[`docs/capabilities.schema.v1.json`](docs/capabilities.schema.v1.json) for
-documents produced by an older binary.
-
-#### Run diagnostics
-
-Every run writes a versioned JSON report next to its output, at the path the
-capabilities document advertises under `diagnostics.run_report` (currently
-`data/output/run_report.json`, relative to the working directory):
-
-```json
-{
-  "schema_version": 1,
-  "status": "failed",
-  "stage": "model_load",
-  "metrics": {
-    "wall_time_ms": 546.9,
-    "samples": 0,
-    "frames": null,
-    "throughput_per_second": null,
-    "stages_ms": {
-      "model_load": 546.7,
-      "preprocess": null,
-      "inference": null,
-      "postprocess": null,
-      "render": null
-    }
-  },
-  "error": { "stage": "model_load", "message": "..." }
-}
-```
-
-It exists so a caller can tell *where* a run failed and *how long each stage
-took* without parsing log text. Five rules make it safe to consume:
-
-- **Absent is not zero.** A stage nobody measured is `null`, never `0`, and
-  `throughput_per_second` appears only when both a processed count and the
-  inference time it belongs to were measured. It is also `null` on a failed
-  run: counts are added after work succeeds while the stage timer still records
-  the attempt that threw, so a rate computed from both would describe work that
-  did not happen. The counts and the stage sums stay; only the ratio is
-  withheld.
-- **`stages_ms` values are sums** over the whole run, in milliseconds;
-  `wall_time_ms` is measured inside `main`, so it is always smaller than the
-  caller's own process wall time. Warmup and benchmark iterations are excluded:
-  they repeat inference without producing a sample, and counting them would
-  inflate every stage total and collapse `throughput_per_second`.
-- **`samples` counts completed sources** — one still image, one video read to
-  its end, one optical-flow pair, one image-understanding request — while
-  `frames` counts video frames and stays `null` for a run with no video. A
-  video the operator stopped with `q` or Escape is not a completed source and
-  is not counted; its frames still are, because they were processed.
-- **A source that cannot be read is a failure, not a skip.** An optical-flow
-  pair with an unreadable half ends the run at `source` instead of returning
-  success with no samples and no artifact.
-- **The stage is recorded, not inferred.** A failure is attributed to the stage
-  the run had reached — `configuration`, `model_load`, `source`, `preprocess`,
-  `inference`, `postprocess`, `render`, or `unknown` — and the message stays
-  the producer's own. A backend that throws a non-`std::exception` (some ONNX
-  graphs abort inside OpenCV DNN) still leaves an attributed report before the
-  process dies.
-
-Writing the report never changes the outcome it describes: a report that cannot
-be written is logged and dropped.
-
-#### Required Parameters
-
-- `--type=<model_type>`: Specifies the type of vision model to use. Supported categories:
-  <!-- SUPPORTED_MODEL_TYPES:START -->
-`TaskFactory` routes model type strings through a **built-in, compile-time**
-registration table in `src/core/task_factory.cpp`. New built-in tasks require
-editing that table and the README list below. **Third-party or runtime task
-plugins are not supported**; if plugin extension becomes a product goal, add a
-separate explicit extension registry rather than growing the internal table
-indefinitely.
-
-<!-- TASKFACTORY_MODEL_LIST:START -->
-The TaskFactory supports the following model type strings. Matching normalizes strings by lowercasing and stripping whitespace, hyphens, and underscores, so `YOLO-V8`, `yolo_v8`, and ` yolo v8 ` route identically. Specific segmentation, pose, and depth aliases are checked before generic detection aliases.
-
-**Object Detection:**
-
-- `"yolo"`, `"yolov7e2e"`, `"yolov10"`, `"yolo26"`, `"yolov4"` - YOLO-based variants
-- `"yolonas"` - YOLO-NAS
-- `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
-- `"rtdetrul"`, `"rtdetrultralytics"` - RT-DETR (Ultralytics implementation)
-- `"rfdetr"` - RF-DETR
-- `"ecdet"` - EdgeCrafter detection (any string starting with `ecdet`)
-- `"edgecrafter"`, `"edgecrafter-det"` - EdgeCrafter detection unless the normalized string contains `seg` or `pose`
-
-For EdgeCrafter detection export details, see [export/detection/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/edgecrafter/README.md).
-
-**Instance Segmentation:**
-- `"ecseg"` - EdgeCrafter segmentation (any string starting with `ecseg` or `edgecrafter` and containing `seg`)
-- `"yoloseg"`, `"yolo-seg"`, `"yolov8-seg"` - YOLOv5/YOLOv8/YOLO11-style segmentation
-- `"yolov10seg"`- YOLOv10
-- `"yolo26seg"` - YOLO26
-- `"rfdetrseg"` - RF-DETR
-
-For EdgeCrafter segmentation export details, see [export/segmentation/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/edgecrafter/README.md).
-
-Instance-segmentation tasks return masks by default. Set `TaskConfig::segmentation_output` to `SegmentationOutput::Polygon` to return full-image exterior rings and holes instead; see [instance-segmentation output representations](docs/segmentation_outputs.md).
-
-**Classification:**
-- `"torchvision-classifier"` - Torchvision models (ResNet, EfficientNet, etc.)
-- `"tensorflow-classifier"` - TensorFlow/Keras models
-- `"vit-classifier"` - Vision Transformers
-
-Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflow` also routes to classification.
-
-**Video Classification:**
-- `"videomae"` - VideoMAE
-- `"vivit"` - ViViT
-- `"timesformer"` - TimeSformer
-
-**Optical Flow:**
-- `"raft"` - RAFT optical flow
-
-**Pose Estimation:**
-- `"yolov8pose"`, `"yolov8-pose"` - YOLOv8 pose (single-stage, returns bbox + keypoints)
-- `"yolo11pose"`, `"yolo11-pose"` - YOLO11 pose
-- `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
-- `"yolov5pose"`, `"yolov5-pose"` - YOLOv5 pose
-- `"rfdetrpose"`, `"rfdetr-pose"`, `"rfdetrkeypoint"`, `"rfdetr-keypoint"`, `"rfdetrkpt"`, `"rfdetr-kpt"` - RF-DETR keypoint pose (single-stage, returns bbox + 17 coco keypoints with visibility and per-keypoint covariance)
-- `"vitpose"` - ViTPose (top-down, heatmap-based)
-- `"ecpose"` - EdgeCrafter pose estimation (any string starting with `ecpose`, or `edgecrafter` and containing `pose`)
-
-For EdgeCrafter pose-estimation export details, see [export/pose_estimation/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md).
-
-RF-DETR keypoint models output per-keypoint visibility and 2×2 pixel covariance (decoded from Cholesky L via the ONNX `log_l11`, `l21`, `log_l22` channels). Keypoints are filtered by an uncertainty-weighted score fusion that discounts high-covariance predictions.
-
-**Depth Estimation:**
-- `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2
-- `"yolo-depth"`, `"yolo26n-depth"` - Ultralytics YOLO26 depth models; any YOLO-prefixed model type containing `depth` routes here
-
-YOLO26 depth expects RGB NCHW float input normalized to `[0,1]` with YOLO letterboxing. Its exported output is an unbounded metric-depth map shaped `[B,1,H,W]`; postprocessing removes letterbox padding and resizes the map to the original frame. See the [YOLO depth export guide](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/depth_estimation/yolo_depth/README.md).
-
-**Open-Vocabulary Detection:**
-- `"owlv2"` - OWLv2 open-vocabulary detection
-- `"owlvit"` - OWL-ViT compatible open-vocabulary detection
-- `"groundingdino"` - Grounding DINO text-conditioned detection
-
-Open-vocabulary models use text prompts supplied at runtime through `TaskConfig::text_prompts`. Tokenizer assets can be passed either as file paths (`tokenizer_vocab_path`, `tokenizer_merges_path`) or preloaded text blobs (`tokenizer_vocab_json`, `tokenizer_merges_text`).
-
-The expected ONNX contract is:
-- Inputs: `pixel_values`, `input_ids`, `attention_mask`
-- Outputs: `logits`, `pred_boxes`, and optional `objectness_logits`
-
-Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
-
-For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/open_vocab_detection/OWLv2.md).
-
-**Image Understanding (VLM):**
-- `"gemma4"`, `"gemma"`, `"llama"`, `"llamacpp"`, `"imageunderstanding"` - Vision-language model image captioning / Q&A via llama.cpp backend
-
-Input contract: `preprocess()` returns two tensors — `[0]` UTF-8 prompt bytes, `[1]` raw RGB pixels with an 8-byte header `[uint32 width LE][uint32 height LE][H×W×3 bytes]`. When no image is provided only tensor `[0]` is returned (text-only mode). Output is a UTF-8 string returned as float-encoded bytes (one `float` per byte value).
-
-Requires the llama.cpp `LLAMACPP` backend with an mmproj (vision projector) GGUF.
-
-For model download and setup details, see [export/image_understanding/ImageUnderstanding.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/image_understanding/ImageUnderstanding.md).
-
-**Gaussian Splatting:**
-- `"lgm"`, `"lgm-mini"` - LGM (Large Gaussian Model)
-- `"grm"` - GRM
-- `"gaussiansplatting"`, any string containing `"splat"` - generic alias
-
-<!-- TASKFACTORY_MODEL_LIST:END -->
-
-Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
-<!-- SUPPORTED_MODEL_TYPES:END -->
-  App-specific routing and validation in `neuriplo-infer` still define the end-to-end supported subset for this repo.
-
-- `--source=<input_source>`: Input image, video file, or stream URL (e.g. `rtsp://...`). Omit for text-only image-understanding tasks and for `--export_metadata`.
-- `--weights=<path>`: Path to local model weights. Required for local backend execution and `--export_metadata`; not required when `--kserve_endpoint` is provided.
-- `--labels=<path>`: Class-labels file, one label per line. Optional, for fixed-label models.
-- `--text_prompts='<a;b;...>'`: Semicolon-separated prompts. Required for open-vocabulary detection (OWLv2).
-- `--tokenizer_vocab=<vocab.json>`, `--tokenizer_merges=<merges.txt>`: Tokenizer assets. Required for OWLv2.
-- `--prompt='<text>'`: Freeform prompt for image-understanding / VLM tasks.
-- `--output_format=<text|json>`: Output hint; use `json` for parseable multimodal responses.
-- `--sample_stride=<n>`, `--max_frames=<n>`: Frame-sampling stride and cap for multimodal video tasks.
-
-#### KServe Runtime Parameters
-
-Use these flags to run preprocessing/postprocessing in `neuriplo-infer` while sending inference tensors to a remote KServe V2 runtime. This is the intended path for `neuriplo-kserve-runtime` integration.
-
-- `--kserve_endpoint=<url>`: Base KServe V2 endpoint, for example `http://127.0.0.1:19090`. A path prefix is allowed when the runtime is behind a gateway. `https://` (HTTP client) and `grpcs://` (gRPC client) select TLS; the server certificate is verified against the system CA roots (or `KSERVE_CA_CERT`). HTTPS requires a build with OpenSSL (`NEURIPLO_INFER_ENABLE_KSERVE_TLS`, on by default when OpenSSL is found); otherwise an `https://` endpoint fails fast with a clear error.
-- `--kserve_model_name=<name>`: Model name served by the endpoint. Defaults to `--type` when omitted.
-- `--kserve_model_version=<version>`: KServe model version to call. Defaults to `1`.
-- `--kserve_transport=<http|grpc>`: Transport selection. Defaults to `http` (the validated path). `grpc` requires a build with Protobuf/gRPC available.
-- `--kserve_timeout_ms=<milliseconds>`: Request timeout. Must be greater than zero; default is `30000`.
-- `--input_mode | -im=<preprocessed|encoded-image>`: Where preprocessing runs. `preprocessed` (default) sends a dense tensor this client preprocessed. `encoded-image` sends the encoded file and lets a server-side ensemble preprocess; it requires `--kserve_endpoint`, `--task_model`, `--batch=1`, and no `--input_sizes`.
-- `--task_model | -tm=<model>`: The inner model whose metadata drives task construction in encoded-image mode. An ensemble's own metadata only describes an encoded image, so the shapes must come from the model inside it.
-- `--postprocess_mode | -pm=<cpu|gpu>`: Where postprocessing runs (default `cpu`). `gpu` decodes the server's result envelope instead of running local postprocessing, and requires `--input_mode=encoded-image`.
-
-Example, running a video's frames through a segmentation ensemble that preprocesses and postprocesses on the server:
-
-```bash
-neuriplo-infer --type=yolo26seg --source=frame.jpg --labels=labels/coco.names \
-  --kserve_endpoint=http://127.0.0.1:8080 \
-  --kserve_model_name=yolo26seg_ens --task_model=yolo26seg \
-  --input_mode=encoded-image --postprocess_mode=gpu
-```
-
-Tensor datatypes are taken from the server's model metadata (no longer hardcoded to `FP32`), so models with `UINT8`/`INT*`/`FP16`/etc. inputs work against KServe, Triton Inference Server, and OpenVINO Model Server. Set a bearer token via the `KSERVE_BEARER_TOKEN` environment variable to authenticate (sent as `Authorization: Bearer …` on HTTP and as gRPC call metadata).
-
-Security/TLS environment variables (secrets are sourced from env/file, never the command line):
-
-- `KSERVE_BEARER_TOKEN`: bearer token sent as `Authorization: Bearer …` (HTTP) / gRPC call metadata.
-- `KSERVE_BEARER_TOKEN_FILE`: path to a file holding the bearer token, used when `KSERVE_BEARER_TOKEN` is unset (trailing whitespace/newline trimmed).
-- `KSERVE_CA_CERT`: path to a PEM CA bundle used to verify the server certificate for `https://` / `grpcs://`. Defaults to the system CA roots when unset.
-- `KSERVE_CLIENT_CERT` / `KSERVE_CLIENT_KEY`: PEM client certificate and private key. Providing both enables mutual TLS (mTLS); providing only one is an error.
-
-Resilience/performance environment variables:
-
-- `KSERVE_BINARY`: KServe binary tensor extension. On HTTP it is opt-in (`KSERVE_BINARY=1`; JSON is the default). On gRPC raw tensor contents are the default and `KSERVE_BINARY=0` falls back to typed `contents` (which cannot carry FP16/BF16).
-- `KSERVE_MAX_RETRIES`, `KSERVE_RETRY_BASE_MS`, `KSERVE_RETRY_MAX_MS`, `KSERVE_RETRY_JITTER`: retry with exponential backoff + jitter on transient failures (HTTP 429/502/503/504; gRPC UNAVAILABLE / DEADLINE_EXCEEDED / RESOURCE_EXHAUSTED).
-
-Before loading model metadata the client issues a KServe V2 readiness probe (HTTP `/v2/models/{name}/ready`, gRPC `ModelReady`). If the endpoint is reachable but the model is not loaded/ready the run fails fast with a clear message instead of a confusing metadata error; an unreachable endpoint still surfaces as a connection error.
-
-Tested server/transport/datatype combinations (kept green by CI via `app/test/kserve_integration.sh`) are documented in [docs/KserveCompatibility.md](docs/KserveCompatibility.md).
-
-Build gating:
-- `-DNEURIPLO_INFER_ENABLE_KSERVE=OFF` produces a pure local-only build that compiles no KServe code (and needs neither Protobuf nor gRPC).
-- `-DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF` produces a **KServe-only** build that does **not** fetch or build `neuriplo` (nor any external contract library): the inference contract comes from the app-local headers in `app/inc/contract/`, `setup_inference_engine` is compiled out, and `--kserve_endpoint` becomes mandatory. Still uses OpenCV + `neuriplo-tasks`.
-- At least one of `ENABLE_KSERVE` / `ENABLE_LOCAL_BACKENDS` must be `ON` (enforced at configure time).
-- `-DNEURIPLO_INFER_ENABLE_GRPC=OFF` keeps the HTTP KServe client but drops the gRPC transport.
-
-Example KServe-only build (no neuriplo fetch):
-```bash
-cmake -B build -DNEURIPLO_INFER_ENABLE_LOCAL_BACKENDS=OFF -DNEURIPLO_INFER_ENABLE_KSERVE=ON
-```
-
-See [docs/KserveRuntime.md](docs/KserveRuntime.md) for the full KServe runtime reference (architecture, capabilities, configuration, build modes) and [docs/KserveCompatibility.md](docs/KserveCompatibility.md) for the maintained server-compatibility matrix.
-
-#### Optional Parameters
-
-- `--min_confidence=<v>`: Minimum detection confidence (default `0.25`).
-- `--nms_threshold=<v>`: IoU threshold for NMS in YOLO detectors/segmenters (default `0.45`).
-- `--mask_threshold=<v>`: Mask binarization threshold for instance segmentation (default `0.50`).
-- `--segmentation_output | -so=<mask|polygon>`: Instance-segmentation representation (default `mask`). `polygon` returns framework-neutral polygon exteriors and holes instead of a dense mask, and renders them as closed perimeter outlines (holes stroked thinner), never filled. Note the polygons are convex hulls of each instance, not tight contours.
-- `--batch | -b=<n>`: Batch size (default `1`; batches > 1 not currently supported).
-- `--input_sizes | -is='<CHW;...>'`: Input sizes for models with dynamic axes or backends that can't report input shapes (e.g. OpenCV DNN). E.g. `'3,224,224'`, or `'3,640,640;2'` for RT-DETR/D-FINE/DEIM.
-- `--use-gpu`: Enable GPU inference (default `false`).
-- `--warmup`: GPU warmup before inference; image sources only (default `false`).
-- `--benchmark` / `--iterations=<n>`: Run repeated inference and report average time; image sources only (default `10` iterations).
-- `--export_metadata`: Print model type, routed task, and input/output layers, then exit. Requires `--weights`, not `--source`.
-- `--no_gif`: Reserved output flag; current paths emit no GIFs (default `false`).
-- `--output_video <path>`: Writes the annotated video output to a file — fixed
-  30 fps, codec auto-selected, container inferred from the file extension.
-  Only available in builds configured with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`;
-  image sources are rejected (they already write still results).
-
-### To check all available options:
-
-```bash
-./neuriplo-infer --help
-```
-
-### Common Use Case Examples
-
-```bash
-# Object Detection - YOLOv8 ONNX Runtime image processing
-./neuriplo-infer \
-  --type=yolo \
-  --source=image.png \
-  --weights=models/yolov8s.onnx \
-  --labels=data/coco.names
-
-# Object Detection - RT-DETR video processing
-./neuriplo-infer \
-  --type=rtdetr \
-  --source=video.mp4 \
-  --weights=models/rtdetr-l.onnx \
-  --labels=data/coco.names \
-  --min_confidence=0.4
-
-# Classification - Image classification
-./neuriplo-infer \
-  --type=torchvisionclassifier \
-  --source=image.png \
-  --weights=models/resnet50.onnx \
-  --labels=data/imagenet_labels.txt
-
-# Instance Segmentation - YOLO segmentation
-./neuriplo-infer \
-  --type=yoloseg \
-  --source=video.mp4 \
-  --weights=models/yolov8s-seg.onnx \
-  --labels=data/coco.names \
-  --min_confidence=0.4 \
-  --nms_threshold=0.5 \
-  --mask_threshold=0.5 \
-  --use-gpu
-
-# Optical Flow - RAFT model
-./neuriplo-infer \
-  --type=raft \
-  --source=video.mp4 \
-  --weights=models/raft-small.onnx
-
-# Open-vocabulary detection - OWLv2 image processing
-./neuriplo-infer \
-  --type=owlv2 \
-  --source=image.png \
-  --weights=models/owlv2.onnx \
-  --text_prompts='cat;dog;bus' \
-  --tokenizer_vocab=models/owlv2/vocab.json \
-  --tokenizer_merges=models/owlv2/merges.txt \
-  --min_confidence=0.2
-
-# Remote KServe runtime - YOLO served by neuriplo-kserve-runtime over HTTP
-./neuriplo-infer \
-  --type=yolo26 \
-  --source=data/dog.jpg \
-  --labels=labels/coco.names \
-  --kserve_endpoint=http://127.0.0.1:19090 \
-  --kserve_model_name=yolo \
-  --kserve_transport=http \
-  --min_confidence=0.25
-
-# Model metadata inspection without an input source
-./neuriplo-infer \
-  --type=yolo \
-  --weights=models/yolov8s.onnx \
-  --export_metadata
-```
-
-*Check the [`.vscode folder`](.vscode/launch.json) for other examples.*
-
-## Documentation
-
-`docs/` documents using and building the project; [`specs/`](specs/) holds the
-agent-facing specifications for changing it.
-
-- [`AGENTS.md`](AGENTS.md): workflow, review focus, and repo-local entrypoints
-- [`specs/README.md`](specs/README.md): the spec-driven development loop used in this repo
-- [`specs/mission.md`](specs/mission.md), [`specs/tech-stack.md`](specs/tech-stack.md), [`specs/roadmap.md`](specs/roadmap.md): project constitution — purpose, technical boundaries, delivery order
-- [`specs/architecture.md`](specs/architecture.md): ownership boundaries and runtime flow
-- [`specs/procedures/merge-feature-branch.md`](specs/procedures/merge-feature-branch.md): GitFlow procedure for landing a feature branch
-- [`docs/KserveRuntime.md`](docs/KserveRuntime.md): KServe remote-runtime reference (architecture, capabilities, configuration, build modes)
-- [`docs/KserveCompatibility.md`](docs/KserveCompatibility.md): CI-backed KServe server/transport/datatype matrix
-- [`docs/DependencyManagement.md`](docs/DependencyManagement.md): dependency responsibilities and version sources
-- [`docs/Versioning.md`](docs/Versioning.md): release/version workflow for `VERSION` and `CHANGELOG.md`
-- [`docs/DetectorArchitectures.md`](docs/DetectorArchitectures.md): object-detection architecture guide
-- [`docs/ExportInstructions.md`](docs/ExportInstructions.md) and [neuriplo-tasks export tools](https://github.com/olibartfast/neuriplo-tasks/tree/main/export): model export guides
-- [`docs/VLMImageUnderstanding.md`](docs/VLMImageUnderstanding.md): running VLMs via the llama.cpp backend
-- [`docs/generated/supported-model-types.md`](docs/generated/supported-model-types.md): generated model-type inventory
-- [`scripts/check_code_quality.sh`](scripts/check_code_quality.sh): optional format / static-analysis / sanitizer helper
-
-## Docker Deployment
-
-### Building Images
-Inside the project, in the [Dockerfiles folder](docker), there will be a dockerfile for each inference backend (currently onnxruntime, libtorch, tensorrt, openvino)
-```bash
-# Build for specific backend
-docker build --rm -t neuriplo-infer:<backend_tag> \
-    -f docker/Dockerfile.<backend_tag> .
-```
-
-### Running Containers
-Replace the wildcards with your desired options and paths:
-```bash
-docker run --rm \
-    -v<path_host_data_folder>:/app/data \
-    -v<path_host_weights_folder>:/weights \
-    -v<path_host_labels_folder>:/labels \
-    neuriplo-infer:<backend_tag> \
-    --type=<model_type> \
-    --weights=<weight_according_your_backend> \
-    --source=/app/data/<image_or_video> \
-    --labels=/labels/<labels_file>
-```
-
-
-For GPU support, add `--gpus all` to the docker run command.
-
-### End-to-End Example Script
-
-[`docker_run_inference_e2e_example.sh`](docker_run_inference_e2e_example.sh) provides preset-driven export-plus-inference workflows (OWLv2, YOLO26s TFLite, EdgeCrafter detection/segmentation/pose, and more). Most presets are self-contained and need no `neuriplo-tasks` checkout.
-
-```bash
-bash docker_run_inference_e2e_example.sh --list-presets        # list presets
-bash docker_run_inference_e2e_example.sh --preset owlv2 --dry-run   # preview without running
-bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite    # run a preset
-```
-
-The OWLv2 dry-run is also exposed through CTest:
-
-```bash
-ctest --output-on-failure -R docker_run_inference_e2e_owlv2_dry_run
-```
-
-## ⚠️ Known Limitations
-- Windows builds not currently supported
-- Some model/backend combinations may require specific export configurations
-- KServe HTTP and gRPC are validated live against `neuriplo-kserve-runtime` (gRPC requires Protobuf/gRPC at build time). Triton/OVMS round-trips run as a CI dry-run on every PR, with live runs behind a manual dispatch — see [docs/KserveCompatibility.md](docs/KserveCompatibility.md). FP16/BF16 inputs over gRPC require raw tensor contents (the default; the typed-`contents` fallback selected by `KSERVE_BINARY=0` cannot carry them).
-- KServe TLS is supported on both transports: HTTPS for the HTTP client (requires an OpenSSL-enabled build) and `grpcs://` for the gRPC client, with optional mTLS via `KSERVE_CLIENT_CERT`/`KSERVE_CLIENT_KEY`. A build without OpenSSL still works over plaintext `http://`, but `https://` endpoints fail fast with a clear error.
-- KServe model management (Model Repository extension: index / load / unload) is implemented on the client API for both transports but is not yet exposed through the CLI, and is only available when the server enables the extension (e.g. Triton `--model-control-mode=explicit`); see [docs/KserveRuntime.md](docs/KserveRuntime.md).
-
- ## References
- - https://paperswithcode.co/tasks
- - https://leaderboard.roboflow.com
+[`AGENTS.md`](AGENTS.md) holds the full workflow, and [`specs/`](specs/README.md)
+the specifications used to change the project.
 
 ## Support
 
-- Open an [issue](https://github.com/olibartfast/neuriplo-infer/issues) for bug reports or feature requests: contributions, corrections, and suggestions are welcome to keep this repository relevant and useful.
-- Check existing issues for solutions to common problems
+- Open an [issue](https://github.com/olibartfast/neuriplo-infer/issues) for bug reports or feature requests: contributions, corrections, and suggestions are welcome.
+- Check existing issues for solutions to common problems.

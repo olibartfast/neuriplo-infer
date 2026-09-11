@@ -33,6 +33,12 @@ a release's worth of user-visible change sitting on `develop`.
   `scripts/cut_release.sh`, `scripts/validate_release_pins.sh` passes, the tag is
   pushed, Publish GitHub Release has run, and
   `git rev-list --left-right --count origin/develop...origin/master` is `0 0`.
+- After the release is published: close issues
+  [#38](https://github.com/olibartfast/neuriplo-infer/issues/38) and
+  [#39](https://github.com/olibartfast/neuriplo-infer/issues/39) if the README
+  quickstart / docs split is in it, replying in English and Chinese with links to
+  the README quickstart, platform table, and `docs/Deployment.md`. Not on merge to
+  `develop` — the maintainer wants them closed only by a release.
 
 ## Phase 3 — Typed errors in `neuriplo-kserve-client` · not started
 
@@ -113,6 +119,19 @@ Real, observed, small enough not to need a packet until someone picks one up:
   `scripts/cut_release.sh` appends instead of replacing it.
 - FP16/BF16 over gRPC works only with raw tensor contents; the `KSERVE_BINARY=0`
   fallback silently cannot carry them.
+- The Docker images unpack backend SDKs under `/root`, so
+  `docker run --user "$(id -u):$(id -g)"` fails to load them
+  (`libonnxruntime.so.1: cannot open shared object file`) and host output is
+  root-owned. Found while verifying the README quickstart (2026-09-11).
+- `OPENCV_DNN` built against Ubuntu 24.04's apt OpenCV 4.6 rejects current
+  Ultralytics ONNX exports (YOLO11n attention `Split`; YOLOv8n `Unsqueeze`, also
+  at opset 12), so the default backend cannot run the most common first model.
+- `versions.env` `CMAKE_MIN_VERSION=3.20` disagrees with
+  `cmake_minimum_required(VERSION 3.24)`.
+
+Done outside a phase: README quickstart and user-docs split
+([`2026-09-11-readme-quickstart-docs/`](2026-09-11-readme-quickstart-docs/requirements.md)),
+addressing issues #38 and #39, which close with the next release (Phase 2).
 
 ## Replanning
 

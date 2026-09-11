@@ -2,6 +2,10 @@
 .gitignore
 build/*
 !build/_deps/neuriplo-src/versions.env
+build-*/
+# Host-side artifacts of docker_run_inference_e2e_example.sh; no image copies them.
+models/
+environments/
 *.md
 .dockerignore
 Dockerfile

@@ -4,6 +4,7 @@
 #   -v $(pwd)/data:/app/data \
 #   neuriplo-infer:llamacpp \
 #   --type=gemma4 --weights=/weights/gemma-4-E2B-it-Q4_K_M.gguf \
+#   --mmproj=/weights/mmproj-F16.gguf \
 #   --prompt="What do you see in this image?"
 #
 # LLAMACPP_VERSION must match neuriplo's versions.env (LLAMACPP_VERSION).
@@ -90,14 +91,18 @@ RUN cmake -Bbuild \
 # ── Stage 5: lean runtime image ──────────────────────────────────────────────
 FROM base_deps AS final
 
+WORKDIR /app
+
 ENV LLAMACPP_DIR=/opt/llamacpp
 ENV LD_LIBRARY_PATH=${LLAMACPP_DIR}/lib:${LLAMACPP_DIR}/lib64:/usr/local/lib
 
 COPY --from=llamacpp_build ${DEPENDENCIES_DIR}/llamacpp /opt/llamacpp
 COPY --from=builder        /src/build/app/neuriplo-infer /usr/local/bin/neuriplo-infer
+COPY --from=builder        /src/build/_deps/neuriplo-build/libneuriplo.so /usr/local/lib/
+COPY --from=builder        /src/build/_deps/videocapture-build/libVideoCapture.so /usr/local/lib/
 COPY --from=model_download /opt/models /opt/models
 
-RUN mkdir -p /app/data /weights
+RUN ldconfig && mkdir -p /app/data /weights
 
 ENTRYPOINT ["neuriplo-infer"]
 CMD ["--help"]
