@@ -17,12 +17,12 @@ Every agent taking ownership of this repo must know these easily-missed steps
 (see the full checklist under "Documentation checklist when wiring a new task
 type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
 
-1. **Supported-model-types docs are generated, not hand-written.** The
-   `<!-- SUPPORTED_MODEL_TYPES -->` block in `README.md` and
-   `docs/generated/supported-model-types.md` come from the neuriplo-tasks README via
+1. **Supported-model-types docs are generated, not hand-written.**
+   `docs/generated/supported-model-types.md` comes from the neuriplo-tasks README via
    `python3 scripts/sync_supported_model_types.py [--neuriplo-tasks-readme <path>]`.
-   `ci.yml` runs it with `--check`; a stale block fails CI. Run it (not a manual
-   edit) whenever neuriplo-tasks adds/changes a task or model type.
+   `ci.yml` runs it with `--check`; a stale page fails CI. Run it (not a manual
+   edit) whenever neuriplo-tasks adds/changes a task or model type. `README.md`
+   links to that page and does not embed the list.
 2. **App task routing must match neuriplo-tasks.** `getTaskTypeForModel`
    (`app/src/NeuriploInferTaskRouting.cpp`) must map each type string to the same
    `TaskType` that `neuriplo_tasks::TaskFactory` builds.
@@ -193,7 +193,7 @@ When a new task type is added end-to-end (neuriplo-tasks → neuriplo → neurip
 
 **neuriplo-infer:**
 4. `## Key Features` bullet in `README.md` — update the task list inline (not synced from neuriplo-tasks).
-5. Run `python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path>` and commit the updated `README.md` and `docs/generated/supported-model-types.md`.
+5. Run `python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path>` and commit the updated `docs/generated/supported-model-types.md`.
 
 Missing any of these makes the task invisible to users reading the top-level READMEs.
 

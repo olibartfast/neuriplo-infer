@@ -9,7 +9,8 @@ Companion documents:
 
 - [KserveCompatibility.md](KserveCompatibility.md) — the CI-backed matrix of
   tested server / transport / datatype combinations.
-- `README.md` § *KServe Runtime Parameters* — CLI flags and usage examples.
+- [Usage.md](Usage.md) — the full CLI reference; the KServe flags are
+  documented below under *CLI flags*.
 - History: the feature was developed on `feature/neuriplo-kserve-runtime` and
   merged into `develop` on 2026-06-09 with all roadmap phases complete; see
   `CHANGELOG.md` and git history for the phase-by-phase record.
@@ -75,11 +76,42 @@ selected at runtime and are mutually exclusive per invocation.
 
 ## Configuration
 
-CLI flags (`--kserve_endpoint`, `--kserve_model_name`,
-`--kserve_model_version`, `--kserve_transport`, `--kserve_timeout_ms`) are
-documented in `README.md` § *KServe Runtime Parameters*. The endpoint scheme
-selects transport security: `http://` / `grpc://` plaintext, `https://` /
-`grpcs://` TLS.
+### CLI flags
+
+Preprocessing and postprocessing run in `neuriplo-infer`; only the inference
+tensors go to the remote runtime. Passing `--kserve_endpoint` selects this mode,
+and `--weights` is then not needed.
+
+| Flag | Default | Effect |
+|------|---------|--------|
+| `--kserve_endpoint=<url>` | — | Base KServe V2 endpoint, e.g. `http://127.0.0.1:19090`. A path prefix is allowed behind a gateway. The scheme selects transport security: `http://` / `grpc://` plaintext, `https://` / `grpcs://` TLS, verified against the system CA roots or `KSERVE_CA_CERT`. `https://` needs an OpenSSL build (see *Build modes*). |
+| `--kserve_model_name=<name>` | `--type` | Model name served by the endpoint. |
+| `--kserve_model_version=<version>` | `1` | Model version to call. |
+| `--kserve_transport=<grpc\|http>` | `grpc` | Transport. A build without gRPC uses HTTP whatever this says. |
+| `--kserve_timeout_ms=<ms>` | `30000` | Request timeout; must be greater than zero. |
+| `--input_mode`, `--im=<preprocessed\|encoded-image>` | `preprocessed` | `preprocessed` sends a dense tensor this client prepared. `encoded-image` sends the encoded file for a server-side ensemble to preprocess; it requires `--kserve_endpoint`, `--task_model`, `--batch=1`, and no `--input_sizes`. |
+| `--task_model`, `--tm=<model>` | — | Inner model whose metadata drives task construction in `encoded-image` mode: an ensemble's own metadata only describes an encoded image. |
+| `--task_model_version`, `--tmv=<version>` | `1` | Version of `--task_model`. |
+| `--postprocess_mode`, `--pm=<cpu\|gpu>` | `cpu` | `gpu` decodes the server's result envelope instead of running local postprocessing; requires `--input_mode=encoded-image`. |
+
+YOLO served by `neuriplo-kserve-runtime` over HTTP:
+
+```bash
+./neuriplo-infer --type=yolo26 --source=data/dog.jpg --labels=labels/coco.names \
+  --kserve_endpoint=http://127.0.0.1:19090 --kserve_model_name=yolo \
+  --kserve_transport=http
+```
+
+A segmentation ensemble that preprocesses and postprocesses on the server:
+
+```bash
+./neuriplo-infer --type=yolo26seg --source=frame.jpg --labels=labels/coco.names \
+  --kserve_endpoint=http://127.0.0.1:8080 \
+  --kserve_model_name=yolo26seg_ens --task_model=yolo26seg \
+  --input_mode=encoded-image --postprocess_mode=gpu
+```
+
+### Environment variables
 
 Environment variables (the canonical list):
 
