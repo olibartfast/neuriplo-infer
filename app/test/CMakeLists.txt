@@ -36,6 +36,7 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_InferencePipelineBuilder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_FrameConversion.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_ModelInputTypes.cpp
     # The pure KServe protocol/retry/security suites live in the
     # neuriplo-kserve-client repo; only the adapter test stays here.
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveEngine.cpp
@@ -157,5 +158,12 @@ if(NEURIPLO_INFER_ENABLE_KSERVE)
     add_test(
         NAME kserve_integration_dry_run
         COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/kserve_integration.sh --dry-run
+    )
+    # Image-input datatypes (UINT8 runs; INT8/BOOL refused before any request)
+    # against a real neuriplo-kserve-runtime. Dry-run here; --live needs the
+    # runtime and neuriplo-infer binaries, see the script.
+    add_test(
+        NAME kserve_input_datatypes_e2e_dry_run
+        COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/kserve_input_datatypes_e2e.sh --dry-run
     )
 endif()

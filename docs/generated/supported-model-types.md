@@ -19,7 +19,8 @@ The TaskFactory supports the following model type strings. Matching normalizes s
 
 - `"yolo"`, `"yolov7e2e"`, `"yolov10"`, `"yolo26"`, `"yolov4"` - YOLO-based variants
 - `"yolonas"` - YOLO-NAS
-- `"rtdetr"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3; includes D-FINE and DEIM v1/v2)
+- `"rtdetr"`, `"rtdetrv2"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3)
+- `"dfine"`, `"deim"`, `"deimv2"` - D-FINE and DEIM; same export signature and postprocessing as RT-DETR, matched by prefix so later revisions resolve too
 - `"rtdetrul"`, `"rtdetrultralytics"` - RT-DETR (Ultralytics implementation)
 - `"rfdetr"` - RF-DETR
 - `"ecdet"` - EdgeCrafter detection (any string starting with `ecdet`)

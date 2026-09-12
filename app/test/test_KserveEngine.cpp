@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include <gtest/gtest.h>
+#include <limits>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -35,13 +36,17 @@ public:
 
   kserve::ModelMetadata modelMetadata() override {
     kserve::ModelMetadata md;
-    md.inputs.push_back({"input", "FP32", {1, 1}});
+    md.inputs = inputs_;
     md.outputs.push_back({"output", "FP32", {1, 1}});
     setMetadataPlatform(md, platform_);
     return md;
   }
 
   void setPlatform(std::string platform) { platform_ = std::move(platform); }
+
+  void setInputs(std::vector<kserve::TensorSpec> inputs) {
+    inputs_ = std::move(inputs);
+  }
 
   std::vector<kserve::InferOutput>
   infer(const std::vector<kserve::InferInput> &inputs) override {
@@ -70,6 +75,7 @@ private:
   std::chrono::milliseconds infer_delay_;
   int infer_calls_{0};
   std::string platform_;
+  std::vector<kserve::TensorSpec> inputs_{{"input", "FP32", {1, 1}}};
 };
 
 std::vector<std::vector<uint8_t>> oneFloatInput() {
@@ -79,7 +85,88 @@ std::vector<std::vector<uint8_t>> oneFloatInput() {
   return {bytes};
 }
 
+std::vector<uint8_t> floatBytes(size_t count) {
+  return std::vector<uint8_t>(count * sizeof(float));
+}
+
 } // namespace
+
+TEST(KserveEngine, CarriesAdvertisedInputDatatypesIntoMetadata) {
+  auto client = std::make_unique<FakeClient>();
+  client->setInputs({{"a", "INT8", {1, 4}},
+                     {"b", "BOOL", {1, 4}},
+                     {"c", "UINT8", {1, 4}},
+                     {"d", "INT64", {1, 2}},
+                     {"e", "FP16", {1, 4}}});
+  KserveEngine engine(std::move(client));
+
+  const auto inputs = engine.get_inference_metadata().getInputs();
+
+  ASSERT_EQ(inputs.size(), 5U);
+  EXPECT_EQ(inputs[0].datatype, TensorDataType::Int8);
+  EXPECT_EQ(inputs[1].datatype, TensorDataType::Bool);
+  EXPECT_EQ(inputs[2].datatype, TensorDataType::UInt8);
+  EXPECT_EQ(inputs[3].datatype, TensorDataType::Int64);
+  // FP16 has no metadata member; callers that need it read rawMetadata().
+  EXPECT_EQ(inputs[4].datatype, TensorDataType::Float32);
+}
+
+TEST(KserveEngine, RefusesBytesThatDoNotFitTheAdvertisedDatatype) {
+  for (const std::string datatype : {"INT8", "BOOL", "UINT8", "FP16"}) {
+    auto client = std::make_unique<FakeClient>();
+    const FakeClient *fake = client.get();
+    client->setInputs({{"images", datatype, {1, 4}}});
+    KserveEngine engine(std::move(client));
+
+    // Four Float32 elements are 16 bytes, which none of these datatypes holds.
+    EXPECT_THROW(engine.get_infer_results({floatBytes(4)}), std::runtime_error)
+        << datatype;
+    EXPECT_EQ(fake->inferCalls(), 0) << "nothing may be sent: " << datatype;
+  }
+}
+
+TEST(KserveEngine, NamesTheInputAndDatatypeWhenRefusing) {
+  auto client = std::make_unique<FakeClient>();
+  client->setInputs({{"pixel_values", "INT8", {1, 3, 2, 2}}});
+  KserveEngine engine(std::move(client));
+
+  try {
+    engine.get_infer_results({floatBytes(12)});
+    FAIL() << "Float32 bytes under INT8 must be refused";
+  } catch (const std::runtime_error &error) {
+    const std::string message = error.what();
+    EXPECT_NE(message.find("'pixel_values'"), std::string::npos) << message;
+    EXPECT_NE(message.find("INT8"), std::string::npos) << message;
+  }
+}
+
+TEST(KserveEngine, SendsBytesThatFitTheAdvertisedDatatype) {
+  auto client = std::make_unique<FakeClient>();
+  const FakeClient *fake = client.get();
+  client->setInputs({{"images", "UINT8", {1, 4}},
+                     {"orig_target_sizes", "INT64", {1, 2}},
+                     {"encoded", "UINT8", {-1}},
+                     {"dynamic_batch", "FP32", {-1, 4}}});
+  KserveEngine engine(std::move(client));
+
+  engine.get_infer_results({std::vector<uint8_t>(4), std::vector<uint8_t>(16),
+                            std::vector<uint8_t>(1234), floatBytes(8)});
+
+  EXPECT_EQ(fake->inferCalls(), 1);
+}
+
+TEST(KserveEngine, RefusesAShapeWhoseByteCountOverflows) {
+  auto client = std::make_unique<FakeClient>();
+  const FakeClient *fake = client.get();
+  // The static dimensions overflow size_t when multiplied by the FP32 width,
+  // so the guard must reject the metadata instead of wrapping to a small value.
+  client->setInputs(
+      {{"images", "FP32", {1, 1, std::numeric_limits<int64_t>::max(), 2}}});
+  KserveEngine engine(std::move(client));
+
+  EXPECT_THROW(engine.get_infer_results({floatBytes(1)}), std::runtime_error);
+  EXPECT_EQ(fake->inferCalls(), 0);
+}
 
 TEST(KserveEngine, LatencyStartsAtZero) {
   KserveEngine engine(std::make_unique<FakeClient>());
