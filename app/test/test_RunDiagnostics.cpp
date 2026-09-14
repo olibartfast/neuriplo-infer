@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <iterator>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -39,9 +40,9 @@ public:
 
   std::tuple<std::vector<std::vector<TensorElement>>,
              std::vector<std::vector<int64_t>>>
-  get_infer_results(
-      const std::vector<std::vector<uint8_t>> & /*inputs*/) override {
+  get_infer_results(const std::vector<std::vector<uint8_t>> &inputs) override {
     ++calls;
+    payloads.push_back(inputs);
     if (delay.count() > 0) {
       std::this_thread::sleep_for(delay);
     }
@@ -50,6 +51,8 @@ public:
   }
 
   int calls{0};
+  /// Every request's input tensors, in call order.
+  std::vector<std::vector<std::vector<uint8_t>>> payloads;
   /// Makes an ignored call cost measurable time, so a test can tell whether
   /// that time was counted.
   std::chrono::milliseconds delay{0};
@@ -454,7 +457,83 @@ TEST_F(RunDiagnostics, AnImageThatCannotBeSavedFailsInsteadOfCountingASample) {
   EXPECT_EQ(document.at("metrics").at("samples"), 0);
 }
 
+TEST_F(RunDiagnostics, ClassificationCountsEachSourceFrameOnce) {
+  // Overlapping windows used to count every frame of every window:
+  // 4 * (6 - 4 + 1) = 12 frames for a 6-frame clip.
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 6);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.num_frames = 4;
+  pipeline.task_type = neuriplo_tasks::TaskType::VideoClassification;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  EXPECT_EQ(dynamic_cast<FakeEngine *>(pipeline.engine.get())->calls, 3);
+  EXPECT_EQ(report().at("metrics").at("frames"), 6);
+}
+
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+TEST_F(RunDiagnostics, EncodedWarmupAndBenchmarkSendTheSourceFileBytes) {
+  // Warmup and benchmark used to re-encode the decoded frame, so they
+  // measured a payload of different content and size than the real request.
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.encoded_image = true;
+  pipeline.config.enable_warmup = true;
+  pipeline.config.enable_benchmark = true;
+  pipeline.config.benchmark_iterations = 2;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+
+  std::ifstream stream(source_, std::ios::binary);
+  const std::vector<uint8_t> file_bytes(
+      (std::istreambuf_iterator<char>(stream)),
+      std::istreambuf_iterator<char>());
+  const auto *engine = dynamic_cast<FakeEngine *>(pipeline.engine.get());
+  ASSERT_NE(engine, nullptr);
+  // Five warmup iterations, the real request, two benchmark iterations.
+  ASSERT_EQ(engine->payloads.size(), 8U);
+  for (const auto &payload : engine->payloads) {
+    ASSERT_EQ(payload.size(), 1U);
+    EXPECT_EQ(payload[0], file_bytes);
+  }
+}
+#endif
+
 #ifdef VIDEOCAPTURE_WITH_WRITER
+TEST_F(RunDiagnostics, OutputVideoCreatesMissingParentDirectories) {
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 5);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.output_video =
+      (directory_ / "nested" / "deeper" / "annotated.avi").string();
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+
+  EXPECT_EQ(countVideoFrames(pipeline.config.output_video), 5);
+}
+
+TEST_F(RunDiagnostics, AVideoWithNoFramesFailsInsteadOfSkippingTheOutput) {
+  const auto video = writeFixtureVideo(directory_ / "empty.avi", 0);
+  if (!cv::VideoCapture(video.string()).isOpened()) {
+    GTEST_SKIP() << "this OpenCV build cannot open a zero-frame clip";
+  }
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.output_video = (directory_ / "annotated.avi").string();
+
+  EXPECT_THROW(RunInferenceCommand().execute(pipeline), std::runtime_error);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+  EXPECT_EQ(report().at("metrics").at("samples"), 0);
+}
+
 TEST_F(RunDiagnostics, AVideoRunWritesEveryFrameToTheOutputVideo) {
   const auto video = writeFixtureVideo(directory_ / "fixture.avi", 5);
   RunReport collected;

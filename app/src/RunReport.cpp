@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <mutex>
 #include <utility>
 
 namespace neuriplo_infer {
@@ -103,20 +104,31 @@ void RunReport::fail(RunStage stage, std::string message) {
 }
 
 namespace {
+// Shared by the public arm/disarm calls and the atexit hook, so every read and
+// write of this state goes through one mutex.
+std::mutex g_configuration_report_mutex;
 std::filesystem::path g_configuration_report_path;
 bool g_configuration_report_armed = false;
 bool g_configuration_hook_registered = false;
 
 void writeConfigurationReportAtExit() {
-  if (!g_configuration_report_armed) {
-    return;
+  std::filesystem::path path;
+  {
+    const std::lock_guard<std::mutex> lock(g_configuration_report_mutex);
+    if (!g_configuration_report_armed) {
+      return;
+    }
+    g_configuration_report_armed = false;
+    path = g_configuration_report_path;
   }
-  g_configuration_report_armed = false;
-  writeConfigurationFailureReport({}, g_configuration_report_path);
+  // Written outside the lock: the write does file I/O and must not hold the
+  // state other threads may still be disarming.
+  writeConfigurationFailureReport({}, path);
 }
 } // namespace
 
 void armConfigurationExitReport(std::filesystem::path path) {
+  const std::lock_guard<std::mutex> lock(g_configuration_report_mutex);
   g_configuration_report_path = std::move(path);
   g_configuration_report_armed = true;
   if (!g_configuration_hook_registered) {
@@ -125,7 +137,10 @@ void armConfigurationExitReport(std::filesystem::path path) {
   }
 }
 
-void disarmConfigurationExitReport() { g_configuration_report_armed = false; }
+void disarmConfigurationExitReport() {
+  const std::lock_guard<std::mutex> lock(g_configuration_report_mutex);
+  g_configuration_report_armed = false;
+}
 
 double RunReport::elapsedMs() const {
   const auto now = std::chrono::steady_clock::now();
