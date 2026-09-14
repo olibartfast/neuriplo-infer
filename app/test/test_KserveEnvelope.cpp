@@ -273,6 +273,25 @@ TEST(KserveEnvelope, RejectsInstanceRingOffsetsPastRingOffsets) {
                std::runtime_error);
 }
 
+// A detection with an empty ring range still needs its sentinel inside
+// RING_POINT_OFFSETS; with that tensor empty, the malformed response used to
+// decode silently into an empty segmentation.
+TEST(KserveEnvelope, RejectsEmptyRingRangeOutsideRingOffsets) {
+  auto outputs = detectionEnvelope(1, {{{0, 0, 10, 10}}}, {0.9F}, {5});
+
+  std::vector<uint8_t> instance_offsets;
+  for (int i = 0; i <= neuriplo_infer::kEnvelopeMaxDetections; ++i) {
+    append<int64_t>(instance_offsets, 0);
+  }
+
+  outputs.push_back(tensor("INSTANCE_RING_OFFSETS", "INT64", instance_offsets));
+  outputs.push_back(tensor("RING_POINT_OFFSETS", "INT64", {}));
+  outputs.push_back(tensor("POLYGON_POINTS", "INT32", {}));
+
+  EXPECT_THROW(neuriplo_infer::decodePolygonEnvelope(outputs),
+               std::runtime_error);
+}
+
 TEST(KserveEnvelope, RecognisesDecodedAndPassthroughModels) {
   kserve::ModelMetadata passthrough;
   passthrough.outputs.push_back({"output0", "FP32", {1, 84, 8400}});
