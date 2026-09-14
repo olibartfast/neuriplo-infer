@@ -3,9 +3,8 @@ name: Release Guard
 # Runs when a semver release tag is pushed. Verifies versions.env sibling pins
 # at the tag so checkouts rebuild against fixed sibling code.
 #
-# GitHub Release publishing is handled separately by publish-github-release.yml
-# (workflow_run after this workflow succeeds) so tags cut before the publish
-# workflow existed still get a Release without retagging.
+# The GitHub Release itself is created manually (gh release create) once this
+# workflow succeeds; the auto-publish workflow was removed.
 
 on:
   push:

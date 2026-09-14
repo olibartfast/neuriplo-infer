@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-14
+
 ### Added
 - `--output_video <path>` writes the annotated video output of a video run to a
   playable file (fixed 30 fps, codec auto-selected, container inferred from the
@@ -72,6 +74,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   may reference a different inner version.
 
 ### Fixed
+- `scripts/cut_release.sh` no longer appends another copy of the sibling-pin
+  comment block to `versions.env` on every release, and the release docs no
+  longer claim a GitHub Release is published automatically on tag push (that
+  workflow was removed; create it with `gh release create`).
 - A model's advertised input datatypes now reach preprocessing instead of the
   first input being forced to `Float32` (#44). Over KServe, `Float32` bytes were
   labelled with whatever datatype the server advertised, so a `UINT8`, `INT8`,
@@ -489,7 +495,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.7.0...v0.8.0
