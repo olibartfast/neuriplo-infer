@@ -195,6 +195,16 @@ void requireEncodedImageSupport(neuriplo_tasks::TaskType task_type,
   }
 }
 
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+void requireServerPostprocessMatchesTask(const InferencePipeline &pipeline,
+                                         const std::string &model_type) {
+  if (pipeline.server_postprocess) {
+    neuriplo_infer::requireEnvelopeMatchesTask(pipeline.envelope_variant,
+                                               pipeline.task_type, model_type);
+  }
+}
+#endif
+
 int InferencePipeline::getRequiredFrameCount() const {
   if (config.num_frames > 0) {
     return config.num_frames;
@@ -381,6 +391,9 @@ void InferencePipelineBuilder::setupTask(InferencePipeline &pipeline) const {
   if (pipeline.encoded_image) {
     requireEncodedImageSupport(pipeline.task_type, config_.detectorType);
   }
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+  requireServerPostprocessMatchesTask(pipeline, config_.detectorType);
+#endif
 
   LOG(INFO) << "Using neuriplo-tasks model type: " << config_.detectorType;
   pipeline.task = neuriplo_tasks::TaskFactory::createTaskInstance(
