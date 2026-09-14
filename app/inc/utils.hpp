@@ -8,6 +8,10 @@ void draw_label(cv::Mat &input_image, const std::string &label,
                 float confidence, int left, int top);
 std::vector<std::string> readLabelNames(const std::string &fileName);
 std::string getFileExtension(const std::string &filename);
+// A source argument naming a still image, judged by its extension
+// case-insensitively. Routing and argument validation share it so they can
+// never disagree about what is an image.
+bool isStillImageSource(const std::string &path);
 std::string getGPUModel();
 std::vector<std::string> getGPUModels();
 std::string getCPUInfo();

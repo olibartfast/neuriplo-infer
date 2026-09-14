@@ -51,6 +51,23 @@ TEST_F(UtilsTest, GetFileExtension) {
   EXPECT_EQ(getFileExtension("image.png"), "png");
   EXPECT_EQ(getFileExtension("archive.tar.gz"), "gz");
   EXPECT_EQ(getFileExtension("no_extension"), "");
+  // Only the file name carries an extension; a dotted directory does not.
+  EXPECT_EQ(getFileExtension("runs.v2/clip"), "");
+  EXPECT_EQ(getFileExtension("runs.v2/clip.mp4"), "mp4");
+  EXPECT_EQ(getFileExtension(".hidden"), "");
+}
+
+// Routing used a case-sensitive substring test for ".jpg"/".png", so
+// IMG_0001.JPG or photo.jpeg ran through the video loop and wrote no image.
+TEST(UtilsStandalone, IsStillImageSourceIsCaseInsensitiveOnTheFileName) {
+  for (const char *path : {"a.jpg", "IMG_0001.JPG", "photo.jpeg", "scan.bmp",
+                           "page.tif", "page.TIFF", "x.png", "y.webp"}) {
+    EXPECT_TRUE(isStillImageSource(path)) << path;
+  }
+  for (const char *path : {"clip.mp4", "a.png.mp4", "runs.jpg/clip",
+                           "dir.v2/clip", "no_extension", ""}) {
+    EXPECT_FALSE(isStillImageSource(path)) << path;
+  }
 }
 
 TEST_F(UtilsTest, ReadLabelNames) {
@@ -87,4 +104,28 @@ TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
             neuriplo_tasks::TaskType::GaussianSplatting);
   EXPECT_EQ(getTaskTypeForModel("imageunderstanding"),
             neuriplo_tasks::TaskType::ImageUnderstanding);
+}
+
+// neuriplo-tasks v0.8.0 routes any YOLO-prefixed model type containing `depth`
+// to its YOLO26 depth family; before the pin bump these fell through to
+// Detection and a depth model silently ran as a detector.
+TEST(TaskRouting, RoutesYoloDepthFamilyToDepthEstimation) {
+  EXPECT_EQ(getTaskTypeForModel("yolo-depth"),
+            neuriplo_tasks::TaskType::DepthEstimation);
+  EXPECT_EQ(getTaskTypeForModel("yolo26n-depth"),
+            neuriplo_tasks::TaskType::DepthEstimation);
+  EXPECT_EQ(getTaskTypeForModel("depthanythingv2"),
+            neuriplo_tasks::TaskType::DepthEstimation);
+
+  // The seg and pose branches still win over the broader depth match.
+  EXPECT_EQ(getTaskTypeForModel("yolo11-seg"),
+            neuriplo_tasks::TaskType::InstanceSegmentation);
+  EXPECT_EQ(getTaskTypeForModel("vitpose"),
+            neuriplo_tasks::TaskType::PoseEstimation);
+  EXPECT_EQ(getTaskTypeForModel("yolo26"), neuriplo_tasks::TaskType::Detection);
+
+  // TaskFactory only routes YOLO-prefixed depth types and Depth-Anything-V2;
+  // any other name containing "depth" is a detector there, and must be here.
+  EXPECT_EQ(getTaskTypeForModel("mydepthnet"),
+            neuriplo_tasks::TaskType::Detection);
 }

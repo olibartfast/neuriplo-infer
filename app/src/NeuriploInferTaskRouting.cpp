@@ -40,7 +40,13 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
        (contains(normalized, "keypoint") || contains(normalized, "kpt")))) {
     return neuriplo_tasks::TaskType::PoseEstimation;
   }
-  if (contains(normalized, "depthanythingv2")) {
+  // Depth estimation: Depth-Anything-V2 plus the YOLO26 depth family added in
+  // neuriplo-tasks v0.8.0 (any YOLO-prefixed model type containing `depth`).
+  // Mirrors TaskFactory's two depth rules exactly; a broader match routed
+  // other "*depth*" names to a task TaskFactory would not build for them.
+  // Runs after the seg/pose branches so their precedence is unchanged.
+  if ((startsWith(normalized, "yolo") && contains(normalized, "depth")) ||
+      contains(normalized, "depthanythingv2")) {
     return neuriplo_tasks::TaskType::DepthEstimation;
   }
   if (normalized == "lgm" || normalized == "grm" ||

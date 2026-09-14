@@ -42,6 +42,66 @@ public:
   bool rendered_called{false};
 };
 
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+// setupTask calls this with the pipeline it is building, so these cover the
+// branch condition and the arguments passed, not only the envelope rule.
+TEST(ServerPostprocessTaskSupport, RejectsAnEnvelopeThatDisagreesWithTheTask) {
+  InferencePipeline pipeline;
+  pipeline.server_postprocess = true;
+  pipeline.envelope_variant = neuriplo_infer::EnvelopeVariant::Mask;
+  pipeline.task_type = neuriplo_tasks::TaskType::Detection;
+  EXPECT_THROW(requireServerPostprocessMatchesTask(pipeline, "yolo"),
+               std::runtime_error);
+
+  pipeline.task_type = neuriplo_tasks::TaskType::InstanceSegmentation;
+  EXPECT_NO_THROW(requireServerPostprocessMatchesTask(pipeline, "yoloseg"));
+}
+
+// The envelope used to override an explicit --segmentation_output silently.
+TEST(ServerPostprocessTaskSupport,
+     RejectsAnExplicitSegmentationOutputMismatch) {
+  InferencePipeline pipeline;
+  pipeline.server_postprocess = true;
+  pipeline.envelope_variant = neuriplo_infer::EnvelopeVariant::Mask;
+  pipeline.task_type = neuriplo_tasks::TaskType::InstanceSegmentation;
+  pipeline.config.segmentationOutput = "polygon";
+
+  // Defaulted: the ensemble decides.
+  pipeline.config.segmentation_output_explicit = false;
+  EXPECT_NO_THROW(requireServerPostprocessMatchesTask(pipeline, "yoloseg"));
+
+  pipeline.config.segmentation_output_explicit = true;
+  EXPECT_THROW(requireServerPostprocessMatchesTask(pipeline, "yoloseg"),
+               std::runtime_error);
+
+  pipeline.envelope_variant = neuriplo_infer::EnvelopeVariant::Polygon;
+  EXPECT_NO_THROW(requireServerPostprocessMatchesTask(pipeline, "yoloseg"));
+}
+
+TEST(ServerPostprocessTaskSupport, SkipsTheCheckWhenPostprocessingLocally) {
+  InferencePipeline pipeline;
+  pipeline.server_postprocess = false;
+  pipeline.envelope_variant = neuriplo_infer::EnvelopeVariant::Mask;
+  pipeline.task_type = neuriplo_tasks::TaskType::Detection;
+  EXPECT_NO_THROW(requireServerPostprocessMatchesTask(pipeline, "yolo"));
+}
+#endif
+
+TEST(EncodedImageTaskSupport, RejectsTasksThatPreprocessLocally) {
+  for (const auto task_type : {neuriplo_tasks::TaskType::VideoClassification,
+                               neuriplo_tasks::TaskType::OpticalFlow,
+                               neuriplo_tasks::TaskType::ImageUnderstanding,
+                               neuriplo_tasks::TaskType::OpenVocabDetection}) {
+    EXPECT_THROW(requireEncodedImageSupport(task_type, "model"),
+                 std::runtime_error);
+  }
+}
+
+TEST(EncodedImageTaskSupport, AcceptsTasksRoutedThroughInferFrame) {
+  EXPECT_NO_THROW(
+      requireEncodedImageSupport(neuriplo_tasks::TaskType::Detection, "yolo"));
+}
+
 TEST(InferencePipelineBuilderTest, FailsOnInvalidWeights) {
   AppConfig config;
   config.detectorType = "yolo26";
@@ -69,6 +129,10 @@ TEST(InferencePipelineBuilderTest, FailsOnInvalidDetectorType) {
 }
 
 TEST(InferencePipelineBuilderTest, BuildSuccessWithValidYoloModel) {
+#ifndef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+  GTEST_SKIP() << "Requires a compiled local inference backend";
+#endif
+
   AppConfig config;
   config.detectorType = "yolo26";
   config.weights = getWeightsPath();
@@ -107,6 +171,10 @@ TEST(InferencePipelineBuilderTest, BuildSuccessWithValidYoloModel) {
 }
 
 TEST(InferencePipelineBuilderTest, BuildWithCustomRenderer) {
+#ifndef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+  GTEST_SKIP() << "Requires a compiled local inference backend";
+#endif
+
   AppConfig config;
   config.detectorType = "yolo26";
   config.weights = getWeightsPath();

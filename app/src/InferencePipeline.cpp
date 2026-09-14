@@ -1,6 +1,8 @@
 #include "InferencePipeline.hpp"
+#include "ModelInputTypes.hpp"
 
 #ifdef NEURIPLO_INFER_WITH_KSERVE
+#include "EncodedImage.hpp"
 #include "KserveEngine.hpp"
 #include "KserveHttpClient.hpp"
 #ifdef KSERVE_CLIENT_WITH_GRPC
@@ -56,9 +58,30 @@ void setInputFormat(neuriplo_tasks::ModelInfo &model_info) {
   }
 }
 
+// One KServe datatype tag per model input. A KServe server's own tags are used
+// as-is: neuriplo's metadata enum cannot represent FP16 and friends, and a
+// rejection should name the datatype the server actually advertised.
+std::vector<std::string> inputDatatypes(const InferencePipeline &pipeline) {
+  std::vector<std::string> datatypes;
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+  if (auto *kserve = dynamic_cast<KserveEngine *>(pipeline.engine.get());
+      kserve != nullptr && !pipeline.encoded_image) {
+    for (const auto &input : kserve->rawMetadata().inputs) {
+      datatypes.push_back(input.datatype);
+    }
+    return datatypes;
+  }
+#endif
+  for (const auto &input : pipeline.inference_metadata.getInputs()) {
+    datatypes.push_back(neuriplo_infer::datatypeTag(input.datatype));
+  }
+  return datatypes;
+}
+
 neuriplo_tasks::ModelInfo
 buildModelInfo(const InferenceMetadata &inference_metadata,
-               const AppConfig &config) {
+               const AppConfig &config,
+               const std::vector<std::string> &input_datatypes) {
   neuriplo_tasks::ModelInfo model_info;
   for (size_t i = 0; i < inference_metadata.getInputs().size(); i++) {
     const auto &input = inference_metadata.getInputs()[i];
@@ -86,9 +109,8 @@ buildModelInfo(const InferenceMetadata &inference_metadata,
   }
 
   setInputFormat(model_info);
-  if (!model_info.input_types.empty()) {
-    model_info.input_types[0] = neuriplo_tasks::vision::PixelType::Float32;
-  }
+  neuriplo_infer::applyInputDatatypes(model_info, input_datatypes,
+                                      config.input_mode == "encoded-image");
   return model_info;
 }
 
@@ -102,11 +124,40 @@ std::string readFile(const std::string &path, const std::string &label) {
   return buffer.str();
 }
 
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+// Fetches the inner model's metadata over a second client. Clients are
+// per-model, so this needs no client API beyond constructing another one.
+kserve::ModelMetadata fetchTaskModelMetadata(const AppConfig &config) {
+  std::unique_ptr<kserve::IClient> client;
+#ifdef KSERVE_CLIENT_WITH_GRPC
+  if (config.kserve_transport == "grpc") {
+    client = std::make_unique<kserve::GrpcClient>(
+        config.kserve_endpoint, config.task_model, config.task_model_version,
+        config.kserve_timeout_ms);
+  }
+#endif
+  if (!client) {
+    client = std::make_unique<kserve::HttpClient>(
+        config.kserve_endpoint, config.task_model, config.task_model_version,
+        config.kserve_timeout_ms);
+  }
+  if (!client->modelReady()) {
+    throw std::runtime_error("--task_model '" + config.task_model +
+                             "' is not ready on the KServe endpoint");
+  }
+  return client->modelMetadata();
+}
+#endif
+
 neuriplo_tasks::TaskConfig buildTaskConfig(const AppConfig &config) {
   neuriplo_tasks::TaskConfig task_config;
   task_config.confidence_threshold = config.confidenceThreshold;
   task_config.nms_threshold = config.nmsThreshold;
   task_config.mask_threshold = config.maskThreshold;
+  task_config.segmentation_output =
+      config.segmentationOutput == "polygon"
+          ? neuriplo_tasks::SegmentationOutput::Polygon
+          : neuriplo_tasks::SegmentationOutput::Mask;
   task_config.text_prompts = config.textPrompts;
   task_config.extra_params = config.taskExtraParams;
 
@@ -127,6 +178,57 @@ neuriplo_tasks::TaskConfig buildTaskConfig(const AppConfig &config) {
 }
 
 } // namespace
+
+void requireEncodedImageSupport(neuriplo_tasks::TaskType task_type,
+                                const std::string &model_type) {
+  // Only inferFrame sends encoded bytes. These tasks run their own loops that
+  // preprocess locally, so they would send dense tensors to an ensemble whose
+  // input is an encoded image.
+  // Open-vocabulary detection is refused too: the ensemble contract has a
+  // single IMAGE input, so --text_prompts can never reach the model and would
+  // only relabel whatever queries the server baked in.
+  if (task_type == neuriplo_tasks::TaskType::VideoClassification ||
+      task_type == neuriplo_tasks::TaskType::OpticalFlow ||
+      task_type == neuriplo_tasks::TaskType::ImageUnderstanding ||
+      task_type == neuriplo_tasks::TaskType::OpenVocabDetection) {
+    throw std::runtime_error(
+        "--input_mode=encoded-image is not supported for model type '" +
+        model_type +
+        "': video classification, optical flow, image understanding, and "
+        "open-vocabulary detection need --input_mode=preprocessed");
+  }
+}
+
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+void requireServerPostprocessMatchesTask(const InferencePipeline &pipeline,
+                                         const std::string &model_type) {
+  if (!pipeline.server_postprocess) {
+    return;
+  }
+  neuriplo_infer::requireEnvelopeMatchesTask(pipeline.envelope_variant,
+                                             pipeline.task_type, model_type);
+  // The envelope also fixes mask versus polygon. An explicit
+  // --segmentation_output that disagrees would otherwise be ignored; the
+  // default is not a request, so it follows the ensemble.
+  if (!pipeline.config.segmentation_output_explicit) {
+    return;
+  }
+  const bool mask_envelope =
+      pipeline.envelope_variant == neuriplo_infer::EnvelopeVariant::Mask;
+  const bool polygon_envelope =
+      pipeline.envelope_variant == neuriplo_infer::EnvelopeVariant::Polygon;
+  if ((mask_envelope && pipeline.config.segmentationOutput != "mask") ||
+      (polygon_envelope && pipeline.config.segmentationOutput != "polygon")) {
+    throw std::runtime_error(
+        std::string("--segmentation_output=") +
+        pipeline.config.segmentationOutput +
+        " was requested, but the ensemble "
+        "returns a " +
+        (mask_envelope ? "packed-mask" : "polygon") +
+        " envelope; drop the flag or serve the matching ensemble");
+  }
+}
+#endif
 
 int InferencePipeline::getRequiredFrameCount() const {
   if (config.num_frames > 0) {
@@ -158,6 +260,12 @@ InferencePipelineBuilder &InferencePipelineBuilder::batch(int batch_size) {
 InferencePipelineBuilder &
 InferencePipelineBuilder::renderer(std::unique_ptr<ResultRenderer> renderer) {
   renderer_ = std::move(renderer);
+  return *this;
+}
+
+InferencePipelineBuilder &
+InferencePipelineBuilder::report(neuriplo_infer::RunReport &report) {
+  report_ = &report;
   return *this;
 }
 
@@ -211,7 +319,8 @@ void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
           config_.kserve_endpoint, config_.kserve_model_name,
           config_.kserve_model_version, config_.kserve_timeout_ms);
     }
-    pipeline.engine = std::make_unique<KserveEngine>(std::move(client));
+    pipeline.engine =
+        std::make_unique<KserveEngine>(std::move(client), config_.input_sizes);
     return;
 #endif
   }
@@ -240,10 +349,77 @@ void InferencePipelineBuilder::setupTask(InferencePipeline &pipeline) const {
   // serving platform is now known for KServe engines.
   if (auto *kserve = dynamic_cast<KserveEngine *>(pipeline.engine.get())) {
     pipeline.kserve_platform = kserve->servingPlatform();
+
+    if (config_.input_mode == "encoded-image") {
+      // The ensemble's own metadata describes an encoded image, which tells the
+      // task layer nothing about tensor layout. Everything the task needs comes
+      // from the inner model, fetched separately by name.
+      const auto &ensemble_metadata = kserve->rawMetadata();
+      const auto task_metadata = fetchTaskModelMetadata(config_);
+
+      pipeline.encoded_image = true;
+      // Asking for server-side postprocessing against a model that does not
+      // return a decoded envelope is a configuration error, not something to
+      // paper over: silently postprocessing on the client instead would move
+      // execution somewhere the operator did not ask for and quietly change
+      // the latency profile they were measuring.
+      const bool decoded = neuriplo_infer::isDecodedEnvelope(ensemble_metadata);
+      if (config_.postprocess_mode == "gpu" && !decoded) {
+        throw std::runtime_error(
+            "--postprocess_mode=gpu requires a model that returns a decoded "
+            "result envelope, but '" +
+            config_.kserve_model_name +
+            "' declares no NUM_DETECTIONS output; use "
+            "--postprocess_mode=cpu for a passthrough ensemble");
+      }
+      pipeline.server_postprocess =
+          config_.postprocess_mode == "gpu" && decoded;
+
+      if (pipeline.server_postprocess) {
+        pipeline.envelope_variant =
+            neuriplo_infer::envelopeVariantOf(ensemble_metadata);
+        neuriplo_infer::validateEnvelopeModel(ensemble_metadata,
+                                              pipeline.envelope_variant);
+        LOG(INFO) << "Server-side postprocessing: decoding the "
+                  << (pipeline.envelope_variant ==
+                              neuriplo_infer::EnvelopeVariant::Polygon
+                          ? "polygon"
+                      : pipeline.envelope_variant ==
+                              neuriplo_infer::EnvelopeVariant::Mask
+                          ? "packed-mask"
+                          : "detection")
+                  << " envelope";
+      } else {
+        // Passthrough ensemble: the server preprocesses, we postprocess, so the
+        // ensemble's outputs must be the inner model's, unchanged.
+        neuriplo_infer::validateEncodedImageModels(ensemble_metadata,
+                                                   task_metadata);
+      }
+
+      // Build the task from the inner model's shapes either way; even under
+      // server-side postprocessing the task type drives rendering.
+      InferenceMetadata task_inference_metadata;
+      for (const auto &input : task_metadata.inputs) {
+        task_inference_metadata.addInput(input.name, input.shape, 1);
+      }
+      for (const auto &output : task_metadata.outputs) {
+        task_inference_metadata.addOutput(output.name, output.shape, 1);
+      }
+      pipeline.inference_metadata = task_inference_metadata;
+      LOG(INFO) << "Encoded-image mode: task metadata from --task_model="
+                << config_.task_model;
+    }
   }
 #endif
-  pipeline.model_info = buildModelInfo(pipeline.inference_metadata, config_);
+  pipeline.model_info = buildModelInfo(pipeline.inference_metadata, config_,
+                                       inputDatatypes(pipeline));
   pipeline.task_type = getTaskTypeForModel(config_.detectorType);
+  if (pipeline.encoded_image) {
+    requireEncodedImageSupport(pipeline.task_type, config_.detectorType);
+  }
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+  requireServerPostprocessMatchesTask(pipeline, config_.detectorType);
+#endif
 
   LOG(INFO) << "Using neuriplo-tasks model type: " << config_.detectorType;
   pipeline.task = neuriplo_tasks::TaskFactory::createTaskInstance(
@@ -261,11 +437,18 @@ void InferencePipelineBuilder::setupPresentation(InferencePipeline &pipeline) {
 InferencePipeline InferencePipelineBuilder::build() {
   InferencePipeline pipeline;
   pipeline.config = config_;
+  pipeline.report = report_;
 
   logPipelineConfig();
   loadLabels(pipeline);
-  setupBackend(pipeline);
-  setupTask(pipeline);
+  {
+    // Engine construction and task setup are what "loading the model" means
+    // here: both read weights or remote metadata before a frame is touched.
+    neuriplo_infer::StageTimer timer(report_,
+                                     neuriplo_infer::RunStage::ModelLoad);
+    setupBackend(pipeline);
+    setupTask(pipeline);
+  }
   setupPresentation(pipeline);
 
   return pipeline;

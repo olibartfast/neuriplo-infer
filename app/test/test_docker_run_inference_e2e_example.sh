@@ -139,5 +139,7 @@ bash "${SCRIPT_PATH}" \
 grep -F -- "gemma-4-E2B-it-Q4_K_M.gguf" "${OUTPUT_FILE}"
 grep -F -- "--type=gemma4" "${OUTPUT_FILE}"
 grep -F -- "--weights=/weights/gemma-4-E2B-it-Q4_K_M.gguf" "${OUTPUT_FILE}"
+grep -F -- "mmproj-F16.gguf" "${OUTPUT_FILE}"
+grep -F -- "--mmproj=/weights/mmproj-F16.gguf" "${OUTPUT_FILE}"
 grep -F -- "--prompt=Describe" "${OUTPUT_FILE}"
 grep -F -- "neuriplo-infer:llamacpp" "${OUTPUT_FILE}"

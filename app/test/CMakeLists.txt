@@ -28,13 +28,19 @@ set(PROJECT_NAME_TEST runUnitTests)
 # Add test executable
 add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_utils.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_Capabilities.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_RunReport.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_RunDiagnostics.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_parseCommandLineArguments.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_InferencePipelineBuilder.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_FrameConversion.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_ModelInputTypes.cpp
     # The pure KServe protocol/retry/security suites live in the
     # neuriplo-kserve-client repo; only the adapter test stays here.
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveEngine.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_KserveEnvelope.cpp
 )
 
 include(${CMAKE_SOURCE_DIR}/cmake/Sanitizers.cmake)
@@ -80,7 +86,7 @@ elseif(DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW" )
         message(WARNING "Skipping TensorFlow test linkage on Windows; use OPENCV_DNN for native Windows test builds.")
     else()
         target_include_directories(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_INCLUDE_DIRS} ${neuriplo_SOURCE_DIR}/backends/libtensorflow/src)
-        target_link_libraries(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_LIBRARIES})  
+        target_link_libraries(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_LIBRARIES})
     endif()
 elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")
     if(WIN32)
@@ -108,8 +114,87 @@ target_link_libraries(${PROJECT_NAME_TEST} PUBLIC
 gtest_discover_tests(${PROJECT_NAME_TEST})
 
 add_test(
+    NAME capabilities_cli_contract
+    COMMAND ${CMAKE_COMMAND}
+        -DNEURIPLO_INFER_BIN=$<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
+        -DEXPECTED_VERSION=2
+        -P ${CMAKE_CURRENT_LIST_DIR}/check_capabilities_cli.cmake
+)
+
+# A source no build compiles is invisible to every other gate here: it is not
+# formatted, linted, warned about, or tested, and it drifts until it no longer
+# builds while still reading like the code that runs.
+add_test(
+    NAME no_orphan_sources
+    COMMAND ${CMAKE_COMMAND}
+        -DAPP_DIR=${CMAKE_CURRENT_LIST_DIR}/..
+        -P ${CMAKE_CURRENT_LIST_DIR}/check_no_orphan_sources.cmake
+)
+
+# The published schema forbids unknown properties, so an emitter that grows a
+# section without updating docs/capabilities.schema.json breaks consumers that
+# validate. Skips itself when the validator is not installed.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME capabilities_schema_contract
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/validate_capabilities_schema.py
+            $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
+            ${CMAKE_SOURCE_DIR}/docs/capabilities.schema.json
+    )
+    # Exit code 77 means the validator is not installed: reported as skipped,
+    # never as a pass that validated nothing.
+    set_tests_properties(capabilities_schema_contract PROPERTIES
+        SKIP_RETURN_CODE 77)
+
+    # A restore key that is not a prefix of its cache key never matches, so CI
+    # rebuilds from scratch on every CMake change without failing anything.
+    file(GLOB NEURIPLO_INFER_WORKFLOWS ${CMAKE_SOURCE_DIR}/.github/workflows/*.yml)
+    add_test(
+        NAME ci_cache_restore_keys
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${NEURIPLO_INFER_WORKFLOWS}
+    )
+    # The checker itself: it must flag a mismatched restore key and report a
+    # missing workflow path instead of crashing on it.
+    add_test(
+        NAME ci_cache_restore_keys_flags_mismatch
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${CMAKE_CURRENT_LIST_DIR}/fixtures/ci_cache_mismatched_restore_key.yml
+    )
+    set_tests_properties(ci_cache_restore_keys_flags_mismatch PROPERTIES
+        PASS_REGULAR_EXPRESSION "is not a prefix of key")
+    add_test(
+        NAME ci_cache_restore_keys_reports_missing_workflow
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${CMAKE_CURRENT_LIST_DIR}/fixtures/no-such-workflow.yml
+    )
+    set_tests_properties(ci_cache_restore_keys_reports_missing_workflow PROPERTIES
+        PASS_REGULAR_EXPRESSION "workflow file does not exist")
+    add_test(
+        NAME ci_cache_restore_keys_never_borrows_a_neighbouring_key
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${CMAKE_CURRENT_LIST_DIR}/fixtures/ci_cache_restore_key_without_key.yml
+    )
+    set_tests_properties(ci_cache_restore_keys_never_borrows_a_neighbouring_key
+        PROPERTIES PASS_REGULAR_EXPRESSION "has no key above it")
+endif()
+
+add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run
     COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR} ${neuriplo-tasks_SOURCE_DIR}
+)
+
+# scripts/cut_release.sh against a fixture versions.env, offline (the sibling
+# tag lookup is stubbed): repeated cuts keep one pin comment block.
+add_test(
+    NAME cut_release_versions_env
+    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_cut_release.sh ${CMAKE_SOURCE_DIR}
 )
 
 # KServe integration round-trip against containerized Triton + OVMS. Registered
@@ -120,5 +205,12 @@ if(NEURIPLO_INFER_ENABLE_KSERVE)
     add_test(
         NAME kserve_integration_dry_run
         COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/kserve_integration.sh --dry-run
+    )
+    # Image-input datatypes (UINT8 runs; INT8/BOOL refused before any request)
+    # against a real neuriplo-kserve-runtime. Dry-run here; --live needs the
+    # runtime and neuriplo-infer binaries, see the script.
+    add_test(
+        NAME kserve_input_datatypes_e2e_dry_run
+        COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/kserve_input_datatypes_e2e.sh --dry-run
     )
 endif()

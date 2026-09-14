@@ -17,12 +17,12 @@ Every agent taking ownership of this repo must know these easily-missed steps
 (see the full checklist under "Documentation checklist when wiring a new task
 type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
 
-1. **Supported-model-types docs are generated, not hand-written.** The
-   `<!-- SUPPORTED_MODEL_TYPES -->` block in `README.md` and
-   `docs/generated/supported-model-types.md` come from the neuriplo-tasks README via
+1. **Supported-model-types docs are generated, not hand-written.**
+   `docs/generated/supported-model-types.md` comes from the neuriplo-tasks README via
    `python3 scripts/sync_supported_model_types.py [--neuriplo-tasks-readme <path>]`.
-   `ci.yml` runs it with `--check`; a stale block fails CI. Run it (not a manual
-   edit) whenever neuriplo-tasks adds/changes a task or model type.
+   `ci.yml` runs it with `--check`; a stale page fails CI. Run it (not a manual
+   edit) whenever neuriplo-tasks adds/changes a task or model type. `README.md`
+   links to that page and does not embed the list.
 2. **App task routing must match neuriplo-tasks.** `getTaskTypeForModel`
    (`app/src/NeuriploInferTaskRouting.cpp`) must map each type string to the same
    `TaskType` that `neuriplo_tasks::TaskFactory` builds.
@@ -61,9 +61,10 @@ Release prep on `release/<version>`:
   must move.
 - Run `scripts/validate_release_pins.sh vX.Y.Z` (same check as the pre-push hook
   and `release-guard.yml` CI).
-- After pushing the tag, **Release Guard** validates pins; **Publish GitHub Release**
-  CI (`.github/workflows/publish-github-release.yml`) then creates the GitHub
-  Release from `CHANGELOG.md`. A pushed git tag alone does not appear on the
+- After pushing the tag, **Release Guard** validates pins; then create the GitHub
+  Release with `gh release create vX.Y.Z` using that version's `CHANGELOG.md`
+  section as notes (the auto-publish workflow was removed in `66cc42c`). A
+  pushed git tag alone does not appear on the
   Releases page.
 - Without concrete pins, checking out an old neuriplo-infer tag fetches sibling
   `master` at fetch time — builds drift.
@@ -133,6 +134,31 @@ When operating as an agent in this repo, follow this loop:
 
 Stop and escalate to a human if the required work falls into a forbidden change class or changes inference semantics rather than mechanical wiring.
 
+## Specifications
+
+This repo uses spec-driven development. [`specs/`](specs/) holds the agent-facing
+specifications; read [`specs/README.md`](specs/README.md) for the loop, and read
+the constitution before planning any non-trivial change:
+
+- [`specs/mission.md`](specs/mission.md) — why the app exists, for whom, what counts as success.
+- [`specs/tech-stack.md`](specs/tech-stack.md) — technical boundaries and the explicit non-choices.
+- [`specs/roadmap.md`](specs/roadmap.md) — the remaining delivery order, with status.
+- [`specs/architecture.md`](specs/architecture.md) — ownership boundaries and runtime flow.
+- [`specs/procedures/merge-feature-branch.md`](specs/procedures/merge-feature-branch.md) — GitFlow merge mechanics.
+
+Work that carries ambiguity, risk, handoff cost, or multi-step implementation gets
+a feature packet: take the next incomplete phase from `specs/roadmap.md`, branch
+`feature/<name>` from `develop`, create `specs/YYYY-MM-DD-<feature-name>/`, and
+fill [`specs/templates/`](specs/templates/) in order — `requirements.md`, then
+`plan.md`, then `validation.md`, with validation written before implementation.
+Interview the maintainer about scope, decisions, and context first; do not commit
+an assumption to code that could materially change the feature. When a discovery
+changes the requirement, update the spec in the same branch as the code, and merge
+spec and code together. A typo or one-line fix needs no packet.
+
+`docs/` is for people using or building the project; put a plan or a boundary rule
+in `specs/`, and a user-facing guide in `docs/`.
+
 ## Repo-local entrypoints
 
 Use the canonical repo-local commands:
@@ -168,7 +194,7 @@ When a new task type is added end-to-end (neuriplo-tasks → neuriplo → neurip
 
 **neuriplo-infer:**
 4. `## Key Features` bullet in `README.md` — update the task list inline (not synced from neuriplo-tasks).
-5. Run `python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path>` and commit the updated `README.md` and `docs/generated/supported-model-types.md`.
+5. Run `python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path>` and commit the updated `docs/generated/supported-model-types.md`.
 
 Missing any of these makes the task invisible to users reading the top-level READMEs.
 

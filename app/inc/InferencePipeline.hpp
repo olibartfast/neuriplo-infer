@@ -11,6 +11,7 @@
 #include "InferenceMetadata.hpp"
 #endif
 #include "ResultRenderer.hpp"
+#include "RunReport.hpp"
 #include "TaskRouting.hpp"
 #include "neuriplo/tasks/core/model_info.hpp"
 #include "neuriplo/tasks/core/task_interface.hpp"
@@ -18,6 +19,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+#include "KserveEnvelope.hpp"
+#endif
 
 struct InferencePipeline {
   AppConfig config;
@@ -33,10 +38,39 @@ struct InferencePipeline {
   // server omits it. Used to tag the rendered output filename.
   std::string kserve_platform;
 
+  // Diagnostics collector for this run, owned by the caller. Null when nobody
+  // is collecting, which is what keeps tests and library users unaffected.
+  neuriplo_infer::RunReport *report{nullptr};
+
+  // Server-side ensemble mode. When encoded_image is set, frames go to the
+  // server as encoded bytes instead of a preprocessed tensor. When
+  // server_postprocess is also set, the server returns a decoded result
+  // envelope and local postprocessing is skipped entirely.
+  bool encoded_image{false};
+  bool server_postprocess{false};
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+  neuriplo_infer::EnvelopeVariant envelope_variant{
+      neuriplo_infer::EnvelopeVariant::Detection};
+#endif
+
   int getRequiredFrameCount() const;
   void renderResults(const std::vector<neuriplo_tasks::Result> &results,
                      cv::Mat &image);
 };
+
+// Throws when encoded-image transport is requested for a task whose execution
+// path preprocesses locally and so can only send dense tensors: video
+// classification, optical flow, and image understanding.
+void requireEncodedImageSupport(neuriplo_tasks::TaskType task_type,
+                                const std::string &model_type);
+
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+// With server-side postprocessing the ensemble's envelope fixes the result
+// type. Throws when it disagrees with the pipeline's task type; a pipeline
+// that postprocesses locally is not checked.
+void requireServerPostprocessMatchesTask(const InferencePipeline &pipeline,
+                                         const std::string &model_type);
+#endif
 
 class InferencePipelineBuilder {
 public:
@@ -45,12 +79,14 @@ public:
   InferencePipelineBuilder &source(const std::vector<std::string> &sources);
   InferencePipelineBuilder &batch(int batch_size);
   InferencePipelineBuilder &renderer(std::unique_ptr<ResultRenderer> renderer);
+  InferencePipelineBuilder &report(neuriplo_infer::RunReport &report);
 
   InferencePipeline build();
 
 private:
   AppConfig config_;
   std::unique_ptr<ResultRenderer> renderer_;
+  neuriplo_infer::RunReport *report_{nullptr};
 
   // Staged helpers for auditable pipeline construction
   void logPipelineConfig() const;

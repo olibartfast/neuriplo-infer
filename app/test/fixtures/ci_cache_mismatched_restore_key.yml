@@ -1,0 +1,14 @@
+# Fixture for the ci_cache_restore_keys checker: the restore key hashes a
+# different file set than its key, so it can never be a prefix of it.
+name: fixture
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: ${{ runner.os }}-build-${{ hashFiles('CMakeLists.txt', 'versions.env') }}
+          restore-keys: ${{ runner.os }}-build-${{ hashFiles('versions.env') }}-

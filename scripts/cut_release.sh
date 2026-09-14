@@ -54,7 +54,9 @@ latest_remote_tag() {
     | sed 's#.*refs/tags/##' \
     | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
     | sort -V \
-    | tail -n1
+    | tail -n1 || true
+  # A repo with no release tag makes grep fail; under `set -euo pipefail` that
+  # used to end the script inside the assignment, before the "missing" message.
 }
 
 echo "==> Detecting sibling release tags from their remotes..."
@@ -86,7 +88,11 @@ echo "==> Updating versions.env pins..."
 # Remove any existing pin lines (commented or active) for the three sibling vars.
 awk -v IGNORECASE=0 '
   /^[[:space:]]*#?[[:space:]]*(NEURIPLO|VIDEOCAPTURE|NEURIPLO_TASKS|NEURIPLO_KSERVE_CLIENT)_VERSION=/ { next }
-  { print }
+  # Drop the previous release'"'"'s pin comment block (it is re-appended below),
+  # so releases do not stack one copy of it per cut.
+  /^# Sibling repository refs/ { in_pin_comment=1; next }
+  in_pin_comment && /^#/ { next }
+  { in_pin_comment=0; print }
 ' versions.env > versions.env.tmp
 # Strip trailing blank lines.
 awk 'NF { blank=0; for (i=0;i<n;i++) print buf[i]; n=0; print; next } { buf[n++]=$0 }' \
@@ -97,7 +103,9 @@ cat >> versions.env <<EOF
 
 # Sibling repository refs, each pinned to that sibling's current release tag
 # so a checkout of the ${TAG} tag rebuilds against the exact same sibling code.
-# Siblings version independently -- these need not be equal.
+# Siblings version independently -- these need not be equal. Every pin must be
+# a concrete vX.Y.Z tag, never a branch. Precedence: cmake -D > versions.env.
+# Managed by scripts/cut_release.sh; enforced by scripts/validate_release_pins.sh.
 NEURIPLO_VERSION=${NEURIPLO_PIN}
 VIDEOCAPTURE_VERSION=${VIDEOCAPTURE_PIN}
 NEURIPLO_TASKS_VERSION=${NEURIPLO_TASKS_PIN}
@@ -114,8 +122,8 @@ echo "  2. git commit -m 'release: ${TAG}'"
 echo "  3. Merge release/${VERSION_NUM} → master; tag ${TAG} on master."
 echo "  4. Merge release/${VERSION_NUM} → develop; delete release/${VERSION_NUM}."
 echo "  5. git push origin master develop ${TAG}"
-echo "  6. GitHub Release is published automatically after Release Guard CI"
-echo "     (.github/workflows/publish-github-release.yml on tag push)"
+echo "  6. After Release Guard CI passes on the tag, create the GitHub Release:"
+echo "     gh release create ${TAG} --title ${TAG} --notes-file <CHANGELOG section>"
 echo ""
 echo "Current versions.env:"
 cat versions.env
