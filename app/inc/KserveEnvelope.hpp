@@ -139,8 +139,8 @@ inline void validateEnvelopeModel(const kserve::ModelMetadata &metadata,
 // The envelope a server-side postprocessing ensemble returns fixes the result
 // type, while --type fixes the renderer. A mismatch decoded fine and rendered
 // nothing, so it is refused at setup instead.
-inline void requireEnvelopeMatchesTask(EnvelopeVariant variant,
-                                       neuriplo_tasks::TaskType task_type,
+inline void requireEnvelopeMatchesTask(const EnvelopeVariant variant,
+                                       const neuriplo_tasks::TaskType task_type,
                                        const std::string &model_type) {
   const bool detection_envelope = variant == EnvelopeVariant::Detection;
   const neuriplo_tasks::TaskType expected =

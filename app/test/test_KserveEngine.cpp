@@ -175,6 +175,31 @@ TEST(KserveEngine, RefusesAShapeWithMoreThanOneDynamicAxis) {
   EXPECT_EQ(fake->inferCalls(), 0);
 }
 
+// BYTES has no element width to infer an extent from, and the runtime rejects
+// a negative dimension for it too, so a dynamic BYTES input is refused locally
+// while a fully static one is still sent.
+TEST(KserveEngine, RefusesADynamicBytesInputButSendsAStaticOne) {
+  {
+    auto client = std::make_unique<FakeClient>();
+    const FakeClient *fake = client.get();
+    client->setInputs({{"prompt", "BYTES", {-1}}});
+    KserveEngine engine(std::move(client));
+
+    EXPECT_THROW(engine.get_infer_results({std::vector<uint8_t>(12)}),
+                 std::runtime_error);
+    EXPECT_EQ(fake->inferCalls(), 0);
+  }
+  {
+    auto client = std::make_unique<FakeClient>();
+    const FakeClient *fake = client.get();
+    client->setInputs({{"prompt", "BYTES", {1}}});
+    KserveEngine engine(std::move(client));
+
+    engine.get_infer_results({std::vector<uint8_t>(12)});
+    EXPECT_EQ(fake->inferCalls(), 1);
+  }
+}
+
 TEST(KserveEngine, RefusesAShapeWhoseByteCountOverflows) {
   auto client = std::make_unique<FakeClient>();
   const FakeClient *fake = client.get();
