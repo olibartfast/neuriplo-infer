@@ -7,6 +7,7 @@ fewer files) is never a prefix of it, so the cache silently misses whenever the
 primary key changes. Usage: check_ci_cache_keys.py WORKFLOW.yml [...]
 """
 
+import os
 import re
 import sys
 
@@ -15,6 +16,12 @@ RESTORE = re.compile(r"^\s*restore-keys:\s*(\S.*?)\s*$")
 
 
 def check(path):
+    # A missing or empty path is a controlled failure for that input, so the
+    # remaining workflows are still checked and reported.
+    if not path:
+        return 0, ["empty workflow path"]
+    if not os.path.isfile(path):
+        return 0, [f"{path}: workflow file does not exist"]
     failures = []
     checked = 0
     with open(path, encoding="utf-8") as handle:

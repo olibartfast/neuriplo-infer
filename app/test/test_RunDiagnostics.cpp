@@ -457,6 +457,24 @@ TEST_F(RunDiagnostics, AnImageThatCannotBeSavedFailsInsteadOfCountingASample) {
   EXPECT_EQ(document.at("metrics").at("samples"), 0);
 }
 
+TEST_F(RunDiagnostics, ClassificationCountsFramesOfAClipShorterThanItsWindow) {
+  // No window closes, but the frames were read and belong to the run; they
+  // used to be counted only when a window closed, so frames stayed null.
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 3);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.num_frames = 16;
+  pipeline.task_type = neuriplo_tasks::TaskType::VideoClassification;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  EXPECT_EQ(dynamic_cast<FakeEngine *>(pipeline.engine.get())->calls, 0);
+  EXPECT_EQ(report().at("metrics").at("frames"), 3);
+}
+
 TEST_F(RunDiagnostics, ClassificationCountsEachSourceFrameOnce) {
   // Overlapping windows used to count every frame of every window:
   // 4 * (6 - 4 + 1) = 12 frames for a 6-frame clip.
