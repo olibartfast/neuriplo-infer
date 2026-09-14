@@ -84,9 +84,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `--timings_csv` checks the stream after the header, every row, and the final
   flush, so a full disk fails the run instead of leaving a truncated CSV behind
   a run that reports success.
-- `--kserve_transport` now defaults to `http` in builds without gRPC, and an
-  explicit `grpc` there is a configuration error; before, it was accepted and
-  the run silently used HTTP, contradicting `--capabilities`.
+- **CLI contract change (builds without gRPC only):** `--kserve_transport` now
+  defaults to `http` there, and an explicit `grpc` is a configuration error;
+  before, `grpc` was the parsed default and was accepted, and the run silently
+  used HTTP, contradicting `--capabilities`. gRPC-enabled builds keep the
+  `grpc` default unchanged.
+- Server mask envelopes whose `MASK_DATA` run does not match its detection's
+  box area are rejected with a decode error; they were accepted and produced a
+  result with no renderable mask. Negative `MASK_OFFSETS` are also rejected
+  explicitly, and a box whose area would overflow `size_t` (reachable on
+  32-bit targets) is rejected before the length is compared.
+- Video-classification runs counted every frame of every overlapping window
+  in the run report, reporting `W * (N - W + 1)` frames for an `N`-frame video
+  and an inflated `throughput_per_second`. Each source frame is now counted
+  once, when it is read, so a clip shorter than one window (or stopped before
+  its first window closes) reports its frames instead of `null`.
+- `--output_video` creates missing parent directories, like `--timings_csv`
+  and the run report, instead of failing to open a nested destination.
+- `--output_video` on a video that yields no frames now fails the run; the
+  writer opens on the first frame, so it used to succeed without creating the
+  requested file.
+- In encoded-image mode, `--warmup` and `--benchmark` send the source's
+  original file bytes like the real request; they re-encoded the decoded frame,
+  so the benchmark measured a different payload. API note: `WarmupCommand` and
+  `BenchmarkCommand` gain a `(cv::Mat, std::vector<uint8_t>)` constructor; the
+  existing one-argument constructors are kept, so source and symbols stay
+  compatible. The `neuriplo-infer` library is internal and not installed.
+- The configuration exit report's state is guarded by a mutex shared by
+  `armConfigurationExitReport`, `disarmConfigurationExitReport`, and the exit
+  hook.
+- CI build caches restore again after a CMake file change: each `restore-keys`
+  entry is now a prefix of its cache key (the previous one hashed a different
+  file set, so it could never match). A `ci_cache_restore_keys` test checks
+  every workflow.
 - `--help` no longer writes a failed configuration `run_report.json`.
 - `--output_video` on a video-classification run wrote only frames that closed
   an inference window, so the leading frames were dropped and a video shorter

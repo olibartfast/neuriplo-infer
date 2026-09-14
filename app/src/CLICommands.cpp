@@ -245,9 +245,21 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
       throw std::runtime_error("Could not read the image source: " + source);
     }
   }
+  // In encoded-image mode the original file bytes go on the wire, so the source
+  // is never decoded and re-encoded. Loaded before warmup so warmup and the
+  // benchmark send exactly the payload the real request does.
+  std::vector<uint8_t> source_bytes;
+  if (pipeline.encoded_image) {
+    std::ifstream stream(source, std::ios::binary);
+    if (!stream.is_open()) {
+      throw std::runtime_error("Could not open encoded image: " + source);
+    }
+    source_bytes.assign(std::istreambuf_iterator<char>(stream), {});
+  }
+
   if (pipeline.config.enable_warmup) {
     LOG(INFO) << "Warmup...";
-    WarmupCommand warmup(image);
+    WarmupCommand warmup(image, source_bytes);
     warmup.execute(pipeline);
   }
 
@@ -259,17 +271,6 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
             << height << "x" << width;
   LOG(INFO) << "Image dimensions: " << image.rows << "x" << image.cols << "x"
             << image.channels();
-
-  // In encoded-image mode the original file bytes go on the wire, so the source
-  // is never decoded and re-encoded.
-  std::vector<uint8_t> source_bytes;
-  if (pipeline.encoded_image) {
-    std::ifstream stream(source, std::ios::binary);
-    if (!stream.is_open()) {
-      throw std::runtime_error("Could not open encoded image: " + source);
-    }
-    source_bytes.assign(std::istreambuf_iterator<char>(stream), {});
-  }
 
   auto results = inferFrame(pipeline, image,
                             pipeline.encoded_image ? &source_bytes : nullptr);
@@ -308,7 +309,7 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
   }
 
   if (pipeline.config.enable_benchmark) {
-    BenchmarkCommand benchmark(image);
+    BenchmarkCommand benchmark(image, source_bytes);
     benchmark.execute(pipeline);
   }
 }
@@ -377,6 +378,12 @@ private:
 class OutputVideoSink {
 public:
   OutputVideoSink(const std::string &destination, int width, int height) {
+    // Same as the timings CSV and the run report: a destination below a
+    // directory that does not exist yet is created rather than refused.
+    const std::filesystem::path destination_path(destination);
+    if (destination_path.has_parent_path()) {
+      std::filesystem::create_directories(destination_path.parent_path());
+    }
     videocapture::VideoWriterConfig config;
     config.width = width;
     config.height = height;
@@ -516,6 +523,14 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
 
   timings.finish();
   videoInterface->release();
+#ifdef VIDEOCAPTURE_WITH_WRITER
+  // The writer opens on the first frame, so a source that yielded none never
+  // created the requested file: a failed run, not a successful empty one.
+  if (read_to_end && !pipeline.config.output_video.empty() && !output_sink) {
+    throw std::runtime_error("--output_video: " + source +
+                             " produced no frames, so no video was written");
+  }
+#endif
   // One video read to its end is one sample, however many frames it held. A
   // video the operator stopped early was not processed to completion, and
   // counting it would report a source the run never finished.
@@ -580,6 +595,13 @@ void processVideoClassification(InferencePipeline &pipeline,
 #endif
     frameBuffer.push_back(image.clone());
     ++frame_index;
+    // A frame read is part of the run whether or not a window has closed on
+    // it yet: counted here, once, a clip shorter than one window or one
+    // stopped before its first window still reports its frames, and
+    // overlapping windows never count a frame twice.
+    if (pipeline.report != nullptr) {
+      pipeline.report->addFrames(1);
+    }
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
     // Frames read before the first window closes have no result yet. They are
@@ -610,10 +632,6 @@ void processVideoClassification(InferencePipeline &pipeline,
         auto tensors = convertToTensors(outputs, shapes);
         return pipeline.task->postprocess(toTaskSize(image), tensors);
       }();
-      // One inference consumes the whole accumulated window.
-      if (pipeline.report != nullptr) {
-        pipeline.report->addFrames(requiredFrames);
-      }
       auto end = std::chrono::steady_clock::now();
       const auto latency_us =
           std::chrono::duration_cast<std::chrono::microseconds>(end - start)
@@ -658,6 +676,13 @@ void processVideoClassification(InferencePipeline &pipeline,
 
   timings.finish();
   videoInterface->release();
+#ifdef VIDEOCAPTURE_WITH_WRITER
+  // Same rule as processVideo: no frame means no file, which is a failure.
+  if (read_to_end && !pipeline.config.output_video.empty() && !output_sink) {
+    throw std::runtime_error("--output_video: " + source +
+                             " produced no frames, so no video was written");
+  }
+#endif
   // Same rule as processVideo: only a video read to its end is a sample.
   if (read_to_end && pipeline.report != nullptr) {
     pipeline.report->addSample();
@@ -854,7 +879,11 @@ void printLayerList(const char *label, const std::vector<LayerInfo> &layers) {
 
 } // namespace
 
-WarmupCommand::WarmupCommand(cv::Mat image) : image_(std::move(image)) {}
+WarmupCommand::WarmupCommand(cv::Mat image)
+    : WarmupCommand(std::move(image), {}) {}
+
+WarmupCommand::WarmupCommand(cv::Mat image, std::vector<uint8_t> encoded_source)
+    : image_(std::move(image)), encoded_source_(std::move(encoded_source)) {}
 
 int WarmupCommand::execute(InferencePipeline &pipeline) {
   // Warmup repeats the real path but produces nothing, so its time must stay
@@ -865,13 +894,19 @@ int WarmupCommand::execute(InferencePipeline &pipeline) {
   // encoded-image mode the server expects a UINT8 IMAGE, and preprocessing
   // locally here would send it a dense float tensor instead.
   for (int i = 0; i < 5; ++i) {
-    auto results = inferFrame(pipeline, image_, nullptr);
+    const auto results = inferFrame(
+        pipeline, image_, encoded_source_.empty() ? nullptr : &encoded_source_);
     (void)results;
   }
   return 0;
 }
 
-BenchmarkCommand::BenchmarkCommand(cv::Mat image) : image_(std::move(image)) {}
+BenchmarkCommand::BenchmarkCommand(cv::Mat image)
+    : BenchmarkCommand(std::move(image), {}) {}
+
+BenchmarkCommand::BenchmarkCommand(cv::Mat image,
+                                   std::vector<uint8_t> encoded_source)
+    : image_(std::move(image)), encoded_source_(std::move(encoded_source)) {}
 
 int BenchmarkCommand::execute(InferencePipeline &pipeline) {
   // Same reason as warmup: the benchmark measures the engine, and its own
@@ -881,7 +916,8 @@ int BenchmarkCommand::execute(InferencePipeline &pipeline) {
   for (int i = 0; i < pipeline.config.benchmark_iterations; ++i) {
     auto start = std::chrono::steady_clock::now();
 
-    auto results = inferFrame(pipeline, image_, nullptr);
+    const auto results = inferFrame(
+        pipeline, image_, encoded_source_.empty() ? nullptr : &encoded_source_);
     (void)results;
 
     auto end = std::chrono::steady_clock::now();
