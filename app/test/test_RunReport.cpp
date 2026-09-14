@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 #include <thread>
+#include <vector>
 
 namespace {
 
@@ -281,6 +282,42 @@ TEST_F(RunReportFile, SuspensionNestsAndAlwaysResumes) {
                        .at("render")
                        .get<double>(),
                    7.0);
+}
+
+TEST_F(RunReportFile, AnArmedExitHookWritesAConfigurationReport) {
+  EXPECT_EXIT(
+      {
+        neuriplo_infer::armConfigurationExitReport(path_);
+        std::exit(1);
+      },
+      ::testing::ExitedWithCode(1), "");
+
+  EXPECT_EQ(readReport(path_).at("error").at("stage"), "configuration");
+}
+
+// The arm/disarm state is shared with the exit hook, so it is guarded by one
+// mutex. Hammering it from many threads must leave a consistent, disarmed
+// state; under a thread sanitizer this is also the race detector's test.
+TEST_F(RunReportFile, ArmAndDisarmAcrossThreadsLeaveTheHookDisarmed) {
+  EXPECT_EXIT(
+      {
+        std::vector<std::thread> threads;
+        for (int t = 0; t < 8; ++t) {
+          threads.emplace_back([this] {
+            for (int i = 0; i < 200; ++i) {
+              neuriplo_infer::armConfigurationExitReport(path_);
+              neuriplo_infer::disarmConfigurationExitReport();
+            }
+          });
+        }
+        for (auto &thread : threads) {
+          thread.join();
+        }
+        std::exit(0);
+      },
+      ::testing::ExitedWithCode(0), "");
+
+  EXPECT_FALSE(std::filesystem::exists(path_));
 }
 
 TEST_F(RunReportFile, SuspendingWithoutACollectorIsANoOp) {

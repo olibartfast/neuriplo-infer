@@ -87,7 +87,7 @@ and `--weights` is then not needed.
 | `--kserve_endpoint=<url>` | — | Base KServe V2 endpoint, e.g. `http://127.0.0.1:19090`. A path prefix is allowed behind a gateway. The scheme selects transport security: `http://` / `grpc://` plaintext, `https://` / `grpcs://` TLS, verified against the system CA roots or `KSERVE_CA_CERT`. `https://` needs an OpenSSL build (see *Build modes*). |
 | `--kserve_model_name=<name>` | `--type` | Model name served by the endpoint. |
 | `--kserve_model_version=<version>` | `1` | Model version to call. |
-| `--kserve_transport=<grpc\|http>` | `grpc` | Transport. A build without gRPC uses HTTP whatever this says. |
+| `--kserve_transport=<grpc\|http>` | `grpc` (`http` in builds without gRPC) | Transport. A build without gRPC defaults to `http` and rejects an explicit `grpc` as a configuration error. |
 | `--kserve_timeout_ms=<ms>` | `30000` | Request timeout; must be greater than zero. |
 | `--input_mode`, `--im=<preprocessed\|encoded-image>` | `preprocessed` | `preprocessed` sends a dense tensor this client prepared. `encoded-image` sends the encoded file for a server-side ensemble to preprocess; it requires `--kserve_endpoint`, `--task_model`, `--batch=1`, and no `--input_sizes`. |
 | `--task_model`, `--tm=<model>` | — | Inner model whose metadata drives task construction in `encoded-image` mode: an ensemble's own metadata only describes an encoded image. |

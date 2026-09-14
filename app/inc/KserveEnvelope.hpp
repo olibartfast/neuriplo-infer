@@ -207,13 +207,31 @@ decodeMaskEnvelope(const std::vector<kserve::InferOutput> &outputs,
 
     const auto begin = envelopeValueAt<int64_t>(*offsets, index);
     const auto end = envelopeValueAt<int64_t>(*offsets, index + 1);
-    if (end < begin || static_cast<size_t>(end) > mask_data->data.size()) {
+    // Offsets are signed server data, so the lower bound is checked explicitly
+    // rather than left to the zero start and monotonic ordering.
+    if (begin < 0 || end < begin ||
+        static_cast<size_t>(end) > mask_data->data.size()) {
       throw std::runtime_error("MASK_OFFSETS run past MASK_DATA");
     }
     segmentation.mask_data.assign(mask_data->data.begin() + begin,
                                   mask_data->data.begin() + end);
     segmentation.mask_width = static_cast<int>(segmentation.bbox.width);
     segmentation.mask_height = static_cast<int>(segmentation.bbox.height);
+
+    // The contract sizes each run to its detection's box. A run of any other
+    // length cannot be laid out, and accepting it made the mask vanish from
+    // an otherwise successful result.
+    const size_t expected =
+        segmentation.mask_width > 0 && segmentation.mask_height > 0
+            ? static_cast<size_t>(segmentation.mask_width) *
+                  static_cast<size_t>(segmentation.mask_height)
+            : 0;
+    if (segmentation.mask_data.size() != expected) {
+      throw std::runtime_error(
+          "MASK_DATA run for detection " + std::to_string(i) + " is " +
+          std::to_string(segmentation.mask_data.size()) +
+          " bytes, but its box needs " + std::to_string(expected));
+    }
 
     // Rebuild the renderable mask image. The envelope carries no per-mask
     // dimensions because the contract fixes a mask to its detection's box, so
@@ -223,11 +241,7 @@ decodeMaskEnvelope(const std::vector<kserve::InferOutput> &outputs,
     // The image is built at frame size with the mask placed at the box origin,
     // matching what the local YOLO postprocessor produces. A box-sized image
     // would be stretched across the whole frame by the renderer's resize.
-    const auto expected = static_cast<size_t>(segmentation.mask_width) *
-                          static_cast<size_t>(segmentation.mask_height);
-    if (segmentation.mask_width > 0 && segmentation.mask_height > 0 &&
-        segmentation.mask_data.size() == expected && frame_width > 0 &&
-        frame_height > 0) {
+    if (expected > 0 && frame_width > 0 && frame_height > 0) {
       auto mask = neuriplo_tasks::vision::Image::zeros(
           frame_width, frame_height, 1,
           neuriplo_tasks::vision::PixelType::UInt8);

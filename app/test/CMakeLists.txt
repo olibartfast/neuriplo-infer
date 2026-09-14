@@ -143,6 +143,16 @@ if(Python3_Interpreter_FOUND)
             $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
             ${CMAKE_SOURCE_DIR}/docs/capabilities.schema.json
     )
+
+    # A restore key that is not a prefix of its cache key never matches, so CI
+    # rebuilds from scratch on every CMake change without failing anything.
+    file(GLOB NEURIPLO_INFER_WORKFLOWS ${CMAKE_SOURCE_DIR}/.github/workflows/*.yml)
+    add_test(
+        NAME ci_cache_restore_keys
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${NEURIPLO_INFER_WORKFLOWS}
+    )
 endif()
 
 add_test(
