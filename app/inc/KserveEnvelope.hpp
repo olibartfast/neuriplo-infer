@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -221,11 +222,20 @@ decodeMaskEnvelope(const std::vector<kserve::InferOutput> &outputs,
     // The contract sizes each run to its detection's box. A run of any other
     // length cannot be laid out, and accepting it made the mask vanish from
     // an otherwise successful result.
+    const bool has_area =
+        segmentation.mask_width > 0 && segmentation.mask_height > 0;
+    // Two in-range int dimensions can still overflow a 32-bit size_t, which
+    // would wrap the area to something small and let a short run through.
+    if (has_area && static_cast<size_t>(segmentation.mask_width) >
+                        std::numeric_limits<size_t>::max() /
+                            static_cast<size_t>(segmentation.mask_height)) {
+      throw std::runtime_error("Box for detection " + std::to_string(i) +
+                               " is too large to hold a mask");
+    }
     const size_t expected =
-        segmentation.mask_width > 0 && segmentation.mask_height > 0
-            ? static_cast<size_t>(segmentation.mask_width) *
-                  static_cast<size_t>(segmentation.mask_height)
-            : 0;
+        has_area ? static_cast<size_t>(segmentation.mask_width) *
+                       static_cast<size_t>(segmentation.mask_height)
+                 : 0;
     if (segmentation.mask_data.size() != expected) {
       throw std::runtime_error(
           "MASK_DATA run for detection " + std::to_string(i) + " is " +

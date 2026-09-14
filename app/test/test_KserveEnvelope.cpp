@@ -312,6 +312,17 @@ TEST(KserveEnvelope, RejectsMaskRunLongerThanItsBox) {
                std::runtime_error);
 }
 
+// On a 32-bit target 65536 * 65536 wraps to 0, which an empty run would
+// match. The box is rejected on every target instead of decoding silently.
+TEST(KserveEnvelope, RejectsHugeBoxWithAnEmptyMaskRun) {
+  auto outputs = detectionEnvelope(1, {{{0, 0, 65536, 65536}}}, {0.9F}, {0});
+  outputs.push_back(tensor("MASK_OFFSETS", "INT64", fullMaskOffsets({0})));
+  outputs.push_back(tensor("MASK_DATA", "UINT8", {}));
+
+  EXPECT_THROW(neuriplo_infer::decodeMaskEnvelope(outputs, 8, 8),
+               std::runtime_error);
+}
+
 TEST(KserveEnvelope, RejectsNegativeMaskOffsets) {
   auto outputs = detectionEnvelope(1, {{{0, 0, 1, 1}}}, {0.9F}, {0});
   std::vector<uint8_t> offsets;

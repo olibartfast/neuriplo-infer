@@ -572,7 +572,6 @@ void processVideoClassification(InferencePipeline &pipeline,
   // counter that would silently mean something different per mode.
   std::size_t frame_index = 0;
   bool read_to_end = false;
-  bool counted_first_window = false;
   while (true) {
     bool read_frame = false;
     {
@@ -596,6 +595,13 @@ void processVideoClassification(InferencePipeline &pipeline,
 #endif
     frameBuffer.push_back(image.clone());
     ++frame_index;
+    // A frame read is part of the run whether or not a window has closed on
+    // it yet: counted here, once, a clip shorter than one window or one
+    // stopped before its first window still reports its frames, and
+    // overlapping windows never count a frame twice.
+    if (pipeline.report != nullptr) {
+      pipeline.report->addFrames(1);
+    }
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
     // Frames read before the first window closes have no result yet. They are
@@ -626,14 +632,6 @@ void processVideoClassification(InferencePipeline &pipeline,
         auto tensors = convertToTensors(outputs, shapes);
         return pipeline.task->postprocess(toTaskSize(image), tensors);
       }();
-      // Windows overlap by all but one frame: only the first window brings
-      // requiredFrames new source frames, and each later one adds the frame
-      // that closed it. Counting the whole window every time reported
-      // W * (N - W + 1) frames for an N-frame video and inflated throughput.
-      if (pipeline.report != nullptr) {
-        pipeline.report->addFrames(counted_first_window ? 1 : requiredFrames);
-      }
-      counted_first_window = true;
       auto end = std::chrono::steady_clock::now();
       const auto latency_us =
           std::chrono::duration_cast<std::chrono::microseconds>(end - start)
@@ -881,6 +879,9 @@ void printLayerList(const char *label, const std::vector<LayerInfo> &layers) {
 
 } // namespace
 
+WarmupCommand::WarmupCommand(cv::Mat image)
+    : WarmupCommand(std::move(image), {}) {}
+
 WarmupCommand::WarmupCommand(cv::Mat image, std::vector<uint8_t> encoded_source)
     : image_(std::move(image)), encoded_source_(std::move(encoded_source)) {}
 
@@ -893,12 +894,15 @@ int WarmupCommand::execute(InferencePipeline &pipeline) {
   // encoded-image mode the server expects a UINT8 IMAGE, and preprocessing
   // locally here would send it a dense float tensor instead.
   for (int i = 0; i < 5; ++i) {
-    auto results = inferFrame(
+    const auto results = inferFrame(
         pipeline, image_, encoded_source_.empty() ? nullptr : &encoded_source_);
     (void)results;
   }
   return 0;
 }
+
+BenchmarkCommand::BenchmarkCommand(cv::Mat image)
+    : BenchmarkCommand(std::move(image), {}) {}
 
 BenchmarkCommand::BenchmarkCommand(cv::Mat image,
                                    std::vector<uint8_t> encoded_source)
@@ -912,7 +916,7 @@ int BenchmarkCommand::execute(InferencePipeline &pipeline) {
   for (int i = 0; i < pipeline.config.benchmark_iterations; ++i) {
     auto start = std::chrono::steady_clock::now();
 
-    auto results = inferFrame(
+    const auto results = inferFrame(
         pipeline, image_, encoded_source_.empty() ? nullptr : &encoded_source_);
     (void)results;
 

@@ -13,11 +13,13 @@ public:
 
 // encoded_source: the source's original file bytes in encoded-image mode, so
 // warmup and benchmark send the same payload as the real request. Empty for
-// every other mode, where the decoded image is what gets sent.
+// every other mode, where the decoded image is what gets sent. The one-argument
+// constructors are kept as separate overloads, not a default argument, so the
+// existing constructor symbols stay available.
 class WarmupCommand : public CLICommand {
 public:
-  explicit WarmupCommand(cv::Mat image,
-                         std::vector<uint8_t> encoded_source = {});
+  explicit WarmupCommand(cv::Mat image);
+  WarmupCommand(cv::Mat image, std::vector<uint8_t> encoded_source);
   int execute(InferencePipeline &pipeline) override;
 
 private:
@@ -27,8 +29,8 @@ private:
 
 class BenchmarkCommand : public CLICommand {
 public:
-  explicit BenchmarkCommand(cv::Mat image,
-                            std::vector<uint8_t> encoded_source = {});
+  explicit BenchmarkCommand(cv::Mat image);
+  BenchmarkCommand(cv::Mat image, std::vector<uint8_t> encoded_source);
   int execute(InferencePipeline &pipeline) override;
 
 private:

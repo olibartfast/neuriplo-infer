@@ -153,6 +153,24 @@ if(Python3_Interpreter_FOUND)
             ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
             ${NEURIPLO_INFER_WORKFLOWS}
     )
+    # The checker itself: it must flag a mismatched restore key and report a
+    # missing workflow path instead of crashing on it.
+    add_test(
+        NAME ci_cache_restore_keys_flags_mismatch
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${CMAKE_CURRENT_LIST_DIR}/fixtures/ci_cache_mismatched_restore_key.yml
+    )
+    set_tests_properties(ci_cache_restore_keys_flags_mismatch PROPERTIES
+        PASS_REGULAR_EXPRESSION "is not a prefix of key")
+    add_test(
+        NAME ci_cache_restore_keys_reports_missing_workflow
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${CMAKE_CURRENT_LIST_DIR}/fixtures/no-such-workflow.yml
+    )
+    set_tests_properties(ci_cache_restore_keys_reports_missing_workflow PROPERTIES
+        PASS_REGULAR_EXPRESSION "workflow file does not exist")
 endif()
 
 add_test(
