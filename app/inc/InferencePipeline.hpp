@@ -64,6 +64,14 @@ struct InferencePipeline {
 void requireEncodedImageSupport(neuriplo_tasks::TaskType task_type,
                                 const std::string &model_type);
 
+#ifdef NEURIPLO_INFER_WITH_KSERVE
+// With server-side postprocessing the ensemble's envelope fixes the result
+// type. Throws when it disagrees with the pipeline's task type; a pipeline
+// that postprocesses locally is not checked.
+void requireServerPostprocessMatchesTask(const InferencePipeline &pipeline,
+                                         const std::string &model_type);
+#endif
+
 class InferencePipelineBuilder {
 public:
   explicit InferencePipelineBuilder(const AppConfig &config);
