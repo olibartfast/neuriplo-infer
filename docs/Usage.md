@@ -81,7 +81,7 @@ neuriplo-infer --capabilities
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--no_display` | `false` | Do not open the preview window. Needed for video without a screen. |
-| `--output_video=<path>` | — | Write the annotated video (fixed 30 fps, codec auto-selected, container from the extension). Only in builds configured with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`; image sources are rejected. |
+| `--output_video=<path>` | — | Write the annotated video (fixed 30 fps, codec auto-selected, container from the extension). Encoded on a background thread; the run report records any backpressure wait as `writer_queue_wait_ms`. Only in builds configured with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`; image sources are rejected. |
 | `--timings_csv=<path>` | — | Write one row per inference (`frame,latency_us`) for a video run; rejected for image, text, and metadata runs. Parent directories are created; the file is opened before the first frame. |
 | `--warmup` | `false` | GPU warmup before inference; single still-image runs only, rejected otherwise. |
 | `--benchmark`, `--iterations=<n>` | `false`, `10` | Repeat inference and report the average time; single still-image runs only, rejected otherwise. |
@@ -176,6 +176,7 @@ capabilities document advertises under `diagnostics.run_report` (currently
     "samples": 0,
     "frames": null,
     "throughput_per_second": null,
+    "writer_queue_wait_ms": null,
     "stages_ms": {
       "model_load": 546.7,
       "preprocess": null,
@@ -189,7 +190,7 @@ capabilities document advertises under `diagnostics.run_report` (currently
 ```
 
 It exists so a caller can tell *where* a run failed and *how long each stage
-took* without parsing log text. Five rules make it safe to consume:
+took* without parsing log text. Six rules make it safe to consume:
 
 - **Absent is not zero.** A stage nobody measured is `null`, never `0`, and
   `throughput_per_second` appears only when both a processed count and the
@@ -198,6 +199,11 @@ took* without parsing log text. Five rules make it safe to consume:
   the attempt that threw, so a rate computed from both would describe work that
   did not happen. The counts and the stage sums stay; only the ratio is
   withheld.
+- **`writer_queue_wait_ms` is backpressure, not encode time.** `--output_video`
+  encodes on a background thread, so this value sums only the time the frame
+  loop spent blocked because the writer's bounded queue was full; it is `null`
+  when no video was written. A non-zero value means the writer could not keep up
+  with inference, and the run was slower than the stage totals suggest.
 - **`stages_ms` values are sums** over the whole run, in milliseconds;
   `wall_time_ms` is measured inside `main`, so it is always smaller than the
   caller's own process wall time. Warmup and benchmark iterations are excluded:

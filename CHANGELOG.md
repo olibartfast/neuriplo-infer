@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- `--output_video` now encodes and writes annotated frames on a background
+  writer thread behind a bounded queue, so the frame loop only blocks when the
+  writer cannot keep up rather than for every frame. A writer failure still
+  fails the run (at the `render` stage), the file is finalized on every exit
+  path including an early `q`/Escape, and no frame is dropped. Frame order and
+  the fixed 30 fps / auto-codec behavior are unchanged.
+
+### Added
+- The run report records writer backpressure separately as
+  `metrics.writer_queue_wait_ms`: the time the frame loop spent blocked on a
+  full `--output_video` writer queue. It is `null` when no video was written,
+  and a non-zero value means the writer could not keep up with inference.
+
 ## [0.10.0] - 2026-09-14
 
 ### Known limitations
