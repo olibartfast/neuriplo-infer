@@ -98,6 +98,50 @@ void renderVideoClassificationResults(
               1, cv::Scalar(0, 255, 255), 2);
 }
 
+std::vector<cv::Point>
+toCvContour(const std::vector<neuriplo_tasks::vision::Point2f> &ring) {
+  std::vector<cv::Point> contour;
+  contour.reserve(ring.size());
+  for (const auto &point : ring) {
+    contour.emplace_back(cvRound(point.x), cvRound(point.y));
+  }
+  return contour;
+}
+
+// Draws the polygon representation produced when
+// TaskConfig::segmentation_output is Polygon (neuriplo-tasks v0.7.0): the
+// exterior ring and any hole rings are stroked as closed outlines. Nothing is
+// filled -- a filled polygon is visually indistinguishable from the mask
+// overlay, which defeats the point of asking for the vector representation.
+void overlaySegmentationPolygons(
+    const std::vector<neuriplo_tasks::SegmentationPolygon> &polygons,
+    cv::Mat &image) {
+  const cv::Scalar color =
+      cv::Scalar(std::rand() & 255, std::rand() & 255, std::rand() & 255);
+
+  for (const auto &polygon : polygons) {
+    if (polygon.exterior.size() < 3) {
+      continue;
+    }
+    const std::vector<std::vector<cv::Point>> exterior{
+        toCvContour(polygon.exterior)};
+    cv::polylines(image, exterior, /*isClosed=*/true, color, 2, cv::LINE_AA);
+
+    // Holes get the same colour but a thinner stroke, so interior boundaries
+    // stay distinguishable from the outer perimeter.
+    std::vector<std::vector<cv::Point>> holes;
+    holes.reserve(polygon.holes.size());
+    for (const auto &hole : polygon.holes) {
+      if (hole.size() >= 3) {
+        holes.push_back(toCvContour(hole));
+      }
+    }
+    if (!holes.empty()) {
+      cv::polylines(image, holes, /*isClosed=*/true, color, 1, cv::LINE_AA);
+    }
+  }
+}
+
 void renderInstanceSegmentationResults(
     const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
     const std::vector<std::string> &classes) {
@@ -109,7 +153,9 @@ void renderInstanceSegmentationResults(
         draw_label(image, label, segmentation.class_confidence,
                    segmentation.bbox.x, segmentation.bbox.y);
 
-        if (!segmentation.mask.empty()) {
+        if (!segmentation.polygons.empty()) {
+          overlaySegmentationPolygons(segmentation.polygons, image);
+        } else if (!segmentation.mask.empty()) {
           cv::Mat mask = neuriplo_tasks::toCvMat(segmentation.mask);
           cv::Mat maskForRender;
           if (mask.size() != image.size()) {

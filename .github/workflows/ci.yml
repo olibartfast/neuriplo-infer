@@ -33,7 +33,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build
-          key: ${{ runner.os }}-opencv-dnn-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt') }}
+          key: ${{ runner.os }}-opencv-dnn-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt', 'versions.env') }}
           restore-keys: ${{ runner.os }}-opencv-dnn-
 
       - name: Configure
@@ -193,7 +193,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build
-          key: ${{ runner.os }}-onnxruntime-${{ env.ORT_VERSION }}-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt') }}
+          key: ${{ runner.os }}-onnxruntime-${{ env.ORT_VERSION }}-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt', 'versions.env') }}
           restore-keys: ${{ runner.os }}-onnxruntime-${{ env.ORT_VERSION }}-
 
       - name: Configure
@@ -246,7 +246,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build
-          key: ${{ runner.os }}-libtorch-cpu-${{ env.LIBTORCH_VERSION }}-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt') }}
+          key: ${{ runner.os }}-libtorch-cpu-${{ env.LIBTORCH_VERSION }}-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt', 'versions.env') }}
           restore-keys: ${{ runner.os }}-libtorch-cpu-${{ env.LIBTORCH_VERSION }}-
 
       - name: Configure

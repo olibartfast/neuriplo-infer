@@ -9,7 +9,8 @@ Companion documents:
 
 - [KserveCompatibility.md](KserveCompatibility.md) — the CI-backed matrix of
   tested server / transport / datatype combinations.
-- `README.md` § *KServe Runtime Parameters* — CLI flags and usage examples.
+- [Usage.md](Usage.md) — the full CLI reference; the KServe flags are
+  documented below under *CLI flags*.
 - History: the feature was developed on `feature/neuriplo-kserve-runtime` and
   merged into `develop` on 2026-06-09 with all roadmap phases complete; see
   `CHANGELOG.md` and git history for the phase-by-phase record.
@@ -75,11 +76,49 @@ selected at runtime and are mutually exclusive per invocation.
 
 ## Configuration
 
-CLI flags (`--kserve_endpoint`, `--kserve_model_name`,
-`--kserve_model_version`, `--kserve_transport`, `--kserve_timeout_ms`) are
-documented in `README.md` § *KServe Runtime Parameters*. The endpoint scheme
-selects transport security: `http://` / `grpc://` plaintext, `https://` /
-`grpcs://` TLS.
+### CLI flags
+
+Preprocessing and postprocessing run in `neuriplo-infer`; only the inference
+tensors go to the remote runtime. Passing `--kserve_endpoint` selects this mode,
+and `--weights` is then not needed.
+
+| Flag | Default | Effect |
+|------|---------|--------|
+| `--kserve_endpoint=<url>` | — | Base KServe V2 endpoint, e.g. `http://127.0.0.1:19090`. A path prefix is allowed behind a gateway. The scheme selects transport security: `http://` / `grpc://` plaintext, `https://` / `grpcs://` TLS, verified against the system CA roots or `KSERVE_CA_CERT`. `https://` needs an OpenSSL build (see *Build modes*). |
+| `--kserve_model_name=<name>` | `--type` | Model name served by the endpoint. |
+| `--kserve_model_version=<version>` | `1` | Model version to call. |
+| `--kserve_transport=<grpc\|http>` | `grpc` (`http` in builds without gRPC) | Transport. A build without gRPC defaults to `http` and rejects an explicit `grpc` as a configuration error. |
+| `--kserve_timeout_ms=<ms>` | `30000` | Request timeout; must be greater than zero. |
+| `--input_mode`, `--im=<preprocessed\|encoded-image>` | `preprocessed` | `preprocessed` sends a dense tensor this client prepared. `encoded-image` sends the encoded file for a server-side ensemble to preprocess; it requires `--kserve_endpoint`, `--task_model`, `--batch=1`, and no `--input_sizes`. |
+| `--task_model`, `--tm=<model>` | — | Inner model whose metadata drives task construction in `encoded-image` mode: an ensemble's own metadata only describes an encoded image. |
+| `--task_model_version`, `--tmv=<version>` | `1` | Version of `--task_model`. |
+| `--postprocess_mode`, `--pm=<cpu\|gpu>` | `cpu` | `gpu` decodes the server's result envelope instead of running local postprocessing; requires `--input_mode=encoded-image`. The ensemble applies its own NMS and mask thresholds, so `--nms_threshold` and `--mask_threshold` are rejected; `--min_confidence` is applied to the decoded results; an explicit `--segmentation_output` must match the envelope (mask or polygon), and `--type` must match its result type. |
+
+With `--input_mode=preprocessed`, `--input_sizes` also fills dynamic dimensions
+of the served model's input shape (for example a detector served as
+`[1,3,-1,-1]`); without it only a single dynamic axis can be inferred from the
+payload size. `--input_mode=encoded-image` is not available for video
+classification, optical flow, image understanding, or open-vocabulary
+detection.
+
+YOLO served by `neuriplo-kserve-runtime` over HTTP:
+
+```bash
+./neuriplo-infer --type=yolo26 --source=data/dog.jpg --labels=labels/coco.names \
+  --kserve_endpoint=http://127.0.0.1:19090 --kserve_model_name=yolo \
+  --kserve_transport=http
+```
+
+A segmentation ensemble that preprocesses and postprocesses on the server:
+
+```bash
+./neuriplo-infer --type=yolo26seg --source=frame.jpg --labels=labels/coco.names \
+  --kserve_endpoint=http://127.0.0.1:8080 \
+  --kserve_model_name=yolo26seg_ens --task_model=yolo26seg \
+  --input_mode=encoded-image --postprocess_mode=gpu
+```
+
+### Environment variables
 
 Environment variables (the canonical list):
 
@@ -127,8 +166,16 @@ per-backend runtimes. `neuriplo-tasks` does not depend on `neuriplo`.
 ## Constraints
 
 - `InferenceMetadata` / `LayerInfo` come from the external `neuriplo` backend
-  library and carry no datatype field, so datatypes are captured and held
-  inside the KServe clients.
+  library (the app-local contract in KServe-only builds). `LayerInfo::datatype`
+  holds `FP32`, `INT32`, `INT64`, `UINT8`, `INT8`, or `BOOL`; datatypes it cannot
+  represent (`FP16`, `FP64`, `INT16`, unsigned wider than 8 bits) keep the
+  `Float32` default there, and the server's own tags stay available through
+  `KserveEngine::rawMetadata()`.
+- An image input must be `FP32` or `UINT8` in `preprocessed` mode (`UINT8`
+  receives raw 0–255 pixels); any other image-input datatype fails at pipeline
+  setup, naming the input. Before each request, every input's byte count is
+  checked against its advertised datatype and shape, so mislabelled bytes are
+  never sent. `encoded-image` mode is exempt from the image-input check.
 - `TensorElement` is `std::variant<float, int32_t, int64_t, uint8_t>`; output
   decoding is bounded to those four C++ types, with wider server datatypes
   widened/narrowed into them.

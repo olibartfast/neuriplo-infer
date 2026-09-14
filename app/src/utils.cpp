@@ -79,11 +79,24 @@ std::vector<std::string> readLabelNames(const std::string &fileName) {
 }
 
 std::string getFileExtension(const std::string &filename) {
-  size_t dotPos = filename.find_last_of(".");
-  if (dotPos != std::string::npos) {
-    return filename.substr(dotPos + 1);
+  // Only the last path component can carry an extension: a dot in a directory
+  // name ("runs.v2/clip") is not one, and neither is a leading dot.
+  const std::string name = std::filesystem::path(filename).filename().string();
+  const size_t dotPos = name.find_last_of('.');
+  if (dotPos != std::string::npos && dotPos != 0) {
+    return name.substr(dotPos + 1);
   }
-  return ""; // Return empty string if no extension found
+  return "";
+}
+
+bool isStillImageSource(const std::string &path) {
+  std::string extension = getFileExtension(path);
+  for (auto &c : extension) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  return extension == "jpg" || extension == "jpeg" || extension == "png" ||
+         extension == "bmp" || extension == "tif" || extension == "tiff" ||
+         extension == "webp";
 }
 
 std::vector<std::string> getGPUModels() {

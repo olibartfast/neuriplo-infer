@@ -84,4 +84,6 @@ CMake build targets.
 
 Linux is the primary supported environment for this repo and its helper scripts.
 Other platforms may work for subsets of the stack, but backend support should be
-verified in the owning dependency repo.
+verified in the owning dependency repo. See
+[Deployment.md § Platform support](Deployment.md#platform-support) for the tested
+matrix.

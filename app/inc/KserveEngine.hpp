@@ -22,6 +22,11 @@
 class KserveEngine : public InferenceInterface {
 public:
   explicit KserveEngine(std::unique_ptr<kserve::IClient> client);
+  // input_sizes: per-input extents from --input_sizes (CHW, without the batch
+  // axis). They fill dynamic metadata dimensions that the payload size alone
+  // cannot resolve, such as a detector served with [1,3,-1,-1].
+  KserveEngine(std::unique_ptr<kserve::IClient> client,
+               std::vector<std::vector<int64_t>> input_sizes);
 
   std::tuple<std::vector<std::vector<TensorElement>>,
              std::vector<std::vector<int64_t>>>
@@ -50,12 +55,23 @@ public:
   // rendered output with the backend that actually ran the model.
   std::string servingPlatform() const noexcept;
 
+  // Raw outputs of the most recent infer(), kept because the typed tuple
+  // returned by get_infer_results() drops tensor names and an ensemble result
+  // envelope is addressed by name. Empty before the first call.
+  const std::vector<kserve::InferOutput> &lastRawOutputs() const noexcept;
+
+  // Model metadata exactly as the server reported it. Not noexcept: the first
+  // call fetches from the server and throws when the model is not ready.
+  const kserve::ModelMetadata &rawMetadata();
+
 private:
   void ensureMetadata();
 
   std::unique_ptr<kserve::IClient> client_;
+  std::vector<std::vector<int64_t>> input_sizes_;
   bool metadata_loaded_{false};
   kserve::ModelMetadata raw_metadata_;
+  std::vector<kserve::InferOutput> last_raw_outputs_;
   InferenceMetadata cached_metadata_;
 
   double last_latency_ms_{0.0};

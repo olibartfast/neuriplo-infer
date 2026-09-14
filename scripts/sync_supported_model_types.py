@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Sync supported model/task types from neuriplo-tasks README into this repo docs.
 
-Single source of truth: the neuriplo-tasks README.  This script propagates the
-model-type list into every file that embeds it, using HTML marker comments.
+Single source of truth: the neuriplo-tasks README.  This script copies the
+model-type block into docs/generated/supported-model-types.md.  README.md does
+not embed the block; it links to the generated page.
 
-Targets updated:
-  1. docs/generated/supported-model-types.md  (full block, rewritten)
-  2. README.md                                (SUPPORTED_MODEL_TYPES markers)
+Relative links in the upstream block point into the neuriplo-tasks repository,
+so they are rewritten to absolute neuriplo-tasks URLs.
 
 Usage:
   python scripts/sync_supported_model_types.py
   python scripts/sync_supported_model_types.py --neuriplo-tasks-readme /path/to/neuriplo-tasks/README.md
-  python scripts/sync_supported_model_types.py --check   # dry-run, exit 1 if any file would change
+  python scripts/sync_supported_model_types.py --check   # dry-run, exit 1 if the file would change
 """
 
 from __future__ import annotations
@@ -22,16 +22,8 @@ import re
 import sys
 
 
-# ---------------------------------------------------------------------------
-# Marker definitions
-# ---------------------------------------------------------------------------
-
-MARKERS: dict[str, tuple[str, str]] = {
-    "readme": (
-        "<!-- SUPPORTED_MODEL_TYPES:START -->",
-        "<!-- SUPPORTED_MODEL_TYPES:END -->",
-    ),
-}
+NEURIPLO_TASKS_URL = "https://github.com/olibartfast/neuriplo-tasks"
+NEURIPLO_TASKS_BLOB_URL = f"{NEURIPLO_TASKS_URL}/blob/master"
 
 
 # ---------------------------------------------------------------------------
@@ -66,24 +58,13 @@ def extract_type_strings(block: str) -> list[str]:
     return re.findall(r'"([a-z0-9_-]+)"', block)
 
 
-# ---------------------------------------------------------------------------
-# Generic marker replacement
-# ---------------------------------------------------------------------------
-
-def replace_between_markers(
-    text: str,
-    replacement: str,
-    marker_start: str,
-    marker_end: str,
-) -> str:
-    pattern = re.compile(
-        rf"{re.escape(marker_start)}.*?{re.escape(marker_end)}",
-        flags=re.DOTALL,
+def absolutize_links(block: str) -> str:
+    """Rewrite relative markdown links to absolute neuriplo-tasks URLs."""
+    return re.sub(
+        r"\]\((?!https?://|#|mailto:)\.?/?([^)\s]+)\)",
+        rf"]({NEURIPLO_TASKS_BLOB_URL}/\1)",
+        block,
     )
-    new_block = f"{marker_start}\n{replacement.strip()}\n{marker_end}"
-    if not pattern.search(text):
-        raise ValueError(f"Could not find markers {marker_start} … {marker_end}")
-    return pattern.sub(new_block, text, count=1)
 
 
 # File-write helper (supports --check dry-run)
@@ -123,7 +104,7 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Dry-run: exit 1 if any file would change (for CI)",
+        help="Dry-run: exit 1 if the generated file would change (for CI)",
     )
     args = parser.parse_args()
 
@@ -142,51 +123,29 @@ def main() -> int:
         print("error: no type strings extracted from neuriplo-tasks README", file=sys.stderr)
         return 1
 
-    changed_files: list[str] = []
-
-    # --- 1. docs/generated/supported-model-types.md (full rewrite) ----------
     generated_path = repo_root / "docs" / "generated" / "supported-model-types.md"
-    source_label = "https://github.com/olibartfast/neuriplo-tasks"
     generated_doc = (
         "# Supported Model Types\n\n"
         "Auto-generated from `neuriplo-tasks` TaskFactory documentation.\n"
         "Do not edit manually; run `python scripts/sync_supported_model_types.py`.\n\n"
-        f"Source: [{source_label}]({source_label})\n\n"
-        f"{block}\n"
+        f"Source: [{NEURIPLO_TASKS_URL}]({NEURIPLO_TASKS_URL})\n\n"
+        f"{absolutize_links(block)}\n"
     )
-    if write_or_check(generated_path, generated_doc, check=args.check):
-        changed_files.append(str(generated_path.relative_to(repo_root)))
+    relative_path = str(generated_path.relative_to(repo_root))
+    changed = write_or_check(generated_path, generated_doc, check=args.check)
 
-    # --- 2. README.md (SUPPORTED_MODEL_TYPES markers) ----------------------
-    readme_path = repo_root / "README.md"
-    if not readme_path.exists():
-        print(f"error: {readme_path} not found", file=sys.stderr)
-        return 1
-    readme_text = readme_path.read_text(encoding="utf-8")
-    readme_replacement = (
-        f"{block}\n\n"
-        "Canonical copy: [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md)."
-    )
-    ms, me = MARKERS["readme"]
-    updated_readme = replace_between_markers(readme_text, readme_replacement, ms, me)
-    if write_or_check(readme_path, updated_readme, check=args.check):
-        changed_files.append("README.md")
-
-    # --- Summary -----------------------------------------------------------
     if args.check:
-        if changed_files:
-            print("check failed — the following files are out of date:")
-            for f in changed_files:
-                print(f"  {f}")
+        if changed:
+            print("check failed — the following file is out of date:")
+            print(f"  {relative_path}")
             print("Run: python scripts/sync_supported_model_types.py")
             return 1
         print("check passed — all files are up to date")
         return 0
 
-    if changed_files:
+    if changed:
         print(f"Synced supported model types from: {source_path}")
-        for f in changed_files:
-            print(f"  Updated: {f}")
+        print(f"  Updated: {relative_path}")
     else:
         print("All files already up to date.")
     return 0

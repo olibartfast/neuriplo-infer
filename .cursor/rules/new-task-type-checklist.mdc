@@ -11,9 +11,8 @@ finishing:
 
 ## 1. Sync supported-model-types docs (automatic — do not hand-edit)
 
-`README.md` (between `<!-- SUPPORTED_MODEL_TYPES:START/END -->`) and
-`docs/generated/supported-model-types.md` are generated from the neuriplo-tasks
-README. Never edit the marker block by hand. Instead run:
+`docs/generated/supported-model-types.md` is generated from the neuriplo-tasks
+README (`README.md` only links to it). Never edit it by hand. Instead run:
 
 ```bash
 python3 scripts/sync_supported_model_types.py \

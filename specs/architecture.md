@@ -1,4 +1,8 @@
-# Project Architecture
+# Architecture
+
+Part of the project constitution (see [`README.md`](README.md)): the existing
+structure a feature plan has to fit. Boundaries and rules that govern *choices*
+live in [`tech-stack.md`](tech-stack.md); this file describes what is already here.
 
 This repo is the application layer in the `vision-stack` cluster. It owns CLI parsing,
 app configuration, runtime wiring, visualization, and end-to-end execution flow.
@@ -7,7 +11,7 @@ app configuration, runtime wiring, visualization, and end-to-end execution flow.
 
 - [`CMakeLists.txt`](../CMakeLists.txt): actual build requirements, backend options, and fetched dependencies
 - [`cmake/versions.cmake`](../cmake/versions.cmake): dependency-ref derivation and version-loading behavior
-- [`docs/generated/supported-model-types.md`](generated/supported-model-types.md): generated upstream TaskFactory model-type inventory
+- [`docs/generated/supported-model-types.md`](../docs/generated/supported-model-types.md): generated upstream TaskFactory model-type inventory
 
 ## Repo Boundaries
 
@@ -33,7 +37,7 @@ Those contracts live in sibling repos and should not be redefined here in hand-m
 
 ## Model Types
 
-The generated list in [`docs/generated/supported-model-types.md`](generated/supported-model-types.md)
+The generated list in [`docs/generated/supported-model-types.md`](../docs/generated/supported-model-types.md)
 reflects the upstream `neuriplo-tasks` TaskFactory inventory.
 
 That list is broader than the guarantees made by this application repo. End-to-end behavior

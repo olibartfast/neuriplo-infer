@@ -6,6 +6,361 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-14
+
+### Known limitations
+- `--input_mode=encoded-image` against a model whose input declares a dynamic
+  dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
+  request shape to equal the metadata exactly. This client sends a concrete
+  extent; it needs a runtime release that treats negative metadata dimensions as
+  wildcards.
+- `--output_video` writes at a fixed 30 fps, since the pinned videocapture
+  capture interface does not report the source frame rate.
+- `--output_video` encodes frames synchronously on the frame loop's thread
+  (about 11 / 23 / 39 ms per frame at 720p / 1080p / 1440p `.mp4` on an
+  i5-11400H). Per-inference latency figures are unaffected; end-to-end
+  throughput is not. Moving the writer off that thread is tracked in #49.
+- neuriplo-platform's capabilities contract still documents schema version 1;
+  this release emits version 2.
+- A video whose read fails mid-stream (an I/O error, a dropped network stream)
+  is indistinguishable from its end through the pinned videocapture interface,
+  so it is reported as read to its end. Likewise a container that cannot be
+  finalized is logged by the writer but not reported to the caller.
+
+### Added
+- `--output_video <path>` writes the annotated video output of a video run to a
+  playable file (fixed 30 fps, codec auto-selected, container inferred from the
+  extension). Opt-in: build with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`.
+  Image sources are rejected, and a writer-less build exits fast naming that
+  flag; the parameter is advertised in `--capabilities` only when built in.
+- `--timings_csv <path>` writes one row per inference (`frame,latency_us`) for
+  a video run. The run report carries per-stage totals and throughput but not
+  the distribution, so a run whose mean is fine because one slow frame was
+  averaged away by four hundred quick ones is indistinguishable from a
+  uniformly quick one. The file is opened before the first frame, so a run that
+  cannot write its measurements fails before spending minutes producing them,
+  and parent directories are created.
+- `--no_display` suppresses the preview window. This is not only a convenience:
+  with no `DISPLAY`, `cv::imshow` aborts the process on its Qt platform plugin,
+  so before this flag a headless or benchmark run could not complete at all.
+  Verified on a 404-frame 1280x720 clip through the ONNX Runtime backend --
+  404 rows written and the run finished, where the same command without the
+  flag dumps core.
+- Machine-readable run diagnostics. Every run now writes a versioned report
+  (`data/output/run_report.json`, advertised by `--capabilities` under
+  `diagnostics.run_report`) carrying per-stage timings, sample/frame counts,
+  throughput, and the stage a failure was attributed to
+  (`configuration`, `model_load`, `source`, `preprocess`, `inference`,
+  `postprocess`, `render`, `unknown`). Unmeasured values are `null` rather than
+  zero, so a consumer never renders a measurement that was not taken.
+  Configuration failures, which exit before anything unwinds, and backends that
+  throw non-`std::exception` types are both attributed. Writing the report
+  cannot change a run's outcome or exit code.
+- `capabilities_schema_contract` test: `--capabilities` output is now validated
+  against `docs/capabilities.schema.json`, which previously could drift from
+  the emitter unnoticed.
+- YOLO26 depth estimation routing. `yolo-depth`, `yolo26n-depth`, and any
+  YOLO-prefixed model type containing `depth` now route to `DepthEstimation`,
+  mirroring the family added in neuriplo-tasks v0.8.0. Previously these fell
+  through to `Detection` and a depth model was rendered as a detector.
+- `--segmentation_output` / `-so` (`mask` or `polygon`, default `mask`),
+  wiring `TaskConfig::segmentation_output` from neuriplo-tasks v0.7.0. Polygon
+  results are rendered as closed perimeter outlines (see Fixed below); the
+  mask path is unchanged when the flag is absent.
+
+- Server-side ensemble building blocks, ported from tritonic v0.4.0 and
+  retargeted onto `kserve::ModelMetadata` / `kserve::InferOutput`:
+  - `--input_mode=preprocessed|encoded-image`, `--task_model`, and
+    `--postprocess_mode=cpu|gpu`, with strict guard rails (encoded-image
+    needs a KServe endpoint, a task model, and `--batch=1`, and forbids
+    `--input_sizes`; GPU postprocessing requires encoded-image).
+  - `app/inc/EncodedImage.hpp`: JPEG dimension reader, encoded-image request
+    builder, and validation of the ensemble against the inner task model.
+  - `app/inc/KserveEnvelope.hpp`: decoders for the detection, packed-mask, and
+    polygon envelopes back into neuriplo-tasks results, including rejection of
+    a truncated offset array on a detection-free frame.
+
+  - Wired through the image and video paths in `CLICommands.cpp`: a single
+    `inferFrame` helper selects local preprocessing, server-side preprocessing,
+    or server-side pre- and postprocessing. Still images send their original
+    file bytes untouched; video frames are re-encoded per frame.
+  - The task is built from the inner model's metadata in encoded-image mode,
+    fetched over a second client, since the ensemble's own metadata only
+    describes an encoded image.
+
+- `--task_model_version` (default `1`): the inner model's version,
+  independent of the ensemble's own `--kserve_model_version`, since a graph
+  may reference a different inner version.
+
+### Fixed
+- `--input_mode=encoded-image` is rejected at pipeline setup for video
+  classification, optical flow, and image understanding. Those paths
+  preprocess locally and sent dense tensors to an ensemble expecting an encoded
+  image.
+- `--output_video` is rejected with `--export_metadata` and text tasks, which
+  return before any frame loop and so succeeded without writing the file.
+- A still image whose output could not be saved (primary and `/tmp` fallback
+  both failing) now fails the run at the render stage; it was logged and then
+  counted as a successful sample in the run report.
+- `--timings_csv` checks the stream after the header, every row, and the final
+  flush, so a full disk fails the run instead of leaving a truncated CSV behind
+  a run that reports success.
+- **CLI contract change (builds without gRPC only):** `--kserve_transport` now
+  defaults to `http` there, and an explicit `grpc` is a configuration error;
+  before, `grpc` was the parsed default and was accepted, and the run silently
+  used HTTP, contradicting `--capabilities`. gRPC-enabled builds keep the
+  `grpc` default unchanged.
+- Server mask envelopes whose `MASK_DATA` run does not match its detection's
+  box area are rejected with a decode error; they were accepted and produced a
+  result with no renderable mask. Negative `MASK_OFFSETS` are also rejected
+  explicitly, and a box whose area would overflow `size_t` (reachable on
+  32-bit targets) is rejected before the length is compared.
+- Video-classification runs counted every frame of every overlapping window
+  in the run report, reporting `W * (N - W + 1)` frames for an `N`-frame video
+  and an inflated `throughput_per_second`. Each source frame is now counted
+  once, when it is read, so a clip shorter than one window (or stopped before
+  its first window closes) reports its frames instead of `null`.
+- `--postprocess_mode=gpu` refuses, at pipeline setup, an ensemble whose
+  result envelope does not match `--type`: a detection envelope needs an
+  object detection type, a mask or polygon envelope an instance segmentation
+  type. A mismatch decoded successfully and rendered no annotations.
+- A KServe input whose shape still has a dynamic dimension after inference
+  from the payload size (two or more dynamic axes, or fixed dimensions that are
+  zero or overflow) is refused before the request is sent, naming the input; it
+  was sent with `-1` extents and failed on the server with a less specific
+  error.
+- `--output_video` creates missing parent directories, like `--timings_csv`
+  and the run report, instead of failing to open a nested destination.
+- `--output_video` on a video that yields no frames now fails the run; the
+  writer opens on the first frame, so it used to succeed without creating the
+  requested file.
+- In encoded-image mode, `--warmup` and `--benchmark` send the source's
+  original file bytes like the real request; they re-encoded the decoded frame,
+  so the benchmark measured a different payload. API note: `WarmupCommand` and
+  `BenchmarkCommand` gain a `(cv::Mat, std::vector<uint8_t>)` constructor; the
+  existing one-argument constructors are kept, so source and symbols stay
+  compatible. The `neuriplo-infer` library is internal and not installed.
+- The configuration exit report's state is guarded by a mutex shared by
+  `armConfigurationExitReport`, `disarmConfigurationExitReport`, and the exit
+  hook.
+- Still images whose extension is not lowercase `.jpg`/`.png` (`.JPG`, `.jpeg`,
+  `.bmp`, `.tif`, `.webp`) ran through the video loop, writing no processed
+  image while reporting success. Routing and argument validation now share one
+  case-insensitive predicate on the file name; `getFileExtension` no longer
+  reads an extension out of a dotted directory name.
+- KServe output tensors are checked against their reported shape before
+  postprocessing; a short payload was indexed past its end. A model that
+  reports no inputs fails with a clear error instead of being indexed.
+- Under `--postprocess_mode=gpu`, `--min_confidence` is applied to the decoded
+  results, `--nms_threshold` / `--mask_threshold` are rejected (the ensemble
+  owns them), and an explicit `--segmentation_output` that contradicts the
+  envelope is refused; all were silently ignored.
+- Encoded-image still images are read without EXIF orientation, matching the
+  server's decoder, so boxes and masks are no longer drawn in a rotated frame.
+- `--input_sizes` now fills dynamic dimensions of a KServe input shape, so a
+  model served with `[1,3,-1,-1]` runs instead of being refused client-side.
+- Video runs finalize the output video before counting the sample.
+- `run_report.json` is written through a temporary file and a rename, with
+  invalid UTF-8 replaced, so it is never left empty; a provisional failed report
+  is written when a run starts, so a crash no longer leaves the previous run's
+  success in place.
+- Image understanding fails on an unreadable source instead of answering
+  text-only, and rejects video sources and the unimplemented `--sample_stride`,
+  `--max_frames`, and `--output_format`.
+- Optical flow writes one image per pair (`processed_frame_optical_flow_<n>.jpg`)
+  instead of overwriting one file, resolves the output directory with
+  `parent_path()` so bare source names work, and fails when the image cannot
+  be saved.
+- A failure while opening or writing `--timings_csv` or `--output_video` is
+  attributed to the `render` stage instead of the last timed stage.
+- Malformed option values (`--batch=abc`) and unknown options
+  (`--output-video`) are rejected; they were read as `0` or ignored.
+- Envelope scores must be finite, and mask placement uses 64-bit arithmetic,
+  so server values near `INT32_MAX` or NaN no longer reach undefined behavior.
+- `--timings_csv` and `--output_video` may not name a source or the run report,
+  which they would overwrite.
+- `--input_mode=encoded-image` is refused for open-vocabulary detection, whose
+  text prompts cannot reach an image-only ensemble.
+- `--timings_csv` is rejected for image, text, and metadata runs; `--warmup` /
+  `--benchmark` for anything but a single still image; `--task_model` without
+  `--input_mode=encoded-image`. Each was accepted and silently did nothing.
+- Depth routing matches neuriplo-tasks' TaskFactory exactly (YOLO-prefixed
+  depth types and Depth-Anything-V2), no longer any name containing `depth`.
+- `NEURIPLO_INFER_WITH_VIDEOWRITER=OFF` now also turns videocapture's
+  `USE_VIDEOWRITER` back off in an existing build directory.
+- The capabilities schema test reports a skip, not a pass, when `jsonschema`
+  is missing, and CI installs `python3-jsonschema`. The CI cache-key checker no
+  longer pairs a restore key with a neighbouring step's key, and
+  `cut_release.sh` reports a sibling without a release tag instead of exiting
+  silently.
+- CI build caches restore again after a CMake file change: each `restore-keys`
+  entry is now a prefix of its cache key (the previous one hashed a different
+  file set, so it could never match). A `ci_cache_restore_keys` test checks
+  every workflow.
+- `--help` no longer writes a failed configuration `run_report.json`.
+- `--output_video` on a video-classification run wrote only frames that closed
+  an inference window, so the leading frames were dropped and a video shorter
+  than one window produced no frames at all. Frames read before the first
+  window closes are now written unannotated; every source frame is written
+  exactly once.
+- `--capabilities` advertises `timings_csv` and `no_display` on every task that
+  can run a video, so capabilities-driven consumers can forward them.
+- Polygon envelope decoding bounds `INSTANCE_RING_OFFSETS` and
+  `RING_POINT_OFFSETS` against the tensors they index, so a malformed server
+  response fails with a decode error instead of reaching an unchecked
+  allocation.
+- `scripts/cut_release.sh` no longer appends another copy of the sibling-pin
+  comment block to `versions.env` on every release, and the release docs no
+  longer claim a GitHub Release is published automatically on tag push (that
+  workflow was removed; create it with `gh release create`).
+- A model's advertised input datatypes now reach preprocessing instead of the
+  first input being forced to `Float32` (#44). Over KServe, `Float32` bytes were
+  labelled with whatever datatype the server advertised, so a `UINT8`, `INT8`,
+  or `BOOL` input was rejected or misread by the server. Now an image input
+  advertised as `UINT8` receives raw 0–255 pixels and runs; an image input whose
+  datatype preprocessing cannot produce (`INT8`, `BOOL`, `INT64`, `FP16`, ...)
+  fails at pipeline setup with an error naming the input, its datatype, and
+  `--input_mode=encoded-image` as the way out; and `KserveEngine` refuses any
+  input whose byte count does not fit its advertised datatype and shape before
+  sending the request. `encoded-image` mode is unaffected. The KServe adapter
+  also records each input and output datatype in `InferenceMetadata`, and the
+  KServe-only contract gains `LayerInfo::datatype`.
+- Video FPS overlay no longer divides by zero. It measured in whole
+  milliseconds, so any inference faster than 1 ms truncated to zero and the
+  overlay reported `inf` -- on exactly the fast backends worth measuring. The
+  measurement is now in microseconds.
+- Polygon segmentation rendering filled the exteriors and alpha-blended them,
+  which is visually indistinguishable from the mask overlay and never drew the
+  perimeter. Polygon results now stroke closed outline contours only
+  (exteriors thickness 2, holes 1, anti-aliased).
+- `--postprocess_mode=gpu` silently fell back to client-side CPU
+  postprocessing when the model's metadata declared no decoded envelope,
+  quietly changing execution placement. It is now a configuration error
+  naming the model and pointing at `--postprocess_mode=cpu`.
+- Warmup and benchmark bypassed the configured transport: both preprocessed
+  locally and sent a dense float tensor even in encoded-image mode, where the
+  server expects a UINT8 IMAGE. Both now route through the same per-frame
+  path as normal inference.
+- KServe requests sent the model's declared input shape verbatim, so a model
+  with a dynamic (negative) dimension produced an invalid request. The extent
+  is now derived from the payload when exactly one axis is dynamic. Encoded
+  images are the first inputs to need it: their byte length varies per request.
+- Decoded mask envelopes produced no visible masks. The envelope carries
+  box-sized masks, and the renderer resizes whatever image it is given to the
+  frame, so a box-sized mask was stretched across the entire picture. Masks are
+  now expanded into a frame-sized image at the detection's box origin, matching
+  what the local postprocessor produces.
+
+### Changed
+- Pinned `neuriplo` to `v0.9.1` (was `v0.8.0`). Its `LayerInfo::datatype` carries
+  the input datatypes the #44 fix reads, and it advertises `INT8` / `BOOL` DALI
+  inputs instead of reporting them as `Float32`. neuriplo 0.9.0 also changed two
+  consumer contracts — TensorRT reports batch-inclusive shapes, and public headers
+  no longer include OpenCV transitively; this app builds and passes its full test
+  suite against the new pin.
+- Pinned `neuriplo-tasks` to `v0.8.2` (was `v0.8.0`), which carries the image-input
+  pixel-type handling the #44 fix depends on (`Preprocessor::applyImageInputType`,
+  `isImageInputShape`). The pin also pulls in the `v0.8.1` preprocessing changes:
+  RT-DETR / RT-DETRv2 / D-FINE / DEIM no longer apply ImageNet mean/std
+  normalization, and YOLO NMS-free detection now detects normalized vs
+  input-pixel coordinates. Detector outputs on those model types change as a
+  result of the pin.
+- The README is now a plug-and-play entry point — a Docker quickstart and a
+  build-from-source quickstart, both run as written on Ubuntu 24.04 with ONNX
+  Runtime, plus platform support — and links to new user guides instead of
+  embedding reference material (#38, #39). `docs/Usage.md` holds the full CLI
+  reference, examples, `--capabilities`, and the run report, and now covers flags
+  the README never listed (`--no_display`, `--timings_csv`, `--num_frames`,
+  `--mmproj`, `--bert_tokenizer_vocab`, `--task_model_version`).
+  `docs/Deployment.md` covers platforms, every backend and Docker image, GPU
+  runs, the end-to-end presets, native builds, and build options. The KServe
+  flags moved to `docs/KserveRuntime.md`, which also corrects the documented
+  `--kserve_transport` default to `grpc` (HTTP in builds without gRPC).
+- `scripts/sync_supported_model_types.py` writes only
+  `docs/generated/supported-model-types.md`; the README links to it instead of
+  embedding the list. Relative links in the upstream block are rewritten to
+  absolute neuriplo-tasks URLs, fixing a broken segmentation-outputs link.
+- `.dockerignore` excludes `models/`, `environments/`, and `build-*/`: after an
+  end-to-end preset run they sent gigabytes of host artifacts to every
+  `docker build`.
+- Pinned `videocapture` to `v0.5.0` (was `v0.4.0`), which adds the optional
+  video writer sink module (`-DUSE_VIDEOWRITER=ON`); the `Frame` capture API is
+  unchanged.
+- Pinned `videocapture` to `v0.4.0` (was `v0.3.0`), a breaking release for
+  consumers: `VideoCaptureInterface::readFrame()` now fills a
+  `videocapture::Frame` instead of a `cv::Mat`. `Frame` is dependency-free and
+  carries an explicit pixel format, per-plane row strides, a presentation
+  timestamp, and a sequence number. Video capture also no longer hangs at end
+  of stream on the GStreamer backend, and `GStreamerOpenCV` was renamed to
+  `GStreamerPipeline`.
+  - Frames are bridged to OpenCV in one place, `neuriplo_infer::toBgrMat()`
+    (`app/inc/FrameConversion.hpp`), rather than teaching every pipeline stage
+    a second image type. For packed BGR8 -- what all three capture backends
+    produce today -- the returned `cv::Mat` aliases the frame's own storage, so
+    the common path copies nothing and the rendered overlay still lands in the
+    frame's buffer. Other formats, including planar NV12 and YUV420P, are
+    converted; a 4:2:0 frame whose layout is not the canonical packed one is
+    rejected rather than reinterpreted.
+  - The app no longer injects OpenCV into the fetched `VideoCapture` target.
+    Up to v0.3.0 that was required, because `cv::Mat` was in the library's
+    public API; since v0.4.0 OpenCV is internal to its OpenCV capture backend,
+    which finds and links it itself. Keeping the injection would have put
+    OpenCV back into the FFmpeg and GStreamer builds that release exists to
+    free of it.
+- **Breaking:** the capabilities document is now `schema_version` 2. It gained
+  the required `diagnostics` section, and because the schema forbids unknown
+  properties that is breaking in both directions; version 1 is preserved as
+  `docs/capabilities.schema.v1.json`. Consumers should accept both and treat a
+  version 1 document as a build that publishes no run report.
+- Run diagnostics now cover the paths that do not go through `inferFrame`.
+  Optical flow and image understanding time their own preprocess, inference,
+  postprocess, and render stages and count their samples; video frame reads are
+  attributed to the source stage and video rendering to the render stage; a
+  completed video and a processed optical-flow pair each count as one sample.
+- Warmup and benchmark iterations no longer contribute to the reported stage
+  timings. They repeat inference without producing a sample, so their time
+  inflated every stage total and collapsed `throughput_per_second`.
+- A failure while constructing the application (log setup) now writes a
+  configuration-stage report, like a failure while parsing arguments.
+- A run report that cannot be flushed to disk is now detected and logged;
+  `writeRunReport` returns whether the complete document was written. Only the
+  open was checked before, so a full disk left truncated JSON behind silently.
+- An unreadable image source now fails with an explicit error attributed to the
+  source stage, instead of surfacing later as a confusing downstream failure.
+  This now includes an optical-flow pair with an unreadable half, which was
+  logged and skipped: the run exited 0 and reported success with no samples and
+  no artifact, which a consumer cannot distinguish from having nothing to do.
+- `throughput_per_second` is now `null` on a failed run. Counts are added only
+  after work succeeds while the stage timer still records the attempt that
+  threw, so the numerator and the denominator covered different work — the same
+  mismatch already excluded for warmup and benchmark. The counts and the stage
+  sums are still published; only the ratio is withheld.
+- A video stopped early with `q` or Escape no longer counts as a completed
+  sample. `samples` is documented as sources processed to completion, and an
+  interrupted video is not one. Its frames still count, because they ran.
+- `capabilities_cli_contract` now parses the emitted document and asserts the
+  top-level `schema_version`. It matched a regular expression before, which the
+  nested `diagnostics.run_report.schema_version` satisfied on its own, so the
+  test would have passed whatever the capabilities version said.
+- Pinned neuriplo-tasks to `v0.8.0` (was `v0.6.1`), picking up polygon
+  segmentation output, the YOLO26 depth task, and the vision preprocessing
+  fast paths.
+
+### Removed
+- `app/src/NeuriploInferProcessing.cpp` and `app/src/NeuriploInferRendering.cpp`,
+  leftovers from the command refactor. They held second copies of the image,
+  video, optical-flow, and image-understanding paths and of the per-task
+  renderers, but were in no build target, referenced nowhere, and no longer
+  compiled against their own headers. Their live counterparts are
+  `CLICommands.cpp` and `ResultRenderer.cpp`. Uncompiled, they were invisible
+  to every gate — formatting, lint, warnings, tests — while still reading like
+  the code that runs, so a fix to one of these paths could land in the copy
+  nothing executes. The run diagnostics were the concrete case: none of that
+  duplicate processing code was instrumented.
+- New `no_orphan_sources` test: a source under `app/src` that is named nowhere
+  in `app/CMakeLists.txt` now fails the suite. Being excluded from a particular
+  build (KServe, a backend) stays fine; being in no build at all does not.
+
 ## [0.9.1] - 2026-07-16
 
 ### Fixed
@@ -275,7 +630,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.7.0...v0.8.0

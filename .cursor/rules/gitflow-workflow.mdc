@@ -58,16 +58,17 @@ git checkout develop && git merge release/<version>
 git branch -d release/<version>
 git push origin --delete release/<version>
 git push origin master develop --tags
-# GitHub Release published by publish-github-release.yml after Release Guard
+gh release create v<version> --title v<version> --notes-file <changelog-section>
 ```
 
 Release prep (`scripts/cut_release.sh`, `CHANGELOG.md`, sibling pins in
 `versions.env`) happens on **`release/*`**, not on `develop` or `master`.
 
 Pushing a tag with `git push --tags` does **not** create an entry on
-https://github.com/olibartfast/neuriplo-infer/releases by itself — CI workflow
-`.github/workflows/publish-github-release.yml` publishes the Release from
-`CHANGELOG.md` after Release Guard succeeds on tag push.
+https://github.com/olibartfast/neuriplo-infer/releases by itself. The
+auto-publish workflow was removed (`66cc42c`); after Release Guard succeeds on
+the tag push, create the Release with `gh release create`, using that version's
+`CHANGELOG.md` section as the notes.
 
 ## Hotfix workflow
 
@@ -80,7 +81,7 @@ git checkout develop && git merge hotfix/<short-name>
 git branch -d hotfix/<short-name>
 git push origin --delete hotfix/<short-name>
 git push origin master develop --tags
-# GitHub Release published by publish-github-release.yml after Release Guard
+gh release create v<patch> --title v<patch> --notes-file <changelog-section>
 ```
 
 ## Before Commit, Push, or PR
