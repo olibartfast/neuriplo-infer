@@ -264,3 +264,33 @@ TEST(CapabilitiesContract, OutputVideoParameterMatchesTheWriterBuild) {
   EXPECT_FALSE(catalog.contains("output_video"));
 #endif
 }
+
+// A capabilities-driven consumer forwards only advertised parameters, so a CLI
+// flag missing from the catalog is unreachable through it.
+TEST(CapabilitiesContract, AdvertisesVideoRunParametersOnVideoTasks) {
+  const json capabilities = buildCapabilities();
+  const json &catalog = capabilities.at("parameters");
+
+  ASSERT_TRUE(catalog.contains("timings_csv"));
+  EXPECT_EQ(catalog.at("timings_csv").at("value_type"), "path");
+  ASSERT_TRUE(catalog.contains("no_display"));
+  EXPECT_EQ(catalog.at("no_display").at("value_type"), "boolean");
+  EXPECT_EQ(catalog.at("no_display").at("default"), false);
+
+  for (const char *id :
+       {"object_detection", "instance_segmentation", "classification",
+        "video_classification", "pose_estimation", "depth_estimation",
+        "open_vocabulary_detection"}) {
+    const json &optional =
+        findById(capabilities.at("tasks"), id).at("parameters").at("optional");
+    EXPECT_TRUE(containsString(optional, "timings_csv")) << id;
+    EXPECT_TRUE(containsString(optional, "no_display")) << id;
+  }
+  for (const char *id :
+       {"optical_flow", "image_understanding", "gaussian_splatting"}) {
+    const json &optional =
+        findById(capabilities.at("tasks"), id).at("parameters").at("optional");
+    EXPECT_FALSE(containsString(optional, "timings_csv")) << id;
+    EXPECT_FALSE(containsString(optional, "no_display")) << id;
+  }
+}

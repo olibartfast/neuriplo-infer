@@ -42,6 +42,20 @@ public:
   bool rendered_called{false};
 };
 
+TEST(EncodedImageTaskSupport, RejectsTasksThatPreprocessLocally) {
+  for (const auto task_type : {neuriplo_tasks::TaskType::VideoClassification,
+                               neuriplo_tasks::TaskType::OpticalFlow,
+                               neuriplo_tasks::TaskType::ImageUnderstanding}) {
+    EXPECT_THROW(requireEncodedImageSupport(task_type, "model"),
+                 std::runtime_error);
+  }
+}
+
+TEST(EncodedImageTaskSupport, AcceptsTasksRoutedThroughInferFrame) {
+  EXPECT_NO_THROW(
+      requireEncodedImageSupport(neuriplo_tasks::TaskType::Detection, "yolo"));
+}
+
 TEST(InferencePipelineBuilderTest, FailsOnInvalidWeights) {
   AppConfig config;
   config.detectorType = "yolo26";

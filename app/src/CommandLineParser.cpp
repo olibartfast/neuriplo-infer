@@ -5,6 +5,16 @@
 #include <glog/logging.h>
 #include <iostream>
 
+#include "RunReport.hpp"
+
+// The advertised default must be a transport this build can honour; a
+// gRPC-less build defaulting to grpc would fall back to HTTP silently.
+#ifdef KSERVE_CLIENT_WITH_GRPC
+#define NEURIPLO_INFER_DEFAULT_KSERVE_TRANSPORT "grpc"
+#else
+#define NEURIPLO_INFER_DEFAULT_KSERVE_TRANSPORT "http"
+#endif
+
 const std::string CommandLineParser::params =
     "{ help h   |   | print help message }"
     "{ capabilities | false | print machine-readable capabilities JSON and "
@@ -57,7 +67,8 @@ const std::string CommandLineParser::params =
     "--type) }"
     "{ kserve_model_version | 1 | model version for KServe requests }"
     "{ kserve_timeout_ms | 30000 | KServe request timeout in milliseconds }"
-    "{ kserve_transport | grpc | KServe transport: grpc (default) or http }"
+    "{ kserve_transport | " NEURIPLO_INFER_DEFAULT_KSERVE_TRANSPORT
+    " | KServe transport: grpc or http (http in builds without gRPC) }"
     "{ input_mode im | preprocessed | input transport: preprocessed or "
     "encoded-image }"
     "{ task_model tm | | inner model used for task metadata in encoded-image "
@@ -142,6 +153,9 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
 
   if (parser.has("help")) {
     printHelpMessage(parser);
+    // Asking for help is not a failed configuration; main() armed that report
+    // before parsing, so it must not be left to fire on this exit.
+    neuriplo_infer::disarmConfigurationExitReport();
     std::exit(1);
   }
 
@@ -338,6 +352,14 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
       LOG(ERROR) << "--kserve_transport must be either 'grpc' or 'http'";
       std::exit(1);
     }
+#if defined(NEURIPLO_INFER_WITH_KSERVE) && !defined(KSERVE_CLIENT_WITH_GRPC)
+    if (transport == "grpc") {
+      LOG(ERROR) << "--kserve_transport=grpc needs a build with gRPC "
+                    "(-DNEURIPLO_INFER_ENABLE_GRPC=ON); this build supports "
+                    "http only";
+      std::exit(1);
+    }
+#endif
   } else if (!isFile(weights)) {
     LOG(ERROR) << "Weights file " << weights << " doesn't exist";
     std::exit(1);
@@ -447,6 +469,13 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
 
   const std::string outputVideo = parser.get<std::string>("output_video");
   if (!outputVideo.empty()) {
+    // Metadata export and text tasks return before any frame loop, so the
+    // writer would never open and the run would succeed without the file.
+    if (is_metadata_export || is_text_task || source.empty()) {
+      LOG(ERROR) << "--output_video applies to video inference runs only; it "
+                    "cannot be combined with --export_metadata or a text task";
+      std::exit(1);
+    }
     // An image source never enters the frame loops, so the writer would sit
     // unused while the run reports success -- reject it up front instead.
     for (const auto &src : split(source, ',')) {

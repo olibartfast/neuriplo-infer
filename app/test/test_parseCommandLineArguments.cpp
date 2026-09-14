@@ -1,4 +1,6 @@
 #include "CommandLineParser.hpp"
+#include "RunReport.hpp"
+#include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 
@@ -450,5 +452,72 @@ TEST(ParseCommandLineArguments, OutputVideoIsParsedForVideoSources) {
   // Reader-side frames are written fresh; the parse path only records the
   // destination.
   EXPECT_EQ(config.output_video, "out.mp4");
+}
+#endif
+
+TEST(ParseCommandLineArguments, OutputVideoIsRejectedForMetadataExport) {
+  // Metadata export never enters a frame loop, so no file would be written.
+  const char *argv[] = {"program", "--type=yolov5", "--weights=model.weights",
+                        "--export_metadata", "--output_video=out.mp4"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("model.weights");
+  EXPECT_EXIT(
+      {
+        AppConfig config = CommandLineParser::parseCommandLineArguments(
+            argc, const_cast<char **>(argv));
+        (void)config;
+      },
+      ::testing::ExitedWithCode(1), "video inference runs only");
+}
+
+TEST(ParseCommandLineArguments, HelpDoesNotWriteAFailedRunReport) {
+  const auto report = std::filesystem::temp_directory_path() /
+                      "neuriplo-infer-help-run-report.json";
+  std::filesystem::remove(report);
+  const char *argv[] = {"program", "--help"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  // main() arms the configuration report before parsing; the help exit must
+  // not leave it armed.
+  EXPECT_EXIT(
+      {
+        neuriplo_infer::armConfigurationExitReport(report);
+        AppConfig config = CommandLineParser::parseCommandLineArguments(
+            argc, const_cast<char **>(argv));
+        (void)config;
+      },
+      ::testing::ExitedWithCode(1), "");
+  EXPECT_FALSE(std::filesystem::exists(report));
+}
+
+TEST(ParseCommandLineArguments, KserveTransportDefaultsToACompiledTransport) {
+  const char *argv[] = {"program", "--type=yolov5", "--source=input.mp4",
+                        "--kserve_endpoint=http://127.0.0.1:8080"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  const AppConfig config = CommandLineParser::parseCommandLineArguments(
+      argc, const_cast<char **>(argv));
+
+#ifdef KSERVE_CLIENT_WITH_GRPC
+  EXPECT_EQ(config.kserve_transport, "grpc");
+#else
+  EXPECT_EQ(config.kserve_transport, "http");
+#endif
+}
+
+#if defined(NEURIPLO_INFER_WITH_KSERVE) && !defined(KSERVE_CLIENT_WITH_GRPC)
+TEST(ParseCommandLineArguments, GrpcTransportIsRejectedWithoutGrpcSupport) {
+  // Accepting it used to build an HTTP client silently.
+  const char *argv[] = {"program", "--type=yolov5", "--source=input.mp4",
+                        "--kserve_endpoint=http://127.0.0.1:8080",
+                        "--kserve_transport=grpc"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("input.mp4");
+  EXPECT_EXIT(
+      {
+        AppConfig config = CommandLineParser::parseCommandLineArguments(
+            argc, const_cast<char **>(argv));
+        (void)config;
+      },
+      ::testing::ExitedWithCode(1), "needs a build with gRPC");
 }
 #endif

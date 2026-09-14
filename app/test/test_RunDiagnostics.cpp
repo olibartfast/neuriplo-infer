@@ -11,6 +11,8 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <string>
 #include <thread>
 
 /**
@@ -343,5 +345,160 @@ TEST_F(RunDiagnostics, APipelineWithoutACollectorStillRuns) {
 
   EXPECT_EQ(RunInferenceCommand().execute(pipeline), 0);
 }
+
+// Writes a short MJPG clip the OpenCV capture backend reads back.
+std::filesystem::path writeFixtureVideo(const std::filesystem::path &path,
+                                        int frames) {
+  cv::VideoWriter writer(path.string(),
+                         cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10.0,
+                         cv::Size(64, 64));
+  EXPECT_TRUE(writer.isOpened()) << "could not create " << path;
+  for (int i = 0; i < frames; ++i) {
+    writer.write(cv::Mat(64, 64, CV_8UC3, cv::Scalar(i * 20, 90, 160)));
+  }
+  return path;
+}
+
+int countVideoFrames(const std::filesystem::path &path) {
+  cv::VideoCapture capture(path.string());
+  int frames = 0;
+  cv::Mat frame;
+  while (capture.read(frame)) {
+    ++frames;
+  }
+  return frames;
+}
+
+TEST_F(RunDiagnostics, AHeadlessVideoRunWritesOneTimingsRowPerFrame) {
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 5);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true; // the test has no screen to open one on
+  pipeline.config.timings_csv = (directory_ / "out" / "timings.csv").string();
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  std::ifstream csv(pipeline.config.timings_csv);
+  ASSERT_TRUE(csv.is_open()) << "parent directories were not created";
+  std::string line;
+  ASSERT_TRUE(std::getline(csv, line));
+  EXPECT_EQ(line, "frame,latency_us");
+  int rows = 0;
+  while (std::getline(csv, line)) {
+    EXPECT_EQ(line.rfind(std::to_string(rows) + ",", 0), 0U) << line;
+    ++rows;
+  }
+  EXPECT_EQ(rows, 5);
+
+  const json metrics = report().at("metrics");
+  EXPECT_EQ(metrics.at("samples"), 1);
+  EXPECT_EQ(metrics.at("frames"), 5);
+}
+
+TEST_F(RunDiagnostics, ATimingsCsvThatCannotBeWrittenFailsTheRun) {
+  if (!std::filesystem::exists("/dev/full")) {
+    GTEST_SKIP() << "needs /dev/full to simulate a full disk";
+  }
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 3);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  // Opens fine, fails on flush: the truncated-CSV case.
+  pipeline.config.timings_csv = "/dev/full";
+
+  EXPECT_THROW(RunInferenceCommand().execute(pipeline), std::runtime_error);
+}
+
+TEST_F(RunDiagnostics, AnImageThatCannotBeSavedFailsInsteadOfCountingASample) {
+  // Learn the output name from a successful run, then occupy both the primary
+  // and the /tmp fallback destination with directories so neither write can
+  // succeed.
+  {
+    RunReport probe_report;
+    auto probe = makePipeline(probe_report);
+    ASSERT_EQ(RunInferenceCommand().execute(probe), 0);
+  }
+  std::string name;
+  for (const auto &entry : std::filesystem::directory_iterator("data/output")) {
+    if (entry.path().extension() == ".png") {
+      name = entry.path().filename().string();
+    }
+  }
+  ASSERT_FALSE(name.empty()) << "the probe run wrote no image";
+  const auto primary = std::filesystem::path("data/output") / name;
+  const auto fallback = std::filesystem::path("/tmp/neuriplo-infer-" + name);
+  std::filesystem::remove(primary);
+  std::filesystem::create_directories(primary);
+  std::filesystem::remove_all(fallback);
+  std::filesystem::create_directories(fallback);
+
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  bool threw = false;
+  try {
+    RunInferenceCommand().execute(pipeline);
+  } catch (const std::exception &e) {
+    threw = true;
+    collected.fail(collected.currentStage(), e.what());
+  }
+  std::filesystem::remove_all(fallback);
+  ASSERT_TRUE(threw) << "a run with no saved image must not succeed";
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  const json document = report();
+  EXPECT_EQ(document.at("status"), "failed");
+  EXPECT_EQ(document.at("error").at("stage"), "render");
+  EXPECT_EQ(document.at("metrics").at("samples"), 0);
+}
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+TEST_F(RunDiagnostics, AVideoRunWritesEveryFrameToTheOutputVideo) {
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 5);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.output_video = (directory_ / "annotated.avi").string();
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+
+  EXPECT_EQ(countVideoFrames(pipeline.config.output_video), 5);
+}
+
+TEST_F(RunDiagnostics, AClassificationVideoShorterThanItsWindowStillWritesIt) {
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 3);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.num_frames = 16; // longer than the clip: no window closes
+  pipeline.config.output_video = (directory_ / "annotated.avi").string();
+  pipeline.task_type = neuriplo_tasks::TaskType::VideoClassification;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+
+  EXPECT_EQ(dynamic_cast<FakeEngine *>(pipeline.engine.get())->calls, 0);
+  EXPECT_EQ(countVideoFrames(pipeline.config.output_video), 3);
+}
+
+TEST_F(RunDiagnostics, AClassificationVideoWritesEachSourceFrameExactlyOnce) {
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 6);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.num_frames = 4; // windows close on frames 4, 5 and 6
+  pipeline.config.output_video = (directory_ / "annotated.avi").string();
+  pipeline.task_type = neuriplo_tasks::TaskType::VideoClassification;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+
+  EXPECT_EQ(dynamic_cast<FakeEngine *>(pipeline.engine.get())->calls, 3);
+  EXPECT_EQ(countVideoFrames(pipeline.config.output_video), 6);
+}
+#endif
 
 } // namespace

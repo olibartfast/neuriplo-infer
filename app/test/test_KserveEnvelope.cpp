@@ -218,6 +218,61 @@ TEST(KserveEnvelope, DecodesPolygonRingsAndHoles) {
   EXPECT_EQ(segmentation.polygons[0].holes[0].size(), 4u);
 }
 
+// A ring whose point range runs far past POLYGON_POINTS used to reach
+// reserve() with the unchecked extent and fail with std::length_error instead
+// of a decode error; it is now rejected against the points tensor first.
+TEST(KserveEnvelope, RejectsRingPointOffsetsPastPolygonPoints) {
+  auto outputs = detectionEnvelope(1, {{{0, 0, 10, 10}}}, {0.9F}, {5});
+
+  std::vector<uint8_t> instance_offsets;
+  append<int64_t>(instance_offsets, 0);
+  for (int i = 0; i < neuriplo_infer::kEnvelopeMaxDetections; ++i) {
+    append<int64_t>(instance_offsets, 1);
+  }
+
+  std::vector<uint8_t> ring_offsets;
+  append<int64_t>(ring_offsets, 0);
+  append<int64_t>(ring_offsets, int64_t{1} << 62);
+
+  std::vector<uint8_t> points;
+  for (const int32_t value : {0, 0, 10, 0, 10, 10}) {
+    append<int32_t>(points, value);
+  }
+
+  outputs.push_back(tensor("INSTANCE_RING_OFFSETS", "INT64", instance_offsets));
+  outputs.push_back(tensor("RING_POINT_OFFSETS", "INT64", ring_offsets));
+  outputs.push_back(tensor("POLYGON_POINTS", "INT32", points));
+
+  EXPECT_THROW(neuriplo_infer::decodePolygonEnvelope(outputs),
+               std::runtime_error);
+}
+
+TEST(KserveEnvelope, RejectsInstanceRingOffsetsPastRingOffsets) {
+  auto outputs = detectionEnvelope(1, {{{0, 0, 10, 10}}}, {0.9F}, {5});
+
+  std::vector<uint8_t> instance_offsets;
+  append<int64_t>(instance_offsets, 0);
+  for (int i = 0; i < neuriplo_infer::kEnvelopeMaxDetections; ++i) {
+    append<int64_t>(instance_offsets, 5);
+  }
+
+  std::vector<uint8_t> ring_offsets;
+  append<int64_t>(ring_offsets, 0);
+  append<int64_t>(ring_offsets, 3);
+
+  std::vector<uint8_t> points;
+  for (const int32_t value : {0, 0, 10, 0, 10, 10}) {
+    append<int32_t>(points, value);
+  }
+
+  outputs.push_back(tensor("INSTANCE_RING_OFFSETS", "INT64", instance_offsets));
+  outputs.push_back(tensor("RING_POINT_OFFSETS", "INT64", ring_offsets));
+  outputs.push_back(tensor("POLYGON_POINTS", "INT32", points));
+
+  EXPECT_THROW(neuriplo_infer::decodePolygonEnvelope(outputs),
+               std::runtime_error);
+}
+
 TEST(KserveEnvelope, RecognisesDecodedAndPassthroughModels) {
   kserve::ModelMetadata passthrough;
   passthrough.outputs.push_back({"output0", "FP32", {1, 84, 8400}});
