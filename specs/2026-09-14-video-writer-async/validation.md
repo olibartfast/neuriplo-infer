@@ -54,8 +54,14 @@ ctest --test-dir build-test-writer --output-on-failure
       writes three frames, destroys the sink without `finish()`, and re-opens the
       destination: three readable frames. The exception path is covered by R-3
       (the run throws and the sink is destroyed during unwinding).
-- [x] **R-5 (queue-wait metric).** `WriterQueueWaitIsReportedWhenTheWriterBlocks`
-      reports a non-null, positive `metrics.writer_queue_wait_ms`;
+- [x] **R-3b (writer exception).** `AsyncVideoWriterSinkTest.WriterExceptionSurfacesThroughTheSink`:
+      a fake writer that throws from `writeFrame` fails through `write()`/`finish()`
+      with its own message instead of terminating the process from the worker.
+- [x] **R-5 (queue-wait metric).** `AsyncVideoWriterSinkTest.FullQueueWaitIsReported`
+      gates the fake writer so the queue fills deterministically and reports a
+      positive wait; `UnblockedWriterReportsZeroQueueWait` reports a measured `0`
+      for a writer that never blocks; `WriterQueueWaitIsMeasuredWhenAVideoIsWritten`
+      proves the pipeline wires its report into the sink;
       `WriterQueueWaitStaysNullWithoutAnOutputVideo` (both builds) and
       `RunReportFile.WriterQueueWaitIsSeparateAndNullUntilMeasured` cover the
       null case.

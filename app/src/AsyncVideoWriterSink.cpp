@@ -5,6 +5,8 @@
 #include "VideoWriterConfig.hpp"
 #include "VideoWriterFactory.hpp"
 
+#include <glog/logging.h>
+
 #include <chrono>
 #include <filesystem>
 #include <stdexcept>
@@ -50,6 +52,12 @@ AsyncVideoWriterSink::AsyncVideoWriterSink(std::string destination, int width,
         "--output_video: could not initialize the video writer for " +
         destination_);
   }
+  // A video is being written from here on, so the metric is measured: a writer
+  // that never fills the queue reports zero wait, not the null of a run with no
+  // --output_video.
+  if (report_ != nullptr) {
+    report_->addWriterQueueWaitMs(0.0);
+  }
   worker_ = std::thread([this] { drain(); });
 }
 
@@ -57,7 +65,16 @@ AsyncVideoWriterSink::~AsyncVideoWriterSink() {
   // Never throws: joining is the one thing that must happen on every exit
   // path, and a worker failure already propagated through write()/finish().
   stop();
-  writer_->release();
+  // The destructor also runs while unwinding, where a second exception would
+  // terminate the process before the run report records the first.
+  try {
+    writer_->release();
+  } catch (const std::exception &e) {
+    LOG(WARNING) << "--output_video: releasing the video writer failed: "
+                 << e.what();
+  } catch (...) {
+    LOG(WARNING) << "--output_video: releasing the video writer failed";
+  }
 }
 
 void AsyncVideoWriterSink::write(videocapture::Frame frame,
@@ -108,13 +125,23 @@ void AsyncVideoWriterSink::drain() {
       queue_.pop_front();
     }
     space_available_.notify_one();
-    if (!writer_->writeFrame(queued.frame)) {
+    std::exception_ptr error;
+    try {
+      if (!writer_->writeFrame(queued.frame)) {
+        error = std::make_exception_ptr(std::runtime_error(
+            "--output_video: video writer failed to write frame " +
+            std::to_string(queued.frame_index)));
+      }
+    } catch (...) {
+      // An exception escaping a std::thread terminates the process; carried
+      // across as state it fails the run at render like a false return.
+      error = std::current_exception();
+    }
+    if (error) {
       {
         std::lock_guard<std::mutex> lock(mutex_);
         failed_ = true;
-        error_ = std::make_exception_ptr(std::runtime_error(
-            "--output_video: video writer failed to write frame " +
-            std::to_string(queued.frame_index)));
+        error_ = std::move(error);
         // Anything still queued cannot be written: the first failure ends the
         // run, and the frame loop rethrows it from its next write().
         queue_.clear();

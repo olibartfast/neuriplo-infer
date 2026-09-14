@@ -609,6 +609,9 @@ void processVideoClassification(InferencePipeline &pipeline,
     // written unannotated so the output keeps every source frame exactly once,
     // and a video shorter than one window still produces its file.
     if (output_sink && static_cast<int>(frameBuffer.size()) < requiredFrames) {
+      // The source timer left the stage at source; a deferred writer failure
+      // rethrown here belongs to render.
+      attributeTo(pipeline, neuriplo_infer::RunStage::Render);
       output_sink->write(neuriplo_infer::toFrame(image), frame_index - 1);
     }
 #endif

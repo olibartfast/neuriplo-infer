@@ -777,10 +777,13 @@ TEST_F(RunDiagnostics,
   EXPECT_TRUE(probe->released.load());
 }
 
-TEST_F(RunDiagnostics, WriterQueueWaitIsReportedWhenTheWriterBlocks) {
+// Wiring only: the pipeline hands its report to the sink, so a written video
+// carries a measured wait. A positive wait under a full queue depends on timing
+// this loop cannot control; the sink test FullQueueWaitIsReported proves it
+// deterministically with a gated writer.
+TEST_F(RunDiagnostics, WriterQueueWaitIsMeasuredWhenAVideoIsWritten) {
   const auto video = writeFixtureVideo(directory_ / "fixture.avi", 12);
   auto probe = std::make_shared<neuriplo_infer_test::WriterProbe>();
-  probe->per_frame_delay = std::chrono::milliseconds(5);
   RunReport collected;
   auto pipeline = makePipeline(collected);
   pipeline.config.sources = {video.string()};
@@ -795,7 +798,7 @@ TEST_F(RunDiagnostics, WriterQueueWaitIsReportedWhenTheWriterBlocks) {
 
   const json metrics = report().at("metrics");
   ASSERT_FALSE(metrics.at("writer_queue_wait_ms").is_null());
-  EXPECT_GT(metrics.at("writer_queue_wait_ms").get<double>(), 0.0);
+  EXPECT_GE(metrics.at("writer_queue_wait_ms").get<double>(), 0.0);
 }
 #endif
 
