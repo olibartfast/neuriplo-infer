@@ -16,6 +16,10 @@
 #include <string>
 #include <thread>
 
+#ifdef VIDEOCAPTURE_WITH_WRITER
+#include "FakeVideoWriter.hpp"
+#endif
+
 /**
  * Proves the instrumentation is wired where the work happens.
  *
@@ -717,6 +721,92 @@ TEST_F(RunDiagnostics, AClassificationVideoWritesEachSourceFrameExactlyOnce) {
   EXPECT_EQ(dynamic_cast<FakeEngine *>(pipeline.engine.get())->calls, 3);
   EXPECT_EQ(countVideoFrames(pipeline.config.output_video), 6);
 }
+
+TEST_F(RunDiagnostics, AWriterFailureAfterNFramesFailsTheRunAtRender) {
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 5);
+  auto probe = std::make_shared<neuriplo_infer_test::WriterProbe>();
+  probe->fail_on_write = 3;
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.output_video = (directory_ / "annotated.avi").string();
+  pipeline.video_writer_factory = [probe] {
+    return std::make_unique<neuriplo_infer_test::FakeVideoWriter>(probe);
+  };
+
+  try {
+    RunInferenceCommand().execute(pipeline);
+    FAIL() << "a writer that cannot encode a frame must fail the run";
+  } catch (const std::exception &e) {
+    collected.fail(collected.currentStage(), e.what());
+  }
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  EXPECT_EQ(report().at("error").at("stage"), "render");
+  EXPECT_EQ(report().at("metrics").at("samples"), 0);
+  EXPECT_EQ(probe->writes.load(), 3);
+}
+
+TEST_F(RunDiagnostics,
+       AFullWriterQueueAppliesBackpressureWithoutDroppingFrames) {
+  // More frames than the queue depth, with a writer slow enough that the
+  // producer must block: every source frame still reaches the writer once.
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 12);
+  auto probe = std::make_shared<neuriplo_infer_test::WriterProbe>();
+  probe->per_frame_delay = std::chrono::milliseconds(5);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.output_video = (directory_ / "annotated.avi").string();
+  pipeline.video_writer_factory = [probe] {
+    return std::make_unique<neuriplo_infer_test::FakeVideoWriter>(probe);
+  };
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+
+  EXPECT_EQ(probe->writes.load(), 12) << "a frame was dropped";
+  EXPECT_NE(probe->worker_thread, std::this_thread::get_id())
+      << "encoding must happen off the frame loop's thread";
+  ASSERT_EQ(probe->first_bytes.size(), 12U);
+  for (std::size_t i = 1; i < probe->first_bytes.size(); ++i) {
+    EXPECT_LT(probe->first_bytes[i - 1], probe->first_bytes[i])
+        << "frames were written out of order";
+  }
+  EXPECT_TRUE(probe->released.load());
+}
+
+TEST_F(RunDiagnostics, WriterQueueWaitIsReportedWhenTheWriterBlocks) {
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 12);
+  auto probe = std::make_shared<neuriplo_infer_test::WriterProbe>();
+  probe->per_frame_delay = std::chrono::milliseconds(5);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.output_video = (directory_ / "annotated.avi").string();
+  pipeline.video_writer_factory = [probe] {
+    return std::make_unique<neuriplo_infer_test::FakeVideoWriter>(probe);
+  };
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  const json metrics = report().at("metrics");
+  ASSERT_FALSE(metrics.at("writer_queue_wait_ms").is_null());
+  EXPECT_GT(metrics.at("writer_queue_wait_ms").get<double>(), 0.0);
+}
 #endif
+
+TEST_F(RunDiagnostics, WriterQueueWaitStaysNullWithoutAnOutputVideo) {
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  EXPECT_TRUE(report().at("metrics").at("writer_queue_wait_ms").is_null());
+}
 
 } // namespace

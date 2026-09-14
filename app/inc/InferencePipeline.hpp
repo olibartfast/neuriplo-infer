@@ -15,7 +15,11 @@
 #include "TaskRouting.hpp"
 #include "neuriplo/tasks/core/model_info.hpp"
 #include "neuriplo/tasks/core/task_interface.hpp"
+#ifdef VIDEOCAPTURE_WITH_WRITER
+#include "VideoWriterInterface.hpp"
+#endif
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -41,6 +45,13 @@ struct InferencePipeline {
   // Diagnostics collector for this run, owned by the caller. Null when nobody
   // is collecting, which is what keeps tests and library users unaffected.
   neuriplo_infer::RunReport *report{nullptr};
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+  // Test seam for the annotated-output writer. Empty in production, where the
+  // videocapture factory is used; tests inject a fake to drive writer failure
+  // and backpressure without a real encoder fault.
+  std::function<std::unique_ptr<VideoWriterInterface>()> video_writer_factory;
+#endif
 
   // Server-side ensemble mode. When encoded_image is set, frames go to the
   // server as encoded bytes instead of a preprocessed tensor. When
