@@ -86,7 +86,7 @@ elseif(DEFAULT_BACKEND STREQUAL "LIBTENSORFLOW" )
         message(WARNING "Skipping TensorFlow test linkage on Windows; use OPENCV_DNN for native Windows test builds.")
     else()
         target_include_directories(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_INCLUDE_DIRS} ${neuriplo_SOURCE_DIR}/backends/libtensorflow/src)
-        target_link_libraries(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_LIBRARIES})  
+        target_link_libraries(${PROJECT_NAME_TEST} PRIVATE ${TensorFlow_LIBRARIES})
     endif()
 elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")
     if(WIN32)
@@ -148,6 +148,13 @@ endif()
 add_test(
     NAME docker_run_inference_e2e_owlv2_dry_run
     COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_docker_run_inference_e2e_example.sh ${CMAKE_SOURCE_DIR} ${neuriplo-tasks_SOURCE_DIR}
+)
+
+# scripts/cut_release.sh against a fixture versions.env, offline (the sibling
+# tag lookup is stubbed): repeated cuts keep one pin comment block.
+add_test(
+    NAME cut_release_versions_env
+    COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_cut_release.sh ${CMAKE_SOURCE_DIR}
 )
 
 # KServe integration round-trip against containerized Triton + OVMS. Registered

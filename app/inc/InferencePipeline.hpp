@@ -58,6 +58,12 @@ struct InferencePipeline {
                      cv::Mat &image);
 };
 
+// Throws when encoded-image transport is requested for a task whose execution
+// path preprocesses locally and so can only send dense tensors: video
+// classification, optical flow, and image understanding.
+void requireEncodedImageSupport(neuriplo_tasks::TaskType task_type,
+                                const std::string &model_type);
+
 class InferencePipelineBuilder {
 public:
   explicit InferencePipelineBuilder(const AppConfig &config);

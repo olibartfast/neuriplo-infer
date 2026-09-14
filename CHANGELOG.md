@@ -72,6 +72,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   may reference a different inner version.
 
 ### Fixed
+- `--input_mode=encoded-image` is rejected at pipeline setup for video
+  classification, optical flow, and image understanding. Those paths
+  preprocess locally and sent dense tensors to an ensemble expecting an encoded
+  image.
+- `--output_video` is rejected with `--export_metadata` and text tasks, which
+  return before any frame loop and so succeeded without writing the file.
+- A still image whose output could not be saved (primary and `/tmp` fallback
+  both failing) now fails the run at the render stage; it was logged and then
+  counted as a successful sample in the run report.
+- `--timings_csv` checks the stream after the header, every row, and the final
+  flush, so a full disk fails the run instead of leaving a truncated CSV behind
+  a run that reports success.
+- `--kserve_transport` now defaults to `http` in builds without gRPC, and an
+  explicit `grpc` there is a configuration error; before, it was accepted and
+  the run silently used HTTP, contradicting `--capabilities`.
+- `--help` no longer writes a failed configuration `run_report.json`.
+- `--output_video` on a video-classification run wrote only frames that closed
+  an inference window, so the leading frames were dropped and a video shorter
+  than one window produced no frames at all. Frames read before the first
+  window closes are now written unannotated; every source frame is written
+  exactly once.
+- `--capabilities` advertises `timings_csv` and `no_display` on every task that
+  can run a video, so capabilities-driven consumers can forward them.
+- Polygon envelope decoding bounds `INSTANCE_RING_OFFSETS` and
+  `RING_POINT_OFFSETS` against the tensors they index, so a malformed server
+  response fails with a decode error instead of reaching an unchecked
+  allocation.
+- `scripts/cut_release.sh` no longer appends another copy of the sibling-pin
+  comment block to `versions.env` on every release, and the release docs no
+  longer claim a GitHub Release is published automatically on tag push (that
+  workflow was removed; create it with `gh release create`).
 - A model's advertised input datatypes now reach preprocessing instead of the
   first input being forced to `Float32` (#44). Over KServe, `Float32` bytes were
   labelled with whatever datatype the server advertised, so a `UINT8`, `INT8`,

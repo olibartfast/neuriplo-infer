@@ -291,12 +291,13 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
     if (!cv::imwrite(processed_path, image)) {
       const std::string fallback_path = "/tmp/neuriplo-infer-" + processed_name;
       if (!cv::imwrite(fallback_path, image)) {
-        LOG(ERROR) << "Failed to save output image to both " << processed_path
-                   << " and " << fallback_path;
-      } else {
-        LOG(WARNING) << "Could not write " << processed_path
-                     << ", saved output to " << fallback_path;
+        // No artifact means no sample: failing here attributes the run to the
+        // render stage instead of reporting success without an image.
+        throw std::runtime_error("Failed to save output image to both " +
+                                 processed_path + " and " + fallback_path);
       }
+      LOG(WARNING) << "Could not write " << processed_path
+                   << ", saved output to " << fallback_path;
     } else {
       LOG(INFO) << "Saved processed image to: " << processed_path;
     }
@@ -337,22 +338,34 @@ public:
     }
     path_ = path;
     out_ << "frame,latency_us\n";
+    checkWritten();
   }
 
   void add(std::size_t frame_index, std::int64_t latency_us) {
     if (out_.is_open()) {
       out_ << frame_index << ',' << latency_us << '\n';
+      checkWritten();
     }
   }
 
+  // Streams do not throw on short writes, so a full disk would otherwise leave
+  // a truncated CSV behind a run that reports success. close() flushes, which
+  // is where a buffered write finally fails.
   void finish() {
     if (out_.is_open()) {
       out_.close();
+      checkWritten();
       LOG(INFO) << "Saved per-inference timings to: " << path_;
     }
   }
 
 private:
+  void checkWritten() const {
+    if (out_.fail()) {
+      throw std::runtime_error("Could not write timings CSV: " + path_);
+    }
+  }
+
   std::ofstream out_;
   std::string path_;
 };
@@ -385,6 +398,13 @@ public:
   OutputVideoSink(const OutputVideoSink &) = delete;
   OutputVideoSink &operator=(const OutputVideoSink &) = delete;
   // writeFrame false is a failed run, not a skippable frame.
+  //
+  // Synchronous on the frame loop's thread. Measured per frame with the OpenCV
+  // writer and Auto codec on an i5-11400H: ~10.6 ms at 720p .mp4, ~22.8 ms at
+  // 1080p, ~38.8 ms at 1440p (.avi/MJPG roughly 1.5x that). It runs after the
+  // inference span and counts as render time, so per-inference latency is not
+  // skewed, but it bounds end-to-end throughput. Moving it behind a bounded
+  // queue is tracked in issue #49.
   void write(videocapture::Frame frame, std::size_t frame_index) {
     if (!writer_->writeFrame(frame)) {
       throw std::runtime_error(
@@ -560,6 +580,15 @@ void processVideoClassification(InferencePipeline &pipeline,
 #endif
     frameBuffer.push_back(image.clone());
     ++frame_index;
+
+#ifdef VIDEOCAPTURE_WITH_WRITER
+    // Frames read before the first window closes have no result yet. They are
+    // written unannotated so the output keeps every source frame exactly once,
+    // and a video shorter than one window still produces its file.
+    if (output_sink && static_cast<int>(frameBuffer.size()) < requiredFrames) {
+      output_sink->write(neuriplo_infer::toFrame(image), frame_index - 1);
+    }
+#endif
 
     if (static_cast<int>(frameBuffer.size()) >= requiredFrames) {
       auto start = std::chrono::steady_clock::now();

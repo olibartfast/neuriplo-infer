@@ -324,6 +324,19 @@ decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs) {
     if (last_ring < first_ring) {
       throw std::runtime_error("INSTANCE_RING_OFFSETS are not monotonic");
     }
+    // Offsets are signed server data. Bound them against the tensors they
+    // index before any becomes a size: a wrapped index or a huge extent would
+    // otherwise reach reserve() or the unsigned index arithmetic below.
+    const auto ring_offset_count =
+        static_cast<int64_t>(ring_offsets->data.size() / sizeof(int64_t));
+    const auto point_count =
+        static_cast<int64_t>(points->data.size() / (2 * sizeof(int32_t)));
+    // RING_POINT_OFFSETS starts at 0, so every valid ring index -- including
+    // the sentinel of a detection with no rings -- is below its length.
+    if (first_ring < 0 || last_ring >= ring_offset_count) {
+      throw std::runtime_error(
+          "INSTANCE_RING_OFFSETS run past RING_POINT_OFFSETS");
+    }
 
     for (int64_t ring = first_ring; ring < last_ring; ++ring) {
       const auto begin =
@@ -332,6 +345,9 @@ decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs) {
                                                 static_cast<size_t>(ring) + 1);
       if (end < begin) {
         throw std::runtime_error("RING_POINT_OFFSETS are not monotonic");
+      }
+      if (begin < 0 || end > point_count) {
+        throw std::runtime_error("RING_POINT_OFFSETS run past POLYGON_POINTS");
       }
 
       std::vector<neuriplo_tasks::vision::Point2f> ring_points;

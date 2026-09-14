@@ -179,6 +179,22 @@ neuriplo_tasks::TaskConfig buildTaskConfig(const AppConfig &config) {
 
 } // namespace
 
+void requireEncodedImageSupport(neuriplo_tasks::TaskType task_type,
+                                const std::string &model_type) {
+  // Only inferFrame sends encoded bytes. These tasks run their own loops that
+  // preprocess locally, so they would send dense tensors to an ensemble whose
+  // input is an encoded image.
+  if (task_type == neuriplo_tasks::TaskType::VideoClassification ||
+      task_type == neuriplo_tasks::TaskType::OpticalFlow ||
+      task_type == neuriplo_tasks::TaskType::ImageUnderstanding) {
+    throw std::runtime_error(
+        "--input_mode=encoded-image is not supported for model type '" +
+        model_type +
+        "': video classification, optical flow, and image understanding "
+        "need --input_mode=preprocessed");
+  }
+}
+
 int InferencePipeline::getRequiredFrameCount() const {
   if (config.num_frames > 0) {
     return config.num_frames;
@@ -362,6 +378,9 @@ void InferencePipelineBuilder::setupTask(InferencePipeline &pipeline) const {
   pipeline.model_info = buildModelInfo(pipeline.inference_metadata, config_,
                                        inputDatatypes(pipeline));
   pipeline.task_type = getTaskTypeForModel(config_.detectorType);
+  if (pipeline.encoded_image) {
+    requireEncodedImageSupport(pipeline.task_type, config_.detectorType);
+  }
 
   LOG(INFO) << "Using neuriplo-tasks model type: " << config_.detectorType;
   pipeline.task = neuriplo_tasks::TaskFactory::createTaskInstance(
