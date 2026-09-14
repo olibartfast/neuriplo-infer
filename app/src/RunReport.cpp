@@ -88,6 +88,13 @@ void RunReport::resumeTiming() {
 
 void RunReport::addSample() { ++samples_; }
 
+void RunReport::addWriterQueueWaitMs(double milliseconds) {
+  if (milliseconds < 0.0) {
+    return;
+  }
+  accumulate(writer_queue_wait_ms_, milliseconds);
+}
+
 void RunReport::addFrames(std::int64_t frames) {
   if (frames <= 0) {
     return;
@@ -175,6 +182,9 @@ json RunReport::toJson() const {
       {"samples", samples_},
       {"frames", saw_frames_ ? json(frames_) : json(nullptr)},
       {"throughput_per_second", throughput},
+      {"writer_queue_wait_ms", writer_queue_wait_ms_.has_value()
+                                   ? json(*writer_queue_wait_ms_)
+                                   : json(nullptr)},
       {"stages_ms", std::move(stages)},
   };
 

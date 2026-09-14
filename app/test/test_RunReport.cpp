@@ -70,6 +70,23 @@ TEST_F(RunReportFile, UnmeasuredStagesAreNullRatherThanZero) {
   EXPECT_TRUE(stages.at("render").is_null());
 }
 
+TEST_F(RunReportFile, WriterQueueWaitIsSeparateAndNullUntilMeasured) {
+  RunReport unmeasured;
+  neuriplo_infer::writeRunReport(unmeasured, path_);
+  EXPECT_TRUE(
+      readReport(path_).at("metrics").at("writer_queue_wait_ms").is_null());
+
+  RunReport measured;
+  measured.addWriterQueueWaitMs(3.5);
+  measured.addWriterQueueWaitMs(1.5);
+  neuriplo_infer::writeRunReport(measured, path_);
+  // A separate metric, not a stage: the encode moved off the inference thread,
+  // and only the backpressure wait is paid there.
+  EXPECT_DOUBLE_EQ(
+      readReport(path_).at("metrics").at("writer_queue_wait_ms").get<double>(),
+      5.0);
+}
+
 TEST_F(RunReportFile, StageTimesAccumulateAcrossFrames) {
   RunReport report;
   report.addStageMs(RunStage::Inference, 10.0);

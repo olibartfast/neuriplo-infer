@@ -75,6 +75,15 @@ public:
   void addFrames(std::int64_t frames);
 
   /**
+   * Accumulates time the frame loop spent blocked on a full video-writer
+   * queue. It is not a stage: the encode itself now runs on the writer thread,
+   * and only this backpressure wait is paid on the inference thread. Absent
+   * (null) until a writer reports, so a run with no --output_video carries no
+   * invented zero.
+   */
+  void addWriterQueueWaitMs(double milliseconds);
+
+  /**
    * Stops and resumes timing accumulation, keeping stage attribution. Warmup
    * and benchmark iterations repeat inference to measure the engine, not to
    * produce a result: counting their time without counting their work would
@@ -103,6 +112,7 @@ private:
   std::optional<double> inference_ms_;
   std::optional<double> postprocess_ms_;
   std::optional<double> render_ms_;
+  std::optional<double> writer_queue_wait_ms_;
   int timing_suspended_{0};
   std::int64_t samples_{0};
   std::int64_t frames_{0};
