@@ -155,6 +155,26 @@ TEST(KserveEngine, SendsBytesThatFitTheAdvertisedDatatype) {
   EXPECT_EQ(fake->inferCalls(), 1);
 }
 
+// Two dynamic axes cannot both be inferred from a byte count. The request used
+// to go out with -1 extents and fail on the server; it is refused before
+// anything is sent, naming the input.
+TEST(KserveEngine, RefusesAShapeWithMoreThanOneDynamicAxis) {
+  auto client = std::make_unique<FakeClient>();
+  const FakeClient *fake = client.get();
+  client->setInputs({{"pixel_values", "FP32", {-1, 3, -1, -1}}});
+  KserveEngine engine(std::move(client));
+
+  try {
+    engine.get_infer_results({floatBytes(3 * 4 * 4)});
+    FAIL() << "a shape with unresolved dynamic axes must not be sent";
+  } catch (const std::runtime_error &error) {
+    const std::string message = error.what();
+    EXPECT_NE(message.find("'pixel_values'"), std::string::npos) << message;
+    EXPECT_NE(message.find("dynamic"), std::string::npos) << message;
+  }
+  EXPECT_EQ(fake->inferCalls(), 0);
+}
+
 TEST(KserveEngine, RefusesAShapeWhoseByteCountOverflows) {
   auto client = std::make_unique<FakeClient>();
   const FakeClient *fake = client.get();
