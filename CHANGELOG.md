@@ -99,6 +99,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   and an inflated `throughput_per_second`. Each source frame is now counted
   once, when it is read, so a clip shorter than one window (or stopped before
   its first window closes) reports its frames instead of `null`.
+- `--postprocess_mode=gpu` refuses, at pipeline setup, an ensemble whose
+  result envelope does not match `--type`: a detection envelope needs an
+  object detection type, a mask or polygon envelope an instance segmentation
+  type. A mismatch decoded successfully and rendered no annotations.
+- A KServe input whose shape still has a dynamic dimension after inference
+  from the payload size (two or more dynamic axes, or fixed dimensions that are
+  zero or overflow) is refused before the request is sent, naming the input; it
+  was sent with `-1` extents and failed on the server with a less specific
+  error.
 - `--output_video` creates missing parent directories, like `--timings_csv`
   and the run report, instead of failing to open a nested destination.
 - `--output_video` on a video that yields no frames now fails the run; the

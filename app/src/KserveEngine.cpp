@@ -245,6 +245,20 @@ KserveEngine::get_infer_results(
     const auto &spec = raw_metadata_.inputs[i];
     validateInputBytes(spec, input_tensors[i].size());
     shapes.push_back(concreteInputShape(spec, input_tensors[i].size()));
+    // Only one dynamic axis can be inferred from the payload size, and none
+    // for BYTES or other variable-width tags. A shape that still has one would
+    // go on the wire with a -1 extent and fail on the server with an error that
+    // no longer names the cause, so refuse it here for every datatype.
+    for (const auto dim : shapes.back()) {
+      if (dim < 0) {
+        throw std::runtime_error(
+            "KServe input '" + spec.name + "' (" + spec.datatype +
+            ") has a dynamic dimension that cannot be inferred from the "
+            "payload size (more than one dynamic axis, a variable-width "
+            "datatype, or fixed dimensions that are zero or overflow); serve "
+            "the model with concrete extents for that input");
+      }
+    }
     inputs.push_back(
         {spec.name, spec.datatype, shapes.back(), &input_tensors[i]});
   }
