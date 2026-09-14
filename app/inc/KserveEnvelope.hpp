@@ -331,8 +331,9 @@ decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs) {
         static_cast<int64_t>(ring_offsets->data.size() / sizeof(int64_t));
     const auto point_count =
         static_cast<int64_t>(points->data.size() / (2 * sizeof(int32_t)));
-    if (first_ring < 0 ||
-        (last_ring > first_ring && last_ring >= ring_offset_count)) {
+    // RING_POINT_OFFSETS starts at 0, so every valid ring index -- including
+    // the sentinel of a detection with no rings -- is below its length.
+    if (first_ring < 0 || last_ring >= ring_offset_count) {
       throw std::runtime_error(
           "INSTANCE_RING_OFFSETS run past RING_POINT_OFFSETS");
     }

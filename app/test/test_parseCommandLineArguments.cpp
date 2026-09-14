@@ -470,6 +470,22 @@ TEST(ParseCommandLineArguments, OutputVideoIsRejectedForMetadataExport) {
       ::testing::ExitedWithCode(1), "video inference runs only");
 }
 
+TEST(ParseCommandLineArguments, OutputVideoIsRejectedForTextTasks) {
+  // Image understanding is dispatched before any frame loop, so it never
+  // writes a video either.
+  const char *argv[] = {"program", "--type=gemma4", "--weights=model.weights",
+                        "--prompt=describe", "--output_video=out.mp4"};
+  int argc = sizeof(argv) / sizeof(argv[0]);
+  touchFile("model.weights");
+  EXPECT_EXIT(
+      {
+        AppConfig config = CommandLineParser::parseCommandLineArguments(
+            argc, const_cast<char **>(argv));
+        (void)config;
+      },
+      ::testing::ExitedWithCode(1), "video inference runs only");
+}
+
 TEST(ParseCommandLineArguments, HelpDoesNotWriteAFailedRunReport) {
   const auto report = std::filesystem::temp_directory_path() /
                       "neuriplo-infer-help-run-report.json";
