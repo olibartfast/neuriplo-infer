@@ -398,6 +398,13 @@ public:
   OutputVideoSink(const OutputVideoSink &) = delete;
   OutputVideoSink &operator=(const OutputVideoSink &) = delete;
   // writeFrame false is a failed run, not a skippable frame.
+  //
+  // Synchronous on the frame loop's thread. Measured per frame with the OpenCV
+  // writer and Auto codec on an i5-11400H: ~10.6 ms at 720p .mp4, ~22.8 ms at
+  // 1080p, ~38.8 ms at 1440p (.avi/MJPG roughly 1.5x that). It runs after the
+  // inference span and counts as render time, so per-inference latency is not
+  // skewed, but it bounds end-to-end throughput. Moving it behind a bounded
+  // queue is tracked in issue #49.
   void write(videocapture::Frame frame, std::size_t frame_index) {
     if (!writer_->writeFrame(frame)) {
       throw std::runtime_error(
