@@ -22,6 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   throughput is not. Moving the writer off that thread is tracked in #49.
 - neuriplo-platform's capabilities contract still documents schema version 1;
   this release emits version 2.
+- A video whose read fails mid-stream (an I/O error, a dropped network stream)
+  is indistinguishable from its end through the pinned videocapture interface,
+  so it is reported as read to its end. Likewise a container that cannot be
+  finalized is logged by the writer but not reported to the caller.
 
 ### Added
 - `--output_video <path>` writes the annotated video output of a video run to a
@@ -139,6 +143,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The configuration exit report's state is guarded by a mutex shared by
   `armConfigurationExitReport`, `disarmConfigurationExitReport`, and the exit
   hook.
+- Still images whose extension is not lowercase `.jpg`/`.png` (`.JPG`, `.jpeg`,
+  `.bmp`, `.tif`, `.webp`) ran through the video loop, writing no processed
+  image while reporting success. Routing and argument validation now share one
+  case-insensitive predicate on the file name; `getFileExtension` no longer
+  reads an extension out of a dotted directory name.
+- KServe output tensors are checked against their reported shape before
+  postprocessing; a short payload was indexed past its end. A model that
+  reports no inputs fails with a clear error instead of being indexed.
+- Under `--postprocess_mode=gpu`, `--min_confidence` is applied to the decoded
+  results, `--nms_threshold` / `--mask_threshold` are rejected (the ensemble
+  owns them), and an explicit `--segmentation_output` that contradicts the
+  envelope is refused; all were silently ignored.
+- Encoded-image still images are read without EXIF orientation, matching the
+  server's decoder, so boxes and masks are no longer drawn in a rotated frame.
+- `--input_sizes` now fills dynamic dimensions of a KServe input shape, so a
+  model served with `[1,3,-1,-1]` runs instead of being refused client-side.
+- Video runs finalize the output video before counting the sample.
+- `run_report.json` is written through a temporary file and a rename, with
+  invalid UTF-8 replaced, so it is never left empty; a provisional failed report
+  is written when a run starts, so a crash no longer leaves the previous run's
+  success in place.
+- Image understanding fails on an unreadable source instead of answering
+  text-only, and rejects video sources and the unimplemented `--sample_stride`,
+  `--max_frames`, and `--output_format`.
+- Optical flow writes one image per pair (`processed_frame_optical_flow_<n>.jpg`)
+  instead of overwriting one file, resolves the output directory with
+  `parent_path()` so bare source names work, and fails when the image cannot
+  be saved.
+- A failure while opening or writing `--timings_csv` or `--output_video` is
+  attributed to the `render` stage instead of the last timed stage.
+- Malformed option values (`--batch=abc`) and unknown options
+  (`--output-video`) are rejected; they were read as `0` or ignored.
+- Envelope scores must be finite, and mask placement uses 64-bit arithmetic,
+  so server values near `INT32_MAX` or NaN no longer reach undefined behavior.
+- `--timings_csv` and `--output_video` may not name a source or the run report,
+  which they would overwrite.
+- `--input_mode=encoded-image` is refused for open-vocabulary detection, whose
+  text prompts cannot reach an image-only ensemble.
+- `--timings_csv` is rejected for image, text, and metadata runs; `--warmup` /
+  `--benchmark` for anything but a single still image; `--task_model` without
+  `--input_mode=encoded-image`. Each was accepted and silently did nothing.
+- Depth routing matches neuriplo-tasks' TaskFactory exactly (YOLO-prefixed
+  depth types and Depth-Anything-V2), no longer any name containing `depth`.
+- `NEURIPLO_INFER_WITH_VIDEOWRITER=OFF` now also turns videocapture's
+  `USE_VIDEOWRITER` back off in an existing build directory.
+- The capabilities schema test reports a skip, not a pass, when `jsonschema`
+  is missing, and CI installs `python3-jsonschema`. The CI cache-key checker no
+  longer pairs a restore key with a neighbouring step's key, and
+  `cut_release.sh` reports a sibling without a release tag instead of exiting
+  silently.
 - CI build caches restore again after a CMake file change: each `restore-keys`
   entry is now a prefix of its cache key (the previous one hashed a different
   file set, so it could never match). A `ci_cache_restore_keys` test checks

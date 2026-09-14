@@ -32,10 +32,19 @@ def check(path):
             continue
         checked += 1
         key = None
-        # The key sits just above restore-keys in the same `with:` block.
-        for previous in range(index - 1, max(index - 6, -1), -1):
-            match = KEY.match(lines[previous])
-            if match:
+        indent = len(line) - len(line.lstrip())
+        # The key belongs to the same `with:` block: scan upward through lines at
+        # this indentation and stop at the block's parent (a shallower line), so
+        # a key from a neighbouring step is never borrowed.
+        for previous in range(index - 1, -1, -1):
+            text = lines[previous]
+            if not text.strip():
+                continue
+            previous_indent = len(text) - len(text.lstrip())
+            if previous_indent < indent:
+                break
+            match = KEY.match(text)
+            if match and previous_indent == indent:
                 key = match.group(1)
                 break
         prefix = restore.group(1)

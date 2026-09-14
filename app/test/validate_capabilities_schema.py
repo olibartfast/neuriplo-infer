@@ -14,8 +14,10 @@ import sys
 try:
     import jsonschema
 except ImportError:  # pragma: no cover - environment without the validator
+    # 77 is registered as SKIP_RETURN_CODE: CTest reports a skip, not a pass
+    # that validated nothing.
     print("jsonschema is not installed; skipping schema validation")
-    sys.exit(0)
+    sys.exit(77)
 
 
 def main() -> int:

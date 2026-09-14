@@ -103,16 +103,6 @@ json parameterCatalog() {
         {"value_type", "string_list"},
         {"separator", ";"}}},
       {"prompt", {{"cli_flag", "prompt"}, {"value_type", "string"}}},
-      {"output_format",
-       {{"cli_flag", "output_format"},
-        {"value_type", "enum"},
-        {"values", {"text", "json"}}}},
-      {"sample_stride",
-       {{"cli_flag", "sample_stride"},
-        {"value_type", "integer"},
-        {"minimum", 0}}},
-      {"max_frames",
-       {{"cli_flag", "max_frames"}, {"value_type", "integer"}, {"minimum", 0}}},
       {"tokenizer_vocab",
        {{"cli_flag", "tokenizer_vocab"}, {"value_type", "path"}}},
       {"tokenizer_merges",
@@ -342,9 +332,11 @@ json taskCapabilities() {
                         {},
                         {},
                         {"mmproj"}}},
-                      image_or_video, 0, 1,
-                      {"prompt", "output_format", "sample_stride", "max_frames",
-                       "input_sizes"}),
+                      // One still image or none (text-only). Video sources and
+                      // --output_format/--sample_stride/--max_frames are not
+                      // implemented by the pinned image understanding task, so
+                      // they are not advertised.
+                      {"image"}, 0, 1, {"prompt", "input_sizes"}),
        taskCapability("gaussian_splatting",
                       {{"lgm", {"lgm-mini"}, {}, {}, {}},
                        {"grm", {}, {}, {}, {}},

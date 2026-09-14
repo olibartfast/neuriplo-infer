@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <gtest/gtest.h>
+#include <limits>
 #include <vector>
 
 namespace {
@@ -321,6 +322,68 @@ TEST(KserveEnvelope, RejectsHugeBoxWithAnEmptyMaskRun) {
 
   EXPECT_THROW(neuriplo_infer::decodeMaskEnvelope(outputs, 8, 8),
                std::runtime_error);
+}
+
+// --min_confidence used to be ignored under --postprocess_mode=gpu.
+TEST(KserveEnvelope, FilterByConfidenceDropsDetectionsBelowTheThreshold) {
+  auto outputs =
+      detectionEnvelope(3, {{{0, 0, 1, 1}}, {{1, 1, 1, 1}}, {{2, 2, 1, 1}}},
+                        {0.9F, 0.5F, 0.3F}, {0, 1, 2});
+
+  const auto kept = neuriplo_infer::filterByConfidence(
+      neuriplo_infer::decodeDetectionEnvelope(outputs), 0.5F);
+
+  ASSERT_EQ(kept.size(), 2u);
+  EXPECT_FLOAT_EQ(std::get<neuriplo_tasks::Detection>(kept[0]).class_confidence,
+                  0.9F);
+  EXPECT_FLOAT_EQ(std::get<neuriplo_tasks::Detection>(kept[1]).class_confidence,
+                  0.5F);
+}
+
+// Box fields are int and renderers add offsets to them; a server box near
+// INT32_MAX overflowed there. With frame dimensions boxes are clamped to the
+// frame, including a box that is only partly visible.
+TEST(KserveEnvelope, ClampsDecodedBoxesToTheFrame) {
+  auto outputs =
+      detectionEnvelope(2, {{{2147483000, 0, 1000, 10}}, {{-5, -5, 10, 10}}},
+                        {0.9F, 0.8F}, {0, 1});
+
+  const auto results = neuriplo_infer::decodeDetectionEnvelope(outputs, 8, 8);
+  ASSERT_EQ(results.size(), 2u);
+
+  const auto &far = std::get<neuriplo_tasks::Detection>(results[0]).bbox;
+  EXPECT_EQ(far.x, 8);
+  EXPECT_EQ(far.width, 0);
+
+  const auto &partial = std::get<neuriplo_tasks::Detection>(results[1]).bbox;
+  EXPECT_EQ(partial.x, 0);
+  EXPECT_EQ(partial.y, 0);
+  EXPECT_EQ(partial.width, 5);
+  EXPECT_EQ(partial.height, 5);
+}
+
+// A NaN score reached static_cast<int>(confidence * 100) in the label drawer.
+TEST(KserveEnvelope, RejectsANonFiniteScore) {
+  auto outputs = detectionEnvelope(
+      1, {{{0, 0, 1, 1}}}, {std::numeric_limits<float>::quiet_NaN()}, {0});
+  EXPECT_THROW(neuriplo_infer::decodeDetectionEnvelope(outputs),
+               std::runtime_error);
+}
+
+// A box origin near INT32_MAX used to overflow int while placing the mask.
+TEST(KserveEnvelope, PlacesAMaskWhoseBoxOriginIsNearTheIntLimit) {
+  auto outputs = detectionEnvelope(1, {{{2147483000, 0, 2, 2}}}, {0.9F}, {0});
+  outputs.push_back(tensor("MASK_OFFSETS", "INT64", fullMaskOffsets({4})));
+  outputs.push_back(tensor("MASK_DATA", "UINT8", {1, 1, 1, 1}));
+
+  const auto results = neuriplo_infer::decodeMaskEnvelope(outputs, 8, 8);
+  ASSERT_EQ(results.size(), 1u);
+  const auto &seg = std::get<neuriplo_tasks::InstanceSegmentation>(results[0]);
+  ASSERT_FALSE(seg.mask.empty());
+  const auto *pixels = seg.mask.data();
+  for (int i = 0; i < 64; ++i) {
+    EXPECT_EQ(pixels[i], 0) << "pixel " << i << " is outside the box";
+  }
 }
 
 TEST(KserveEnvelope, RejectsNegativeMaskOffsets) {

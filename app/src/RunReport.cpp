@@ -199,30 +199,53 @@ json RunReport::toJson() const {
 
 bool writeRunReport(const RunReport &report,
                     const std::filesystem::path &path) {
+  std::filesystem::path temporary = path;
+  temporary += ".tmp";
+  std::error_code ignored;
   try {
+    // Serialized before any file is touched, with invalid UTF-8 in a message
+    // replaced rather than thrown, so an unencodable message can never leave a
+    // truncated or empty report behind.
+    const std::string document = report.toJson().dump(
+        2, ' ', false, nlohmann::json::error_handler_t::replace);
     if (path.has_parent_path()) {
       std::filesystem::create_directories(path.parent_path());
     }
-    std::ofstream stream(path, std::ios::trunc);
-    if (!stream.is_open()) {
-      LOG(WARNING) << "Could not write the run report to " << path;
-      return false;
+    // Written beside the destination and renamed over it, so a reader never
+    // sees a partial document and a failed write keeps the previous one.
+    {
+      std::ofstream stream(temporary, std::ios::trunc);
+      if (!stream.is_open()) {
+        LOG(WARNING) << "Could not write the run report to " << path;
+        return false;
+      }
+      stream << document << '\n';
+      // An ofstream does not throw on a failed write by default, so a full
+      // disk or a short write would otherwise go unnoticed. close() flushes,
+      // and the stream carries the verdict.
+      stream.close();
+      if (!stream) {
+        LOG(WARNING) << "Could not write the run report completely to " << path;
+        std::filesystem::remove(temporary, ignored);
+        return false;
+      }
     }
-    stream << report.toJson().dump(2) << '\n';
-    // An ofstream does not throw on a failed write by default, so a full disk
-    // or a short write would otherwise leave truncated JSON behind silently.
-    // close() flushes, and the stream carries the verdict.
-    stream.close();
-    if (!stream) {
-      LOG(WARNING) << "Could not write the run report completely to " << path;
-      return false;
-    }
+    std::filesystem::rename(temporary, path);
     return true;
   } catch (const std::exception &e) {
     // Diagnostics must never change the outcome they describe.
     LOG(WARNING) << "Could not write the run report: " << e.what();
+    std::filesystem::remove(temporary, ignored);
     return false;
   }
+}
+
+void writeProvisionalRunReport(const std::filesystem::path &path) {
+  RunReport report;
+  report.fail(RunStage::Unknown,
+              "the run did not finish; this provisional report is written "
+              "when a run starts and replaced when it ends");
+  writeRunReport(report, path);
 }
 
 void writeConfigurationFailureReport(const std::string &message,

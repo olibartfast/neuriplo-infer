@@ -204,6 +204,10 @@ endif()
 # MakeAvailable so the option reaches videocapture's configure.
 if(NEURIPLO_INFER_WITH_VIDEOWRITER)
     set(USE_VIDEOWRITER ON CACHE BOOL "" FORCE)
+else()
+    # Forced back off too: the cache otherwise keeps ON after the option is
+    # turned off, and the writer module stays built into a writer-less config.
+    set(USE_VIDEOWRITER OFF CACHE BOOL "" FORCE)
 endif()
 
 FetchContent_MakeAvailable(VideoCapture neuriplo-tasks nlohmann_json)

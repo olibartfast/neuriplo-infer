@@ -200,6 +200,43 @@ TEST(KserveEngine, RefusesADynamicBytesInputButSendsAStaticOne) {
   }
 }
 
+// --input_sizes supplies the extents a [1,3,-1,-1] model cannot infer from the
+// payload; before, the request shape came from metadata alone and was refused.
+TEST(KserveEngine, FillsDynamicDimensionsFromInputSizes) {
+  auto client = std::make_unique<FakeClient>();
+  const FakeClient *fake = client.get();
+  client->setInputs({{"images", "FP32", {1, 3, -1, -1}}});
+  KserveEngine engine(std::move(client), {{3, 4, 4}});
+
+  engine.get_infer_results({floatBytes(3 * 4 * 4)});
+
+  EXPECT_EQ(fake->inferCalls(), 1);
+}
+
+class ShortOutputClient : public FakeClient {
+public:
+  std::vector<kserve::InferOutput>
+  infer(const std::vector<kserve::InferInput> &inputs) override {
+    auto outputs = FakeClient::infer(inputs);
+    outputs[0].shape = {1, 84, 8400}; // claims far more than one float
+    return outputs;
+  }
+};
+
+// Postprocessors index outputs by their reported shape; a payload shorter
+// than that shape used to reach them and be read past its end.
+TEST(KserveEngine, RefusesAnOutputPayloadShorterThanItsShape) {
+  KserveEngine engine(std::make_unique<ShortOutputClient>());
+
+  try {
+    engine.get_infer_results(oneFloatInput());
+    FAIL() << "a short output payload must be refused";
+  } catch (const std::runtime_error &error) {
+    EXPECT_NE(std::string(error.what()).find("'output'"), std::string::npos)
+        << error.what();
+  }
+}
+
 TEST(KserveEngine, RefusesAShapeWhoseByteCountOverflows) {
   auto client = std::make_unique<FakeClient>();
   const FakeClient *fake = client.get();

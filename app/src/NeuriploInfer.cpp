@@ -11,6 +11,8 @@ NeuriploInfer::NeuriploInfer(const AppConfig &app_config) : config(app_config) {
 }
 
 int NeuriploInfer::run() {
+  neuriplo_infer::writeProvisionalRunReport(
+      neuriplo_infer::RunReport::kDefaultPath);
   try {
     auto pipeline = InferencePipelineBuilder(config)
                         .source(config.sources)

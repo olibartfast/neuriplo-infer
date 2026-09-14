@@ -22,6 +22,11 @@
 class KserveEngine : public InferenceInterface {
 public:
   explicit KserveEngine(std::unique_ptr<kserve::IClient> client);
+  // input_sizes: per-input extents from --input_sizes (CHW, without the batch
+  // axis). They fill dynamic metadata dimensions that the payload size alone
+  // cannot resolve, such as a detector served with [1,3,-1,-1].
+  KserveEngine(std::unique_ptr<kserve::IClient> client,
+               std::vector<std::vector<int64_t>> input_sizes);
 
   std::tuple<std::vector<std::vector<TensorElement>>,
              std::vector<std::vector<int64_t>>>
@@ -63,6 +68,7 @@ private:
   void ensureMetadata();
 
   std::unique_ptr<kserve::IClient> client_;
+  std::vector<std::vector<int64_t>> input_sizes_;
   bool metadata_loaded_{false};
   kserve::ModelMetadata raw_metadata_;
   std::vector<kserve::InferOutput> last_raw_outputs_;

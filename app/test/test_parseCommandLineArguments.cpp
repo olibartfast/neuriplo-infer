@@ -125,27 +125,50 @@ TEST(ParseCommandLineArguments, OpenVocabFlags) {
   EXPECT_EQ(config.tokenizerMergesPath, "merges.txt");
 }
 
-TEST(ParseCommandLineArguments, MultimodalExtraParams) {
-  const char *argv[] = {"program",
-                        "--type=gemma4",
-                        "--source=input.mp4",
-                        "--weights=model.onnx",
-                        "--prompt=Summarize the clip",
-                        "--output_format=JSON",
-                        "--sample_stride=4",
-                        "--max_frames=12"};
+TEST(ParseCommandLineArguments, MultimodalPromptIsParsed) {
+  const char *argv[] = {"program", "--type=gemma4", "--source=input.jpg",
+                        "--weights=model.onnx", "--prompt=Describe the image"};
   int argc = sizeof(argv) / sizeof(argv[0]);
-  touchFile("input.mp4");
+  touchFile("input.jpg");
   touchFile("model.onnx");
 
   AppConfig config = CommandLineParser::parseCommandLineArguments(
       argc, const_cast<char **>(argv));
 
-  ASSERT_EQ(config.taskExtraParams.size(), 4u);
-  EXPECT_EQ(config.taskExtraParams.at("prompt"), "Summarize the clip");
-  EXPECT_EQ(config.taskExtraParams.at("output_format"), "json");
-  EXPECT_EQ(config.taskExtraParams.at("sample_stride"), "4");
-  EXPECT_EQ(config.taskExtraParams.at("max_frames"), "12");
+  ASSERT_EQ(config.taskExtraParams.size(), 1u);
+  EXPECT_EQ(config.taskExtraParams.at("prompt"), "Describe the image");
+}
+
+// The image understanding task reads only the prompt: video sources ran
+// text-only and these flags did nothing, while the run reported success.
+TEST(ParseCommandLineArguments, ImageUnderstandingRejectsVideoAndUnusedFlags) {
+  touchFile("input.mp4");
+  touchFile("input.jpg");
+  touchFile("model.onnx");
+  {
+    const char *argv[] = {"program", "--type=gemma4", "--source=input.mp4",
+                          "--weights=model.onnx"};
+    int argc = sizeof(argv) / sizeof(argv[0]);
+    EXPECT_EXIT(
+        {
+          AppConfig config = CommandLineParser::parseCommandLineArguments(
+              argc, const_cast<char **>(argv));
+          (void)config;
+        },
+        ::testing::ExitedWithCode(1), "one still image");
+  }
+  {
+    const char *argv[] = {"program", "--type=gemma4", "--source=input.jpg",
+                          "--weights=model.onnx", "--sample_stride=4"};
+    int argc = sizeof(argv) / sizeof(argv[0]);
+    EXPECT_EXIT(
+        {
+          AppConfig config = CommandLineParser::parseCommandLineArguments(
+              argc, const_cast<char **>(argv));
+          (void)config;
+        },
+        ::testing::ExitedWithCode(1), "not supported");
+  }
 }
 
 TEST(ParseCommandLineArguments, ExportMetadataFlag) {
@@ -321,6 +344,106 @@ TEST(ParseCommandLineArguments, EncodedImageAcceptsWarmupAndBenchmark) {
   EXPECT_EQ(config.input_mode, "encoded-image");
   EXPECT_TRUE(config.enable_warmup);
   EXPECT_TRUE(config.enable_benchmark);
+}
+
+namespace {
+// Parses argv in a child process and expects it to exit 1 with `message`.
+void expectRejected(std::vector<const char *> argv, const char *message) {
+  argv.insert(argv.begin(), "program");
+  const int argc = static_cast<int>(argv.size());
+  EXPECT_EXIT(
+      {
+        AppConfig config = CommandLineParser::parseCommandLineArguments(
+            argc, const_cast<char **>(argv.data()));
+        (void)config;
+      },
+      ::testing::ExitedWithCode(1), message);
+}
+} // namespace
+
+TEST(ParseCommandLineArguments, TimingsCsvIsRejectedForStillImageRuns) {
+  touchFile("input.jpg");
+  touchFile("model.weights");
+  expectRejected({"--type=yolov5", "--source=input.jpg",
+                  "--weights=model.weights", "--timings_csv=t.csv"},
+                 "--timings_csv applies to video");
+  expectRejected({"--type=yolov5", "--weights=model.weights",
+                  "--export_metadata", "--timings_csv=t.csv"},
+                 "--timings_csv applies to video");
+}
+
+TEST(ParseCommandLineArguments, WarmupAndBenchmarkAreRejectedForVideoRuns) {
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  expectRejected({"--type=yolov5", "--source=input.mp4",
+                  "--weights=model.weights", "--benchmark"},
+                 "apply to single still-image runs");
+}
+
+TEST(ParseCommandLineArguments, TaskModelRequiresEncodedImageMode) {
+  touchFile("input.mp4");
+  expectRejected({"--type=yolov5", "--source=input.mp4",
+                  "--kserve_endpoint=http://127.0.0.1:8080",
+                  "--task_model=yolo"},
+                 "--task_model only applies");
+}
+
+TEST(ParseCommandLineArguments,
+     ExplicitNmsThresholdIsRejectedWithGpuPostprocess) {
+  touchFile("input.jpg");
+  expectRejected({"--type=yolo26seg", "--source=input.jpg",
+                  "--kserve_endpoint=http://127.0.0.1:8080",
+                  "--input_mode=encoded-image", "--task_model=yolo",
+                  "--postprocess_mode=gpu", "--nms_threshold=0.3"},
+                 "the ensemble applies its own");
+}
+
+// cv::CommandLineParser records a conversion error only when a value is read;
+// checking before the reads let --batch=abc through as batch 0.
+TEST(ParseCommandLineArguments, MalformedNumericValueIsRejected) {
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  expectRejected({"--type=yolov5", "--source=input.mp4",
+                  "--weights=model.weights", "--batch=abc"},
+                 "");
+}
+
+TEST(ParseCommandLineArguments, UnknownOptionIsRejected) {
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  expectRejected({"--type=yolov5", "--source=input.mp4",
+                  "--weights=model.weights", "--output-video=out.mp4"},
+                 "Unknown option");
+}
+
+TEST(ParseCommandLineArguments, OutputThatWouldOverwriteTheSourceIsRejected) {
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  expectRejected({"--type=yolov5", "--source=input.mp4",
+                  "--weights=model.weights", "--timings_csv=./input.mp4"},
+                 "would overwrite the source");
+}
+
+TEST(ParseCommandLineArguments, RecordsWhetherSegmentationOutputWasGiven) {
+  touchFile("input.mp4");
+  touchFile("model.weights");
+  {
+    const char *argv[] = {"program", "--type=yoloseg", "--source=input.mp4",
+                          "--weights=model.weights"};
+    int argc = sizeof(argv) / sizeof(argv[0]);
+    const AppConfig config = CommandLineParser::parseCommandLineArguments(
+        argc, const_cast<char **>(argv));
+    EXPECT_FALSE(config.segmentation_output_explicit);
+  }
+  {
+    const char *argv[] = {"program", "--type=yoloseg", "--source=input.mp4",
+                          "--weights=model.weights", "--so=polygon"};
+    int argc = sizeof(argv) / sizeof(argv[0]);
+    const AppConfig config = CommandLineParser::parseCommandLineArguments(
+        argc, const_cast<char **>(argv));
+    EXPECT_TRUE(config.segmentation_output_explicit);
+    EXPECT_EQ(config.segmentationOutput, "polygon");
+  }
 }
 
 TEST(ParseCommandLineArguments, TaskModelVersionDefaultsAndParses) {

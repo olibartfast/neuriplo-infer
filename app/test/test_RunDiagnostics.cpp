@@ -493,6 +493,127 @@ TEST_F(RunDiagnostics, ClassificationCountsEachSourceFrameOnce) {
   EXPECT_EQ(report().at("metrics").at("frames"), 6);
 }
 
+// A case-sensitive ".jpg" substring test sent PHOTO.JPG through the video
+// loop: no processed image was written and the run still reported success.
+TEST_F(RunDiagnostics, AnUppercaseJpgRunsAsAStillImage) {
+  const auto upper = directory_ / "PHOTO.JPG";
+  const auto lower = directory_ / "photo.jpg";
+  ASSERT_TRUE(cv::imwrite(lower.string(),
+                          cv::Mat(64, 64, CV_8UC3, cv::Scalar(10, 20, 30))));
+  std::filesystem::rename(lower, upper);
+
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {upper.string()};
+  pipeline.config.no_display = true;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  bool wrote_image = false;
+  for (const auto &entry : std::filesystem::directory_iterator("data/output")) {
+    wrote_image = wrote_image || entry.path().extension() == ".png";
+  }
+  EXPECT_TRUE(wrote_image) << "the still-image path writes a processed image";
+  EXPECT_TRUE(report().at("metrics").at("frames").is_null())
+      << "a still image is not a video";
+}
+
+// Every pair used to write the same file, and a bare source name produced
+// "<file>/output", which failed after inference.
+TEST_F(RunDiagnostics, OpticalFlowWritesOneImagePerPairForBareSourceNames) {
+  for (const char *name : {"b.png", "c.png"}) {
+    ASSERT_TRUE(cv::imwrite((directory_ / name).string(),
+                            cv::Mat(64, 64, CV_8UC3, cv::Scalar(90, 20, 30))));
+  }
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {"fixture.png", "b.png", "c.png"};
+  pipeline.task_type = neuriplo_tasks::TaskType::OpticalFlow;
+
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  EXPECT_TRUE(
+      std::filesystem::exists("output/processed_frame_optical_flow_0.jpg"));
+  EXPECT_TRUE(
+      std::filesystem::exists("output/processed_frame_optical_flow_1.jpg"));
+  EXPECT_EQ(report().at("metrics").at("samples"), 2);
+}
+
+TEST_F(RunDiagnostics, AnOpticalFlowImageThatCannotBeSavedFailsTheRun) {
+  ASSERT_TRUE(cv::imwrite((directory_ / "b.png").string(),
+                          cv::Mat(64, 64, CV_8UC3, cv::Scalar(90, 20, 30))));
+  // A directory where the image should go: the write returns false.
+  std::filesystem::create_directories(directory_ / "output" /
+                                      "processed_frame_optical_flow_0.jpg");
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {source_.string(), (directory_ / "b.png").string()};
+  pipeline.task_type = neuriplo_tasks::TaskType::OpticalFlow;
+
+  bool threw = false;
+  try {
+    RunInferenceCommand().execute(pipeline);
+  } catch (const std::exception &e) {
+    threw = true;
+    collected.fail(collected.currentStage(), e.what());
+  }
+  ASSERT_TRUE(threw) << "an unsaved flow image must not count as a sample";
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  const json document = report();
+  EXPECT_EQ(document.at("error").at("stage"), "render");
+  EXPECT_EQ(document.at("metrics").at("samples"), 0);
+}
+
+// An unreadable source used to run text-only and report success.
+TEST_F(RunDiagnostics, ImageUnderstandingFailsOnAnUnreadableSource) {
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.task_type = neuriplo_tasks::TaskType::ImageUnderstanding;
+  pipeline.config.sources = {(directory_ / "missing.png").string()};
+
+  bool threw = false;
+  try {
+    RunInferenceCommand().execute(pipeline);
+  } catch (const std::exception &e) {
+    threw = true;
+    collected.fail(collected.currentStage(), e.what());
+  }
+  ASSERT_TRUE(threw);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  const json document = report();
+  EXPECT_EQ(document.at("error").at("stage"), "source");
+  EXPECT_EQ(document.at("metrics").at("samples"), 0);
+}
+
+// Opening the CSV happens after the source is initialized; a failure there was
+// attributed to "source", sending consumers to the input instead of the output.
+TEST_F(RunDiagnostics, AnUnwritableTimingsCsvIsAttributedToRender) {
+  const auto video = writeFixtureVideo(directory_ / "fixture.avi", 3);
+  const auto csv = directory_ / "csv-is-a-directory";
+  std::filesystem::create_directories(csv);
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources = {video.string()};
+  pipeline.config.no_display = true;
+  pipeline.config.timings_csv = csv.string();
+
+  bool threw = false;
+  try {
+    RunInferenceCommand().execute(pipeline);
+  } catch (const std::exception &e) {
+    threw = true;
+    collected.fail(collected.currentStage(), e.what());
+  }
+  ASSERT_TRUE(threw);
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+
+  EXPECT_EQ(report().at("error").at("stage"), "render");
+}
+
 #ifdef NEURIPLO_INFER_WITH_KSERVE
 TEST_F(RunDiagnostics, EncodedWarmupAndBenchmarkSendTheSourceFileBytes) {
   // Warmup and benchmark used to re-encode the decoded frame, so they

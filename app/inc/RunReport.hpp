@@ -129,6 +129,14 @@ void writeConfigurationFailureReport(const std::string &message,
                                      const std::filesystem::path &path);
 
 /**
+ * Writes a failed report at stage "unknown" when a run starts, so a process
+ * that dies before writing its real report (an abort, a segfault, an OOM kill)
+ * leaves a failure behind instead of the previous run's success. The run's own
+ * report replaces it when the run ends.
+ */
+void writeProvisionalRunReport(const std::filesystem::path &path);
+
+/**
  * Argument validation ends the process with `std::exit` rather than an
  * exception, so nothing unwinds back to main to describe it. Arming this
  * around the configuration phase writes a configuration-stage report if the

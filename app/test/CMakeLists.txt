@@ -143,6 +143,10 @@ if(Python3_Interpreter_FOUND)
             $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
             ${CMAKE_SOURCE_DIR}/docs/capabilities.schema.json
     )
+    # Exit code 77 means the validator is not installed: reported as skipped,
+    # never as a pass that validated nothing.
+    set_tests_properties(capabilities_schema_contract PROPERTIES
+        SKIP_RETURN_CODE 77)
 
     # A restore key that is not a prefix of its cache key never matches, so CI
     # rebuilds from scratch on every CMake change without failing anything.
@@ -171,6 +175,14 @@ if(Python3_Interpreter_FOUND)
     )
     set_tests_properties(ci_cache_restore_keys_reports_missing_workflow PROPERTIES
         PASS_REGULAR_EXPRESSION "workflow file does not exist")
+    add_test(
+        NAME ci_cache_restore_keys_never_borrows_a_neighbouring_key
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${CMAKE_CURRENT_LIST_DIR}/fixtures/ci_cache_restore_key_without_key.yml
+    )
+    set_tests_properties(ci_cache_restore_keys_never_borrows_a_neighbouring_key
+        PROPERTIES PASS_REGULAR_EXPRESSION "has no key above it")
 endif()
 
 add_test(

@@ -28,8 +28,9 @@ neuriplo-infer --capabilities
 - **Image source (detection, segmentation, pose, classification, depth):** the
   annotated image is written to `data/output/processed_<type>_<mode>.png` (for
   example `processed_yolo_local.png`), relative to the working directory.
-- **Optical flow:** the flow visualization is written next to the source image at
-  `<source-dir>/output/processed_frame_optical_flow.jpg`, not under `data/output/`.
+- **Optical flow:** one flow visualization per consecutive pair is written next
+  to the first source image at `<source-dir>/output/processed_frame_optical_flow_<n>.jpg`
+  (`n` counts pairs from 0), not under `data/output/`.
 - **Image understanding (`--type=gemma4` and other vision-language models):** the
   model's response is written to standard output; no annotated image is produced.
   The run report is still written.
@@ -72,8 +73,7 @@ neuriplo-infer --capabilities
 | `--bert_tokenizer_vocab=<vocab.txt>` | — | Grounding DINO BERT vocabulary. |
 | `--prompt='<text>'` | — | Image understanding / VLM: freeform prompt. |
 | `--mmproj=<path>` | — | Image understanding / VLM: multimodal projector GGUF (llama.cpp). |
-| `--output_format=<text\|json>` | — | Multimodal output hint; `json` for parseable responses. |
-| `--sample_stride=<n>`, `--max_frames=<n>` | `0` | Frame-sampling stride and cap for multimodal video tasks. |
+| `--output_format`, `--sample_stride`, `--max_frames` | — | Reserved: not implemented by the image understanding task in this release, and rejected when set. Image understanding takes one still image (or no `--source` for a text-only prompt). |
 | `--num_frames`, `--nf=<n>` | `0` | Frames per clip for video classification; `0` uses the model default (16 for VideoMAE). |
 
 ### Output and measurement
@@ -82,9 +82,13 @@ neuriplo-infer --capabilities
 |------|---------|-------------|
 | `--no_display` | `false` | Do not open the preview window. Needed for video without a screen. |
 | `--output_video=<path>` | — | Write the annotated video (fixed 30 fps, codec auto-selected, container from the extension). Only in builds configured with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`; image sources are rejected. |
-| `--timings_csv=<path>` | — | Write one row per inference (`frame,latency_us`) for a video run. Parent directories are created; the file is opened before the first frame. |
-| `--warmup` | `false` | GPU warmup before inference; image sources only. |
-| `--benchmark`, `--iterations=<n>` | `false`, `10` | Repeat inference and report the average time; image sources only. |
+| `--timings_csv=<path>` | — | Write one row per inference (`frame,latency_us`) for a video run; rejected for image, text, and metadata runs. Parent directories are created; the file is opened before the first frame. |
+| `--warmup` | `false` | GPU warmup before inference; single still-image runs only, rejected otherwise. |
+| `--benchmark`, `--iterations=<n>` | `false`, `10` | Repeat inference and report the average time; single still-image runs only, rejected otherwise. |
+
+Unknown options and malformed values (for example `--batch=abc`) are rejected
+rather than ignored or read as `0`, and `--output_video` / `--timings_csv` may
+not name a source file or the run report.
 | `--export_metadata` | `false` | Print model type, routed task, and input/output layers, then exit. Requires `--weights`, not `--source`. |
 | `--no_gif` | `false` | Reserved; current paths emit no GIFs. |
 

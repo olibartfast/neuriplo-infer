@@ -13,4 +13,5 @@ runs:
           libopencv-dev \
           libgoogle-glog-dev \
           libcurl4-openssl-dev \
-          libgtest-dev
+          libgtest-dev \
+          python3-jsonschema
