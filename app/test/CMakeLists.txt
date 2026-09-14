@@ -143,6 +143,34 @@ if(Python3_Interpreter_FOUND)
             $<TARGET_FILE:${NEURIPLO_INFER_EXECUTABLE}>
             ${CMAKE_SOURCE_DIR}/docs/capabilities.schema.json
     )
+
+    # A restore key that is not a prefix of its cache key never matches, so CI
+    # rebuilds from scratch on every CMake change without failing anything.
+    file(GLOB NEURIPLO_INFER_WORKFLOWS ${CMAKE_SOURCE_DIR}/.github/workflows/*.yml)
+    add_test(
+        NAME ci_cache_restore_keys
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${NEURIPLO_INFER_WORKFLOWS}
+    )
+    # The checker itself: it must flag a mismatched restore key and report a
+    # missing workflow path instead of crashing on it.
+    add_test(
+        NAME ci_cache_restore_keys_flags_mismatch
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${CMAKE_CURRENT_LIST_DIR}/fixtures/ci_cache_mismatched_restore_key.yml
+    )
+    set_tests_properties(ci_cache_restore_keys_flags_mismatch PROPERTIES
+        PASS_REGULAR_EXPRESSION "is not a prefix of key")
+    add_test(
+        NAME ci_cache_restore_keys_reports_missing_workflow
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_LIST_DIR}/check_ci_cache_keys.py
+            ${CMAKE_CURRENT_LIST_DIR}/fixtures/no-such-workflow.yml
+    )
+    set_tests_properties(ci_cache_restore_keys_reports_missing_workflow PROPERTIES
+        PASS_REGULAR_EXPRESSION "workflow file does not exist")
 endif()
 
 add_test(

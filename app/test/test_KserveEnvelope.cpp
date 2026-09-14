@@ -292,6 +292,51 @@ TEST(KserveEnvelope, RejectsEmptyRingRangeOutsideRingOffsets) {
                std::runtime_error);
 }
 
+// A run that does not match its box used to decode "successfully" with no
+// renderable mask, so the segmentation silently disappeared.
+TEST(KserveEnvelope, RejectsMaskRunShorterThanItsBox) {
+  auto outputs = detectionEnvelope(1, {{{0, 0, 2, 2}}}, {0.9F}, {0});
+  outputs.push_back(tensor("MASK_OFFSETS", "INT64", fullMaskOffsets({3})));
+  outputs.push_back(tensor("MASK_DATA", "UINT8", {1, 1, 1}));
+
+  EXPECT_THROW(neuriplo_infer::decodeMaskEnvelope(outputs, 8, 8),
+               std::runtime_error);
+}
+
+TEST(KserveEnvelope, RejectsMaskRunLongerThanItsBox) {
+  auto outputs = detectionEnvelope(1, {{{0, 0, 2, 2}}}, {0.9F}, {0});
+  outputs.push_back(tensor("MASK_OFFSETS", "INT64", fullMaskOffsets({5})));
+  outputs.push_back(tensor("MASK_DATA", "UINT8", {1, 1, 1, 1, 1}));
+
+  EXPECT_THROW(neuriplo_infer::decodeMaskEnvelope(outputs, 8, 8),
+               std::runtime_error);
+}
+
+// On a 32-bit target 65536 * 65536 wraps to 0, which an empty run would
+// match. The box is rejected on every target instead of decoding silently.
+TEST(KserveEnvelope, RejectsHugeBoxWithAnEmptyMaskRun) {
+  auto outputs = detectionEnvelope(1, {{{0, 0, 65536, 65536}}}, {0.9F}, {0});
+  outputs.push_back(tensor("MASK_OFFSETS", "INT64", fullMaskOffsets({0})));
+  outputs.push_back(tensor("MASK_DATA", "UINT8", {}));
+
+  EXPECT_THROW(neuriplo_infer::decodeMaskEnvelope(outputs, 8, 8),
+               std::runtime_error);
+}
+
+TEST(KserveEnvelope, RejectsNegativeMaskOffsets) {
+  auto outputs = detectionEnvelope(1, {{{0, 0, 1, 1}}}, {0.9F}, {0});
+  std::vector<uint8_t> offsets;
+  append<int64_t>(offsets, -1);
+  for (int i = 0; i < neuriplo_infer::kEnvelopeMaxDetections; ++i) {
+    append<int64_t>(offsets, 1);
+  }
+  outputs.push_back(tensor("MASK_OFFSETS", "INT64", offsets));
+  outputs.push_back(tensor("MASK_DATA", "UINT8", {1}));
+
+  EXPECT_THROW(neuriplo_infer::decodeMaskEnvelope(outputs, 8, 8),
+               std::runtime_error);
+}
+
 TEST(KserveEnvelope, RecognisesDecodedAndPassthroughModels) {
   kserve::ModelMetadata passthrough;
   passthrough.outputs.push_back({"output0", "FP32", {1, 84, 8400}});
