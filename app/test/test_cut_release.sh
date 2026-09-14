@@ -20,6 +20,9 @@ cat > "${BIN}/git" <<EOF
 #!/bin/bash
 # Offline stand-in for the sibling tag lookup; everything else is real git.
 if [ "\$1" = "ls-remote" ]; then
+  if [ -n "\${STUB_NO_TAGS_FOR:-}" ] && [[ "\$*" == *"/\${STUB_NO_TAGS_FOR}.git"* ]]; then
+    exit 0
+  fi
   printf 'abc\trefs/tags/v0.1.0\nabc\trefs/tags/v9.9.9\nabc\trefs/tags/v10.0.0-rc1\n'
   exit 0
 fi
@@ -79,5 +82,14 @@ done
 cmp -s "${TMP_DIR}/first-cut.env" "${ENV_FILE}" ||
   fail "a second cut of the same version changed versions.env"
 [ "$(cat "${REPO}/VERSION")" = "1.2.3" ] || fail "VERSION not bumped"
+
+# A sibling with no release tag must stop the cut with a message naming it,
+# not end silently inside a failed pipeline under `set -e`.
+if MISSING_OUTPUT="$(STUB_NO_TAGS_FOR=videocapture PATH="${BIN}:${PATH}" \
+  bash "${REPO}/scripts/cut_release.sh" 1.2.4 2>&1)"; then
+  fail "a sibling without a release tag must fail the cut"
+fi
+grep -q "missing videocapture" <<<"${MISSING_OUTPUT}" ||
+  fail "no message naming the sibling without a release tag"
 
 echo "cut_release_versions_env: ok"

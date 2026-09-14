@@ -2,6 +2,7 @@
 
 #include "FrameConversion.hpp"
 #include "VideoCaptureFactory.hpp"
+#include "utils.hpp"
 #ifdef VIDEOCAPTURE_WITH_WRITER
 #include "VideoWriterConfig.hpp"
 #include "VideoWriterFactory.hpp"
@@ -11,6 +12,7 @@
 #include "KserveEngine.hpp"
 #endif
 
+#include <algorithm>
 #include <cctype>
 #include <chrono>
 #include <cstdint>
@@ -37,6 +39,15 @@ toTaskImages(const std::vector<cv::Mat> &images) {
 
 neuriplo_tasks::vision::Size toTaskSize(const cv::Mat &image) {
   return {image.cols, image.rows};
+}
+
+// Marks the stage that untimed work belongs to, so a throw from it (an output
+// path that cannot be opened, a full disk) is attributed there rather than to
+// whichever timed stage happened to run last.
+void attributeTo(InferencePipeline &pipeline, neuriplo_infer::RunStage stage) {
+  if (pipeline.report != nullptr) {
+    pipeline.report->beginStage(stage);
+  }
 }
 
 // Replaces characters that are awkward in filenames with '-' so model/backend
@@ -213,9 +224,13 @@ inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
     throw std::runtime_error(
         "server-side postprocessing requires the KServe engine");
   }
-  return neuriplo_infer::decodeEnvelope(kserve->lastRawOutputs(),
-                                        pipeline.envelope_variant, frame.cols,
-                                        frame.rows);
+  // The ensemble applied its own thresholds; --min_confidence still applies to
+  // what it returned, so the flag is never silently ignored on this path.
+  return neuriplo_infer::filterByConfidence(
+      neuriplo_infer::decodeEnvelope(kserve->lastRawOutputs(),
+                                     pipeline.envelope_variant, frame.cols,
+                                     frame.rows),
+      pipeline.config.confidenceThreshold);
 #else
   (void)encoded_source;
   throw std::runtime_error(
@@ -223,14 +238,13 @@ inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
 #endif
 }
 
+// The same predicate argument validation uses. A case-sensitive substring test
+// for ".jpg"/".png" sent IMG_0001.JPG, photo.jpeg, and scan.bmp through the
+// video loop, which wrote no image and still reported a successful sample.
 bool hasImageSources(const std::vector<std::string> &sources) {
-  for (const auto &src : sources) {
-    if (src.find(".jpg") != std::string::npos ||
-        src.find(".png") != std::string::npos) {
-      return true;
-    }
-  }
-  return false;
+  return std::any_of(
+      sources.begin(), sources.end(),
+      [](const std::string &src) { return isStillImageSource(src); });
 }
 
 void processImage(InferencePipeline &pipeline, const std::string &source) {
@@ -238,7 +252,13 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
   {
     neuriplo_infer::StageTimer timer(pipeline.report,
                                      neuriplo_infer::RunStage::Source);
-    image = cv::imread(source);
+    // Encoded-image mode sends the file's own bytes, which the server decodes
+    // without applying EXIF orientation. Reading it the same way keeps the
+    // drawn frame in the coordinate system the server's results are in.
+    image = cv::imread(source,
+                       pipeline.encoded_image
+                           ? cv::IMREAD_COLOR | cv::IMREAD_IGNORE_ORIENTATION
+                           : cv::IMREAD_COLOR);
     // Reading nothing used to surface as a confusing failure further down the
     // pipeline; saying so here also attributes it to the source stage.
     if (image.empty()) {
@@ -264,7 +284,13 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
   }
 
   auto start = std::chrono::steady_clock::now();
-  const auto &first_input = pipeline.inference_metadata.getInputs()[0];
+  attributeTo(pipeline, neuriplo_infer::RunStage::Preprocess);
+  const auto inputs = pipeline.inference_metadata.getInputs();
+  if (inputs.empty()) {
+    throw std::runtime_error("The model reports no inputs; cannot run " +
+                             source + " through it");
+  }
+  const auto &first_input = inputs[0];
   auto [batch, channels, height, width] = extractInputDims(first_input.shape);
 
   LOG(INFO) << "Model input shape: " << batch << "x" << channels << "x"
@@ -342,6 +368,9 @@ public:
     checkWritten();
   }
 
+  // A row goes into std::ofstream's buffer, not straight to the disk: the loop
+  // pays for formatting a few bytes, and the buffer is flushed in large blocks
+  // (and checked) rather than once per frame.
   void add(std::size_t frame_index, std::int64_t latency_us) {
     if (out_.is_open()) {
       out_ << frame_index << ',' << latency_us << '\n';
@@ -437,6 +466,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     }
   }
 
+  attributeTo(pipeline, neuriplo_infer::RunStage::Render);
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
@@ -468,6 +498,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
 #ifdef VIDEOCAPTURE_WITH_WRITER
     // Configured once from the first frame: video sources have fixed dims.
     if (!pipeline.config.output_video.empty() && !output_sink) {
+      attributeTo(pipeline, neuriplo_infer::RunStage::Render);
       output_sink = std::make_unique<OutputVideoSink>(
           pipeline.config.output_video, image.cols, image.rows);
     }
@@ -485,6 +516,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     const auto latency_us =
         std::chrono::duration_cast<std::chrono::microseconds>(end - start)
             .count();
+    attributeTo(pipeline, neuriplo_infer::RunStage::Render);
     timings.add(frame_index, latency_us);
     const double fps =
         latency_us > 0 ? 1e6 / static_cast<double>(latency_us) : 0.0;
@@ -521,6 +553,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     }
   }
 
+  attributeTo(pipeline, neuriplo_infer::RunStage::Render);
   timings.finish();
   videoInterface->release();
 #ifdef VIDEOCAPTURE_WITH_WRITER
@@ -530,6 +563,9 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     throw std::runtime_error("--output_video: " + source +
                              " produced no frames, so no video was written");
   }
+  // Finalizing the container is part of producing the artifact, so it happens
+  // before the source is counted as processed, not after.
+  output_sink.reset();
 #endif
   // One video read to its end is one sample, however many frames it held. A
   // video the operator stopped early was not processed to completion, and
@@ -556,6 +592,7 @@ void processVideoClassification(InferencePipeline &pipeline,
   LOG(INFO) << "Video classification mode: accumulating " << requiredFrames
             << " frames";
 
+  attributeTo(pipeline, neuriplo_infer::RunStage::Render);
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
@@ -589,6 +626,7 @@ void processVideoClassification(InferencePipeline &pipeline,
 #ifdef VIDEOCAPTURE_WITH_WRITER
     // Configured once from the first frame: video sources have fixed dims.
     if (!pipeline.config.output_video.empty() && !output_sink) {
+      attributeTo(pipeline, neuriplo_infer::RunStage::Render);
       output_sink = std::make_unique<OutputVideoSink>(
           pipeline.config.output_video, image.cols, image.rows);
     }
@@ -636,6 +674,7 @@ void processVideoClassification(InferencePipeline &pipeline,
       const auto latency_us =
           std::chrono::duration_cast<std::chrono::microseconds>(end - start)
               .count();
+      attributeTo(pipeline, neuriplo_infer::RunStage::Render);
       timings.add(frame_index - 1, latency_us);
       const double fps =
           latency_us > 0 ? 1e6 / static_cast<double>(latency_us) : 0.0;
@@ -674,6 +713,7 @@ void processVideoClassification(InferencePipeline &pipeline,
     }
   }
 
+  attributeTo(pipeline, neuriplo_infer::RunStage::Render);
   timings.finish();
   videoInterface->release();
 #ifdef VIDEOCAPTURE_WITH_WRITER
@@ -682,6 +722,8 @@ void processVideoClassification(InferencePipeline &pipeline,
     throw std::runtime_error("--output_video: " + source +
                              " produced no frames, so no video was written");
   }
+  // Same rule as processVideo: finalize the file before counting the sample.
+  output_sink.reset();
 #endif
   // Same rule as processVideo: only a video read to its end is a sample.
   if (read_to_end && pipeline.report != nullptr) {
@@ -754,14 +796,21 @@ void processOpticalFlow(InferencePipeline &pipeline) {
         }
       }
 
-      std::string sourceDir =
-          flowInputs[0].substr(0, flowInputs[0].find_last_of("/\\"));
-      std::string outputDir = sourceDir + "/output";
+      // parent_path(), not a search for a separator: a source given without a
+      // directory has the working directory as its parent, not itself.
+      const std::filesystem::path outputDir =
+          std::filesystem::path(flowInputs[0]).parent_path() / "output";
       std::filesystem::create_directories(outputDir);
-      std::string processedFrameFilename =
-          outputDir + "/processed_frame_optical_flow.jpg";
-      LOG(INFO) << "Saving frame to: " << processedFrameFilename;
-      cv::imwrite(processedFrameFilename, image);
+      // One file per pair: a fixed name let every pair overwrite the previous
+      // one while each still counted as a written sample.
+      const std::filesystem::path processedFrameFilename =
+          outputDir /
+          ("processed_frame_optical_flow_" + std::to_string(i) + ".jpg");
+      LOG(INFO) << "Saving frame to: " << processedFrameFilename.string();
+      if (!cv::imwrite(processedFrameFilename.string(), image)) {
+        throw std::runtime_error("Failed to save the optical flow image to " +
+                                 processedFrameFilename.string());
+      }
     }
 
     // A pair carried through to its written flow image is one sample.
@@ -786,9 +835,13 @@ void processImageUnderstanding(InferencePipeline &pipeline) {
         !pipeline.config.sources[0].empty()) {
       cv::Mat img = cv::imread(pipeline.config.sources[0]);
       if (img.empty()) {
-        LOG(WARNING) << "Could not read source image: "
-                     << pipeline.config.sources[0] << " - running text-only";
-      } else {
+        // A source the run was given and could not read is a failure, as for
+        // every other task: answering the prompt text-only reported success
+        // for an image the model never saw.
+        throw std::runtime_error("Could not read the image source: " +
+                                 pipeline.config.sources[0]);
+      }
+      {
         LOG(INFO) << "Source image: " << pipeline.config.sources[0] << " ("
                   << img.cols << "x" << img.rows << ")";
         images.push_back(std::move(img));

@@ -320,6 +320,35 @@ TEST_F(RunReportFile, ArmAndDisarmAcrossThreadsLeaveTheHookDisarmed) {
   EXPECT_FALSE(std::filesystem::exists(path_));
 }
 
+// nlohmann throws on invalid UTF-8, and the stream was already truncated, so
+// a Latin-1 file name in a failure message left a 0-byte report.
+TEST_F(RunReportFile, AMessageThatIsNotValidUtf8StillWritesValidJson) {
+  RunReport report;
+  report.fail(RunStage::Source,
+              std::string("Could not read the image source: caf\xE9") + ".jpg");
+
+  ASSERT_TRUE(neuriplo_infer::writeRunReport(report, path_));
+  const json document = readReport(path_);
+
+  EXPECT_EQ(document.at("status"), "failed");
+  EXPECT_EQ(document.at("error").at("stage"), "source");
+  EXPECT_FALSE(std::filesystem::exists(path_.string() + ".tmp"));
+}
+
+// A run that dies before writing its report used to leave the previous run's
+// success in place.
+TEST_F(RunReportFile, AProvisionalReportReplacesThePreviousRunsSuccess) {
+  RunReport previous;
+  previous.addSample();
+  ASSERT_TRUE(neuriplo_infer::writeRunReport(previous, path_));
+
+  neuriplo_infer::writeProvisionalRunReport(path_);
+  const json document = readReport(path_);
+
+  EXPECT_EQ(document.at("status"), "failed");
+  EXPECT_EQ(document.at("error").at("stage"), "unknown");
+}
+
 TEST_F(RunReportFile, SuspendingWithoutACollectorIsANoOp) {
   EXPECT_NO_FATAL_FAILURE(
       { neuriplo_infer::TimingSuspension untimed(nullptr); });

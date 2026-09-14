@@ -57,6 +57,27 @@ TEST(ServerPostprocessTaskSupport, RejectsAnEnvelopeThatDisagreesWithTheTask) {
   EXPECT_NO_THROW(requireServerPostprocessMatchesTask(pipeline, "yoloseg"));
 }
 
+// The envelope used to override an explicit --segmentation_output silently.
+TEST(ServerPostprocessTaskSupport,
+     RejectsAnExplicitSegmentationOutputMismatch) {
+  InferencePipeline pipeline;
+  pipeline.server_postprocess = true;
+  pipeline.envelope_variant = neuriplo_infer::EnvelopeVariant::Mask;
+  pipeline.task_type = neuriplo_tasks::TaskType::InstanceSegmentation;
+  pipeline.config.segmentationOutput = "polygon";
+
+  // Defaulted: the ensemble decides.
+  pipeline.config.segmentation_output_explicit = false;
+  EXPECT_NO_THROW(requireServerPostprocessMatchesTask(pipeline, "yoloseg"));
+
+  pipeline.config.segmentation_output_explicit = true;
+  EXPECT_THROW(requireServerPostprocessMatchesTask(pipeline, "yoloseg"),
+               std::runtime_error);
+
+  pipeline.envelope_variant = neuriplo_infer::EnvelopeVariant::Polygon;
+  EXPECT_NO_THROW(requireServerPostprocessMatchesTask(pipeline, "yoloseg"));
+}
+
 TEST(ServerPostprocessTaskSupport, SkipsTheCheckWhenPostprocessingLocally) {
   InferencePipeline pipeline;
   pipeline.server_postprocess = false;
@@ -69,7 +90,8 @@ TEST(ServerPostprocessTaskSupport, SkipsTheCheckWhenPostprocessingLocally) {
 TEST(EncodedImageTaskSupport, RejectsTasksThatPreprocessLocally) {
   for (const auto task_type : {neuriplo_tasks::TaskType::VideoClassification,
                                neuriplo_tasks::TaskType::OpticalFlow,
-                               neuriplo_tasks::TaskType::ImageUnderstanding}) {
+                               neuriplo_tasks::TaskType::ImageUnderstanding,
+                               neuriplo_tasks::TaskType::OpenVocabDetection}) {
     EXPECT_THROW(requireEncodedImageSupport(task_type, "model"),
                  std::runtime_error);
   }

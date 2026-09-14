@@ -39,6 +39,10 @@ struct AppConfig {
   float maskThreshold{0.50f};
   // Instance-segmentation representation: "mask" (default) or "polygon".
   std::string segmentationOutput{"mask"};
+  // Whether --segmentation_output was given, as opposed to defaulted. A server
+  // envelope that contradicts an explicit request is refused; the default is
+  // not a request.
+  bool segmentation_output_explicit{false};
   int batch_size{1};
   std::vector<std::vector<int64_t>> input_sizes;
   int num_frames{

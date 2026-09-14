@@ -92,7 +92,14 @@ and `--weights` is then not needed.
 | `--input_mode`, `--im=<preprocessed\|encoded-image>` | `preprocessed` | `preprocessed` sends a dense tensor this client prepared. `encoded-image` sends the encoded file for a server-side ensemble to preprocess; it requires `--kserve_endpoint`, `--task_model`, `--batch=1`, and no `--input_sizes`. |
 | `--task_model`, `--tm=<model>` | — | Inner model whose metadata drives task construction in `encoded-image` mode: an ensemble's own metadata only describes an encoded image. |
 | `--task_model_version`, `--tmv=<version>` | `1` | Version of `--task_model`. |
-| `--postprocess_mode`, `--pm=<cpu\|gpu>` | `cpu` | `gpu` decodes the server's result envelope instead of running local postprocessing; requires `--input_mode=encoded-image`. |
+| `--postprocess_mode`, `--pm=<cpu\|gpu>` | `cpu` | `gpu` decodes the server's result envelope instead of running local postprocessing; requires `--input_mode=encoded-image`. The ensemble applies its own NMS and mask thresholds, so `--nms_threshold` and `--mask_threshold` are rejected; `--min_confidence` is applied to the decoded results; an explicit `--segmentation_output` must match the envelope (mask or polygon), and `--type` must match its result type. |
+
+With `--input_mode=preprocessed`, `--input_sizes` also fills dynamic dimensions
+of the served model's input shape (for example a detector served as
+`[1,3,-1,-1]`); without it only a single dynamic axis can be inferred from the
+payload size. `--input_mode=encoded-image` is not available for video
+classification, optical flow, image understanding, or open-vocabulary
+detection.
 
 YOLO served by `neuriplo-kserve-runtime` over HTTP:
 

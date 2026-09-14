@@ -15,6 +15,8 @@
 #include "neuriplo/tasks/core/result_types.hpp"
 #include "neuriplo/tasks/core/segmentation_types.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -64,6 +66,40 @@ T envelopeValueAt(const kserve::InferOutput &tensor, size_t index) {
   T value{};
   std::memcpy(&value, tensor.data.data() + offset, sizeof(T));
   return value;
+}
+
+// A score from the envelope. Renderers convert confidence to int for the
+// label, which is undefined for NaN or out-of-range values, so a non-finite
+// score is a decode error.
+inline float finiteEnvelopeScore(const kserve::InferOutput &scores,
+                                 size_t index) {
+  const float score = envelopeValueAt<float>(scores, index);
+  if (!std::isfinite(score)) {
+    throw std::runtime_error("Envelope SCORES[" + std::to_string(index) +
+                             "] is not a finite number");
+  }
+  return score;
+}
+
+// Clamps a server box to the frame with 64-bit arithmetic. Box fields are int,
+// and renderers add offsets to them (left + label width), so a value near
+// INT32_MAX would overflow; a box partly off-frame is also drawn as its
+// visible part. Without frame dimensions the box is left as sent.
+inline void clampBoxToFrame(neuriplo_tasks::BoundingBox &box,
+                            const int frame_width, const int frame_height) {
+  if (frame_width <= 0 || frame_height <= 0) {
+    return;
+  }
+  const int64_t left = std::clamp<int64_t>(box.x, 0, frame_width);
+  const int64_t top = std::clamp<int64_t>(box.y, 0, frame_height);
+  const int64_t right = std::clamp<int64_t>(
+      int64_t{box.x} + std::max(box.width, 0), 0, frame_width);
+  const int64_t bottom = std::clamp<int64_t>(
+      int64_t{box.y} + std::max(box.height, 0), 0, frame_height);
+  box.x = static_cast<int>(left);
+  box.y = static_cast<int>(top);
+  box.width = static_cast<int>(right - left);
+  box.height = static_cast<int>(bottom - top);
 }
 
 // True when the model returns a decoded envelope rather than the inner model's
@@ -172,7 +208,8 @@ inline int readDetectionCount(const std::vector<kserve::InferOutput> &outputs) {
 // Decodes the detection envelope. Boxes are already in source-image pixels, so
 // no inverse letterbox is needed here -- the server did it.
 inline std::vector<neuriplo_tasks::Result>
-decodeDetectionEnvelope(const std::vector<kserve::InferOutput> &outputs) {
+decodeDetectionEnvelope(const std::vector<kserve::InferOutput> &outputs,
+                        int frame_width = 0, int frame_height = 0) {
   const int count = readDetectionCount(outputs);
   const auto *boxes = requireEnvelopeTensor(outputs, "BOXES", "INT32");
   const auto *scores = requireEnvelopeTensor(outputs, "SCORES", "FP32");
@@ -187,9 +224,10 @@ decodeDetectionEnvelope(const std::vector<kserve::InferOutput> &outputs) {
     detection.bbox.y = envelopeValueAt<int32_t>(*boxes, index * 4 + 1);
     detection.bbox.width = envelopeValueAt<int32_t>(*boxes, index * 4 + 2);
     detection.bbox.height = envelopeValueAt<int32_t>(*boxes, index * 4 + 3);
-    detection.class_confidence = envelopeValueAt<float>(*scores, index);
+    detection.class_confidence = finiteEnvelopeScore(*scores, index);
     detection.class_id =
         static_cast<float>(envelopeValueAt<int32_t>(*classes, index));
+    clampBoxToFrame(detection.bbox, frame_width, frame_height);
     results.emplace_back(std::move(detection));
   }
   return results;
@@ -225,7 +263,7 @@ decodeMaskEnvelope(const std::vector<kserve::InferOutput> &outputs,
     segmentation.bbox.y = envelopeValueAt<int32_t>(*boxes, index * 4 + 1);
     segmentation.bbox.width = envelopeValueAt<int32_t>(*boxes, index * 4 + 2);
     segmentation.bbox.height = envelopeValueAt<int32_t>(*boxes, index * 4 + 3);
-    segmentation.class_confidence = envelopeValueAt<float>(*scores, index);
+    segmentation.class_confidence = finiteEnvelopeScore(*scores, index);
     segmentation.class_id =
         static_cast<float>(envelopeValueAt<int32_t>(*classes, index));
 
@@ -279,15 +317,17 @@ decodeMaskEnvelope(const std::vector<kserve::InferOutput> &outputs,
           frame_width, frame_height, 1,
           neuriplo_tasks::vision::PixelType::UInt8);
       auto *pixels = mask.data<uint8_t>();
-      const auto origin_x = static_cast<int>(segmentation.bbox.x);
-      const auto origin_y = static_cast<int>(segmentation.bbox.y);
+      // 64-bit arithmetic: a server box origin near INT32_MAX plus a row or
+      // column offset would overflow int.
+      const auto origin_x = static_cast<int64_t>(segmentation.bbox.x);
+      const auto origin_y = static_cast<int64_t>(segmentation.bbox.y);
       for (int row = 0; row < segmentation.mask_height; ++row) {
-        const int target_row = origin_y + row;
+        const int64_t target_row = origin_y + row;
         if (target_row < 0 || target_row >= frame_height) {
           continue;
         }
         for (int column = 0; column < segmentation.mask_width; ++column) {
-          const int target_column = origin_x + column;
+          const int64_t target_column = origin_x + column;
           if (target_column < 0 || target_column >= frame_width) {
             continue;
           }
@@ -304,6 +344,8 @@ decodeMaskEnvelope(const std::vector<kserve::InferOutput> &outputs,
       segmentation.mask_width = frame_width;
       segmentation.mask_height = frame_height;
     }
+    // After placement, which needs the box origin exactly as sent.
+    clampBoxToFrame(segmentation.bbox, frame_width, frame_height);
     results.emplace_back(std::move(segmentation));
   }
   return results;
@@ -332,7 +374,8 @@ pointInsideRing(const std::vector<neuriplo_tasks::vision::Point2f> &ring,
 // detection to its rings, ring to its points. A ring contained inside an
 // earlier ring of the same detection is a hole in it.
 inline std::vector<neuriplo_tasks::Result>
-decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs) {
+decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs,
+                      int frame_width = 0, int frame_height = 0) {
   const int count = readDetectionCount(outputs);
   const auto *boxes = requireEnvelopeTensor(outputs, "BOXES", "INT32");
   const auto *scores = requireEnvelopeTensor(outputs, "SCORES", "FP32");
@@ -361,7 +404,7 @@ decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs) {
     segmentation.bbox.y = envelopeValueAt<int32_t>(*boxes, index * 4 + 1);
     segmentation.bbox.width = envelopeValueAt<int32_t>(*boxes, index * 4 + 2);
     segmentation.bbox.height = envelopeValueAt<int32_t>(*boxes, index * 4 + 3);
-    segmentation.class_confidence = envelopeValueAt<float>(*scores, index);
+    segmentation.class_confidence = finiteEnvelopeScore(*scores, index);
     segmentation.class_id =
         static_cast<float>(envelopeValueAt<int32_t>(*classes, index));
 
@@ -430,8 +473,31 @@ decodePolygonEnvelope(const std::vector<kserve::InferOutput> &outputs) {
       }
     }
 
+    clampBoxToFrame(segmentation.bbox, frame_width, frame_height);
     results.emplace_back(std::move(segmentation));
   }
+  return results;
+}
+
+// Drops decoded detections below --min_confidence. With server-side
+// postprocessing the ensemble applies its own threshold; this keeps the CLI
+// threshold honored on top of it instead of silently ignored.
+inline std::vector<neuriplo_tasks::Result>
+filterByConfidence(std::vector<neuriplo_tasks::Result> results,
+                   const float threshold) {
+  const auto below = [threshold](const neuriplo_tasks::Result &result) {
+    if (const auto *detection =
+            std::get_if<neuriplo_tasks::Detection>(&result)) {
+      return detection->class_confidence < threshold;
+    }
+    if (const auto *segmentation =
+            std::get_if<neuriplo_tasks::InstanceSegmentation>(&result)) {
+      return segmentation->class_confidence < threshold;
+    }
+    return false;
+  };
+  results.erase(std::remove_if(results.begin(), results.end(), below),
+                results.end());
   return results;
 }
 
@@ -443,11 +509,11 @@ decodeEnvelope(const std::vector<kserve::InferOutput> &outputs,
   case EnvelopeVariant::Mask:
     return decodeMaskEnvelope(outputs, frame_width, frame_height);
   case EnvelopeVariant::Polygon:
-    return decodePolygonEnvelope(outputs);
+    return decodePolygonEnvelope(outputs, frame_width, frame_height);
   case EnvelopeVariant::Detection:
     break;
   }
-  return decodeDetectionEnvelope(outputs);
+  return decodeDetectionEnvelope(outputs, frame_width, frame_height);
 }
 
 } // namespace neuriplo_infer

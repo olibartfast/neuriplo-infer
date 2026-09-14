@@ -2,8 +2,13 @@
 #include "utils.hpp"
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
 #include <glog/logging.h>
 #include <iostream>
+#include <map>
+#include <set>
+#include <sstream>
+#include <system_error>
 
 #include "RunReport.hpp"
 
@@ -24,8 +29,12 @@ const std::string CommandLineParser::params =
     "torchvisionclassifier, tensorflowclassifier, vitclassifier, timesformer | "
     "Instance Segmentation: yoloseg | Optical Flow: raft | Pose Estimation: "
     "vitpose }"
-    "{ source s   | <none>  | path to image or video source}"
-    "{ labels lb  |<none>  | path to class labels}"
+    // Empty defaults, not <none>: cv::CommandLineParser records reading an
+    // absent <none> key as an error, and every value is now checked after it
+    // is read. These three are optional here; validateArguments enforces when
+    // --source and --weights are required.
+    "{ source s   |   | path to image or video source}"
+    "{ labels lb  |   | path to class labels}"
     "{ text_prompts tp | | semicolon-separated text prompts for "
     "open-vocabulary detection (e.g. 'cat;dog;bus')}"
     "{ prompt | | freeform prompt for multimodal understanding models }"
@@ -40,7 +49,7 @@ const std::string CommandLineParser::params =
     "{ tokenizer_merges | | path to tokenizer merges.txt for open-vocabulary "
     "detection }"
     "{ bert_tokenizer_vocab | | path to BERT vocab.txt for Grounding DINO }"
-    "{ weights w  | <none>  | path to models weights}"
+    "{ weights w  |   | path to models weights}"
     "{ use-gpu   | false  | activate gpu support}"
     "{ min_confidence | 0.25   | optional min confidence}"
     "{ nms_threshold  | 0.45   | NMS IoU threshold (YOLO-based "
@@ -135,14 +144,168 @@ void validateEnsembleArguments(const cv::CommandLineParser &parser) {
   }
 }
 
-// A source the writer sink cannot serve. Deliberately wider than the router's
-// still-image predicate (.jpg/.png): any common still-image extension is
-// refused here, since none of those paths produce frames a video writer could
-// take, and a still routed to the video loop by accident is not a video either.
-bool isStillImageSource(const std::string &path) {
-  const std::string extension = lowered(getFileExtension(path));
-  return extension == "jpg" || extension == "jpeg" || extension == "png" ||
-         extension == "bmp" || extension == "tiff";
+// Every key the parser accepts, mapped to its primary name ("so" ->
+// "segmentation_output"), read from the params string so the two cannot drift.
+std::map<std::string, std::string> knownOptionKeys(const std::string &spec) {
+  std::map<std::string, std::string> keys;
+  size_t open = spec.find('{');
+  while (open != std::string::npos) {
+    const size_t bar = spec.find('|', open);
+    if (bar == std::string::npos) {
+      break;
+    }
+    std::istringstream names(spec.substr(open + 1, bar - open - 1));
+    std::string primary;
+    std::string name;
+    while (names >> name) {
+      if (primary.empty()) {
+        primary = name;
+      }
+      keys[name] = primary;
+    }
+    open = spec.find('{', bar);
+  }
+  return keys;
+}
+
+// Primary names of the options given on the command line. cv::CommandLineParser
+// ignores keys it does not know, so a misspelled flag (--output-video,
+// --timing_csv) used to exit 0 without the artifact it asked for; an unknown
+// key now ends the run.
+std::set<std::string>
+providedOptionKeys(int argc, char *argv[],
+                   const std::map<std::string, std::string> &known) {
+  std::set<std::string> provided;
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg = argv[i] != nullptr ? argv[i] : "";
+    if (arg.size() < 2 || arg[0] != '-') {
+      continue;
+    }
+    const size_t start = arg.find_first_not_of('-');
+    if (start == std::string::npos) {
+      continue;
+    }
+    const size_t equals = arg.find('=');
+    const std::string key =
+        arg.substr(start, equals == std::string::npos ? std::string::npos
+                                                      : equals - start);
+    const auto found = known.find(key);
+    if (found == known.end()) {
+      LOG(ERROR) << "Unknown option: " << arg;
+      std::exit(1);
+    }
+    provided.insert(found->second);
+  }
+  return provided;
+}
+
+// Whether two paths name the same file, comparing canonical forms so that
+// "./run.mp4" and "run.mp4" match. Falls back to a literal comparison when a
+// path cannot be resolved.
+bool samePath(const std::string &lhs, const std::string &rhs) {
+  std::error_code lhs_error;
+  std::error_code rhs_error;
+  const auto lhs_canonical = std::filesystem::weakly_canonical(lhs, lhs_error);
+  const auto rhs_canonical = std::filesystem::weakly_canonical(rhs, rhs_error);
+  if (lhs_error || rhs_error) {
+    return lhs == rhs;
+  }
+  return lhs_canonical == rhs_canonical;
+}
+
+[[noreturn]] void rejectArguments(const std::string &message) {
+  LOG(ERROR) << message;
+  std::exit(1);
+}
+
+// Flags that only some run modes honor are refused in the others, so a run
+// never succeeds without the artifact or behavior it was asked for.
+void validateRunModes(const cv::CommandLineParser &parser,
+                      const std::set<std::string> &provided) {
+  const std::string type = normalizeModelType(parser.get<std::string>("type"));
+  const bool is_text_task = type == "gemma4" || type == "gemma" ||
+                            type == "llama" || type == "llamacpp" ||
+                            type == "imageunderstanding";
+  const bool is_metadata_export = parser.get<bool>("export_metadata");
+  const std::string source = parser.get<std::string>("source");
+  const std::vector<std::string> sources =
+      source.empty() ? std::vector<std::string>{} : split(source, ',');
+
+  bool any_still_image = false;
+  bool all_still_images = !sources.empty();
+  for (const auto &src : sources) {
+    if (isStillImageSource(src)) {
+      any_still_image = true;
+    } else {
+      all_still_images = false;
+    }
+  }
+  const bool frame_loop_run = !sources.empty() && !any_still_image &&
+                              !is_text_task && !is_metadata_export;
+  const bool single_image_run = sources.size() == 1 && all_still_images &&
+                                !is_text_task && !is_metadata_export;
+
+  const std::string timings_csv = parser.get<std::string>("timings_csv");
+  if (!timings_csv.empty() && !frame_loop_run) {
+    rejectArguments("--timings_csv applies to video inference runs only; "
+                    "image, text, and metadata runs never write it");
+  }
+
+  if ((parser.get<bool>("warmup") || parser.get<bool>("benchmark")) &&
+      !single_image_run) {
+    rejectArguments("--warmup and --benchmark apply to single still-image runs "
+                    "only; video, optical flow, text, and metadata runs never "
+                    "run them");
+  }
+
+  if (is_text_task) {
+    if (!sources.empty() && !(sources.size() == 1 && all_still_images)) {
+      rejectArguments("image understanding takes one still image, or no "
+                      "--source for a text-only prompt; video sources are not "
+                      "supported");
+    }
+    if (parser.get<int>("sample_stride") > 0 ||
+        parser.get<int>("max_frames") > 0 ||
+        !parser.get<std::string>("output_format").empty()) {
+      rejectArguments("--sample_stride, --max_frames, and --output_format are "
+                      "not supported by the image understanding task in this "
+                      "release");
+    }
+  }
+
+  if (!parser.get<std::string>("task_model").empty() &&
+      lowered(parser.get<std::string>("input_mode")) != "encoded-image") {
+    rejectArguments(
+        "--task_model only applies with --input_mode=encoded-image");
+  }
+
+  if (lowered(parser.get<std::string>("postprocess_mode")) == "gpu" &&
+      (provided.count("nms_threshold") > 0 ||
+       provided.count("mask_threshold") > 0)) {
+    rejectArguments("--nms_threshold and --mask_threshold cannot be set with "
+                    "--postprocess_mode=gpu: the ensemble applies its own NMS "
+                    "and mask thresholds (--min_confidence is still applied to "
+                    "its results)");
+  }
+
+  const std::string output_video = parser.get<std::string>("output_video");
+  if (!timings_csv.empty() && !output_video.empty() &&
+      samePath(timings_csv, output_video)) {
+    rejectArguments("--timings_csv and --output_video name the same file");
+  }
+  for (const auto &output : {timings_csv, output_video}) {
+    if (output.empty()) {
+      continue;
+    }
+    if (samePath(output, neuriplo_infer::RunReport::kDefaultPath)) {
+      rejectArguments(output + " would overwrite the run report");
+    }
+    for (const auto &src : sources) {
+      if (samePath(output, src)) {
+        rejectArguments(output + " would overwrite the source " + src);
+      }
+    }
+  }
 }
 
 } // namespace
@@ -150,6 +313,8 @@ bool isStillImageSource(const std::string &path) {
 AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   cv::CommandLineParser parser(argc, argv, params);
   parser.about("Detect objects from video or image input source");
+  const std::set<std::string> provided =
+      providedOptionKeys(argc, argv, knownOptionKeys(params));
 
   if (parser.has("help")) {
     printHelpMessage(parser);
@@ -170,6 +335,7 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   }
 
   validateArguments(parser);
+  validateRunModes(parser, provided);
 
   AppConfig config;
   std::string source_str = parser.get<std::string>("source");
@@ -184,6 +350,8 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   config.nmsThreshold = parser.get<float>("nms_threshold");
   config.maskThreshold = parser.get<float>("mask_threshold");
   config.segmentationOutput = parser.get<std::string>("segmentation_output");
+  config.segmentation_output_explicit =
+      provided.count("segmentation_output") > 0;
   std::transform(
       config.segmentationOutput.begin(), config.segmentationOutput.end(),
       config.segmentationOutput.begin(),
@@ -292,6 +460,15 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
 
   if (!config.kserve_endpoint.empty() && config.kserve_model_name.empty()) {
     config.kserve_model_name = config.detectorType;
+  }
+
+  // cv::CommandLineParser records a malformed value (--batch=abc,
+  // --min_confidence=high) only when that value is read, and substitutes 0 or
+  // false. The check that turns it into an error therefore runs after every
+  // read, not before them.
+  if (!parser.check()) {
+    parser.printErrors();
+    std::exit(1);
   }
 
   return config;

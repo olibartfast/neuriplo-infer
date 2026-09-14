@@ -179,6 +179,62 @@ std::vector<int64_t> concreteInputShape(const kserve::TensorSpec &spec,
   return shape;
 }
 
+// --input_sizes gives CHW extents without the batch axis. They fill the dynamic
+// trailing dimensions of the matching metadata shape, which the payload size
+// alone cannot resolve when more than one is dynamic.
+void applyInputSizes(std::vector<int64_t> &shape,
+                     const std::vector<std::vector<int64_t>> &input_sizes,
+                     size_t index) {
+  if (index >= input_sizes.size()) {
+    return;
+  }
+  const auto &sizes = input_sizes[index];
+  if (sizes.empty() || sizes.size() > shape.size()) {
+    return;
+  }
+  const size_t offset = shape.size() - sizes.size();
+  for (size_t i = 0; i < sizes.size(); ++i) {
+    if (shape[offset + i] < 0) {
+      shape[offset + i] = sizes[i];
+    }
+  }
+}
+
+// Postprocessors index output tensors by their reported shape, so a payload
+// shorter than that shape would be read past its end. Refused here instead,
+// naming the output. Variable-width tags (BYTES) carry no element size.
+void validateOutputBytes(const kserve::InferOutput &output) {
+  const size_t width = kserve::datatypeByteWidth(output.datatype);
+  if (width == 0) {
+    return;
+  }
+  size_t elements = 1;
+  std::string dims;
+  for (const auto dim : output.shape) {
+    dims += (dims.empty() ? "" : ",") + std::to_string(dim);
+  }
+  for (const auto dim : output.shape) {
+    if (dim < 0) {
+      throw std::runtime_error("KServe output '" + output.name + "' [" + dims +
+                               "] has a negative dimension");
+    }
+    const auto extent = static_cast<size_t>(dim);
+    if (extent != 0 && elements > std::numeric_limits<size_t>::max() / extent) {
+      throw std::runtime_error("KServe output '" + output.name + "' [" + dims +
+                               "] has an element count that overflows");
+    }
+    elements *= extent;
+  }
+  if (elements > std::numeric_limits<size_t>::max() / width ||
+      output.data.size() != elements * width) {
+    throw std::runtime_error("KServe output '" + output.name + "' is " +
+                             output.datatype + " [" + dims + "] and needs " +
+                             std::to_string(elements * width) +
+                             " bytes, but the response carries " +
+                             std::to_string(output.data.size()));
+  }
+}
+
 template <typename Metadata>
 std::string metadataPlatform(const Metadata &metadata) {
   if constexpr (requires { metadata.platform; }) {
@@ -191,7 +247,12 @@ std::string metadataPlatform(const Metadata &metadata) {
 } // namespace
 
 KserveEngine::KserveEngine(std::unique_ptr<kserve::IClient> client)
-    : InferenceInterface("", false, 1), client_(std::move(client)) {
+    : KserveEngine(std::move(client), {}) {}
+
+KserveEngine::KserveEngine(std::unique_ptr<kserve::IClient> client,
+                           std::vector<std::vector<int64_t>> input_sizes)
+    : InferenceInterface("", false, 1), client_(std::move(client)),
+      input_sizes_(std::move(input_sizes)) {
   if (!client_) {
     throw std::runtime_error("KserveEngine requires a non-null client");
   }
@@ -242,7 +303,8 @@ KserveEngine::get_infer_results(
   inputs.reserve(input_tensors.size());
   shapes.reserve(input_tensors.size());
   for (size_t i = 0; i < input_tensors.size(); ++i) {
-    const auto &spec = raw_metadata_.inputs[i];
+    kserve::TensorSpec spec = raw_metadata_.inputs[i];
+    applyInputSizes(spec.shape, input_sizes_, i);
     validateInputBytes(spec, input_tensors[i].size());
     shapes.push_back(concreteInputShape(spec, input_tensors[i].size()));
     // Only one dynamic axis can be inferred from the payload size, and none
@@ -278,6 +340,7 @@ KserveEngine::get_infer_results(
   output_data.reserve(results.size());
   output_shapes.reserve(results.size());
   for (const auto &output : results) {
+    validateOutputBytes(output);
     output_shapes.push_back(output.shape);
     output_data.push_back(bytesToElements(output.data, output.datatype));
   }

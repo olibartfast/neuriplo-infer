@@ -184,23 +184,48 @@ void requireEncodedImageSupport(neuriplo_tasks::TaskType task_type,
   // Only inferFrame sends encoded bytes. These tasks run their own loops that
   // preprocess locally, so they would send dense tensors to an ensemble whose
   // input is an encoded image.
+  // Open-vocabulary detection is refused too: the ensemble contract has a
+  // single IMAGE input, so --text_prompts can never reach the model and would
+  // only relabel whatever queries the server baked in.
   if (task_type == neuriplo_tasks::TaskType::VideoClassification ||
       task_type == neuriplo_tasks::TaskType::OpticalFlow ||
-      task_type == neuriplo_tasks::TaskType::ImageUnderstanding) {
+      task_type == neuriplo_tasks::TaskType::ImageUnderstanding ||
+      task_type == neuriplo_tasks::TaskType::OpenVocabDetection) {
     throw std::runtime_error(
         "--input_mode=encoded-image is not supported for model type '" +
         model_type +
-        "': video classification, optical flow, and image understanding "
-        "need --input_mode=preprocessed");
+        "': video classification, optical flow, image understanding, and "
+        "open-vocabulary detection need --input_mode=preprocessed");
   }
 }
 
 #ifdef NEURIPLO_INFER_WITH_KSERVE
 void requireServerPostprocessMatchesTask(const InferencePipeline &pipeline,
                                          const std::string &model_type) {
-  if (pipeline.server_postprocess) {
-    neuriplo_infer::requireEnvelopeMatchesTask(pipeline.envelope_variant,
-                                               pipeline.task_type, model_type);
+  if (!pipeline.server_postprocess) {
+    return;
+  }
+  neuriplo_infer::requireEnvelopeMatchesTask(pipeline.envelope_variant,
+                                             pipeline.task_type, model_type);
+  // The envelope also fixes mask versus polygon. An explicit
+  // --segmentation_output that disagrees would otherwise be ignored; the
+  // default is not a request, so it follows the ensemble.
+  if (!pipeline.config.segmentation_output_explicit) {
+    return;
+  }
+  const bool mask_envelope =
+      pipeline.envelope_variant == neuriplo_infer::EnvelopeVariant::Mask;
+  const bool polygon_envelope =
+      pipeline.envelope_variant == neuriplo_infer::EnvelopeVariant::Polygon;
+  if ((mask_envelope && pipeline.config.segmentationOutput != "mask") ||
+      (polygon_envelope && pipeline.config.segmentationOutput != "polygon")) {
+    throw std::runtime_error(
+        std::string("--segmentation_output=") +
+        pipeline.config.segmentationOutput +
+        " was requested, but the ensemble "
+        "returns a " +
+        (mask_envelope ? "packed-mask" : "polygon") +
+        " envelope; drop the flag or serve the matching ensemble");
   }
 }
 #endif
@@ -294,7 +319,8 @@ void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
           config_.kserve_endpoint, config_.kserve_model_name,
           config_.kserve_model_version, config_.kserve_timeout_ms);
     }
-    pipeline.engine = std::make_unique<KserveEngine>(std::move(client));
+    pipeline.engine =
+        std::make_unique<KserveEngine>(std::move(client), config_.input_sizes);
     return;
 #endif
   }

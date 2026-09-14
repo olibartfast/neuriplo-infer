@@ -54,7 +54,9 @@ latest_remote_tag() {
     | sed 's#.*refs/tags/##' \
     | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
     | sort -V \
-    | tail -n1
+    | tail -n1 || true
+  # A repo with no release tag makes grep fail; under `set -euo pipefail` that
+  # used to end the script inside the assignment, before the "missing" message.
 }
 
 echo "==> Detecting sibling release tags from their remotes..."

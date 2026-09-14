@@ -1,0 +1,19 @@
+# Fixture for the ci_cache_restore_keys checker: the second cache step has a
+# restore key but no key of its own. It must not be paired with the first
+# step's key just because that key is a few lines above.
+name: fixture
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Cache one
+        uses: actions/cache@v4
+        with:
+          path: a
+          key: ${{ runner.os }}-a-${{ hashFiles('a') }}
+      - name: Cache two
+        uses: actions/cache@v4
+        with:
+          path: b
+          restore-keys: ${{ runner.os }}-a-
