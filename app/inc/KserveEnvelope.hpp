@@ -136,6 +136,29 @@ inline void validateEnvelopeModel(const kserve::ModelMetadata &metadata,
   }
 }
 
+// The envelope a server-side postprocessing ensemble returns fixes the result
+// type, while --type fixes the renderer. A mismatch decoded fine and rendered
+// nothing, so it is refused at setup instead.
+inline void requireEnvelopeMatchesTask(EnvelopeVariant variant,
+                                       neuriplo_tasks::TaskType task_type,
+                                       const std::string &model_type) {
+  const bool detection_envelope = variant == EnvelopeVariant::Detection;
+  const neuriplo_tasks::TaskType expected =
+      detection_envelope ? neuriplo_tasks::TaskType::Detection
+                         : neuriplo_tasks::TaskType::InstanceSegmentation;
+  if (task_type != expected) {
+    throw std::runtime_error(
+        std::string("--postprocess_mode=gpu: the ensemble returns a ") +
+        (detection_envelope                 ? "detection"
+         : variant == EnvelopeVariant::Mask ? "packed-mask segmentation"
+                                            : "polygon segmentation") +
+        " envelope, but --type=" + model_type + " is not " +
+        (detection_envelope ? "an object detection"
+                            : "an instance segmentation") +
+        " model type");
+  }
+}
+
 inline int readDetectionCount(const std::vector<kserve::InferOutput> &outputs) {
   const auto *count = requireEnvelopeTensor(outputs, "NUM_DETECTIONS", "INT32");
   const auto value = envelopeValueAt<int32_t>(*count, 0);

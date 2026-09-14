@@ -337,6 +337,39 @@ TEST(KserveEnvelope, RejectsNegativeMaskOffsets) {
                std::runtime_error);
 }
 
+// A detection renderer draws nothing for segmentation results and the
+// reverse, so a --type that disagrees with the ensemble's envelope used to run
+// "successfully" with no annotations.
+TEST(KserveEnvelope, RejectsAnEnvelopeThatDisagreesWithTheTaskType) {
+  using neuriplo_infer::EnvelopeVariant;
+  using neuriplo_tasks::TaskType;
+  EXPECT_THROW(neuriplo_infer::requireEnvelopeMatchesTask(
+                   EnvelopeVariant::Mask, TaskType::Detection, "yolo"),
+               std::runtime_error);
+  EXPECT_THROW(neuriplo_infer::requireEnvelopeMatchesTask(
+                   EnvelopeVariant::Polygon, TaskType::Detection, "yolo"),
+               std::runtime_error);
+  EXPECT_THROW(neuriplo_infer::requireEnvelopeMatchesTask(
+                   EnvelopeVariant::Detection, TaskType::InstanceSegmentation,
+                   "yoloseg"),
+               std::runtime_error);
+  EXPECT_THROW(
+      neuriplo_infer::requireEnvelopeMatchesTask(
+          EnvelopeVariant::Detection, TaskType::PoseEstimation, "yolov8pose"),
+      std::runtime_error);
+}
+
+TEST(KserveEnvelope, AcceptsAnEnvelopeThatMatchesTheTaskType) {
+  using neuriplo_infer::EnvelopeVariant;
+  using neuriplo_tasks::TaskType;
+  EXPECT_NO_THROW(neuriplo_infer::requireEnvelopeMatchesTask(
+      EnvelopeVariant::Detection, TaskType::Detection, "yolo"));
+  EXPECT_NO_THROW(neuriplo_infer::requireEnvelopeMatchesTask(
+      EnvelopeVariant::Mask, TaskType::InstanceSegmentation, "yoloseg"));
+  EXPECT_NO_THROW(neuriplo_infer::requireEnvelopeMatchesTask(
+      EnvelopeVariant::Polygon, TaskType::InstanceSegmentation, "yoloseg"));
+}
+
 TEST(KserveEnvelope, RecognisesDecodedAndPassthroughModels) {
   kserve::ModelMetadata passthrough;
   passthrough.outputs.push_back({"output0", "FP32", {1, 84, 8400}});
