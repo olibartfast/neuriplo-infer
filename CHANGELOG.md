@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-09-18
+
+### Known limitations
+- `--input_mode=encoded-image` against a model whose input declares a dynamic
+  dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
+  request shape to equal the metadata exactly. This client sends a concrete
+  extent; it needs a runtime release that treats negative metadata dimensions as
+  wildcards.
+- `--output_video` writes at a fixed 30 fps, since the pinned videocapture
+  capture interface still does not report the source frame rate.
+- The run report has no separate figure for time spent waiting on the video
+  writer. Backpressure is accumulated into the render stage, so a run slowed by
+  the encoder is indistinguishable there from a run slowed by drawing
+  ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)).
+- A frame that fails to encode is reported by the first `--output_video` write
+  after the failure, not by the write that submitted it, so the frame index in
+  the error message is where the run noticed rather than the frame that failed.
+- neuriplo-platform's capabilities contract still documents schema version 1;
+  this release emits version 2.
+- A video whose read fails mid-stream (an I/O error, a dropped network stream)
+  is indistinguishable from its end through the pinned videocapture interface,
+  so it is reported as read to its end.
+
 ### Changed
 - Pinned `videocapture` to `v0.6.0` (was `v0.5.0`). `--output_video` now encodes
   on the writer's own thread behind a bounded queue instead of on the frame
