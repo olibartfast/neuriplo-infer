@@ -250,7 +250,10 @@ TEST(FrameConversionTest, ToFrameRoundTripWritesAndReadsBackAVideo) {
     cv::randu(mat, cv::Scalar(i, i, i), cv::Scalar(i + 1, i + 1, i + 1));
     EXPECT_TRUE(writer->writeFrame(neuriplo_infer::toFrame(mat)));
   }
-  writer->release();
+  // Checked, not discarded: since videocapture v0.6.0 release() reports
+  // whether every accepted frame was encoded and the container finalized, and
+  // the re-read below only means something if it was.
+  EXPECT_TRUE(writer->release());
 
   std::unique_ptr<VideoCaptureInterface> reader = createVideoInterface();
   ASSERT_TRUE(reader);
