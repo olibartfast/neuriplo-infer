@@ -111,7 +111,7 @@ Packet: [`2026-08-31-opencv-free-app/`](2026-08-31-opencv-free-app/requirements.
 
 ---
 
-## Phase 7 — Move `--output_video` encoding off the frame loop · in progress
+## Phase 7 — Move `--output_video` encoding off the frame loop · done
 
 `--output_video` encoded every annotated frame on the frame loop's thread,
 capping a run near 25 fps at 1440p `.mp4` regardless of how fast the backend
@@ -123,10 +123,11 @@ This repo moves the pin and acts on the result.
 
 Packet: [`2026-09-17-async-video-writer/`](2026-09-17-async-video-writer/requirements.md).
 
-- Done when: `versions.env` pins `videocapture` `v0.6.0`, a destination that
-  could not be encoded or finalized fails the run and counts no sample, the
-  existing output-video tests pass unchanged, and a clip's wall-clock with and
-  without `--output_video` is recorded against the v0.5.0 figures in #49.
+- Done: `versions.env` pins `v0.6.0`, a destination that could not be completed
+  fails the run, the existing output-video tests pass unchanged (193/193), and
+  the throughput measurement is recorded in the packet's `validation.md` —
+  +39% at 1080p and +56% at 1440p end-to-end once the caller has work to
+  overlap, with per-write cost on the frame loop down to the hand-off.
 - Deferred to a follow-up, not a blocker for closing #49: a separate writer
   queue-wait figure in the run report. Backpressure is now inside the render
   stage total, so a run slowed by the encoder looks like a run slowed by
