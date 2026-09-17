@@ -61,11 +61,17 @@ encode or finalize fails the run.
 
 - **The destructor is not the place to report a failed file.** `release()` now
   returns a result worth acting on, but a destructor that throws during stack
-  unwinding terminates the process. So the normal path closes explicitly
-  (`OutputVideoSink::finish()`) and throws there; the destructor releases
-  whatever is still open and logs instead of throwing, which keeps the
-  early-exit (`q`/Escape) and exception paths finalizing the file as they do
-  today.
+  unwinding terminates the process. So every path that ends a run normally
+  closes explicitly through `OutputVideoSink::finish()` and throws there, while
+  the destructor releases whatever is still open and logs instead.
+- **An early `q`/Escape closes through `finish()` too, and can fail the run.**
+  It is the operator ending the run, not the run failing, so it reaches the
+  same close as a source read to its end. The file it produced is still an
+  artifact the operator asked for: if the container could not be finalized, the
+  truncated result is worth a message and a non-zero exit, which is the whole
+  point of reading `release()`. The destructor's quiet path is then what it
+  should be -- unwinding, where an exception is already on its way up and a
+  second one would terminate the process.
 - **A failed finalize is a failed run, not a warning.** It is the same class of
   fault as `writeFrame()` returning `false`, which already throws: the operator
   asked for a playable artifact and did not get one. Exit code and the run

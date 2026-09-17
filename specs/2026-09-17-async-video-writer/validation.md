@@ -147,9 +147,14 @@ already-recorded `OPENCV_DNN` limitation, not a writer fault.)
 
 *Deviation:* `q`/Escape needs a preview window and an interactive session, which
 this environment does not have (`--no_display` is what makes the run possible at
-all). The path is covered by `TheDestructorStillFinalizesAnEarlyExit` and
+all). Reading the path instead: an early stop leaves the loop and reaches the
+same close as a source read to its end, so it finalizes through `finish()` and
+is held to the same rule -- a container that could not be completed fails that
+run too. What the destructor still covers is unwinding, exercised by
+`TheDestructorStillFinalizesAnUnfinishedSink` and
 `TheDestructorDoesNotThrowOnAFailedFinalize`, which destroy the sink without
-calling `finish()` and assert the writer was still released exactly once.
+calling `finish()` and assert the writer was still released exactly once and
+that nothing was thrown.
 
 ### M-3 — where the throughput went
 
@@ -195,6 +200,23 @@ there, which is why finalization happens before the source is counted.
 Every relative link added to `specs/roadmap.md` and this packet resolves
 (`ls`-checked); `https://github.com/olibartfast/neuriplo-infer/issues/49`
 returns `HTTP/2 200`.
+
+### Review follow-ups (2026-09-17, after PR #55 review)
+
+- The nine sink tests kept a raw pointer to the `FakeWriter` the sink owns and
+  read it after the sink was destroyed — a use-after-free in the destructor
+  cases. Counters and outcomes now live in a `shared_ptr<FakeWriterState>` that
+  outlives the writer. Re-run: 193/193.
+- `finish()` ran outside any `StageTimer`, so the queue drain it waits for
+  (14–85 ms above) was missing from `stages_ms.render` — the render total would
+  have understated output work by exactly what moved off the frame loop. Both
+  call sites now wrap it in a `RunStage::Render` timer.
+- The reviewer also proposed calling `finish()` only when `read_to_end`, leaving
+  an early `q`/Escape to the non-throwing destructor. Not taken: that reinstates
+  the behavior this branch removes, a truncated file behind an exit code of `0`,
+  for the one case where the operator is watching. The spec text it was reading
+  (the decision in `requirements.md`) said the destructor covered the early-stop
+  path; the code never did, and the text is what was wrong.
 
 ### Deviations summary
 

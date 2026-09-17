@@ -24,52 +24,68 @@ namespace {
 // on demand: cv::VideoWriter returns nothing from write() or release(), and a
 // write that runs out of disk is silently truncated. So the outcomes are set
 // here rather than provoked through a codec.
+//
+// The sink owns the writer, and the destructor cases assert after the sink is
+// gone, so what the test reads has to outlive the writer: the outcomes and the
+// counters live in a state object both of them share.
+struct FakeWriterState {
+  bool initialize_result = true;
+  bool write_result = true;
+  bool release_result = true;
+
+  std::string destination;
+  videocapture::VideoWriterConfig config;
+  std::vector<std::size_t> frame_sizes;
+  int copied_frames = 0;
+  int moved_frames = 0;
+  int releases = 0;
+  bool open = false;
+};
+
 class FakeWriter : public VideoWriterInterface {
 public:
+  explicit FakeWriter(std::shared_ptr<FakeWriterState> state)
+      : state_(std::move(state)) {}
+
   bool initialize(const std::string &destination,
                   const videocapture::VideoWriterConfig &config) override {
-    destination_ = destination;
-    config_ = config;
-    open_ = initialize_result_;
-    return initialize_result_;
+    state_->destination = destination;
+    state_->config = config;
+    state_->open = state_->initialize_result;
+    return state_->initialize_result;
   }
 
   bool writeFrame(const videocapture::Frame &frame) override {
-    copied_frames_ += 1;
+    state_->copied_frames += 1;
     return recordFrame(frame);
   }
 
   bool writeFrame(videocapture::Frame &&frame) override {
-    moved_frames_ += 1;
+    state_->moved_frames += 1;
     return recordFrame(frame);
   }
 
-  [[nodiscard]] bool isOpen() const override { return open_; }
+  [[nodiscard]] bool isOpen() const override { return state_->open; }
 
   bool release() override {
-    releases_ += 1;
-    open_ = false;
-    return release_result_;
+    state_->releases += 1;
+    state_->open = false;
+    return state_->release_result;
   }
-
-  bool initialize_result_ = true;
-  bool write_result_ = true;
-  bool release_result_ = true;
-
-  std::string destination_;
-  videocapture::VideoWriterConfig config_;
-  std::vector<std::size_t> frame_sizes_;
-  int copied_frames_ = 0;
-  int moved_frames_ = 0;
-  int releases_ = 0;
-  bool open_ = false;
 
 private:
   bool recordFrame(const videocapture::Frame &frame) {
-    frame_sizes_.push_back(frame.storageSizeBytes());
-    return write_result_;
+    state_->frame_sizes.push_back(frame.storageSizeBytes());
+    return state_->write_result;
   }
+
+  std::shared_ptr<FakeWriterState> state_;
 };
+
+std::unique_ptr<VideoWriterInterface>
+fakeWriter(const std::shared_ptr<FakeWriterState> &state) {
+  return std::make_unique<FakeWriter>(state);
+}
 
 videocapture::Frame makeFrame(int width = 4, int height = 4) {
   return videocapture::Frame(width, height, videocapture::PixelFormat::BGR8);
@@ -83,28 +99,27 @@ std::filesystem::path destinationFor(const std::string &name) {
 } // namespace
 
 TEST(OutputVideoSinkTest, FinishReportsADestinationThatCouldNotBeCompleted) {
-  auto writer = std::make_unique<FakeWriter>();
-  writer->release_result_ = false;
-  auto *raw = writer.get();
+  auto state = std::make_shared<FakeWriterState>();
+  state->release_result = false;
   const auto destination = destinationFor("failed_finalize.avi");
 
   neuriplo_infer::OutputVideoSink sink(destination.string(), 4, 4,
-                                       std::move(writer));
+                                       fakeWriter(state));
   sink.write(makeFrame(), 0);
 
   // The frame was accepted; the encoder failed behind it, which only release()
   // can report. A run that ignored this would exit 0 over a truncated file.
   EXPECT_THROW(sink.finish(), std::runtime_error);
-  EXPECT_EQ(raw->releases_, 1);
+  EXPECT_EQ(state->releases, 1);
 }
 
 TEST(OutputVideoSinkTest, FinishNamesTheDestinationItCouldNotComplete) {
-  auto writer = std::make_unique<FakeWriter>();
-  writer->release_result_ = false;
+  auto state = std::make_shared<FakeWriterState>();
+  state->release_result = false;
   const auto destination = destinationFor("named_destination.avi");
 
   neuriplo_infer::OutputVideoSink sink(destination.string(), 4, 4,
-                                       std::move(writer));
+                                       fakeWriter(state));
   try {
     sink.finish();
     FAIL() << "finish() accepted a destination the writer did not complete";
@@ -116,68 +131,64 @@ TEST(OutputVideoSinkTest, FinishNamesTheDestinationItCouldNotComplete) {
 }
 
 TEST(OutputVideoSinkTest, FinishReleasesOnceAndTheDestructorDoesNotRepeatIt) {
-  auto writer = std::make_unique<FakeWriter>();
-  auto *raw = writer.get();
+  auto state = std::make_shared<FakeWriterState>();
   {
     neuriplo_infer::OutputVideoSink sink(
-        destinationFor("released_once.avi").string(), 4, 4, std::move(writer));
+        destinationFor("released_once.avi").string(), 4, 4, fakeWriter(state));
     sink.finish();
     sink.finish(); // Idempotent: a second close is not a second finalize.
-    EXPECT_EQ(raw->releases_, 1);
+    EXPECT_EQ(state->releases, 1);
   }
-  EXPECT_EQ(raw->releases_, 1);
+  EXPECT_EQ(state->releases, 1);
 }
 
-TEST(OutputVideoSinkTest, TheDestructorStillFinalizesAnEarlyExit) {
-  auto writer = std::make_unique<FakeWriter>();
-  auto *raw = writer.get();
+TEST(OutputVideoSinkTest, TheDestructorStillFinalizesAnUnfinishedSink) {
+  auto state = std::make_shared<FakeWriterState>();
   {
-    // The q/Escape path: the sink is destroyed without finish() ever running.
+    // What unwinding does: the sink is destroyed without finish() ever running.
     neuriplo_infer::OutputVideoSink sink(
-        destinationFor("early_exit.avi").string(), 4, 4, std::move(writer));
+        destinationFor("unfinished.avi").string(), 4, 4, fakeWriter(state));
     sink.write(makeFrame(), 0);
   }
-  EXPECT_EQ(raw->releases_, 1);
+  EXPECT_EQ(state->releases, 1);
 }
 
 TEST(OutputVideoSinkTest, TheDestructorDoesNotThrowOnAFailedFinalize) {
-  auto writer = std::make_unique<FakeWriter>();
-  writer->release_result_ = false;
-  auto *raw = writer.get();
+  auto state = std::make_shared<FakeWriterState>();
+  state->release_result = false;
   // Throwing here would run during unwinding and terminate the process, so the
   // destructor logs instead. The failure is reported by finish() on the paths
-  // that reach it.
+  // that reach it, which is every path that is not already failing.
   EXPECT_NO_THROW({
     neuriplo_infer::OutputVideoSink sink(
         destinationFor("failed_finalize_dtor.avi").string(), 4, 4,
-        std::move(writer));
+        fakeWriter(state));
     sink.write(makeFrame(), 0);
   });
-  EXPECT_EQ(raw->releases_, 1);
+  EXPECT_EQ(state->releases, 1);
 }
 
 TEST(OutputVideoSinkTest, FramesAreHandedOverByMoveNotCopied) {
-  auto writer = std::make_unique<FakeWriter>();
-  auto *raw = writer.get();
+  auto state = std::make_shared<FakeWriterState>();
   neuriplo_infer::OutputVideoSink sink(
-      destinationFor("moved_frames.avi").string(), 4, 4, std::move(writer));
+      destinationFor("moved_frames.avi").string(), 4, 4, fakeWriter(state));
 
   sink.write(makeFrame(), 0);
   sink.write(makeFrame(), 1);
 
   // The rvalue overload is what lets the encoder thread take the pixels
-  // instead of copying them; a lvalue hand-off would still compile and still
+  // instead of copying them; an lvalue hand-off would still compile and still
   // write the file, so it is asserted rather than assumed.
-  EXPECT_EQ(raw->moved_frames_, 2);
-  EXPECT_EQ(raw->copied_frames_, 0);
+  EXPECT_EQ(state->moved_frames, 2);
+  EXPECT_EQ(state->copied_frames, 0);
   sink.finish();
 }
 
 TEST(OutputVideoSinkTest, ARejectedFrameFailsTheRunNamingItsIndex) {
-  auto writer = std::make_unique<FakeWriter>();
-  writer->write_result_ = false;
+  auto state = std::make_shared<FakeWriterState>();
+  state->write_result = false;
   neuriplo_infer::OutputVideoSink sink(
-      destinationFor("rejected_frame.avi").string(), 4, 4, std::move(writer));
+      destinationFor("rejected_frame.avi").string(), 4, 4, fakeWriter(state));
 
   try {
     sink.write(makeFrame(), 7);
@@ -188,29 +199,28 @@ TEST(OutputVideoSinkTest, ARejectedFrameFailsTheRunNamingItsIndex) {
 }
 
 TEST(OutputVideoSinkTest, AWriterThatCannotOpenItsDestinationFailsImmediately) {
-  auto writer = std::make_unique<FakeWriter>();
-  writer->initialize_result_ = false;
+  auto state = std::make_shared<FakeWriterState>();
+  state->initialize_result = false;
 
   EXPECT_THROW(
       neuriplo_infer::OutputVideoSink(destinationFor("unopenable.avi").string(),
-                                      4, 4, std::move(writer)),
+                                      4, 4, fakeWriter(state)),
       std::runtime_error);
 }
 
 TEST(OutputVideoSinkTest, TheDestinationsParentDirectoryIsCreated) {
-  auto writer = std::make_unique<FakeWriter>();
-  auto *raw = writer.get();
+  auto state = std::make_shared<FakeWriterState>();
   const auto destination =
       destinationFor("nested_parent") / "deeper" / "annotated.avi";
   std::filesystem::remove_all(destination.parent_path().parent_path());
 
   neuriplo_infer::OutputVideoSink sink(destination.string(), 8, 6,
-                                       std::move(writer));
+                                       fakeWriter(state));
 
   EXPECT_TRUE(std::filesystem::is_directory(destination.parent_path()));
-  EXPECT_EQ(raw->destination_, destination.string());
-  EXPECT_EQ(raw->config_.width, 8);
-  EXPECT_EQ(raw->config_.height, 6);
+  EXPECT_EQ(state->destination, destination.string());
+  EXPECT_EQ(state->config.width, 8);
+  EXPECT_EQ(state->config.height, 6);
   sink.finish();
   std::filesystem::remove_all(destination.parent_path().parent_path());
 }

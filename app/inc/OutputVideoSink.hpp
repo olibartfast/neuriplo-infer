@@ -30,10 +30,12 @@ public:
   OutputVideoSink(const std::string &destination, int width, int height,
                   std::unique_ptr<VideoWriterInterface> writer);
 
-  // Last resort only, for the paths finish() never reaches: an early q/Escape
-  // or an exception on its way out. It cannot report what it finds -- throwing
-  // here during unwinding terminates the process -- so it logs, and the normal
-  // path closes through finish() instead.
+  // Last resort, for the paths finish() never reaches -- an exception on its
+  // way out, a caller that forgot. It cannot report what it finds: throwing
+  // here during unwinding terminates the process, and the failure already
+  // travelling up is the one worth reporting. So it logs. Every path that ends
+  // a run normally, including an operator stopping it early with q/Escape,
+  // closes through finish() instead.
   ~OutputVideoSink();
 
   OutputVideoSink(const OutputVideoSink &) = delete;

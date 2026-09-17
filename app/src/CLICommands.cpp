@@ -512,8 +512,13 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   // Finalizing the container is part of producing the artifact, so it happens
   // before the source is counted as processed, not after. finish() rather than
   // reset(): the encoder thread may still be draining, and a frame that failed
-  // there is only reported here.
+  // there is only reported here. Timed as render work like the frames were:
+  // the drain is the encode that the loop no longer waits for, and leaving it
+  // untimed would understate the output cost by exactly what moved off the
+  // frame loop.
   if (output_sink) {
+    neuriplo_infer::StageTimer finish_timer(pipeline.report,
+                                            neuriplo_infer::RunStage::Render);
     output_sink->finish();
   }
   output_sink.reset();
@@ -674,8 +679,11 @@ void processVideoClassification(InferencePipeline &pipeline,
                              " produced no frames, so no video was written");
   }
   // Same rule as processVideo: finalize the file, and report a destination
-  // that could not be completed, before counting the sample.
+  // that could not be completed, before counting the sample -- and time the
+  // drain as render work.
   if (output_sink) {
+    neuriplo_infer::StageTimer finish_timer(pipeline.report,
+                                            neuriplo_infer::RunStage::Render);
     output_sink->finish();
   }
   output_sink.reset();
