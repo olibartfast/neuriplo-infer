@@ -20,6 +20,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <utility>
 
 namespace {
 
@@ -406,7 +407,8 @@ private:
 // complete playable file even when the run stops early.
 class OutputVideoSink {
 public:
-  OutputVideoSink(const std::string &destination, int width, int height) {
+  OutputVideoSink(const std::string &destination, int width, int height)
+      : destination_(destination) {
     // Same as the timings CSV and the run report: a destination below a
     // directory that does not exist yet is created rather than refused.
     const std::filesystem::path destination_path(destination);
@@ -430,27 +432,62 @@ public:
           destination);
     }
   }
-  ~OutputVideoSink() { writer_->release(); }
+  // Last resort only, for the paths finish() never reaches: an early q/Escape
+  // or an exception on its way out. It cannot report what it finds -- throwing
+  // here during unwinding terminates the process -- so it logs, and the normal
+  // path closes through finish() instead.
+  ~OutputVideoSink() {
+    if (released_) {
+      return;
+    }
+    if (!writer_->release()) {
+      LOG(ERROR) << "--output_video: " << destination_
+                 << " was not completed: a frame failed to encode or the "
+                    "container could not be finalized";
+    }
+  }
   OutputVideoSink(const OutputVideoSink &) = delete;
   OutputVideoSink &operator=(const OutputVideoSink &) = delete;
   // writeFrame false is a failed run, not a skippable frame.
   //
-  // Synchronous on the frame loop's thread. Measured per frame with the OpenCV
-  // writer and Auto codec on an i5-11400H: ~10.6 ms at 720p .mp4, ~22.8 ms at
-  // 1080p, ~38.8 ms at 1440p (.avi/MJPG roughly 1.5x that). It runs after the
-  // inference span and counts as render time, so per-inference latency is not
-  // skewed, but it bounds end-to-end throughput. Moving it behind a bounded
-  // queue is tracked in issue #49.
+  // Since videocapture v0.6.0 the writer encodes on a thread of its own behind
+  // a bounded queue, so this hands the frame over rather than encoding it:
+  // what the frame loop still pays is the toFrame() copy plus the hand-off,
+  // and the wait when the encoder falls behind. Frames keep submission order
+  // and are never dropped. Both the hand-off and any backpressure wait land in
+  // the render stage, after the inference span, so per-inference latency is
+  // unaffected. A frame that fails to encode is reported by the next
+  // writeFrame() or by release(), not by the call that submitted it -- which
+  // is why finish() has to be checked and not only the calls below.
   void write(videocapture::Frame frame, std::size_t frame_index) {
-    if (!writer_->writeFrame(frame)) {
+    if (!writer_->writeFrame(std::move(frame))) {
       throw std::runtime_error(
           "--output_video: video writer failed to write frame " +
           std::to_string(frame_index));
     }
   }
 
+  // Encodes every accepted frame, finalizes the container, and reports the
+  // outcome -- the counterpart of FrameTimingsCsv::finish(). A destination the
+  // operator asked for and did not get is a failed run, not a warning, so this
+  // throws rather than logging. Called on the normal path before the source is
+  // counted as processed; the destructor covers the rest.
+  void finish() {
+    if (released_) {
+      return;
+    }
+    released_ = true;
+    if (!writer_->release()) {
+      throw std::runtime_error(
+          "--output_video: could not complete " + destination_ +
+          ": a frame failed to encode or the container could not be finalized");
+    }
+  }
+
 private:
   std::unique_ptr<VideoWriterInterface> writer_;
+  std::string destination_;
+  bool released_ = false;
 };
 #endif
 
@@ -564,7 +601,12 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
                              " produced no frames, so no video was written");
   }
   // Finalizing the container is part of producing the artifact, so it happens
-  // before the source is counted as processed, not after.
+  // before the source is counted as processed, not after. finish() rather than
+  // reset(): the encoder thread may still be draining, and a frame that failed
+  // there is only reported here.
+  if (output_sink) {
+    output_sink->finish();
+  }
   output_sink.reset();
 #endif
   // One video read to its end is one sample, however many frames it held. A
@@ -722,7 +764,11 @@ void processVideoClassification(InferencePipeline &pipeline,
     throw std::runtime_error("--output_video: " + source +
                              " produced no frames, so no video was written");
   }
-  // Same rule as processVideo: finalize the file before counting the sample.
+  // Same rule as processVideo: finalize the file, and report a destination
+  // that could not be completed, before counting the sample.
+  if (output_sink) {
+    output_sink->finish();
+  }
   output_sink.reset();
 #endif
   // Same rule as processVideo: only a video read to its end is a sample.
