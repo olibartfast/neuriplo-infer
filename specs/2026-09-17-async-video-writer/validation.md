@@ -215,6 +215,15 @@ returns `HTTP/2 200`.
   (14–85 ms above) was missing from `stages_ms.render` — the render total would
   have understated output work by exactly what moved off the frame loop. Both
   call sites now wrap it in a `RunStage::Render` timer.
+- A second review pass (2026-09-18) found two more, both taken. The thrown
+  message named the frame the run noticed a failure on as though it were the
+  frame that failed: the encoder holds up to four frames and reports through
+  the first call after the failure, so it now reads "at or before frame N".
+  And in `processVideoClassification` the pre-window write — every written
+  frame on a clip shorter than one window — sat outside any `StageTimer`, so
+  the output cost this packet says lands in the render stage did not. It is
+  timed now. That one was a pre-existing gap the packet's own wording turned
+  into a contradiction.
 - The reviewer also proposed calling `finish()` only when `read_to_end`, leaving
   an early `q`/Escape to the non-throwing destructor. Not taken: that reinstates
   the behavior this branch removes, a truncated file behind an exit code of `0`,

@@ -49,6 +49,10 @@ public:
   // never dropped. Both the hand-off and any backpressure wait land in the
   // render stage, after the inference span, so per-inference latency is
   // unaffected.
+  //
+  // frame_index is where the run noticed a failure, not necessarily the frame
+  // that failed: the encoder holds a few frames, and a failure is reported by
+  // the first call after it happened. The message says so.
   void write(videocapture::Frame frame, std::size_t frame_index);
 
   // Encodes every accepted frame, finalizes the container, and reports the

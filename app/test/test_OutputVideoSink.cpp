@@ -194,7 +194,11 @@ TEST(OutputVideoSinkTest, ARejectedFrameFailsTheRunNamingItsIndex) {
     sink.write(makeFrame(), 7);
     FAIL() << "a rejected frame was treated as skippable";
   } catch (const std::runtime_error &error) {
-    EXPECT_NE(std::string(error.what()).find("frame 7"), std::string::npos);
+    const std::string message = error.what();
+    // "at or before", because the encoder holds a few frames and reports a
+    // failure through the first call after it: the index is where the run
+    // noticed, and claiming it is the frame that failed would be wrong.
+    EXPECT_NE(message.find("at or before frame 7"), std::string::npos);
   }
 }
 

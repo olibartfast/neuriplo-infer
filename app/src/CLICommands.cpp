@@ -602,6 +602,11 @@ void processVideoClassification(InferencePipeline &pipeline,
     // written unannotated so the output keeps every source frame exactly once,
     // and a video shorter than one window still produces its file.
     if (output_sink && static_cast<int>(frameBuffer.size()) < requiredFrames) {
+      // Timed as render work like every other written frame: on a clip shorter
+      // than one window every frame goes out through here, so leaving it
+      // untimed would keep the whole output cost out of the run report.
+      neuriplo_infer::StageTimer render_timer(pipeline.report,
+                                              neuriplo_infer::RunStage::Render);
       output_sink->write(neuriplo_infer::toFrame(image), frame_index - 1);
     }
 #endif
