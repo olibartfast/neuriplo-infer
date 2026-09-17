@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-09-18
+
+### Known limitations
+- `--input_mode=encoded-image` against a model whose input declares a dynamic
+  dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
+  request shape to equal the metadata exactly. This client sends a concrete
+  extent; it needs a runtime release that treats negative metadata dimensions as
+  wildcards.
+- `--output_video` writes at a fixed 30 fps, since the pinned videocapture
+  capture interface still does not report the source frame rate.
+- The run report has no separate figure for time spent waiting on the video
+  writer. Backpressure is accumulated into the render stage, so a run slowed by
+  the encoder is indistinguishable there from a run slowed by drawing
+  ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)).
+- A frame that fails to encode is reported by the first `--output_video` write
+  after the failure, not by the write that submitted it, so the frame index in
+  the error message is where the run noticed rather than the frame that failed.
+- neuriplo-platform's capabilities contract still documents schema version 1;
+  this release emits version 2.
+- A video whose read fails mid-stream (an I/O error, a dropped network stream)
+  is indistinguishable from its end through the pinned videocapture interface,
+  so it is reported as read to its end.
+
+### Changed
+- Pinned `videocapture` to `v0.6.0` (was `v0.5.0`). `--output_video` now encodes
+  on the writer's own thread behind a bounded queue instead of on the frame
+  loop, which resolves the `[0.10.0]` known limitation that every annotated
+  frame cost about 11 / 23 / 39 ms of loop time at 720p / 1080p / 1440p `.mp4`
+  ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)). Frames keep
+  submission order and are never dropped: when the encoder falls behind, the
+  loop waits for it, and that wait is attributed to the render stage as the
+  encode was. What the loop still pays per frame is the `cv::Mat → Frame` copy
+  and the hand-off, which the new `writeFrame(Frame&&)` overload takes without
+  copying the pixels again. Measured against `v0.5.0` on the same machine, with
+  per-frame work on the calling thread standing in for inference: +39% frames
+  per second at 1080p and +56% at 1440p. A separate queue-wait figure in the run
+  report is not part of this change.
+- Building with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON` now needs a C++20
+  standard library providing `std::jthread`, stop-aware waits, and
+  `std::osyncstream` — the reason `videocapture` ships its packaged macOS
+  builds capture-only. Linux is unaffected; capture-only builds are unchanged.
+
+### Fixed
+- `--output_video` fails the run when its destination could not be completed.
+  The writer reports at `release()` whether every accepted frame was encoded
+  and the container finalized; that result was discarded, so a truncated file
+  was left behind a run that exited `0` — the `[0.10.0]` known limitation that
+  a container that could not be finalized was logged by the writer but not
+  reported to the caller. An early `q`/Escape finalizes the file as before and
+  is held to the same rule: the frames written so far are an artifact that was
+  asked for, so a container that could not be completed fails that run too. A
+  run already ending in an exception keeps reporting that exception, with the
+  finalization failure logged rather than thrown.
+
 ## [0.10.0] - 2026-09-14
 
 ### Known limitations

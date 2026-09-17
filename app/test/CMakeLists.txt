@@ -36,6 +36,7 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_NeuriploInfer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_InferencePipelineBuilder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_FrameConversion.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_OutputVideoSink.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_ModelInputTypes.cpp
     # The pure KServe protocol/retry/security suites live in the
     # neuriplo-kserve-client repo; only the adapter test stays here.

@@ -5,6 +5,9 @@ set(APP_LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FrameConversion.cpp
+    # Compiles to nothing unless videocapture exports VIDEOCAPTURE_WITH_WRITER,
+    # i.e. unless NEURIPLO_INFER_WITH_VIDEOWRITER turned the writer on.
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/OutputVideoSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ResultRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInferTaskRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
