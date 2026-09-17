@@ -33,6 +33,11 @@ encode or finalize fails the run.
   this release resolves are recorded as resolved in `[Unreleased]`.
 - Build modes covered: `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON` (the writer path)
   and the default writer-less build, which must keep compiling untouched.
+- Added during implementation, not planned up front: `OutputVideoSink` moves out
+  of `app/src/CLICommands.cpp` into `app/inc/OutputVideoSink.hpp` plus
+  `app/src/OutputVideoSink.cpp`, with a second constructor that takes the writer
+  to drive. Without it the failure this branch introduces cannot be tested at
+  all — see the decision below.
 
 ## Out of Scope
 
@@ -69,6 +74,14 @@ encode or finalize fails the run.
   `output_sink.reset()` does today — producing the artifact is part of
   processing the source, so a source whose file could not be finalized is not
   a completed sample.
+- **The failure path gets a seam, because the backend cannot provide one.**
+  A destination that cannot be completed is what this branch teaches the app to
+  report, so it has to be tested; the OpenCV writer backend reports nothing from
+  `write()` or `release()`, and a write past the file-size limit is silently
+  truncated with the writer still open (measured, `validation.md`). No
+  destination produces the failure, so the sink takes its writer as a
+  constructor argument and the tests supply one. The frame loops keep using the
+  backend-selecting constructor.
 - **No app-side writer thread.** The queue and thread belong in `videocapture`,
   which now has them; adding a second layer in the app would duplicate the
   buffering and the ordering guarantee. This is why #49's proposal is satisfied

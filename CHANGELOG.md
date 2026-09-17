@@ -16,8 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   loop waits for it, and that wait is attributed to the render stage as the
   encode was. What the loop still pays per frame is the `cv::Mat → Frame` copy
   and the hand-off, which the new `writeFrame(Frame&&)` overload takes without
-  copying the pixels again. A separate queue-wait figure in the run report is
-  not part of this change.
+  copying the pixels again. Measured against `v0.5.0` on the same machine, with
+  per-frame work on the calling thread standing in for inference: +39% frames
+  per second at 1080p and +56% at 1440p. A separate queue-wait figure in the run
+  report is not part of this change.
 - Building with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON` now needs a C++20
   standard library providing `std::jthread`, stop-aware waits, and
   `std::osyncstream` — the reason `videocapture` ships its packaged macOS
