@@ -81,7 +81,7 @@ neuriplo-infer --capabilities
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--no_display` | `false` | Do not open the preview window. Needed for video without a screen. |
-| `--output_video=<path>` | — | Write the annotated video (fixed 30 fps, codec auto-selected, container from the extension). Only in builds configured with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`; image sources are rejected. |
+| `--output_video=<path>` | — | Write the annotated video (fixed 30 fps, codec auto-selected, container from the extension). Encoding runs on the writer's own thread, so it does not serialize with the frame loop; frames keep their order and none are dropped. A destination that could not be encoded or finalized fails the run rather than leaving a truncated file. Only in builds configured with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`; image sources are rejected. |
 | `--timings_csv=<path>` | — | Write one row per inference (`frame,latency_us`) for a video run; rejected for image, text, and metadata runs. Parent directories are created; the file is opened before the first frame. |
 | `--warmup` | `false` | GPU warmup before inference; single still-image runs only, rejected otherwise. |
 | `--benchmark`, `--iterations=<n>` | `false`, `10` | Repeat inference and report the average time; single still-image runs only, rejected otherwise. |
