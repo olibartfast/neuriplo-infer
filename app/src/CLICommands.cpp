@@ -4,8 +4,7 @@
 #include "VideoCaptureFactory.hpp"
 #include "utils.hpp"
 #ifdef VIDEOCAPTURE_WITH_WRITER
-#include "VideoWriterConfig.hpp"
-#include "VideoWriterFactory.hpp"
+#include "OutputVideoSink.hpp"
 #endif
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 #ifdef NEURIPLO_INFER_WITH_KSERVE
@@ -401,96 +400,6 @@ private:
   std::string path_;
 };
 
-#ifdef VIDEOCAPTURE_WITH_WRITER
-// RAII over the videocapture writer: creates and initializes exactly once
-// and guarantees release() on every exit path, so the destination is a
-// complete playable file even when the run stops early.
-class OutputVideoSink {
-public:
-  OutputVideoSink(const std::string &destination, int width, int height)
-      : destination_(destination) {
-    // Same as the timings CSV and the run report: a destination below a
-    // directory that does not exist yet is created rather than refused.
-    const std::filesystem::path destination_path(destination);
-    if (destination_path.has_parent_path()) {
-      std::filesystem::create_directories(destination_path.parent_path());
-    }
-    videocapture::VideoWriterConfig config;
-    config.width = width;
-    config.height = height;
-    config.frameRate = 30.0;
-    config.codec = videocapture::VideoCodec::Auto;
-    writer_ = createVideoWriter();
-    if (!writer_) {
-      throw std::runtime_error(
-          "--output_video: no writer backend available for destination: " +
-          destination);
-    }
-    if (!writer_->initialize(destination, config)) {
-      throw std::runtime_error(
-          "--output_video: could not initialize the video writer for " +
-          destination);
-    }
-  }
-  // Last resort only, for the paths finish() never reaches: an early q/Escape
-  // or an exception on its way out. It cannot report what it finds -- throwing
-  // here during unwinding terminates the process -- so it logs, and the normal
-  // path closes through finish() instead.
-  ~OutputVideoSink() {
-    if (released_) {
-      return;
-    }
-    if (!writer_->release()) {
-      LOG(ERROR) << "--output_video: " << destination_
-                 << " was not completed: a frame failed to encode or the "
-                    "container could not be finalized";
-    }
-  }
-  OutputVideoSink(const OutputVideoSink &) = delete;
-  OutputVideoSink &operator=(const OutputVideoSink &) = delete;
-  // writeFrame false is a failed run, not a skippable frame.
-  //
-  // Since videocapture v0.6.0 the writer encodes on a thread of its own behind
-  // a bounded queue, so this hands the frame over rather than encoding it:
-  // what the frame loop still pays is the toFrame() copy plus the hand-off,
-  // and the wait when the encoder falls behind. Frames keep submission order
-  // and are never dropped. Both the hand-off and any backpressure wait land in
-  // the render stage, after the inference span, so per-inference latency is
-  // unaffected. A frame that fails to encode is reported by the next
-  // writeFrame() or by release(), not by the call that submitted it -- which
-  // is why finish() has to be checked and not only the calls below.
-  void write(videocapture::Frame frame, std::size_t frame_index) {
-    if (!writer_->writeFrame(std::move(frame))) {
-      throw std::runtime_error(
-          "--output_video: video writer failed to write frame " +
-          std::to_string(frame_index));
-    }
-  }
-
-  // Encodes every accepted frame, finalizes the container, and reports the
-  // outcome -- the counterpart of FrameTimingsCsv::finish(). A destination the
-  // operator asked for and did not get is a failed run, not a warning, so this
-  // throws rather than logging. Called on the normal path before the source is
-  // counted as processed; the destructor covers the rest.
-  void finish() {
-    if (released_) {
-      return;
-    }
-    released_ = true;
-    if (!writer_->release()) {
-      throw std::runtime_error(
-          "--output_video: could not complete " + destination_ +
-          ": a frame failed to encode or the container could not be finalized");
-    }
-  }
-
-private:
-  std::unique_ptr<VideoWriterInterface> writer_;
-  std::string destination_;
-  bool released_ = false;
-};
-#endif
-
 void processVideo(InferencePipeline &pipeline, const std::string &source) {
   std::unique_ptr<VideoCaptureInterface> videoInterface =
       createVideoInterface();
@@ -507,7 +416,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
-  std::unique_ptr<OutputVideoSink> output_sink;
+  std::unique_ptr<neuriplo_infer::OutputVideoSink> output_sink;
 #endif
 
   videocapture::Frame frame;
@@ -536,7 +445,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     // Configured once from the first frame: video sources have fixed dims.
     if (!pipeline.config.output_video.empty() && !output_sink) {
       attributeTo(pipeline, neuriplo_infer::RunStage::Render);
-      output_sink = std::make_unique<OutputVideoSink>(
+      output_sink = std::make_unique<neuriplo_infer::OutputVideoSink>(
           pipeline.config.output_video, image.cols, image.rows);
     }
 #endif
@@ -638,7 +547,7 @@ void processVideoClassification(InferencePipeline &pipeline,
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
-  std::unique_ptr<OutputVideoSink> output_sink;
+  std::unique_ptr<neuriplo_infer::OutputVideoSink> output_sink;
 #endif
 
   videocapture::Frame frame;
@@ -669,7 +578,7 @@ void processVideoClassification(InferencePipeline &pipeline,
     // Configured once from the first frame: video sources have fixed dims.
     if (!pipeline.config.output_video.empty() && !output_sink) {
       attributeTo(pipeline, neuriplo_infer::RunStage::Render);
-      output_sink = std::make_unique<OutputVideoSink>(
+      output_sink = std::make_unique<neuriplo_infer::OutputVideoSink>(
           pipeline.config.output_video, image.cols, image.rows);
     }
 #endif
