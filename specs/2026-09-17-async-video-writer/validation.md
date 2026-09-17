@@ -206,7 +206,11 @@ returns `HTTP/2 200`.
 - The nine sink tests kept a raw pointer to the `FakeWriter` the sink owns and
   read it after the sink was destroyed — a use-after-free in the destructor
   cases. Counters and outcomes now live in a `shared_ptr<FakeWriterState>` that
-  outlives the writer. Re-run: 193/193.
+  outlives the writer. Re-run: 193/193. Confirmed with sanitizers
+  (`-DSANITIZER=address-undefined`, `RelWithDebInfo`): the pre-fix tests abort
+  with `ERROR: AddressSanitizer: heap-use-after-free`, the fixed ones run clean.
+  Worth noting for the future — `ctest` runs the default build, which has no
+  sanitizer, so nothing in CI would have caught this.
 - `finish()` ran outside any `StageTimer`, so the queue drain it waits for
   (14–85 ms above) was missing from `stages_ms.render` — the render total would
   have understated output work by exactly what moved off the frame loop. Both
