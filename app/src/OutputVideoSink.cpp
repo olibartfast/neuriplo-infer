@@ -59,8 +59,12 @@ OutputVideoSink::~OutputVideoSink() {
 void OutputVideoSink::write(videocapture::Frame frame,
                             std::size_t frame_index) {
   if (!writer_->writeFrame(std::move(frame))) {
+    // "at or before": the encoder runs behind the loop and holds a few frames,
+    // and a failure is only reported by the first call after it happened, so
+    // this index is where the run noticed -- not necessarily the frame that
+    // failed to encode.
     throw std::runtime_error(
-        "--output_video: video writer failed to write frame " +
+        "--output_video: video writer failed at or before frame " +
         std::to_string(frame_index));
   }
 }
