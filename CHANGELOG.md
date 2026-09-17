@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Pinned `videocapture` to `v0.6.0` (was `v0.5.0`). `--output_video` now encodes
+  on the writer's own thread behind a bounded queue instead of on the frame
+  loop, which resolves the `[0.10.0]` known limitation that every annotated
+  frame cost about 11 / 23 / 39 ms of loop time at 720p / 1080p / 1440p `.mp4`
+  ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)). Frames keep
+  submission order and are never dropped: when the encoder falls behind, the
+  loop waits for it, and that wait is attributed to the render stage as the
+  encode was. What the loop still pays per frame is the `cv::Mat → Frame` copy
+  and the hand-off, which the new `writeFrame(Frame&&)` overload takes without
+  copying the pixels again. A separate queue-wait figure in the run report is
+  not part of this change.
+- Building with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON` now needs a C++20
+  standard library providing `std::jthread`, stop-aware waits, and
+  `std::osyncstream` — the reason `videocapture` ships its packaged macOS
+  builds capture-only. Linux is unaffected; capture-only builds are unchanged.
+
+### Fixed
+- `--output_video` fails the run when its destination could not be completed.
+  The writer reports at `release()` whether every accepted frame was encoded
+  and the container finalized; that result was discarded, so a truncated file
+  was left behind a run that exited `0` — the `[0.10.0]` known limitation that
+  a container that could not be finalized was logged by the writer but not
+  reported to the caller. An early `q`/Escape and a run that ends in an
+  exception still finalize the file as before.
+
 ## [0.10.0] - 2026-09-14
 
 ### Known limitations

@@ -111,6 +111,30 @@ Packet: [`2026-08-31-opencv-free-app/`](2026-08-31-opencv-free-app/requirements.
 
 ---
 
+## Phase 7 — Move `--output_video` encoding off the frame loop · in progress
+
+`--output_video` encoded every annotated frame on the frame loop's thread,
+capping a run near 25 fps at 1440p `.mp4` regardless of how fast the backend
+inferred, and a container that could not be finalized was logged by the writer
+but never reported ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)).
+`videocapture` v0.6.0 owns the fix: encoding runs on the writer's thread behind
+a bounded queue, and `release()` reports whether the destination was completed.
+This repo moves the pin and acts on the result.
+
+Packet: [`2026-09-17-async-video-writer/`](2026-09-17-async-video-writer/requirements.md).
+
+- Done when: `versions.env` pins `videocapture` `v0.6.0`, a destination that
+  could not be encoded or finalized fails the run and counts no sample, the
+  existing output-video tests pass unchanged, and a clip's wall-clock with and
+  without `--output_video` is recorded against the v0.5.0 figures in #49.
+- Deferred to a follow-up, not a blocker for closing #49: a separate writer
+  queue-wait figure in the run report. Backpressure is now inside the render
+  stage total, so a run slowed by the encoder looks like a run slowed by
+  drawing. It touches `RunReport`, `docs/capabilities.schema.json`, and their
+  tests.
+
+---
+
 ## Candidates — not scheduled
 
 Real, observed, small enough not to need a packet until someone picks one up:

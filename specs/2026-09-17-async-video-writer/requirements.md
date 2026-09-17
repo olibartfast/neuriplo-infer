@@ -1,6 +1,6 @@
 # Feature Requirements — async video writer (videocapture v0.6.0)
 
-Roadmap phase: [Phase 7 — Move `--output_video` encoding off the frame loop](../roadmap.md#phase-7--move---output_video-encoding-off-the-frame-loop--in-progress)
+Roadmap phase: Phase 7 — Move `--output_video` encoding off the frame loop, in [`../roadmap.md`](../roadmap.md)
 Branch: `feature/videocapture-0.6.0`
 
 ## Goal
