@@ -31,8 +31,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   and the container finalized; that result was discarded, so a truncated file
   was left behind a run that exited `0` — the `[0.10.0]` known limitation that
   a container that could not be finalized was logged by the writer but not
-  reported to the caller. An early `q`/Escape and a run that ends in an
-  exception still finalize the file as before.
+  reported to the caller. An early `q`/Escape finalizes the file as before and
+  is held to the same rule: the frames written so far are an artifact that was
+  asked for, so a container that could not be completed fails that run too. A
+  run already ending in an exception keeps reporting that exception, with the
+  finalization failure logged rather than thrown.
 
 ## [0.10.0] - 2026-09-14
 
