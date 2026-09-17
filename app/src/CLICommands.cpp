@@ -4,8 +4,7 @@
 #include "VideoCaptureFactory.hpp"
 #include "utils.hpp"
 #ifdef VIDEOCAPTURE_WITH_WRITER
-#include "VideoWriterConfig.hpp"
-#include "VideoWriterFactory.hpp"
+#include "OutputVideoSink.hpp"
 #endif
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 #ifdef NEURIPLO_INFER_WITH_KSERVE
@@ -20,6 +19,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <utility>
 
 namespace {
 
@@ -400,60 +400,6 @@ private:
   std::string path_;
 };
 
-#ifdef VIDEOCAPTURE_WITH_WRITER
-// RAII over the videocapture writer: creates and initializes exactly once
-// and guarantees release() on every exit path, so the destination is a
-// complete playable file even when the run stops early.
-class OutputVideoSink {
-public:
-  OutputVideoSink(const std::string &destination, int width, int height) {
-    // Same as the timings CSV and the run report: a destination below a
-    // directory that does not exist yet is created rather than refused.
-    const std::filesystem::path destination_path(destination);
-    if (destination_path.has_parent_path()) {
-      std::filesystem::create_directories(destination_path.parent_path());
-    }
-    videocapture::VideoWriterConfig config;
-    config.width = width;
-    config.height = height;
-    config.frameRate = 30.0;
-    config.codec = videocapture::VideoCodec::Auto;
-    writer_ = createVideoWriter();
-    if (!writer_) {
-      throw std::runtime_error(
-          "--output_video: no writer backend available for destination: " +
-          destination);
-    }
-    if (!writer_->initialize(destination, config)) {
-      throw std::runtime_error(
-          "--output_video: could not initialize the video writer for " +
-          destination);
-    }
-  }
-  ~OutputVideoSink() { writer_->release(); }
-  OutputVideoSink(const OutputVideoSink &) = delete;
-  OutputVideoSink &operator=(const OutputVideoSink &) = delete;
-  // writeFrame false is a failed run, not a skippable frame.
-  //
-  // Synchronous on the frame loop's thread. Measured per frame with the OpenCV
-  // writer and Auto codec on an i5-11400H: ~10.6 ms at 720p .mp4, ~22.8 ms at
-  // 1080p, ~38.8 ms at 1440p (.avi/MJPG roughly 1.5x that). It runs after the
-  // inference span and counts as render time, so per-inference latency is not
-  // skewed, but it bounds end-to-end throughput. Moving it behind a bounded
-  // queue is tracked in issue #49.
-  void write(videocapture::Frame frame, std::size_t frame_index) {
-    if (!writer_->writeFrame(frame)) {
-      throw std::runtime_error(
-          "--output_video: video writer failed to write frame " +
-          std::to_string(frame_index));
-    }
-  }
-
-private:
-  std::unique_ptr<VideoWriterInterface> writer_;
-};
-#endif
-
 void processVideo(InferencePipeline &pipeline, const std::string &source) {
   std::unique_ptr<VideoCaptureInterface> videoInterface =
       createVideoInterface();
@@ -470,7 +416,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
-  std::unique_ptr<OutputVideoSink> output_sink;
+  std::unique_ptr<neuriplo_infer::OutputVideoSink> output_sink;
 #endif
 
   videocapture::Frame frame;
@@ -499,7 +445,7 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     // Configured once from the first frame: video sources have fixed dims.
     if (!pipeline.config.output_video.empty() && !output_sink) {
       attributeTo(pipeline, neuriplo_infer::RunStage::Render);
-      output_sink = std::make_unique<OutputVideoSink>(
+      output_sink = std::make_unique<neuriplo_infer::OutputVideoSink>(
           pipeline.config.output_video, image.cols, image.rows);
     }
 #endif
@@ -564,7 +510,17 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
                              " produced no frames, so no video was written");
   }
   // Finalizing the container is part of producing the artifact, so it happens
-  // before the source is counted as processed, not after.
+  // before the source is counted as processed, not after. finish() rather than
+  // reset(): the encoder thread may still be draining, and a frame that failed
+  // there is only reported here. Timed as render work like the frames were:
+  // the drain is the encode that the loop no longer waits for, and leaving it
+  // untimed would understate the output cost by exactly what moved off the
+  // frame loop.
+  if (output_sink) {
+    neuriplo_infer::StageTimer finish_timer(pipeline.report,
+                                            neuriplo_infer::RunStage::Render);
+    output_sink->finish();
+  }
   output_sink.reset();
 #endif
   // One video read to its end is one sample, however many frames it held. A
@@ -596,7 +552,7 @@ void processVideoClassification(InferencePipeline &pipeline,
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
-  std::unique_ptr<OutputVideoSink> output_sink;
+  std::unique_ptr<neuriplo_infer::OutputVideoSink> output_sink;
 #endif
 
   videocapture::Frame frame;
@@ -627,7 +583,7 @@ void processVideoClassification(InferencePipeline &pipeline,
     // Configured once from the first frame: video sources have fixed dims.
     if (!pipeline.config.output_video.empty() && !output_sink) {
       attributeTo(pipeline, neuriplo_infer::RunStage::Render);
-      output_sink = std::make_unique<OutputVideoSink>(
+      output_sink = std::make_unique<neuriplo_infer::OutputVideoSink>(
           pipeline.config.output_video, image.cols, image.rows);
     }
 #endif
@@ -646,6 +602,11 @@ void processVideoClassification(InferencePipeline &pipeline,
     // written unannotated so the output keeps every source frame exactly once,
     // and a video shorter than one window still produces its file.
     if (output_sink && static_cast<int>(frameBuffer.size()) < requiredFrames) {
+      // Timed as render work like every other written frame: on a clip shorter
+      // than one window every frame goes out through here, so leaving it
+      // untimed would keep the whole output cost out of the run report.
+      neuriplo_infer::StageTimer render_timer(pipeline.report,
+                                              neuriplo_infer::RunStage::Render);
       output_sink->write(neuriplo_infer::toFrame(image), frame_index - 1);
     }
 #endif
@@ -722,7 +683,14 @@ void processVideoClassification(InferencePipeline &pipeline,
     throw std::runtime_error("--output_video: " + source +
                              " produced no frames, so no video was written");
   }
-  // Same rule as processVideo: finalize the file before counting the sample.
+  // Same rule as processVideo: finalize the file, and report a destination
+  // that could not be completed, before counting the sample -- and time the
+  // drain as render work.
+  if (output_sink) {
+    neuriplo_infer::StageTimer finish_timer(pipeline.report,
+                                            neuriplo_infer::RunStage::Render);
+    output_sink->finish();
+  }
   output_sink.reset();
 #endif
   // Same rule as processVideo: only a video read to its end is a sample.

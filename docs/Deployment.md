@@ -14,7 +14,7 @@ CLI itself, see [Usage.md](Usage.md).
 | Other Linux, x86_64 | Expected to work | Untested. The setup scripts assume an apt-style system. |
 | Linux, ARM64 | Untested | The setup scripts and Dockerfiles download x86_64 SDK packages. |
 | Windows (native) | Best-effort | See [Windows](#windows). Windows support is not a project goal. |
-| macOS | Untested | |
+| macOS | Untested | `NEURIPLO_INFER_WITH_VIDEOWRITER=ON` additionally needs a C++20 standard library providing `std::jthread` and `std::osyncstream`. |
 
 Build requirements: CMake ≥ 3.24, a C++20 compiler, OpenCV ≥ 4.6, and glog.
 
@@ -209,7 +209,7 @@ convenient for cross-repo work, surprising otherwise. See
 | `DEFAULT_BACKEND` | `OPENCV_DNN` | Local inference backend compiled into the binary. |
 | `USE_FFMPEG` | `OFF` | FFmpeg video backend — widest codec support. |
 | `USE_GSTREAMER` | `OFF` | GStreamer video backend. With both on, FFmpeg wins; with neither, OpenCV reads video. |
-| `NEURIPLO_INFER_WITH_VIDEOWRITER` | `OFF` | Builds the writer behind `--output_video`. |
+| `NEURIPLO_INFER_WITH_VIDEOWRITER` | `OFF` | Builds the writer behind `--output_video`. Needs a C++20 standard library providing `std::jthread` and `std::osyncstream`, which is why `videocapture` ships its packaged macOS builds capture-only. The supported Linux toolchains are unaffected. |
 | `NEURIPLO_INFER_ENABLE_KSERVE` | `ON` | Remote KServe client. |
 | `NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS` | `ON` | Local backends; `OFF` gives a KServe-only build that does not fetch `neuriplo`. |
 | `NEURIPLO_INFER_ENABLE_GRPC` | `ON` | gRPC transport, when Protobuf and gRPC are found. |
