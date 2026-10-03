@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Pinned `neuriplo` to `v0.10.0` (was `v0.9.1`). It hardens the plugin loader:
+  malformed plugin metadata or outputs are rejected with a diagnostic instead of
+  being read, plugin outputs are released on every path, and descriptor lookup
+  is thread-safe. It also adds a stable consumer C ABI (`neuriplo_c.h`) that
+  this app does not use yet. No neuriplo-infer source changes were needed.
+
 ## [0.10.1] - 2026-09-18
 
 ### Known limitations
