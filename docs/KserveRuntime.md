@@ -118,6 +118,22 @@ A segmentation ensemble that preprocesses and postprocesses on the server:
   --input_mode=encoded-image --postprocess_mode=gpu
 ```
 
+`encoded-image` needs a server-side ensemble whose `IMAGE` input is
+`UINT8 [1, -1]`: the byte length varies per request, so the server must treat
+the negative metadata dimension as a wildcard.
+[neuriplo-kserve-runtime](https://github.com/olibartfast/neuriplo-kserve-runtime)
+does so from
+[v0.4.0](https://github.com/olibartfast/neuriplo-kserve-runtime/releases/tag/v0.4.0),
+its first release with ensemble models; v0.3.2 and earlier cannot serve this
+mode. The two postprocess modes need different graphs:
+
+- `--postprocess_mode=gpu`: an ensemble that ends in a postprocess step and
+  returns the result envelope (the runtime's `deploy/ensemble/yolo-detection.json`).
+- `--postprocess_mode=cpu`: an ensemble of a preprocess step and the model
+  only, so the raw model outputs come back and this client postprocesses them.
+  Pointing `cpu` mode at an envelope ensemble is refused: its outputs do not
+  match the `--task_model` metadata.
+
 ### Environment variables
 
 Environment variables (the canonical list):
