@@ -144,7 +144,7 @@ the constitution before planning any non-trivial change:
 - [`specs/tech-stack.md`](specs/tech-stack.md) — technical boundaries and the explicit non-choices.
 - [`specs/roadmap.md`](specs/roadmap.md) — the remaining delivery order, with status.
 - [`specs/architecture.md`](specs/architecture.md) — ownership boundaries and runtime flow.
-- [`specs/procedures/merge-feature-branch.md`](specs/procedures/merge-feature-branch.md) — GitFlow merge mechanics.
+- [`specs/README.md`](specs/README.md#merging-a-feature-branch) — the spec-driven loop and the GitFlow merge mechanics.
 
 Work that carries ambiguity, risk, handoff cost, or multi-step implementation gets
 a feature packet: take the next incomplete phase from `specs/roadmap.md`, branch
