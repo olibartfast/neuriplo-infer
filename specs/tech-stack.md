@@ -65,8 +65,8 @@ through `CommandLineParser` → `NeuriploInfer` → `InferencePipelineBuilder` �
   `feature/*` branches from `develop` and merges back by PR; releases and
   hotfixes are the only PRs into `master`, and every merge into `master` is
   back-merged into `develop` immediately. `AGENTS.md` holds the full procedure;
-  [`procedures/merge-feature-branch.md`](procedures/merge-feature-branch.md)
-  holds the step-by-step merge.
+  [`README.md`](README.md#merging-a-feature-branch) holds the step-by-step
+  merge.
 - Agent commits carry a `Co-Authored-By` trailer naming agent, model, and vendor.
 
 ## Explicit non-choices
