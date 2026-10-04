@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-10-05
+
 ### Fixed
 - The `--input_mode=encoded-image` known limitation of 0.10.0 to 0.10.2 is
   resolved on the server side: neuriplo-kserve-runtime v0.4.0 treats a negative
