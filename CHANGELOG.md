@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- The `--input_mode=encoded-image` known limitation of 0.10.0 to 0.10.2 is
+  resolved on the server side: neuriplo-kserve-runtime v0.4.0 treats a negative
+  metadata dimension as a wildcard and serves ensemble models, so the
+  encoded-image path works against it over HTTP and gRPC with either
+  `--postprocess_mode`. No client change was needed.
+
+### Documentation
+- `docs/KserveRuntime.md` states the runtime version `encoded-image` needs and
+  which ensemble graph each `--postprocess_mode` expects (`cpu` needs a
+  preprocess-plus-model graph, without a postprocess step).
+
 ## [0.10.2] - 2026-10-03
 
 ### Known limitations
