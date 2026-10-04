@@ -136,7 +136,7 @@ cmake --build build-test-writer
 ## Review and merge
 
 14. Merge per
-    [`../procedures/merge-feature-branch.md`](../procedures/merge-feature-branch.md):
+    [`../README.md`](../README.md#merging-a-feature-branch):
     sync with `develop`, re-run the scoreboard after the merge, open the PR
     `feature/video-writer-sink` → `develop`, merge as a merge commit, delete
     the branch. No release tag on this branch; the changelog `[Unreleased]`
