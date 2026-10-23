@@ -1,0 +1,34 @@
+{
+  "benchmark_version": "1.0",
+  "compatibility_set": "rfdetr-keypoint-pose-followup",
+  "timestamp": null,
+  "hardware": {
+    "device_name": null,
+    "driver_version": null,
+    "memory_mib": null
+  },
+  "backend": {
+    "name": "kserve-grpc",
+    "version": null
+  },
+  "model": {
+    "name": "rfdetr-pose",
+    "sha256": null
+  },
+  "results": [
+    {
+      "scenario": "rfdetr-pose-kserve-grpc",
+      "category": "single_stream",
+      "transport": "grpc-binary",
+      "batch_size": 1,
+      "metrics": {
+        "requests_per_second": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "gpu_utilization_pct": null,
+        "gpu_memory_used_mib": null
+      }
+    }
+  ]
+}

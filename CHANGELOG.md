@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- `integration-tests/` hosts the app-surface suites moved from
+  `neuriplo-platform`: `local-inference-smoke` (E2E runner dry-run),
+  `kserve-runtime-yolo-e2e`, `rfdetr-pose-local-vs-kserve`, and
+  `kserve-runtime-edgecrafter-e2e`. The scaffold and runner checks run in
+  CTest (`local_inference_smoke_runner`, `rfdetr_pose_evidence_scaffold`);
+  live runtime/model/GPU paths stay manual per each suite's README.
+
 ### Documentation
 - `docs/BackendCoverage.md` adds a NERT-style task × backend coverage matrix
   (10 task families × 9 local backends + KServe) with PASS / DRY-RUN / BUILDS /

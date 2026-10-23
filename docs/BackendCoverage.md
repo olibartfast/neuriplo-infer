@@ -134,5 +134,8 @@ is listed by `--list-presets` and green in `e2e-example-emulation.yml`
   `ecdet` numbers, YOLO26-`litert` note, Identity round-trips).
 - Task inventory: [generated/supported-model-types.md](generated/supported-model-types.md),
   `app/src/Capabilities.cpp` (`taskCapabilities`), `app/src/NeuriploInferTaskRouting.cpp`.
+- App-surface integration tests: `../integration-tests/` — the runner
+  dry-run, YOLO/EdgeCrafter KServe E2E, and RF-DETR pose scaffold moved from
+  `neuriplo-platform` (live paths stay manual per each suite's README).
 - Style reference:
   [NERT coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).

@@ -1,0 +1,34 @@
+{
+  "benchmark_version": "1.0",
+  "compatibility_set": "ecdet-kserve-litert-followup",
+  "timestamp": null,
+  "hardware": {
+    "device_name": null,
+    "driver_version": null,
+    "memory_mib": null
+  },
+  "backend": {
+    "name": "kserve-http",
+    "version": null
+  },
+  "model": {
+    "name": "ecdet",
+    "sha256": null
+  },
+  "results": [
+    {
+      "scenario": "ecdet-kserve-http",
+      "category": "single_stream",
+      "transport": "http-binary",
+      "batch_size": 1,
+      "metrics": {
+        "requests_per_second": null,
+        "latency_p50_ms": null,
+        "latency_p95_ms": null,
+        "latency_p99_ms": null,
+        "gpu_utilization_pct": null,
+        "gpu_memory_used_mib": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "compatibility_set": "rfdetr-keypoint-pose-followup",
+  "status": "active",
+  "last_attested": "2026-06-24",
+  "evidence": "integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml",
+  "checks": [
+    {
+      "check": "Clone pinned refs",
+      "source": "metadata CI",
+      "result": "verified"
+    },
+    {
+      "check": "Configure",
+      "source": "attested",
+      "result": "pass (2026-06-24)",
+      "detail": "CMake release configure of neuriplo-infer v0.8.0 against the pinned sibling tags (DEFAULT_BACKEND=OPENCV_DNN)."
+    },
+    {
+      "check": "Build",
+      "source": "attested",
+      "result": "pass (2026-06-24)",
+      "detail": "Full release build of neuriplo-infer v0.8.0 against the pinned sibling tags fetched from GitHub."
+    },
+    {
+      "check": "Unit tests",
+      "source": "attested",
+      "result": "pass (2026-06-24)",
+      "detail": "neuriplo-infer v0.8.0 app test suite, 29 of 29 tests pass."
+    },
+    {
+      "check": "Local embedded inference smoke test",
+      "source": "attested",
+      "result": "pass (2026-06-24)",
+      "detail": "Local embedded inference smoke over the local backends (OpenCV-DNN) path for the RF-DETR keypoint pose task."
+    },
+    {
+      "check": "KServe gRPC inference smoke test",
+      "source": "attested",
+      "result": "skipped",
+      "detail": "The RF-DETR keypoint pose KServe gRPC smoke was NOT executed against this pinned set. neuriplo-kserve-runtime v0.3.2 is unchanged since its tag and was not rebuilt; compatibility with neuriplo-tasks v0.5.0 is inferred, not measured, from the additive, pose-only contract change the runtime does not consume. Promote to pass only after serving rfdetr-pose through the pinned neuriplo-kserve-runtime and running the gRPC smoke end to end."
+    },
+    {
+      "check": "Result contract validation",
+      "source": "metadata CI",
+      "result": "verified"
+    },
+    {
+      "check": "Benchmark schema validation",
+      "source": "metadata CI",
+      "result": "verified"
+    }
+  ],
+  "repositories": [
+    {
+      "name": "neuriplo-tasks",
+      "version": "v0.5.0",
+      "ref": "7b7fbfbd4c0b695b8428958e796ba369c39638dd",
+      "url": "https://github.com/olibartfast/neuriplo-tasks",
+      "tag_resolves_to_ref": "yes"
+    },
+    {
+      "name": "neuriplo",
+      "version": "v0.8.0",
+      "ref": "add7bd9c2b7a0e311c153d4f7a4057765e07e28f",
+      "url": "https://github.com/olibartfast/neuriplo",
+      "tag_resolves_to_ref": "yes"
+    },
+    {
+      "name": "neuriplo-infer",
+      "version": "v0.8.0",
+      "ref": "fcdff274a4a2e20d9022a86e753a169a7169fc18",
+      "url": "https://github.com/olibartfast/neuriplo-infer",
+      "tag_resolves_to_ref": "yes"
+    },
+    {
+      "name": "neuriplo-kserve-client",
+      "version": "v0.4.0",
+      "ref": "e741f4286de61bf82b9d6925d2ce5da3a2ede5a7",
+      "url": "https://github.com/olibartfast/neuriplo-kserve-client",
+      "tag_resolves_to_ref": "yes"
+    },
+    {
+      "name": "neuriplo-kserve-runtime",
+      "version": "v0.3.2",
+      "ref": "2f3b960a3e48ca57f60c4ac045533fcb9b77fc22",
+      "url": "https://github.com/olibartfast/neuriplo-kserve-runtime",
+      "tag_resolves_to_ref": "yes"
+    },
+    {
+      "name": "videocapture",
+      "version": "v0.3.0",
+      "ref": "fb94bd4f371fa741f8ad0e9a61e7ec2d991359b7",
+      "url": "https://github.com/olibartfast/videocapture",
+      "tag_resolves_to_ref": "yes"
+    }
+  ],
+  "failures": {
+    "clone": [],
+    "benchmark_schema": [],
+    "result_contract": [],
+    "evidence": []
+  },
+  "benchmark_summary": [
+    {
+      "scenario": "rfdetr-pose-local",
+      "backend": "local-backend",
+      "transport": "embedded",
+      "batch_size": 1,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "throughput": null
+    },
+    {
+      "scenario": "rfdetr-pose-kserve-grpc",
+      "backend": "kserve-grpc",
+      "transport": "grpc-binary",
+      "batch_size": 1,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "throughput": null
+    }
+  ]
+}
