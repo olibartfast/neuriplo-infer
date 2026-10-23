@@ -47,7 +47,7 @@ not tested.
 
 | Backend | `-DDEFAULT_BACKEND=` | `setup_dependencies.sh --backend` | Dockerfile | Model file |
 |---------|----------------------|-----------------------------------|------------|------------|
-| OpenCV DNN | `OPENCV_DNN` (default) | — (none needed) | — | `.onnx` with static shapes; Darknet `.weights` + `.cfg` |
+| OpenCV DNN | `OPENCV_DNN` (default) | `opencv` | — | `.onnx` with static shapes; Darknet `.weights` + `.cfg` |
 | ONNX Runtime | `ONNX_RUNTIME` | `onnx_runtime` | `docker/Dockerfile.onnxruntime` | `.onnx` |
 | TensorRT | `TENSORRT` | `tensorrt` | `docker/Dockerfile.tensorrt` | serialized `.engine` |
 | LibTorch | `LIBTORCH` | `libtorch` | `docker/Dockerfile.libtorch` | TorchScript `.pt` |
@@ -62,9 +62,13 @@ One binary carries one local backend; build again with another
 [ExportInstructions.md](ExportInstructions.md) and the
 [neuriplo-tasks export tools](https://github.com/olibartfast/neuriplo-tasks/tree/master/export).
 
-OpenCV DNN is the default because it needs nothing beyond OpenCV, but Ubuntu's
-apt OpenCV 4.6 rejects current Ultralytics exports (YOLO11, and YOLOv8 even at
-opset 12). Use ONNX Runtime for those models.
+OpenCV DNN is the default. Ubuntu's apt OpenCV 4.6 rejects current
+Ultralytics exports (YOLO11, and YOLOv8 even at opset 12), so the build
+prefers a source-built OpenCV 5 in `~/dependencies` when present
+(`scripts/setup_opencv.sh`; explicit `-DOpenCV_DIR` wins, otherwise apt
+OpenCV is used as before). OpenCV 5 loads those models; multi-input
+graphs (e.g. open-vocabulary detection) still fail at inference —
+see [BackendCoverage.md](BackendCoverage.md).
 
 Which task runs on which backend, and on what evidence, is tracked in
 [BackendCoverage.md](BackendCoverage.md): one gated representative per task
