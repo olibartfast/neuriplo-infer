@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- `--weights` accepts a directory as well as a file (mirroring `--source`),
+  so TensorFlow SavedModel directories can be passed to the `LIBTENSORFLOW`
+  backend, which needs the directory for `LoadSavedModel`. File behavior is
+  unchanged.
+
 ### Added
 - `integration-tests/` hosts the app-surface suites moved from
   `neuriplo-platform`: `local-inference-smoke` (E2E runner dry-run),
