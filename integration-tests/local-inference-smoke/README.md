@@ -1,5 +1,7 @@
 # Local Inference Smoke Test
 
+> Coverage owner: [docs/BackendCoverage.md](../../docs/BackendCoverage.md#integration-test-evidence) — this README documents the runner; coverage claims live there.
+
 Validation status: Draft executable smoke, not a release E2E
 
 Version set: `initial-architecture-baseline`

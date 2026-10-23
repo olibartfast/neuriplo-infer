@@ -1,5 +1,7 @@
 # EdgeCrafter KServe Runtime E2E
 
+> Coverage owner: [docs/BackendCoverage.md](../../docs/BackendCoverage.md#integration-test-evidence) — this README documents the runner; coverage claims live there.
+
 Validation status: Real local E2E (onnx_runtime, tensorrt, openvino, and executorch backends)
 
 Version set: sibling branch set with local built binaries and model artifacts.

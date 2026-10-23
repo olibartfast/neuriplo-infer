@@ -1,5 +1,7 @@
 # RF-DETR Pose Local vs KServe Integration Evidence
 
+> Coverage owner: [docs/BackendCoverage.md](../../docs/BackendCoverage.md#integration-test-evidence) — this README documents the runner; coverage claims live there.
+
 Validation status: Active compatibility set, evidence-tracked
 
 Version set: `rfdetr-keypoint-pose-followup` from the pinned refs recorded in

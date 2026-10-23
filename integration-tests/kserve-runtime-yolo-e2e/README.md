@@ -1,5 +1,7 @@
 # YOLO KServe Runtime E2E Test
 
+> Coverage owner: [docs/BackendCoverage.md](../../docs/BackendCoverage.md#integration-test-evidence) — this README documents the runner; coverage claims live there.
+
 Validation status: Real local E2E
 
 Version set: `feature/neuriplo-kserve-runtime` sibling branch set, with local
