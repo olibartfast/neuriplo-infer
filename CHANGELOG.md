@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Documentation
+- `docs/BackendCoverage.md` adds a NERT-style task × backend coverage matrix
+  (10 task families × 9 local backends + KServe) with PASS / DRY-RUN / BUILDS /
+  BLOCKED / KNOWN-BAD / UNTESTED definitions, a scoreboard, and open items.
+  Linked from `README.md` and `docs/Deployment.md`.
+
 ## [0.10.3] - 2026-10-05
 
 ### Fixed

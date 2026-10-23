@@ -66,6 +66,10 @@ OpenCV DNN is the default because it needs nothing beyond OpenCV, but Ubuntu's
 apt OpenCV 4.6 rejects current Ultralytics exports (YOLO11, and YOLOv8 even at
 opset 12). Use ONNX Runtime for those models.
 
+Which task runs on which backend, and on what evidence, is tracked in
+[BackendCoverage.md](BackendCoverage.md): one gated representative per task
+family, NERT-style PASS / DRY-RUN / BUILDS / BLOCKED / KNOWN-BAD / UNTESTED.
+
 ## Docker
 
 ### Images
