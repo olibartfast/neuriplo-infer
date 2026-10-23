@@ -2,7 +2,10 @@
 
 Date: 2026-10-23. Branch `feature/backend-coverage` merged `origin/develop`
 at `6951525` (no-op — already at tip) and re-validated: `ctest` 177/177,
-sync `--check` clean, all 15 script presets `--dry-run` green. Style follows the NERT
+sync `--check` clean, all 15 script presets `--dry-run` green. DNN column
+live-probed 2026-10-23 on apt OpenCV 4.6.0 (`OPENCV_DNN` build, `ctest`
+179/179): 5 loader probes via `--export_metadata` (full pipeline build incl.
+model load, no inference) — see Evidence cells and Open item 4. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md):
 one gated representative per task family, one status per backend, no cell
 claiming more than its evidence.
@@ -53,7 +56,7 @@ Columns: `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
 
 | Task (representative) | DNN | ORT | TRT | Torch | OVINO | TF | LiteRT | ExecT | LLaMA | KServe | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Object detection (`yolo26`, preset `yolo26s_tflite`) | BLOCKED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | DRY-RUN | UNTESTED | UNTESTED | PASS | DNN BLOCKED: apt OpenCV 4.6 rejects Ultralytics exports (`Split`, `Unsqueeze`) — [Deployment.md](Deployment.md#backends) + roadmap candidate. LiteRT local DRY-RUN (preset + emulation green). KServe PASS: YOLO26 `.tflite` serves correctly over `litert`, validated locally 2026-06-13 — [KserveCompatibility.md](KserveCompatibility.md#model-formats); live path is [§ Integration-test evidence](#integration-test-evidence) `kserve-runtime-yolo-e2e`. |
+| Object detection (`yolo26`, preset `yolo26s_tflite`) | BLOCKED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | DRY-RUN | UNTESTED | UNTESTED | PASS | DNN BLOCKED: apt OpenCV 4.6 rejects Ultralytics exports (`Split`, `Unsqueeze`) — [Deployment.md](Deployment.md#backends) + roadmap candidate; re-confirmed live 2026-10-23 (`yolo26s.onnx` → `Split` parse error, `slice_layer.cpp:235`). LiteRT local DRY-RUN (preset + emulation green). KServe PASS: YOLO26 `.tflite` serves correctly over `litert`, validated locally 2026-06-13 — [KserveCompatibility.md](KserveCompatibility.md#model-formats); live path is [§ Integration-test evidence](#integration-test-evidence) `kserve-runtime-yolo-e2e`. |
 | Object detection (`yolov8`, preset `yolov8_executorch`) | BLOCKED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | DRY-RUN | UNTESTED | UNTESTED | Same DNN blocker (YOLOv8n `Unsqueeze` at opset 12). ExecT DRY-RUN (preset + emulation green, no CI build job). |
 | Object detection (`rtdetr`, preset `rtdetrv4`) | UNTESTED | DRY-RUN | DRY-RUN | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | TRT default preset; `ci.yml` builds the TRT image; emulation dry-run green. No live log cited — not PASS. |
 | Object detection (`ecdet`, preset `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | KNOWN-BAD | PASS: C++ e2e `data/dog.jpg` @ 0.5 — bicycle 0.93, dog 0.92, car 0.74 on ORT + TRT — [KserveCompatibility.md](KserveCompatibility.md#known-bad-conversion-edgecrafter-ecdet--tflite). Live multi-backend path is [§ Integration-test evidence](#integration-test-evidence) `kserve-runtime-edgecrafter-e2e` ([BENCHMARK.md](../integration-tests/kserve-runtime-edgecrafter-e2e/BENCHMARK.md)). LiteRT/KServe KNOWN-BAD: same input over `litert` gives top ≈0.19, random labels — conversion fault (`onnx2tf`), not runtime. Do not serve `ecdet` as TFLite. |
@@ -62,9 +65,9 @@ Columns: `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
 | Classification (`torchvisionclassifier`, preset `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Preset + emulation green. `tensorflow-classifier` / `vit-classifier` aliases have no preset — same cells, no separate row. |
 | Video classification (`videomae`, preset `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Preset + emulation green. `vivit` / `timesformer` aliases ride the same task path; no separate preset. |
 | Optical flow (`raft`, preset `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Preset + emulation green. |
-| Pose estimation (`vitpose`, preset `vitpose`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Preset + emulation green. `yolo*pose` shares the DNN/Ultralytics blocker on DNN only; `ecpose`/`rfdetr_keypoint` same ORT DRY-RUN level (see Open items for the `rfdetr_keypoint` emulation gap; scaffold evidence is [§ Integration-test evidence](#integration-test-evidence) `rfdetr-pose-local-vs-kserve`). |
-| Depth estimation (`depth_anything_v2`, preset `depth_anything_v2`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Preset + emulation green. `yolo*depth` alias same cells. |
-| Open-vocabulary detection (`owlv2`, preset `owlv2`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Preset + emulation green. `owlvit` / `groundingdino` aliases same cells. |
+| Pose estimation (`vitpose`, preset `vitpose`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Preset + emulation green. `yolo*pose` shares the DNN/Ultralytics blocker on DNN only; `ecpose`/`rfdetr_keypoint` same ORT DRY-RUN level (see Open items for the `rfdetr_keypoint` emulation gap; scaffold evidence is [§ Integration-test evidence](#integration-test-evidence) `rfdetr-pose-local-vs-kserve`). DNN loader probe 2026-10-23: `rfdetr_keypoint` (`rfdetr-keypoint-preview.onnx`) BLOCKED — `Unsupported data type: BOOL` in `onnx_graph_simplifier.cpp:842`; `vitpose` artifact itself not probed, cell stays UNTESTED. |
+| Depth estimation (`depth_anything_v2`, preset `depth_anything_v2`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Preset + emulation green. `yolo*depth` alias same cells. DNN loader probe 2026-10-23: `yolo26depth` (`yolo26n-depth.onnx`) BLOCKED — same Ultralytics `Split` parse error as detection; `depth_anything_v2` artifact itself not probed, cell stays UNTESTED. |
+| Open-vocabulary detection (`owlv2`, preset `owlv2`) | BLOCKED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | DNN BLOCKED (loader probe 2026-10-23, apt 4.6.0): `owlv2.onnx` → `Mul` broadcast-with-constant parse error (`onnx_importer.cpp:2221`); alias `groundingdino.onnx` also fails (`Identity_12597`, `layer.cpp:246`). Preset + emulation green on ORT. `owlvit` / `groundingdino` aliases same cells. |
 | Image understanding (`gemma4`, preset `gemma4`) | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | DRY-RUN | UNTESTED | Only LLaMA applies (GGUF + mmproj). Preset + emulation green, no CI build job. |
 | Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | Routed (`Capabilities.cpp`), no e2e preset, no emulation. Torch/OVINO cells are BUILDS-only. |
 
@@ -100,9 +103,12 @@ is listed by `--list-presets` and green in `e2e-example-emulation.yml`
    but no preset targets them. Either add `--backend` override runs that are
    known to work, or record per-task BLOCKED with the loader error.
 4. **OPENCV_DNN scope.** The Ultralytics `Split`/`Unsqueeze` blocker is
-   recorded for YOLO families. Confirm cell-by-cell whether non-YOLO tasks
-   (`raft`, `vitpose`, torchvision ResNet) load on apt OpenCV 4.6 or belong
-   in BLOCKED too.
+   recorded for YOLO families. Partially probed 2026-10-23 (apt 4.6.0,
+   `--export_metadata` loader probes): `yolo26depth` shares the YOLO
+   `Split` blocker; `rfdetr_keypoint` fails differently (`BOOL` dtype);
+   `owlv2`/`groundingdino` fail differently again (`Mul` broadcast,
+   `Identity`). Still unprobed on DNN: `rtdetr`, `ecdet`, `yoloseg`,
+   `ecseg`, torchvision ResNet, `raft`, `vitpose`, `depth_anything_v2`.
 5. **KServe per-task gates.** Today's KServe evidence is protocol-level
    (Identity round-trip, dry-run) plus YOLO26-`litert` and the `ecdet`
    KNOWN-BAD. Gate one model per task through `neuriplo-kserve-runtime`
