@@ -44,3 +44,10 @@ Deployment link the matrix once each.
 Deviation: `pre-commit` not installed on this runner — skipped. Change is
 docs/markdown + packet only (no C++), so clang-format/cppcheck have nothing to
 cover; CI `lint.yml` remains the gate.
+
+## Results — post-merge re-validation (develop @ 6951525)
+
+`git merge origin/develop` was a no-op (branch already at tip). Re-ran on the
+merged tree: test build OK, `ctest` 177/177 pass, sync `--check` clean, all 15
+script presets `--dry-run` green. Emulation matrix still lists 14 presets
+(`rfdetr_keypoint` still absent) — Open item 2 stands. No cell changed status.

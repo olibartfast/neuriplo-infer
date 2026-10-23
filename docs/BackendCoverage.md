@@ -1,6 +1,8 @@
 # Backend coverage — task models × backends
 
-Date: 2026-10-23. Style follows the NERT
+Date: 2026-10-23. Branch `feature/backend-coverage` merged `origin/develop`
+at `6951525` (no-op — already at tip) and re-validated: `ctest` 177/177,
+sync `--check` clean, all 15 script presets `--dry-run` green. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md):
 one gated representative per task family, one status per backend, no cell
 claiming more than its evidence.
