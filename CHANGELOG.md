@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-25
+
+### Changed
+- Pin neuriplo to v0.11.0, including NERT v0.2.0 and the corrected OpenCV
+  5.0.0 recommendation with OpenCV 4.6+ compatibility retained.
+- Prefer the source-built OpenCV 5 installation for OPENCV_DNN; an explicit
+  OpenCV_DIR still selects the supported OpenCV 4.x installation. Add
+  scripts/setup_opencv.sh to build the selected source dependency.
+- Keep videocapture pinned to v0.6.0, validated with both OpenCV 4.6 and 5.0.
+
+### Known limitations
+- Native AMD GPU cloud coverage and persistent AMD CI remain accepted missing
+  validation in the NERT dependency. This release does not claim that coverage.
+- Live model/runtime coverage retains the BLOCKED, KNOWN-BAD and UNTESTED
+  entries documented in docs/BackendCoverage.md.
+
 ### Fixed
 - `--weights` accepts a directory as well as a file (mirroring `--source`),
   so TensorFlow SavedModel directories can be passed to the `LIBTENSORFLOW`
