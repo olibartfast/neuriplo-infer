@@ -514,7 +514,7 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  --backend <backend>        Specify the inference backend to setup"
-    echo "                             Supported: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
+    echo "                             Supported: opencv_dnn, opencv, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
     echo "                             Default: opencv_dnn (no setup required)"
     echo "  --compute-platform <platform>  For LibTorch: cpu, gpu/cuda, cu118, cu121, rocm6.0"
     echo "                             Default: cpu"
@@ -595,6 +595,11 @@ main() {
             print_status "OPENCV_DNN is the default backend - no additional setup required"
             print_success "System dependencies (OpenCV) are already validated"
             ;;
+        opencv)
+            local script_dir_here
+            script_dir_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+            bash "${script_dir_here}/setup_opencv.sh"
+            ;;
         onnx_runtime)
             setup_onnx_runtime
             ;;
@@ -631,7 +636,7 @@ main() {
             ;;
         *)
             print_error "Unknown backend: $backend"
-            print_status "Supported backends: opencv_dnn, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
+            print_status "Supported backends: opencv_dnn, opencv, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
             exit 1
             ;;
     esac

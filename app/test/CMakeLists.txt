@@ -198,6 +198,25 @@ add_test(
     COMMAND bash ${CMAKE_SOURCE_DIR}/app/test/test_cut_release.sh ${CMAKE_SOURCE_DIR}
 )
 
+# Moved from neuriplo-platform/integration-tests/: app-surface checks that
+# need no runtime binary, model artifact, or GPU. Live paths (--live, real
+# KServe runtime, engines) stay manual; see each suite's README.
+if(Python3_Interpreter_FOUND)
+    # App-owned E2E runner lists presets and dry-runs one representative preset.
+    add_test(
+        NAME local_inference_smoke_runner
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_SOURCE_DIR}/integration-tests/local-inference-smoke/run.py
+            --preset owlv2
+    )
+    # RF-DETR pose evidence scaffold: baselines + report exist.
+    add_test(
+        NAME rfdetr_pose_evidence_scaffold
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_SOURCE_DIR}/integration-tests/rfdetr-pose-local-vs-kserve/run.py
+    )
+endif()
+
 # KServe integration round-trip against containerized Triton + OVMS. Registered
 # in dry-run mode so it validates command construction and passes on CI runners
 # without docker/images/GPUs. The live path (--live) is opt-in; see the script

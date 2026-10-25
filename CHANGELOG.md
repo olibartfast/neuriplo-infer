@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-25
+
+### Changed
+- Pin neuriplo to v0.11.0, including NERT v0.2.0 and the corrected OpenCV
+  5.0.0 recommendation with OpenCV 4.6+ compatibility retained.
+- Prefer the source-built OpenCV 5 installation for OPENCV_DNN; an explicit
+  OpenCV_DIR still selects the supported OpenCV 4.x installation. Add
+  scripts/setup_opencv.sh to build the selected source dependency.
+- Keep videocapture pinned to v0.6.0, validated with both OpenCV 4.6 and 5.0.
+
+### Known limitations
+- Native AMD GPU cloud coverage and persistent AMD CI remain accepted missing
+  validation in the NERT dependency. This release does not claim that coverage.
+- Live model/runtime coverage retains the BLOCKED, KNOWN-BAD and UNTESTED
+  entries documented in docs/BackendCoverage.md.
+
+### Fixed
+- `--weights` accepts a directory as well as a file (mirroring `--source`),
+  so TensorFlow SavedModel directories can be passed to the `LIBTENSORFLOW`
+  backend, which needs the directory for `LoadSavedModel`. File behavior is
+  unchanged.
+
+### Added
+- `integration-tests/` hosts the app-surface suites moved from
+  `neuriplo-platform`: `local-inference-smoke` (E2E runner dry-run),
+  `kserve-runtime-yolo-e2e`, `rfdetr-pose-local-vs-kserve`, and
+  `kserve-runtime-edgecrafter-e2e`. The scaffold and runner checks run in
+  CTest (`local_inference_smoke_runner`, `rfdetr_pose_evidence_scaffold`);
+  live runtime/model/GPU paths stay manual per each suite's README.
+
+### Documentation
+- `docs/BackendCoverage.md` adds a NERT-style task × backend coverage matrix
+  (10 task families × 9 local backends + KServe) with PASS / DRY-RUN / BUILDS /
+  BLOCKED / KNOWN-BAD / UNTESTED definitions, a scoreboard, and open items.
+  Linked from `README.md` and `docs/Deployment.md`.
+
 ## [0.10.3] - 2026-10-05
 
 ### Fixed

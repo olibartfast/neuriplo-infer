@@ -1,0 +1,58 @@
+# Attested validation evidence for compatibility set
+# rfdetr-keypoint-pose-followup.
+#
+# These checks require GPU and C++ tooling and are NOT executed by platform
+# metadata CI. They are attested by the release maintainer (or owning-repo CI)
+# and committed here. scripts/generate_compat_report.py validates this file and
+# renders it into reports/latest.md; platform CI validates the attestation, it
+# does not re-run the underlying build/test.
+#
+# Per-check schema:
+#   status: pass | fail | skipped | not_attested
+#   detail: short human-readable description of what was run
+#   source: optional pointer to the runbook, command, or CI log
+#
+# status values:
+#   pass          attested as succeeding for this pinned set
+#   fail          attested as failing; blocks the set until documented or reverted
+#   skipped       intentionally not run for this set (document why in detail)
+#   not_attested  no attestation recorded yet (reported, not blocking)
+
+compatibility_set: rfdetr-keypoint-pose-followup
+last_attested: 2026-06-24
+attested_by: release-maintainer
+
+checks:
+  configure:
+    status: pass
+    detail: >
+      CMake release configure of neuriplo-infer v0.8.0 against the pinned
+      sibling tags (DEFAULT_BACKEND=OPENCV_DNN).
+    source: ops/runbooks/faster-compilation.md
+  build:
+    status: pass
+    detail: >
+      Full release build of neuriplo-infer v0.8.0 against the pinned sibling
+      tags fetched from GitHub.
+    source: ops/runbooks/faster-compilation.md
+  unit_tests:
+    status: pass
+    detail: >
+      neuriplo-infer v0.8.0 app test suite, 29 of 29 tests pass.
+    source: ops/runbooks/faster-compilation.md
+  local_embedded_smoke:
+    status: pass
+    detail: >
+      Local embedded inference smoke over the local backends (OpenCV-DNN) path
+      for the RF-DETR keypoint pose task.
+    source: integration-tests/local-inference-smoke/run.py
+  kserve_grpc_smoke:
+    status: skipped
+    detail: >
+      The RF-DETR keypoint pose KServe gRPC smoke was NOT executed against this
+      pinned set. neuriplo-kserve-runtime v0.3.2 is unchanged since its tag and
+      was not rebuilt; compatibility with neuriplo-tasks v0.5.0 is inferred, not
+      measured, from the additive, pose-only contract change the runtime does
+      not consume. Promote to pass only after serving rfdetr-pose through the
+      pinned neuriplo-kserve-runtime and running the gRPC smoke end to end.
+    source: integration-tests/kserve-runtime-yolo-e2e/README.md
