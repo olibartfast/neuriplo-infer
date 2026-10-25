@@ -15,13 +15,16 @@ RUN apt-get update && apt-get upgrade -y && \
     libopencv-dev \
     libgoogle-glog-dev \
     wget \
+    zstd \
     git \
     && rm -rf /var/lib/apt/lists/*
 
 COPY VERSION /tmp/neuriplo-infer.VERSION
+COPY versions.env /tmp/neuriplo-infer.versions.env
 
-RUN dependency_ref=develop && \
-    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi && \
+RUN dependency_ref=$(awk -F= '/^NEURIPLO_VERSION=/{gsub(/[ \t\r"]/,"",$2); print $2; exit}' /tmp/neuriplo-infer.versions.env) && \
+    if [ -z "$dependency_ref" ]; then dependency_ref=develop; \
+        if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi; fi && \
     wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
 # Stage 2: Install TensorRT dependencies
@@ -32,11 +35,17 @@ ARG BACKEND=TENSORRT
 # Download and install TensorRT
 RUN . /tmp/versions.env && \
     TRT_SHORT=$(echo ${TENSORRT_VERSION} | cut -d. -f1-3) && \
+    TRT_CUDA=${TENSORRT_CUDA_VERSION:-$CUDA_VERSION} && \
+    if [ "${TENSORRT_VERSION%%.*}" -ge 11 ]; then \
+        archive="TensorRT-Enterprise-${TENSORRT_VERSION}-Linux-x86_64-cuda-${TRT_CUDA}-Release-external.tar.zst"; \
+    else \
+        archive="TensorRT-${TENSORRT_VERSION}.Linux.x86_64-gnu.cuda-${TRT_CUDA}.tar.gz"; \
+    fi && \
     wget --tries=3 --retry-connrefused \
-    https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/${TRT_SHORT}/tars/TensorRT-${TENSORRT_VERSION}.Linux.x86_64-gnu.cuda-${CUDA_VERSION}.tar.gz \
-    && tar -xzvf TensorRT-${TENSORRT_VERSION}.Linux.x86_64-gnu.cuda-${CUDA_VERSION}.tar.gz -C /opt \
-    && rm TensorRT-${TENSORRT_VERSION}.Linux.x86_64-gnu.cuda-${CUDA_VERSION}.tar.gz \
-    && ln -s /opt/TensorRT-${TENSORRT_VERSION} /opt/tensorrt
+        "https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/${TRT_SHORT}/tars/${archive}" && \
+    tar -xf "$archive" -C /opt && \
+    rm "$archive" && \
+    ln -s /opt/TensorRT-${TENSORRT_VERSION} /opt/tensorrt
 
 # Set TensorRT environment variables
 ENV TENSORRT_DIR=/opt/tensorrt
