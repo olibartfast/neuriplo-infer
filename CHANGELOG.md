@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-10-25
+
+### Fixed
+- TensorRT Docker builds use the pinned neuriplo release metadata, the
+  declared TensorRT CUDA build, and the TensorRT 11 Enterprise zstd archive.
+  This fixes the SDK download 404 in the 0.11.0 backend CI matrix.
+- Install zstd for TensorRT 11 extraction; retain the gzip archive path for
+  TensorRT 10 and earlier.
+- Run the full backend CI matrix on release and hotfix PRs into master,
+  so backend build failures are checked before publication.
+
 ## [0.11.0] - 2026-10-25
 
 ### Changed
