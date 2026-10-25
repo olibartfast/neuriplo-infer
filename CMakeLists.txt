@@ -79,6 +79,17 @@ message(STATUS "Home path: ${HOME_PATH}")
 include(cmake/DependencyValidation.cmake)
 
 # Find system dependencies first (before fetching external dependencies)
+# Prefer the source-built OpenCV 5 in dependencies (non-apt, like the other
+# backend SDKs; see scripts/setup_opencv.sh). An explicit -DOpenCV_DIR wins;
+# otherwise apt OpenCV is used as before (CI images stay unchanged).
+if(NOT DEFINED OpenCV_DIR)
+  set(_OPENCV5_CONFIG "$ENV{HOME}/dependencies/opencv-5.0.0/install/lib/cmake/opencv5/OpenCVConfig.cmake")
+  if(EXISTS "${_OPENCV5_CONFIG}")
+    set(OpenCV_DIR "$ENV{HOME}/dependencies/opencv-5.0.0/install/lib/cmake/opencv5"
+        CACHE PATH "Path to OpenCV (source-built 5.x preferred)")
+    message(STATUS "Using source-built OpenCV 5 from dependencies")
+  endif()
+endif()
 find_package(OpenCV REQUIRED)
 find_package(glog REQUIRED)
 message(STATUS "OpenCV ${OpenCV_VERSION} found")

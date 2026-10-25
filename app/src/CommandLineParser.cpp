@@ -537,7 +537,7 @@ void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
       std::exit(1);
     }
 #endif
-  } else if (!isFile(weights)) {
+  } else if (!isFile(weights) && !isDirectory(weights)) {
     LOG(ERROR) << "Weights file " << weights << " doesn't exist";
     std::exit(1);
   }
