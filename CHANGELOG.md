@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-10-26
+
+### Changed
+- Pin neuriplo to v0.11.1, including explicit OpenCV 5 GPU-request rejection
+  before model loading and stricter real-model classifier checks.
+- Pin videocapture to v0.6.1, including documented OpenCV 4.6/5.0
+  compatibility and bounded macOS CI/release dependency installation.
+- Keep neuriplo-tasks at v0.8.2 and neuriplo-kserve-client at v0.4.0.
+
 ## [0.11.1] - 2026-10-25
 
 ### Fixed
