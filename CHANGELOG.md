@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.11.2] - 2026-10-26
 
+### Fixed
+- Apply apt network timeouts and acquisition retries in CI dependency setup;
+  install optional gRPC packages in the shared transaction to avoid a second
+  package-index update.
+
 ### Changed
 - Pin neuriplo to v0.11.1, including explicit OpenCV 5 GPU-request rejection
   before model loading and stricter real-model classifier checks.
