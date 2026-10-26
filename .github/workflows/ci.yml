@@ -91,15 +91,8 @@ jobs:
 
       - name: Install shared dependencies
         uses: ./.github/actions/install-linux-deps
-
-      - name: Install gRPC toolchain
-        if: matrix.install_grpc
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            protobuf-compiler protobuf-compiler-grpc \
-            libprotobuf-dev libgrpc++-dev
+        with:
+          install-grpc: ${{ matrix.install_grpc }}
 
       - name: Set up ccache
         uses: hendrikmuhs/ccache-action@v1

@@ -1,17 +1,34 @@
 name: Install Linux Dependencies
 description: Installs shared apt packages required by all CI jobs
 
+inputs:
+  install-grpc:
+    description: Install the optional gRPC compiler and development packages
+    required: false
+    default: 'false'
+
 runs:
   using: composite
   steps:
     - name: Install shared dependencies
       shell: bash
+      env:
+        INSTALL_GRPC: ${{ inputs.install-grpc }}
       run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
+        # Bound idle mirror connections; retry transient acquisition failures.
+        apt_options=(-o Acquire::Retries=3
+                     -o Acquire::http::Timeout=30
+                     -o Acquire::https::Timeout=30)
+        grpc_packages=()
+        if [[ "$INSTALL_GRPC" == 'true' ]]; then
+          grpc_packages=(protobuf-compiler protobuf-compiler-grpc
+                         libprotobuf-dev libgrpc++-dev)
+        fi
+        sudo apt-get "${apt_options[@]}" update
+        sudo apt-get "${apt_options[@]}" install -y --no-install-recommends \
           cmake build-essential git wget ninja-build ccache \
           libopencv-dev \
           libgoogle-glog-dev \
           libcurl4-openssl-dev \
           libgtest-dev \
-          python3-jsonschema
+          python3-jsonschema "${grpc_packages[@]}"
