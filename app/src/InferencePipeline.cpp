@@ -88,18 +88,14 @@ buildModelInfo(const InferenceMetadata &inference_metadata,
     std::vector<int64_t> shape;
 
     if (i < config.input_sizes.size() && !config.input_sizes[i].empty()) {
-      for (auto dim : config.input_sizes[i]) {
-        shape.push_back(dim);
-      }
-      if (shape.size() == 3) {
-        shape.insert(shape.begin(), config.batch_size);
-      }
+      shape = config.input_sizes[i];
     } else {
       shape = input.shape;
-      if (shape.size() == 3) {
-        shape.insert(shape.begin(), config.batch_size);
-      }
     }
+    shape = neuriplo_infer::taskInputShape(
+        std::move(shape), input.batch_size,
+        getTaskTypeForModel(config.detectorType) ==
+            neuriplo_tasks::TaskType::VideoClassification);
 
     model_info.addInput(input.name, shape, input.batch_size);
   }
