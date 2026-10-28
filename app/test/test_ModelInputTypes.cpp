@@ -72,3 +72,22 @@ TEST(ModelInputTypes, ServerSidePreprocessingIsNotChecked) {
   EXPECT_NO_THROW(neuriplo_infer::applyInputDatatypes(info, {"INT8"}, true));
   EXPECT_EQ(info.input_types[0], neuriplo_tasks::PixelType::Float32);
 }
+
+TEST(TaskInputShape, AddsBatchToVideoInputWithoutBatchAxis) {
+  EXPECT_EQ(neuriplo_infer::taskInputShape({16, 3, 224, 224}, 1, true),
+            (std::vector<int64_t>{1, 16, 3, 224, 224}));
+}
+
+TEST(TaskInputShape, PreservesFullVideoAndImageShapes) {
+  EXPECT_EQ(neuriplo_infer::taskInputShape({1, 16, 3, 224, 224}, 1, true),
+            (std::vector<int64_t>{1, 16, 3, 224, 224}));
+  EXPECT_EQ(neuriplo_infer::taskInputShape({1, 3, 224, 224}, 1, false),
+            (std::vector<int64_t>{1, 3, 224, 224}));
+  EXPECT_EQ(neuriplo_infer::taskInputShape({3, 224, 224}, 2, false),
+            (std::vector<int64_t>{2, 3, 224, 224}));
+}
+
+TEST(TaskInputShape, PreservesTextQueryDimensions) {
+  EXPECT_EQ(neuriplo_infer::taskInputShape({3, 16}, 3, false),
+            (std::vector<int64_t>{3, 16}));
+}

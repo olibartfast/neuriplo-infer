@@ -13,6 +13,11 @@
 
 namespace neuriplo_infer {
 
+// Add an omitted image/video batch axis before constructing task metadata.
+std::vector<int64_t> taskInputShape(std::vector<int64_t> shape,
+                                    size_t batch_size,
+                                    bool video_classification);
+
 // KServe datatype tag ("FP32", "UINT8", ...) for a backend metadata datatype.
 std::string datatypeTag(TensorDataType datatype);
 
