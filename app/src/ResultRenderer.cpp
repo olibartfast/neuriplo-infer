@@ -3,6 +3,7 @@
 #include "neuriplo/tasks/core/opencv_interop.hpp"
 #include "utils.hpp"
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <type_traits>
@@ -68,34 +69,59 @@ void renderOpenVocabDetectionResults(
       });
 }
 
+void renderRankedLabels(const std::vector<std::string> &labels,
+                        cv::Mat &image) {
+  if (labels.empty() || image.empty()) {
+    return;
+  }
+  const int margin = std::min(10, std::min(image.cols, image.rows) / 10);
+  int max_width = 1;
+  for (const auto &label : labels) {
+    max_width =
+        std::max(max_width, cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX,
+                                            1.0, 1, nullptr)
+                                .width);
+  }
+  const double scale = std::min(
+      {0.7, static_cast<double>(image.cols - 2 * margin - 2) / max_width,
+       static_cast<double>(image.rows - 2 * margin) /
+           (40.0 * static_cast<double>(labels.size()))});
+  if (scale <= 0.0) {
+    return;
+  }
+  int baseline = 0;
+  const auto size =
+      cv::getTextSize("Ag", cv::FONT_HERSHEY_SIMPLEX, scale, 1, &baseline);
+  int y = margin + size.height;
+  for (const auto &label : labels) {
+    cv::putText(image, label, cv::Point(margin, y), cv::FONT_HERSHEY_SIMPLEX,
+                scale, cv::Scalar(0, 255, 255), 1);
+    y += size.height + baseline + 4;
+  }
+}
+
 void renderClassificationResults(
     const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
     const std::vector<std::string> &classes) {
-  std::string result_text = "Classification: ";
+  std::vector<std::string> labels;
   forEachResultOfType<neuriplo_tasks::Classification>(
       results, [&](const auto &classification) {
-        const int class_index = static_cast<int>(classification.class_id);
-        if (classification.class_id >= 0.0F &&
-            static_cast<size_t>(class_index) < classes.size()) {
-          result_text += classes[static_cast<size_t>(class_index)] + " (" +
-                         std::to_string(classification.class_confidence) + ")";
-        }
+        labels.push_back(labelForClass(classification.class_id, classes) +
+                         " (" +
+                         std::to_string(classification.class_confidence) + ")");
       });
-  cv::putText(image, result_text, cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX,
-              1, cv::Scalar(0, 255, 255), 2);
+  renderRankedLabels(labels, image);
 }
 
 void renderVideoClassificationResults(
     const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
-  std::string result_text = "Action: ";
+  std::vector<std::string> labels;
   forEachResultOfType<neuriplo_tasks::VideoClassification>(
-      results, [&](const auto &video_classification) {
-        result_text += video_classification.action_label + " (" +
-                       std::to_string(video_classification.class_confidence) +
-                       ")";
+      results, [&](const auto &classification) {
+        labels.push_back(classification.action_label + " (" +
+                         std::to_string(classification.class_confidence) + ")");
       });
-  cv::putText(image, result_text, cv::Point(10, 60), cv::FONT_HERSHEY_SIMPLEX,
-              1, cv::Scalar(0, 255, 255), 2);
+  renderRankedLabels(labels, image);
 }
 
 std::vector<cv::Point>

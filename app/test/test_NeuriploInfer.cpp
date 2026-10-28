@@ -1,4 +1,5 @@
 #include "AppConfig.hpp"
+#include "ResultRenderer.hpp"
 #include "neuriplo/tasks/core/task_config.hpp"
 #include <gtest/gtest.h>
 
@@ -68,4 +69,35 @@ TEST(NeuriploInferTaskConfig, ExtraParamsRoundtrip) {
   EXPECT_EQ(task_config.extra_params.at("output_format"), "json");
   EXPECT_EQ(task_config.extra_params.at("sample_stride"), "4");
   EXPECT_EQ(task_config.extra_params.at("max_frames"), "8");
+}
+
+TEST(ClassificationRendering, KeepsAllRankedResultsVisible) {
+  cv::Mat image = cv::Mat::zeros(240, 320, CV_8UC3);
+  std::vector<neuriplo_tasks::Result> results;
+  const std::vector<std::string> classes{"malamute", "Eskimo dog",
+                                         "Siberian husky", "Norwegian elkhound",
+                                         "German shepherd"};
+  for (size_t i = 0; i < classes.size(); ++i) {
+    neuriplo_tasks::Classification value;
+    value.class_id = static_cast<float>(i);
+    value.class_confidence = 0.9f - 0.1f * i;
+    results.emplace_back(value);
+  }
+  DefaultResultRenderer renderer;
+  renderer.render(
+      results, image,
+      RenderContext{neuriplo_tasks::TaskType::Classification, classes, 0.25f});
+  cv::Mat gray;
+  cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+  int text_rows = 0;
+  bool in_text = false;
+  for (int y = 0; y < gray.rows; ++y) {
+    const bool ink = cv::countNonZero(gray.row(y)) > 0;
+    if (ink && !in_text) {
+      ++text_rows;
+    }
+    in_text = ink;
+  }
+  EXPECT_EQ(text_rows, 5);
+  EXPECT_EQ(cv::countNonZero(gray.col(gray.cols - 1)), 0);
 }

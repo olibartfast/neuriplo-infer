@@ -5,6 +5,15 @@
 
 namespace neuriplo_infer {
 
+std::vector<int64_t> taskInputShape(std::vector<int64_t> shape,
+                                    size_t batch_size,
+                                    bool video_classification) {
+  if (shape.size() == 3 || (video_classification && shape.size() == 4)) {
+    shape.insert(shape.begin(), static_cast<int64_t>(batch_size));
+  }
+  return shape;
+}
+
 std::string datatypeTag(TensorDataType datatype) {
   switch (datatype) {
   case TensorDataType::Float32:
