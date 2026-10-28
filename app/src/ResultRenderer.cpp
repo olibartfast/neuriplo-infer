@@ -84,7 +84,8 @@ void renderRankedLabels(const std::vector<std::string> &labels,
   }
   const double scale = std::min(
       {0.7, static_cast<double>(image.cols - 2 * margin - 2) / max_width,
-       static_cast<double>(image.rows - 2 * margin) / (40.0 * labels.size())});
+       static_cast<double>(image.rows - 2 * margin) /
+           (40.0 * static_cast<double>(labels.size()))});
   if (scale <= 0.0) {
     return;
   }
