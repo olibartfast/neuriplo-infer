@@ -108,3 +108,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/LinkBackend.cmake)
 if(ENABLE_APP_TESTS)
     add_subdirectory(test)
 endif()
+
+# Agent/developer verification tool; shares the exact production pipeline.
+option(NEURIPLO_INFER_BUILD_VALIDATION_TOOLS "Build real-output model validation tools" OFF)
+if(NEURIPLO_INFER_BUILD_VALIDATION_TOOLS)
+    add_executable(neuriplo-model-validation validation/ModelValidation.cpp)
+    target_link_libraries(neuriplo-model-validation PRIVATE ${NEURIPLO_INFER_LIBRARY})
+endif()

@@ -1,6 +1,17 @@
 name: Fetch neuriplo versions.env
 description: Downloads versions.env from the neuriplo repo selected from the current release line
 
+outputs:
+  onnxruntime_version:
+    description: Pinned ONNX Runtime SDK version
+    value: ${{ steps.sdk.outputs.onnx_runtime_version }}
+  pytorch_version:
+    description: Pinned LibTorch SDK version
+    value: ${{ steps.sdk.outputs.pytorch_version }}
+  openvino_version:
+    description: Pinned OpenVINO SDK version
+    value: ${{ steps.sdk.outputs.openvino_version }}
+
 runs:
   using: composite
   steps:
@@ -25,3 +36,8 @@ runs:
         mkdir -p build/_deps/neuriplo-src
         curl -fsSL "https://raw.githubusercontent.com/olibartfast/neuriplo/${neuriplo_ref}/versions.env" \
           -o build/_deps/neuriplo-src/versions.env
+
+    - name: Resolve pinned CI SDK versions
+      id: sdk
+      shell: bash
+      run: python3 scripts/ci_sdk_versions.py build/_deps/neuriplo-src/versions.env >> "$GITHUB_OUTPUT"

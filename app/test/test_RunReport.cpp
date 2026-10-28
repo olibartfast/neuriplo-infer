@@ -225,16 +225,24 @@ TEST_F(RunReportFile, AnUnwritableReportNeverThrows) {
 }
 
 TEST_F(RunReportFile, AWriteThatCannotBeFlushedIsReported) {
-  // Opening succeeds on /dev/full and every write fails on flush, which is
-  // what a full disk does. Checking only is_open() would report success over
-  // truncated JSON.
-  if (!std::filesystem::exists("/dev/full")) {
-    GTEST_SKIP() << "no /dev/full on this platform";
+  if (!std::filesystem::is_character_file("/dev/full")) {
+    GTEST_SKIP() << "needs the /dev/full character device";
   }
   RunReport report;
   report.addSample();
+  ASSERT_TRUE(neuriplo_infer::writeRunReport(report, path_));
+  const auto previous = readReport(path_);
 
-  EXPECT_FALSE(neuriplo_infer::writeRunReport(report, "/dev/full"));
+  // Reports are written atomically through path.tmp. Directly targeting
+  // /dev/full would rename over the device when running as root. Fail the
+  // temporary stream instead, keeping the existing report and device intact.
+  auto temporary = path_;
+  temporary += ".tmp";
+  std::filesystem::create_symlink("/dev/full", temporary);
+  report.addSample();
+  EXPECT_FALSE(neuriplo_infer::writeRunReport(report, path_));
+  EXPECT_EQ(readReport(path_), previous);
+  EXPECT_TRUE(std::filesystem::is_character_file("/dev/full"));
   EXPECT_TRUE(neuriplo_infer::writeRunReport(report, path_));
 }
 

@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Preserve every runtime input datatype through the task bridge, including independently typed detector dimensions, token IDs and attention masks.
+- Resolve ONNX Runtime, LibTorch and OpenVINO CI SDK versions from the pinned neuriplo metadata; reject image/metadata mismatches instead of building against older SDKs.
+- Import the OpenVINO runtime target in the application test scope so OpenVINO builds can enable the app tests.
+
 ## [0.11.3] - 2026-10-28
 
 ### Fixed
