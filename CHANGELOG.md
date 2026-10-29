@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- Cancel remaining backend and KServe CI configurations when any configuration fails, using a single fail-fast matrix.
 - Preserve every runtime input datatype through the task bridge, including independently typed detector dimensions, token IDs and attention masks.
 - Resolve ONNX Runtime, LibTorch and OpenVINO CI SDK versions from the pinned neuriplo metadata; reject image/metadata mismatches instead of building against older SDKs.
 - Import the OpenVINO runtime target in the application test scope so OpenVINO builds can enable the app tests.
