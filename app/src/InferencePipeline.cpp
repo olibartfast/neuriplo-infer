@@ -240,7 +240,26 @@ void InferencePipeline::renderResults(
 }
 
 InferencePipelineBuilder::InferencePipelineBuilder(const AppConfig &config)
-    : config_(config) {}
+    : config_(config) {
+#ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+  local_engine_factory_ = [](const std::string &weights, bool use_gpu,
+                             size_t batch,
+                             const std::vector<std::vector<int64_t>> &sizes) {
+    return setup_inference_engine(weights, use_gpu, batch, sizes);
+  };
+#endif
+}
+
+#ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+InferencePipelineBuilder::InferencePipelineBuilder(const AppConfig &config,
+                                                   LocalEngineFactory factory)
+    : InferencePipelineBuilder(config) {
+  if (!factory) {
+    throw std::invalid_argument("Local engine factory must be provided");
+  }
+  local_engine_factory_ = std::move(factory);
+}
+#endif
 
 InferencePipelineBuilder &
 InferencePipelineBuilder::source(const std::vector<std::string> &sources) {
@@ -322,9 +341,8 @@ void InferencePipelineBuilder::setupBackend(InferencePipeline &pipeline) const {
   }
 
 #ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
-  const auto use_gpu = config_.use_gpu && hasNvidiaGPU();
-  pipeline.engine = setup_inference_engine(
-      buildEngineWeights(config_), use_gpu,
+  pipeline.engine = local_engine_factory_(
+      buildEngineWeights(config_), config_.use_gpu,
       static_cast<size_t>(config_.batch_size), config_.input_sizes);
   if (!pipeline.engine) {
     throw std::runtime_error("Can't setup an inference engine for " +

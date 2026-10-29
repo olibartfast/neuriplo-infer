@@ -197,3 +197,39 @@ TEST(InferencePipelineBuilderTest, BuildWithCustomRenderer) {
         << "Unexpected runtime_error: " << e.what();
   }
 }
+
+#ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+namespace {
+struct BackendConstructionObserved {};
+} // namespace
+
+TEST(LocalDeviceSelection, PassesRequestedDeviceToBackendFactory) {
+  for (const bool requested_gpu : {false, true}) {
+    AppConfig config;
+    config.use_gpu = requested_gpu;
+    config.weights = "synthetic-model.onnx";
+    config.batch_size = 2;
+    config.input_sizes = {{1, 3, 2, 2}, {1, 2}};
+    bool called = false;
+    InferencePipelineBuilder builder(
+        config,
+        [&](const std::string &weights, bool use_gpu, size_t batch,
+            const std::vector<std::vector<int64_t>> &sizes)
+            -> std::unique_ptr<InferenceInterface> {
+          called = true;
+          EXPECT_EQ(weights, config.weights);
+          EXPECT_EQ(use_gpu, requested_gpu);
+          EXPECT_EQ(batch, 2u);
+          EXPECT_EQ(sizes, config.input_sizes);
+          throw BackendConstructionObserved{};
+        });
+    EXPECT_THROW(builder.build(), BackendConstructionObserved);
+    EXPECT_TRUE(called);
+  }
+}
+
+TEST(LocalDeviceSelection, RejectsMissingBackendFactory) {
+  EXPECT_THROW(InferencePipelineBuilder(AppConfig{}, {}),
+               std::invalid_argument);
+}
+#endif
