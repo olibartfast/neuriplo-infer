@@ -188,14 +188,14 @@ jobs:
       uses: actions/cache@v4
       id: build_onnxruntime_cache_ort
       with:
-        path: ~/onnxruntime-linux-x64-gpu-${{ env.ORT_VERSION }}
-        key: onnxruntime-linux-x64-gpu-${{ env.ORT_VERSION }}
+        path: ~/onnxruntime-linux-x64-${{ env.ORT_VERSION }}
+        key: onnxruntime-linux-x64-${{ env.ORT_VERSION }}
       if: ${{ matrix.variant == 'build-onnxruntime' }}
     - name: Download ONNX Runtime
       run: |
-        wget -q https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
-        tar -xzf onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz -C ~
-        rm onnxruntime-linux-x64-gpu-${ORT_VERSION}.tgz
+        wget -q https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz
+        tar -xzf onnxruntime-linux-x64-${ORT_VERSION}.tgz -C ~
+        rm onnxruntime-linux-x64-${ORT_VERSION}.tgz
       if: ${{ matrix.variant == 'build-onnxruntime' && (steps.build_onnxruntime_cache_ort.outputs.cache-hit != 'true') }}
     - name: Set up ccache
       uses: hendrikmuhs/ccache-action@v1
@@ -215,7 +215,7 @@ jobs:
         cmake -B build -G Ninja \
           -DDEFAULT_BACKEND=ONNX_RUNTIME \
           -DORT_VERSION=${ORT_VERSION} \
-          -DONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-gpu-${ORT_VERSION} \
+          -DONNX_RUNTIME_DIR=$HOME/onnxruntime-linux-x64-${ORT_VERSION} \
           -DENABLE_APP_TESTS=OFF \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -244,7 +244,7 @@ jobs:
       if: ${{ matrix.variant == 'build-libtorch-cpu' }}
     - name: Download LibTorch CPU
       run: |
-        wget -q "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-${LIBTORCH_VERSION}%2Bcpu.zip" \
+        wget -q "https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-${LIBTORCH_VERSION}%2Bcpu.zip" \
           -O libtorch.zip
         unzip -q libtorch.zip -d ~
         rm libtorch.zip
