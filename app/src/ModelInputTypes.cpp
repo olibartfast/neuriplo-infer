@@ -47,6 +47,10 @@ void applyInputDatatypes(neuriplo_tasks::ModelInfo &model_info,
         " model inputs; refusing to guess the type of an image input");
   }
 
+  // Preserve every tensor's actual runtime type, including auxiliary inputs
+  // whose scalar types cannot be represented by the image PixelType enum.
+  model_info.input_datatypes = datatypes;
+
   const size_t count =
       std::min({model_info.input_shapes.size(), model_info.input_types.size(),
                 datatypes.size()});
