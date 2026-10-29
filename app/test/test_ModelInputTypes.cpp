@@ -65,6 +65,7 @@ TEST(ModelInputTypes, LeavesNonImageInputsToTheTask) {
       {{"images", {1, 3, 640, 640}}, {"orig_target_sizes", {1, 2}}});
   neuriplo_infer::applyInputDatatypes(info, {"FP32", "INT64"}, false);
   EXPECT_EQ(info.input_types[1], neuriplo_tasks::PixelType::Float32);
+  EXPECT_EQ(info.input_datatypes, (std::vector<std::string>{"FP32", "INT64"}));
 }
 
 TEST(ModelInputTypes, ServerSidePreprocessingIsNotChecked) {
@@ -90,4 +91,15 @@ TEST(TaskInputShape, PreservesFullVideoAndImageShapes) {
 TEST(TaskInputShape, PreservesTextQueryDimensions) {
   EXPECT_EQ(neuriplo_infer::taskInputShape({3, 16}, 3, false),
             (std::vector<int64_t>{3, 16}));
+}
+
+TEST(ModelInputTypes,
+     PreservesMixedRuntimeTypesWithoutNarrowingAuxiliaryInputs) {
+  for (const std::string size_type : {"INT32", "INT64", "FP32"}) {
+    auto info = modelWithInputs(
+        {{"images", {1, 3, 320, 544}}, {"orig_target_sizes", {1, 2}}});
+    neuriplo_infer::applyInputDatatypes(info, {"FP32", size_type}, false);
+    EXPECT_EQ(info.input_datatypes,
+              (std::vector<std::string>{"FP32", size_type}));
+  }
 }

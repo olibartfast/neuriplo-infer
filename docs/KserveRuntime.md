@@ -206,7 +206,7 @@ per-backend runtimes. `neuriplo-tasks` does not depend on `neuriplo`.
   PR (CTest: `kserve_integration_dry_run`; workflow:
   `.github/workflows/kserve-integration.yml`); the live path is gated behind a
   manual `workflow_dispatch` (`run_live=true`).
-- The CI build matrix (`ci.yml` `kserve-build-matrix`) builds with and without
+- The CI build matrix (`ci.yml` `backend-builds`, KServe variants) builds with and without
   gRPC, with `ENABLE_KSERVE=OFF`, and a kserve-only (`LOCAL_BACKENDS=OFF`)
   config, asserting KServe sources are absent in local-only builds and
   neuriplo is not fetched in kserve-only builds.
