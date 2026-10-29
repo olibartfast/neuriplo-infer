@@ -16,6 +16,10 @@ name: CI
     paths-ignore:
     - '**.md'
     - docs/**
+# A pull request and its branch push share this key. Keep only the newest run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 jobs:
   backend-builds:
     name: ${{ matrix.display }}
