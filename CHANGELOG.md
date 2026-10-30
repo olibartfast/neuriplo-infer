@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   v0.11.3, neuriplo-tasks v0.8.4) instead of candidate commit SHAs. Checking
   out the release tag now builds against the code the release was cut from.
 
+### Documentation
+- Refresh the backend coverage matrix for the 0.11.5 stack: record the
+  TorchScript input-datatype requirement, the DETR TorchScript and OpenCV DNN
+  results, and the per-backend device selection.
+
 ## [0.11.4] - 2026-10-30
 
 ### Fixed
