@@ -50,12 +50,19 @@ not tested.
 | OpenCV DNN | `OPENCV_DNN` (default) | `opencv` | — | `.onnx` with static shapes; Darknet `.weights` + `.cfg` |
 | ONNX Runtime | `ONNX_RUNTIME` | `onnx_runtime` | `docker/Dockerfile.onnxruntime` | `.onnx` |
 | TensorRT | `TENSORRT` | `tensorrt` | `docker/Dockerfile.tensorrt` | serialized `.engine` |
-| LibTorch | `LIBTORCH` | `libtorch` | `docker/Dockerfile.libtorch` | TorchScript `.pt` |
+| LibTorch | `LIBTORCH` | `libtorch` | `docker/Dockerfile.libtorch` | TorchScript `.pt` / `.torchscript`; AOTInductor `.pt2` |
 | OpenVINO | `OPENVINO` | `openvino` | `docker/Dockerfile.openvino` | IR `.xml` + `.bin`, or `.onnx` |
 | TensorFlow | `LIBTENSORFLOW` | `tensorflow` | `docker/Dockerfile.libtensorflow` | SavedModel directory |
 | LiteRT | `LITERT` | `litert` | `docker/Dockerfile.litert` | `.tflite` |
 | ExecuTorch | `EXECUTORCH` | `executorch` | `docker/Dockerfile.executorch` | `.pte` |
 | llama.cpp | `LLAMACPP` | — (built inside the image) | `docker/Dockerfile.llamacpp` | `.gguf` model + `.gguf` projector |
+
+The LibTorch backend chooses its runtime from the model file extension. A
+`.pt2` file (case-insensitive) is an AOTInductor package; every other path is
+TorchScript. The two are not interchangeable and there is no fallback, so the
+suffix must match the artifact. AOTInductor needs LibTorch 2.6 or newer, the
+complete static input shape including the batch dimension, and package metadata
+for input datatypes, shapes, and device.
 
 TorchScript models must include the input-datatype metadata written by
 [torchscript_metadata.py](https://github.com/olibartfast/neuriplo/blob/master/scripts/lib/torchscript_metadata.py).
