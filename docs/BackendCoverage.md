@@ -4,13 +4,19 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-10-23.** The [gate table](#gate-table) summarizes
-coverage by task and backend. Recorded results are listed under
-[Evidence](#evidence); build versions and test totals are under
-[Environments](#environments).
+**Last updated: 2026-10-30.** Coverage was refreshed against neuriplo-infer
+0.11.5, neuriplo 0.11.3 and neuriplo-tasks 0.8.4. The
+[gate table](#gate-table) summarizes coverage by task and backend. Recorded
+results are listed under [Evidence](#evidence); build versions and test totals
+are under [Environments](#environments).
 
 Main limitations:
 
+- **TorchScript input metadata:** since neuriplo 0.11.3, TorchScript files
+  must record their input datatypes. Files exported without the metadata
+  helper are rejected at load time and must be re-exported; some Torch cells
+  below are BLOCKED for that reason, while the re-exported DETR files are
+  PASS.
 - **Incorrect outputs:** TensorFlow ResNet-50 classification and EdgeCrafter
   TFLite conversion are **KNOWN-BAD**; do not serve these combinations.
 - **Incomplete test coverage:** LiteRT has 21 failing death-tests;
@@ -57,13 +63,13 @@ Evidence column points to the task's section below.
 
 | Task (representative) | DNN | ORT | TRT | Torch | OVINO | TF | LiteRT | ExecT | LLaMA | KServe | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | UNTESTED | UNTESTED | PASS | [E1](#ev-yolo26) |
+| Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | BLOCKED | PASS | BUILDS | PASS | UNTESTED | UNTESTED | PASS | [E1](#ev-yolo26) |
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | PASS | UNTESTED | UNTESTED | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | UNTESTED | DRY-RUN | DRY-RUN | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E3](#ev-rtdetr) |
+| Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | KNOWN-BAD | [E4](#ev-ecdet) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E5](#ev-seg) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | PASS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E6](#ev-classification) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E8](#ev-pose) |
@@ -74,8 +80,10 @@ Evidence column points to the task's section below.
 
 ## Evidence
 
-Live runs below are all 2026-10-23 on `data/dog.jpg` (`person.jpg` for pose)
-with rendered outputs inspected, unless noted otherwise.
+Live runs below were recorded on 2026-10-23 on `data/dog.jpg` (`person.jpg`
+for pose) with rendered outputs inspected, unless a bullet gives another date.
+The 2026-10-30 runs used the neuriplo-infer 0.11.5 release stack (neuriplo
+0.11.3, neuriplo-tasks 0.8.4).
 
 ### <a id="ev-yolo26"></a>E1 — Object detection (`yolo26`)
 
@@ -89,10 +97,13 @@ with rendered outputs inspected, unless noted otherwise.
   identical outputs. The pre-existing `rfdetr-keypoint-preview.engine`
   (built with 10.13) does NOT deserialize on 10.14 — engines were rebuilt
   with 10.14 `trtexec`.
-- **Torch PASS** (CPU, 1083 ms): `yolo26s.torchscript` (ultralytics export)
-  with `--input_sizes=1,3,640,640` — identical outputs. The TorchScript
-  graph declares dynamic inputs, and the backend uses provided sizes
-  verbatim, so the batch dim must be included explicitly.
+- **Torch BLOCKED (2026-10-30).** The 2026-10-23 `yolo26s.torchscript`
+  (ultralytics export) ran PASS in 1083 ms with
+  `--input_sizes=1,3,640,640`, but that file predates the input-datatype
+  metadata requirement in neuriplo 0.11.3. It now stops at load with
+  `TorchScript input 'x.1' has no datatype metadata; re-export with the typed
+  input metadata helper`. Re-export with the helper to restore the cell; the
+  other backends are unaffected.
 - **OpenVINO PASS** (CPU, 267 ms): `yolo26s.onnx` read directly.
 - **LiteRT PASS** (CPU, 888 ms): `yolo26s.tflite` (`1x640x640x3`).
 - **KServe PASS** (HTTP): YOLO26 `.tflite` over `litert`, validated locally
@@ -115,6 +126,15 @@ with rendered outputs inspected, unless noted otherwise.
 
 - **ORT/TRT DRY-RUN.** TRT is the default preset; `ci.yml` builds the TRT
   image; emulation dry-run green. No live log cited — not PASS.
+- **Torch PASS (2026-10-30, CPU, 15.8 s inference).** A typed
+  `rtdetr.torchscript` export (image plus original-size input, FP32/INT64)
+  loaded on the 0.11.5 stack and rendered dog, bicycle and car correctly on
+  `data/dog.jpg` at 0.25/0.45. The file records its input datatypes; the
+  pre-contract export is rejected. `rtdetrv4` on Torch is still unrun.
+- **DNN BLOCKED (2026-10-30).** `rtdetr` and `rtdetrv4` take two inputs (image
+  and original size). OpenCV DNN accepts a single input only — the run stops
+  with `OpenCV DNN backend currently supports only single input models, got 2
+  inputs`. Same limitation as E10.
 
 ### <a id="ev-ecdet"></a>E4 — Object detection (`ecdet`)
 
@@ -139,8 +159,11 @@ with rendered outputs inspected, unless noted otherwise.
 
 ### <a id="ev-classification"></a>E6 — Classification (`torchvisionclassifier`)
 
-- **Torch PASS** (CPU, 689 ms): traced `resnet50` (`torchvision`
-  IMAGENET1K_V2, `--input_sizes=1,3,224,224`) — malamute 0.44.
+- **Torch BLOCKED (2026-10-30).** The traced `resnet50` (`torchvision`
+  IMAGENET1K_V2) ran PASS in 689 ms with `--input_sizes=1,3,224,224` —
+  malamute 0.44 — but the file has no input-datatype metadata and is now
+  rejected at load with the same error as E1. Re-export with the helper to
+  restore the cell.
 - **TF KNOWN-BAD** (CPU, 2600 ms): ResNet-50 SavedModel (neuriplo-tasks
   export guide) loads and runs but labels `tiger shark`. The app's generic
   RGB `[0,1]` preprocessing lacks ResNet-50's caffe-mode preprocessing
@@ -211,13 +234,15 @@ gated as alias.
 ## Environments
 
 How each column was built and tested on 2026-10-23 (all CPU except TRT).
+The TorchScript metadata rule and the DETR re-runs are from 2026-10-30; the
+other columns were not re-run on the 0.11.5 stack.
 
 | Backend | Version / artifact | Build flags | Tests | Notes |
 |---|---|---|---|---|
 | DNN | OpenCV 5.0.0 source-built (`~/dependencies/opencv-5.0.0`, `scripts/setup_opencv.sh`) | `OPENCV_DNN` | 179/179 | New graph engine; `--input_sizes` required; apt 4.6 kept as fallback when the 5.x dir is absent |
 | ORT | 1.19.2 CPU | `ONNX_RUNTIME` | 179/179 | Full inference runs, renders inspected |
 | TRT | 10.14.1.48 FP16 | `TENSORRT` | 194/194 | Engines rebuilt from the same `.onnx`; stale `build-trt` dir (pinned videocapture v0.5.0) reconfigured to v0.6.0 |
-| Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4) |
+| Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
 | OVINO | 2025.2.0 | `OPENVINO`, tests OFF | — (not covered) | Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too (`Dockerfile.openvino`) |
 | TF | 2.19 | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
 | LiteRT | `~/dependencies/litert` | `LITERT` | 158/179 | 21 death-tests crash at subprocess exit (SEGV / `free(): invalid pointer`); live CLI exits 0 — see Open item 8 |
@@ -229,9 +254,9 @@ How each column was built and tested on 2026-10-23 (all CPU except TRT).
 
 | Status | Count (task rows) | Rows |
 |---|---|---|
-| PASS (≥1 backend live-gated) | 9 | `yolo26`, `yolov8`, `torchvisionclassifier`, `ecdet`, `owlv2`, `gemma4`, `yoloseg`, pose (`rfdetr_keypoint` alias), depth (`yolo26depth` alias) |
+| PASS (≥1 backend live-gated) | 9 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `owlv2`, `gemma4`, `yoloseg`, pose (`rfdetr_keypoint` alias), depth (`yolo26depth` alias) |
 | KNOWN-BAD recorded | 2 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW |
-| DRY-RUN best | 4 | `rtdetr`, `ecseg`, `videomae`, `raft` |
+| DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
 | BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
 | **Total** | **14** | 10 task families; detection/segmentation/pose split by representative |
 
@@ -244,14 +269,16 @@ How each column was built and tested on 2026-10-23 (all CPU except TRT).
    `docker_run_inference_e2e_example.sh --list-presets` but has no job in
    `e2e-example-emulation.yml`. Add it (one-line matrix entry).
 3. **Record Torch / OpenVINO `--backend` override runs as repeatable gates.**
-   Both gated live (`yolo26`, plus `torchvisionclassifier` on Torch) but only
-   via manual CLI invocations, not presets.
+   The DETR Torch run is a manual CLI invocation on `rtdetr.torchscript`, not
+   a preset. Add presets and re-gate once the remaining TorchScript exports
+   are refreshed (item 9).
 4. **OPENCV_DNN scope (now 5.0.0).** The YOLO `Split`/`Unsqueeze` blockers,
    the `rfdetr` `BOOL` dtype failure, and the `owlv2`/`groundingdino`
    importer errors are all gone on the 5.x importer. Remaining 5.x gap:
-   multi-input inference (`owlv2`, `groundingdino` fail in
-   `setMainGraphInput`). Still unprobed on 5.x: `rtdetr`, `ecdet`, `ecseg`,
-   torchvision ResNet, `raft`, `vitpose`, `depth_anything_v2`.
+   multi-input inference (`owlv2`, `groundingdino` and the two-input
+   `rtdetr`/`rtdetrv4` exports fail in `setMainGraphInput`). Still unprobed on
+   5.x: `ecdet`, `ecseg`, torchvision ResNet, `raft`, `vitpose`,
+   `depth_anything_v2`.
 5. **KServe per-task gates.** Done for servable local models (`real-onnx`,
    HTTP): pose, depth, open-vocab — plus YOLO26-`litert` PASS and `ecdet`
    KNOWN-BAD. gRPC transport BLOCKED server-side. Still open: classification,
@@ -267,6 +294,12 @@ How each column was built and tested on 2026-10-23 (all CPU except TRT).
    pass; 21 death-style tests SEGV / `free(): invalid pointer` in the forked
    child at teardown. Live CLI exits 0. Bisect with `ctest -R` on a minimal
    link before trusting LiteRT CI.
+9. **Re-export the remaining TorchScript representatives.** neuriplo 0.11.3
+   requires input-datatype metadata in the TorchScript archive. `yolo26` and
+   `torchvisionclassifier` were gated on pre-contract files and are now
+   BLOCKED until re-exported with
+   [torchscript_metadata.py](https://github.com/olibartfast/neuriplo/blob/master/scripts/lib/torchscript_metadata.py);
+   the DETR family has typed exports and was re-gated 2026-10-30.
 
 ## Integration-test evidence
 
@@ -318,6 +351,9 @@ in [KserveCompatibility.md](KserveCompatibility.md).
   `ecdet` numbers, YOLO26-`litert` note, Identity round-trips).
 - Task inventory: [generated/supported-model-types.md](generated/supported-model-types.md),
   `app/src/Capabilities.cpp` (`taskCapabilities`), `app/src/NeuriploInferTaskRouting.cpp`.
+- TorchScript input metadata:
+  [torchscript_metadata.py](https://github.com/olibartfast/neuriplo/blob/master/scripts/lib/torchscript_metadata.py)
+  (writes the datatype sidecar read by the libtorch backend).
 - App-surface integration tests: [§ Integration-test evidence](#integration-test-evidence)
   above owns them (moved from `neuriplo-platform`; live paths stay manual
   per each suite's README).

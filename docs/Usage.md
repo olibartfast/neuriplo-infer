@@ -51,7 +51,7 @@ neuriplo-infer --capabilities
 | `--weights`, `-w=<path>` | — | Local model file. Required for local inference and `--export_metadata`; not used with `--kserve_endpoint`. |
 | `--source`, `-s=<input>` | — | Image, video file, or stream URL (e.g. `rtsp://...`). Optical flow takes two comma-separated images. Omit for text-only image understanding and for `--export_metadata`. |
 | `--labels`, `--lb=<path>` | — | Class labels, one per line, for fixed-label models (`labels/` ships COCO and VOC lists). |
-| `--use-gpu` | `false` | Run inference on the GPU when the backend supports it. |
+| `--use-gpu` | `false` | Ask the backend to run on the GPU. Each backend chooses the device it can use; a GPU request no longer disables non-NVIDIA backends when no CUDA device is present. |
 | `--input_sizes`, `--is='<CHW;...>'` | — | Input sizes for models with dynamic axes, or for backends that cannot report input shapes (OpenCV DNN). E.g. `'3,224,224'`, or `'3,640,640;2'` for RT-DETR / D-FINE / DEIM. |
 | `--batch`, `-b=<n>` | `1` | Batch size. Values above 1 are not currently supported. |
 
