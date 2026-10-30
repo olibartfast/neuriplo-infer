@@ -16,6 +16,7 @@
 #include "neuriplo/tasks/core/model_info.hpp"
 #include "neuriplo/tasks/core/task_interface.hpp"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -75,6 +76,12 @@ void requireServerPostprocessMatchesTask(const InferencePipeline &pipeline,
 class InferencePipelineBuilder {
 public:
   explicit InferencePipelineBuilder(const AppConfig &config);
+#ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+  using LocalEngineFactory = std::function<std::unique_ptr<InferenceInterface>(
+      const std::string &, bool, size_t,
+      const std::vector<std::vector<int64_t>> &)>;
+  InferencePipelineBuilder(const AppConfig &config, LocalEngineFactory factory);
+#endif
 
   InferencePipelineBuilder &source(const std::vector<std::string> &sources);
   InferencePipelineBuilder &batch(int batch_size);
@@ -85,6 +92,9 @@ public:
 
 private:
   AppConfig config_;
+#ifdef NEURIPLO_INFER_WITH_LOCAL_BACKENDS
+  LocalEngineFactory local_engine_factory_;
+#endif
   std::unique_ptr<ResultRenderer> renderer_;
   neuriplo_infer::RunReport *report_{nullptr};
 
