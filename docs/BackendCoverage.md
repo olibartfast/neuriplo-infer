@@ -61,6 +61,11 @@ Columns: `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
 `KServe` = remote `KserveEngine`. Representative preset in parentheses.
 Evidence column points to the task's section below.
 
+The `Torch` column covers TorchScript. AOTInductor is a second runtime inside
+the same LibTorch backend, selected when the model path ends in `.pt2`. It is
+not covered by these cells yet; do not read a Torch cell as AOTInductor
+evidence.
+
 | Task (representative) | DNN | ORT | TRT | Torch | OVINO | TF | LiteRT | ExecT | LLaMA | KServe | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | BLOCKED | PASS | BUILDS | PASS | UNTESTED | UNTESTED | PASS | [E1](#ev-yolo26) |
@@ -242,7 +247,7 @@ other columns were not re-run on the 0.11.5 stack.
 | DNN | OpenCV 5.0.0 source-built (`~/dependencies/opencv-5.0.0`, `scripts/setup_opencv.sh`) | `OPENCV_DNN` | 179/179 | New graph engine; `--input_sizes` required; apt 4.6 kept as fallback when the 5.x dir is absent |
 | ORT | 1.19.2 CPU | `ONNX_RUNTIME` | 179/179 | Full inference runs, renders inspected |
 | TRT | 10.14.1.48 FP16 | `TENSORRT` | 194/194 | Engines rebuilt from the same `.onnx`; stale `build-trt` dir (pinned videocapture v0.5.0) reconfigured to v0.6.0 |
-| Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
+| Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | TorchScript cells only; AOTInductor (`.pt2`) is a separate adapter and is not yet covered. KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
 | OVINO | 2025.2.0 | `OPENVINO`, tests OFF | — (not covered) | Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too (`Dockerfile.openvino`) |
 | TF | 2.19 | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
 | LiteRT | `~/dependencies/litert` | `LITERT` | 158/179 | 21 death-tests crash at subprocess exit (SEGV / `free(): invalid pointer`); live CLI exits 0 — see Open item 8 |
