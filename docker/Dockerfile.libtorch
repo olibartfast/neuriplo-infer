@@ -30,9 +30,9 @@ ARG Torch_DIR=$HOME/libtorch/share/cmake/Torch/
 # Compute platform from pytorch.org, i.e. cu118, cu121, rocm6.0 or cpu
 ARG COMPUTE_PLATFORM=cpu
 RUN . /tmp/versions.env && \
-    wget https://download.pytorch.org/libtorch/$COMPUTE_PLATFORM/libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}%2B$COMPUTE_PLATFORM.zip && \
-    unzip libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}+$COMPUTE_PLATFORM.zip -d $HOME && \
-    rm libtorch-cxx11-abi-shared-with-deps-${PYTORCH_VERSION}+$COMPUTE_PLATFORM.zip
+    wget https://download.pytorch.org/libtorch/$COMPUTE_PLATFORM/libtorch-shared-with-deps-${PYTORCH_VERSION}%2B$COMPUTE_PLATFORM.zip && \
+    unzip libtorch-shared-with-deps-${PYTORCH_VERSION}+$COMPUTE_PLATFORM.zip -d $HOME && \
+    rm libtorch-shared-with-deps-${PYTORCH_VERSION}+$COMPUTE_PLATFORM.zip
 
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder

@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.11.6] - 2026-10-30
 
+### Fixed
+- Download the LibTorch archive name that 2.14 publishes, so
+  `docker/Dockerfile.libtorch` builds again. The previous name still exists for
+  older releases but returns 404 for the pinned 2.14.0.
+
 ### Documentation
 - Explain how the LibTorch backend chooses between TorchScript and
   AOTInductor: the `.pt2` extension selects AOTInductor, everything else is
