@@ -163,3 +163,7 @@ addressing issues #38 and #39, which close with the next release (Phase 2).
 Revisit this file at the end of every feature (stage 7). Delivered work changes
 what should come next: merge phases that turned out to be one change, split a
 phase that grew a dependency, and delete a phase the work made unnecessary.
+
+## Backend CI fail-fast — validation in progress
+
+Maintainer-requested CI correction: all six backend builds and four KServe configurations share one fail-fast matrix. See [requirements](2026-10-29-backend-ci-fail-fast/requirements.md) and [validation](2026-10-29-backend-ci-fail-fast/validation.md). Hosted cancellation behavior and the existing SDK download failures remain to be verified. No release is authorized by this work.

@@ -4,10 +4,12 @@
 # because Docker evaluates FROM instructions before any RUN commands can execute.
 # This means versions.env cannot be sourced to populate it at build time.
 # Keep this version in sync with OPENVINO_VERSION in neuriplo/versions.env.
-ARG OPENVINO_VERSION=2025.2.0
+ARG OPENVINO_VERSION=2026.3.0
 
 # Stage 1: Build
 FROM openvino/ubuntu24_runtime:${OPENVINO_VERSION} AS builder
+ARG OPENVINO_VERSION
+ENV OPENVINO_IMAGE_VERSION=${OPENVINO_VERSION}
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV HOME=/root
@@ -30,12 +32,15 @@ RUN apt-get update \
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 COPY VERSION /tmp/neuriplo-infer.VERSION
+COPY versions.env /tmp/neuriplo-infer.versions.env
 
-RUN dependency_ref=develop && \
-    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi && \
+RUN dependency_ref="$(awk -F= '/^NEURIPLO_VERSION=/{print $2; exit}' /tmp/neuriplo-infer.versions.env)" && \
+    if [ -z "$dependency_ref" ]; then dependency_ref=develop; \
+    if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi; fi && \
     wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
 RUN . /tmp/versions.env && \
+    test "${OPENVINO_IMAGE_VERSION}" = "${OPENVINO_VERSION}" && \
     mkdir -p "$HOME/dependencies" && \
     ln -s "${INTEL_OPENVINO_DIR}" "$HOME/dependencies/openvino_${OPENVINO_VERSION}"
 
@@ -48,11 +53,11 @@ COPY . .
 # Build the project using CMake
 RUN cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=OPENVINO \
-    -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DBUILD_TESTS=OFF && \
-    cmake --build build --config Release -j$(nproc)
+    -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DENABLE_APP_TESTS=ON && \
+    cmake --build build --config Release -j$(nproc) && \
+    ctest --test-dir build --output-on-failure
 
 # Stage 2: Final image
-ARG OPENVINO_VERSION=2025.2.0
 FROM openvino/ubuntu24_runtime:${OPENVINO_VERSION} AS final
 
 ENV DEBIAN_FRONTEND=noninteractive

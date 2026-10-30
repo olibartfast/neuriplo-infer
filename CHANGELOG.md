@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.4] - 2026-10-30
+
+### Fixed
+- Pass the requested device to the chosen backend. Asking for a GPU no longer
+  disables MIGraphX, OpenVINO or other GPU backends simply because no NVIDIA
+  device was found; each backend now decides which device it can use.
+- Use the available CPU ONNX Runtime archive and current LibTorch CPU archive names in hosted CPU builds.
+- Cancel remaining backend and KServe CI configurations when any configuration fails, using a single fail-fast matrix.
+- Preserve every runtime input datatype through the task bridge, including independently typed detector dimensions, token IDs and attention masks.
+- Resolve ONNX Runtime, LibTorch and OpenVINO CI SDK versions from the pinned neuriplo metadata; reject image/metadata mismatches instead of building against older SDKs.
+- Import the OpenVINO runtime target in the application test scope so OpenVINO builds can enable the app tests.
+
 ## [0.11.3] - 2026-10-28
 
 ### Fixed
@@ -795,7 +807,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.2...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.4...HEAD
+[0.11.4]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.3...v0.11.4
+[0.11.3]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.2...v0.11.3
+[0.11.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.1...v0.11.2
+[0.11.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.0...v0.11.1
+[0.11.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.2...v0.11.0
 [0.10.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.9.1...v0.10.0
