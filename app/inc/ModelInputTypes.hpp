@@ -21,6 +21,7 @@ std::vector<int64_t> taskInputShape(std::vector<int64_t> shape,
 // KServe datatype tag ("FP32", "UINT8", ...) for a backend metadata datatype.
 std::string datatypeTag(TensorDataType datatype);
 
+// Preserves every runtime tag in model_info.input_datatypes.
 // Records each image input's datatype in model_info.input_types: FP32 and UINT8
 // become their pixel types, and any other datatype on an image input throws
 // std::runtime_error naming the input. `datatypes` holds one KServe tag per

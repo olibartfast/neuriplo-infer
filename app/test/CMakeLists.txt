@@ -38,6 +38,7 @@ add_executable(${PROJECT_NAME_TEST}
     ${CMAKE_CURRENT_LIST_DIR}/test_FrameConversion.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_OutputVideoSink.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_ModelInputTypes.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_ModelValidationRecorder.cpp
     # The pure KServe protocol/retry/security suites live in the
     # neuriplo-kserve-client repo; only the adapter test stays here.
     ${CMAKE_CURRENT_LIST_DIR}/test_KserveEngine.cpp
@@ -93,6 +94,9 @@ elseif(DEFAULT_BACKEND STREQUAL "OPENVINO")
     if(WIN32)
         message(WARNING "Skipping OpenVINO test linkage on Windows; use OPENCV_DNN for native Windows test builds.")
     else()
+        # Imported targets from neuriplo's subdirectory are scoped there.
+        # These tests consume the SDK directly, so import it in this scope too.
+        find_package(OpenVINO REQUIRED HINTS "$ENV{OPENVINO_DIR}/runtime/cmake")
         target_include_directories(${PROJECT_NAME_TEST} PRIVATE ${InferenceEngine_INCLUDE_DIRS} ${neuriplo_SOURCE_DIR}/backends/openvino/src)
         target_link_libraries(${PROJECT_NAME_TEST} PRIVATE openvino::runtime )
     endif()
