@@ -57,6 +57,11 @@ not tested.
 | ExecuTorch | `EXECUTORCH` | `executorch` | `docker/Dockerfile.executorch` | `.pte` |
 | llama.cpp | `LLAMACPP` | — (built inside the image) | `docker/Dockerfile.llamacpp` | `.gguf` model + `.gguf` projector |
 
+TorchScript models must include the input-datatype metadata written by
+[torchscript_metadata.py](https://github.com/olibartfast/neuriplo/blob/master/scripts/lib/torchscript_metadata.py).
+Files exported without it are rejected at load with `TorchScript input ... has
+no datatype metadata` and need to be re-exported.
+
 One binary carries one local backend; build again with another
 `DEFAULT_BACKEND` to switch. Guides for producing model files:
 [ExportInstructions.md](ExportInstructions.md) and the
