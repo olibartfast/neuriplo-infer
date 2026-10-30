@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.5] - 2026-10-30
+
+### Fixed
+- Point the release pins in `versions.env` at real release tags (neuriplo
+  v0.11.3, neuriplo-tasks v0.8.4) instead of candidate commit SHAs. Checking
+  out the release tag now builds against the code the release was cut from.
+
 ## [0.11.4] - 2026-10-30
 
 ### Fixed
@@ -807,7 +814,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.4...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.5...HEAD
+[0.11.5]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.1...v0.11.2
