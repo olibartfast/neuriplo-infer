@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.6] - 2026-10-30
+
+### Fixed
+- Download the LibTorch archive name that 2.14 publishes, so
+  `docker/Dockerfile.libtorch` builds again. The previous name still exists for
+  older releases but returns 404 for the pinned 2.14.0.
+
+### Documentation
+- Explain how the LibTorch backend chooses between TorchScript and
+  AOTInductor: the `.pt2` extension selects AOTInductor, everything else is
+  TorchScript. Note the static input shapes and device metadata AOTInductor
+  requires, and that the coverage matrix currently exercises TorchScript only.
+
 ## [0.11.5] - 2026-10-30
 
 ### Fixed
@@ -819,7 +832,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.5...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.6...HEAD
+[0.11.6]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.2...v0.11.3
