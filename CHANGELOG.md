@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.7] - 2026-10-31
+
+### Fixed
+- Build the LibTorch backend image on Ubuntu 24.04. Ubuntu 22.04 ships
+  CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
+
 ### Documentation
 - Refresh the backend coverage matrix for the 0.11.6 stack (neuriplo
   0.11.3, neuriplo-tasks 0.8.4): record the OpenCV DNN single-input limit
@@ -839,7 +845,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.6...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.7...HEAD
+[0.11.7]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.3...v0.11.4
