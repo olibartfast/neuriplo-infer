@@ -4,9 +4,9 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-10-30.** Coverage was refreshed against neuriplo-infer
-0.11.5, neuriplo 0.11.3 and neuriplo-tasks 0.8.4. The
-[gate table](#gate-table) summarizes coverage by task and backend. Recorded
+**Last updated: 2026-10-31.** Coverage was refreshed against neuriplo-infer
+0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.4. The
+[gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
 are under [Environments](#environments).
 
@@ -25,6 +25,15 @@ Main limitations:
   models — the DNN column below runs OpenCV 5.0.0 source-built (see
   [Environments](#environments)); KServe HTTP has live evidence, while the
   gRPC failure described in E1 remains blocked server-side.
+- **Full cell matrix (2026-10-31):** `neuriplo-ui/artifacts/model-matrix`
+  ran every explicit TaskFactory architecture × backend on the 0.11.6
+  stack: 176 RUNTIME_PASS / 22 FAILED / 12 TIMEOUT / 10 KNOWN_BAD /
+  159 EXPORT_BLOCKED / 51 NOT_APPLICABLE, with 13 triage decisions. New
+  blockers recorded there and not re-claimed here: OpenCV DNN single-input
+  limit (DETR two-input, OWL three-input, `groundingdino` four-input),
+  OpenCV DNN importer SIGSEGV on EdgeCrafter exact-GELU graphs, OpenVINO
+  CPU SIGSEGV on 5D video inference, and NERT/OpenVINO setup-contract
+  rejections plus CPU-timeout video cells.
 
 See [Open items](#open-items) for remaining validation and fixes.
 
@@ -88,7 +97,9 @@ evidence.
 Live runs below were recorded on 2026-10-23 on `data/dog.jpg` (`person.jpg`
 for pose) with rendered outputs inspected, unless a bullet gives another date.
 The 2026-10-30 runs used the neuriplo-infer 0.11.5 release stack (neuriplo
-0.11.3, neuriplo-tasks 0.8.4).
+0.11.3, neuriplo-tasks 0.8.4); the 2026-10-31 cell matrix ran on the 0.11.6
+stack and is recorded in `neuriplo-ui/artifacts/model-matrix` (REPORT.md +
+13 decisions).
 
 ### <a id="ev-yolo26"></a>E1 — Object detection (`yolo26`)
 
@@ -281,8 +292,10 @@ other columns were not re-run on the 0.11.5 stack.
    the `rfdetr` `BOOL` dtype failure, and the `owlv2`/`groundingdino`
    importer errors are all gone on the 5.x importer. Remaining 5.x gap:
    multi-input inference (`owlv2`, `groundingdino` and the two-input
-   `rtdetr`/`rtdetrv4` exports fail in `setMainGraphInput`). Still unprobed on
-   5.x: `ecdet`, `ecseg`, torchvision ResNet, `raft`, `vitpose`,
+   `rtdetr`/`rtdetrv4` exports fail in `setMainGraphInput`). EdgeCrafter
+   exact-GELU graphs are a separate importer SIGSEGV, not the input-count
+   limit. `groundingdino` is confirmed 4-input (2026-10-31). Still unprobed on
+   5.x: `ecseg`, torchvision ResNet, `vitpose`,
    `depth_anything_v2`.
 5. **KServe per-task gates.** Done for servable local models (`real-onnx`,
    HTTP): pose, depth, open-vocab — plus YOLO26-`litert` PASS and `ecdet`
