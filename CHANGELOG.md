@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Documentation
+- Refresh the backend coverage matrix for the 0.11.6 stack (neuriplo
+  0.11.3, neuriplo-tasks 0.8.4): record the OpenCV DNN single-input limit
+  (including 4-input `groundingdino`), the EdgeCrafter exact-GELU importer
+  crash, and the OpenVINO 5D video inference crash, and point at the 13
+  triage decisions in the `neuriplo-ui` cell matrix.
+
 ## [0.11.6] - 2026-10-30
 
 ### Fixed
