@@ -105,7 +105,7 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Task (representative) | DNN | ORT | TRT | Torch | OVINO | TF | LiteRT | ExecT | LLaMA | KServe | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | BLOCKED | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E1](#ev-yolo26) |
-| Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
+| Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | UNTESTED | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
 | Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | UNTESTED | [E13](#ev-rfdetr) |
@@ -119,7 +119,7 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E8](#ev-pose) |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | PASS | PASS | BUILDS | UNTESTED | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E9](#ev-depth) |
+| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | DRY-RUN | BUILDS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E9](#ev-depth) |
 | Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | PASS | UNTESTED | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | N/A | UNTESTED | [E12](#ev-splatting) |
@@ -169,6 +169,18 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
   dog 0.93, car 0.61. The 4.6 `Unsqueeze` blocker is gone on 5.x.
 - **ExecT PASS** (CPU, 320 ms): `yolov8n.pte` @ 0.4/0.5 — bicycle 0.89,
   dog 0.93, car 0.61. No CI build job for ExecT.
+- **TF PASS** (2026-11-01, TF 2.19 runtime `build-tensorflow`, CPU,
+  1423 ms): `yolov8n_saved_model` (ultralytics SavedModel export) @ 0.4/0.5
+  — bicycle 0.89, dog 0.93, car 0.61 — the launch.json TF debug configs
+  still hold, no regression. Render inspected
+  (`data/output/processed_yolo_local.png`).
+- **TF 2.21 BLOCKED at load (protobuf ABI, requested-version probe).**
+  Same SavedModel under a 2.21-linked binary dies before `main`:
+  `libtensorflow_framework.so.2` binds system `libprotobuf.so.32` and
+  segfaults in `Arena` during static init (gdb: `KernelDefBuilder` ←
+  `_GLOBAL__sub_I_dataset.cc`). Same bug family as the Torch/KServe
+  protobuf clash. The pinned 2.19 PASS above stands; 2.21 needs a
+  matching-protobuf environment, not a model fix.
 
 ### <a id="ev-rtdetr"></a>E3 — Object detection (`rtdetr`)
 
@@ -251,6 +263,10 @@ gated as alias.
   error — gone on 5.x.) `depth_anything_v2` itself unrun.
 - **ORT DRY-RUN + alias live** (CPU, 618 ms): sane depth map, min/max
   1.26/5.41.
+- **OVINO PASS via alias** (2026-11-01, pinned 2026.3.0 runtime on
+  optiplex-3040, CPU, 434 ms): `yolo26depth` renders the same sane map,
+  min/max 1.26/5.41 — the promo-video memory was right; the BUILDS cell
+  was stale.
 - **KServe PASS** (`real-onnx` runtime, HTTP): same sane map — task gated
   via alias.
 
@@ -325,17 +341,22 @@ gated as alias.
   so classification reads the masks tensor. Named (ONNX) outputs are
   unaffected. Do not serve `rfdetrseg` on Torch until tasks maps by shape
   or position for synthetic names.
-- **ORT / OpenVINO / TensorRT app-surface confirmation (same stack).**
-  Beyond the matrix: ORT 1.19.2 CPU (`build-ort`), OpenVINO 2025.2.0
-  (`build-openvino` linked runtime; `versions.env` pins 2026.3.0 — overridden
-  here via `OPENVINO_DIR`), TensorRT 10.14.1.48 (`build-trt`, FP16 `trtexec`
-  engines). Detection `rfdetr-medium` (ORT 1083 ms / OVINO 1120 ms): bicycle
-  0.92, horse 0.94, car 0.87. Detection `rfdetr-nano` (TRT FP16 246 ms):
-  bicycle 0.94, horse 0.93, car 0.85. Seg `rfdetrseg-medium` (OVINO 1648 ms):
-  bicycle 0.94, horse 0.91, car 0.86, all with masks, plus a spurious
-  `motorbike 0.57` background hit at 0.4 (model behavior, kept in the
-  record). Keypoint (OVINO 1912 ms): skeleton, pose 0.850784 — identical
-  across ORT, OVINO, Torch-AOTI and the E8 alias runs.
+- **OpenVINO app-surface confirmation (pinned 2026.3.0 runtime,
+  `build-openvino`, no override).** Detection `rfdetr-medium` (784 ms):
+  bicycle 0.92, horse 0.94, car 0.87. Seg `rfdetrseg-medium` (1184 ms):
+  bicycle 0.94, horse 0.91, car 0.86, all with masks, plus the same spurious
+  `motorbike 0.57` background hit at 0.4. Keypoint (1566 ms): skeleton,
+  pose 0.850784 — identical across OVINO, Torch-AOTI and the E8 alias runs.
+  (An earlier pass on the unpinned 2025.2.0 runtime gave identical labels;
+  only the pinned run is claimed.)
+- **TensorRT app-surface confirmation (pinned 11.2.1.2, `build-trt`
+  rebuilt against 11.2 headers, default-build engines — 11.2 `trtexec`
+  dropped the `--fp16` shorthand under strongly-typed networks).**
+  Detection `rfdetr-medium` (109 ms): bicycle 0.92, horse 0.94, car 0.86.
+  Seg `rfdetrseg-medium` (380 ms): same trio with masks + the `motorbike`
+  artifact. Keypoint (292 ms): skeleton, pose **0.850754** — 3e-5 below the
+  0.850784 every other backend reports (FP tactic selection, rounds to the
+  same 0.85).
 - **LiteRT KNOWN-BAD (conversion fault, not runtime).** `rfdetr-nano.onnx`
   → `onnx2tf` float32 `.tflite` converts cleanly and runs exit 0 in
   `build-litert` (2445 ms) — but the render keeps a single wrong
