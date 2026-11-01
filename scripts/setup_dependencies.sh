@@ -119,34 +119,48 @@ setup_onnx_runtime() {
     local version="$ONNX_RUNTIME_VERSION"
     local dependency_root=$(get_dependency_root)
     local install_dir="$dependency_root/onnxruntime-linux-x64-gpu-$version"
-    
+
     print_status "Setting up ONNX Runtime $version (for neuriplo library)..."
-    
+
     if [[ -d "$install_dir" ]]; then
         print_warning "ONNX Runtime already exists at $install_dir"
         return 0
     fi
-    
+
     ensure_directory "$dependency_root"
-    
+
+    # ONNX Runtime 1.28 split the GPU build per CUDA major and renamed it
+    # (onnxruntime-linux-x64-gpu_cuda13-<ver>); older releases publish a single
+    # onnxruntime-linux-x64-gpu-<ver>. Try the build matching the pinned CUDA
+    # first, then the old name. Either way the install lands at $install_dir,
+    # the path cmake and the other scripts expect.
+    local cuda_major="${CUDA_VERSION%%.*}"
+    local base_url="https://github.com/microsoft/onnxruntime/releases/download/v$version"
+
     local temp_dir=$(mktemp -d)
-    cd "$temp_dir"
-    
-    local filename="onnxruntime-linux-x64-gpu-$version.tgz"
-    local url="https://github.com/microsoft/onnxruntime/releases/download/v$version/$filename"
-    
-    print_status "Downloading ONNX Runtime..."
-    if download_with_retry "$url" "$filename"; then
-        print_status "Extracting ONNX Runtime..."
-        tar -xzf "$filename"
-        mv "onnxruntime-linux-x64-gpu-$version" "$install_dir"
-        print_success "ONNX Runtime installed to $install_dir"
-    else
-        print_error "Failed to setup ONNX Runtime"
+    local downloaded=""
+    local archive=""
+    for archive in "onnxruntime-linux-x64-gpu_cuda${cuda_major}-$version" "onnxruntime-linux-x64-gpu-$version"; do
+        print_status "Trying $archive..."
+        if curl -fL "$base_url/$archive.tgz" -o "$temp_dir/ort.tgz"; then
+            downloaded="$archive"
+            break
+        fi
+    done
+
+    if [[ -z "$downloaded" ]]; then
+        print_error "No ONNX Runtime $version GPU build found for CUDA $cuda_major under $base_url"
+        rm -rf "$temp_dir"
         return 1
     fi
-    
-    cd - > /dev/null
+    print_status "Downloaded $downloaded"
+
+    print_status "Extracting ONNX Runtime..."
+    tar -xzf "$temp_dir/ort.tgz" -C "$temp_dir"
+    rm -rf "$install_dir"
+    mv "$temp_dir/$downloaded" "$install_dir"
+    print_success "ONNX Runtime installed to $install_dir"
+
     rm -rf "$temp_dir"
 }
 
@@ -281,29 +295,39 @@ setup_openvino() {
     
     print_status "Installing OpenVINO $version to $dir..."
     mkdir -p "$dependency_root" && cd "$dependency_root"
-    
+
     # Download OpenVINO toolkit
-    local tarball="openvino_2025.2.0.tgz"
+    # Archive names carry the build number and hash (OPENVINO_FULL_ID); the
+    # directory on the server is the major.minor release.
+    local short_version
+    short_version="$(echo "$version" | cut -d. -f1-2)"
+    if [[ -z "${OPENVINO_FULL_ID:-}" ]]; then
+        print_error "OPENVINO_FULL_ID is not set (needed for the toolkit archive name)"
+        return 1
+    fi
+    local tarball="openvino_${version}.tgz"
     if [[ ! -f "$tarball" ]]; then
         print_status "Downloading OpenVINO toolkit..."
-        curl -L "https://storage.openvinotoolkit.org/repositories/openvino/packages/2025.2/linux/openvino_toolkit_ubuntu24_2025.2.0.19140.c01cd93e24d_x86_64.tgz" --output "$tarball"
+        curl -fL "https://storage.openvinotoolkit.org/repositories/openvino/packages/${short_version}/linux/openvino_toolkit_ubuntu24_${OPENVINO_FULL_ID}_x86_64.tgz" --output "$tarball"
     fi
-    
+
     # Extract and move to final location
     print_status "Extracting OpenVINO..."
     tar -xf "$tarball"
     if [[ -d "$dir" ]]; then
         rm -rf "$dir"
     fi
-    mv openvino_toolkit_ubuntu24_2025.2.0.19140.c01cd93e24d_x86_64 "$dir"
+    mv "openvino_toolkit_ubuntu24_${OPENVINO_FULL_ID}_x86_64" "$dir"
     rm -f "$tarball"
-    
+
     # Create a local Python virtual environment for OpenVINO tools
     print_status "Setting up OpenVINO Python tools..."
     local venv_dir="$dir/python_env"
     python3 -m venv "$venv_dir"
     source "$venv_dir/bin/activate"
-    pip install openvino-dev
+    # openvino-dev (with the legacy `mo`) ended at 2024.6 and breaks against a
+    # newer runtime; the openvino wheel ships `ovc`. Pin it to the toolkit version.
+    pip install "openvino==${version}"
     deactivate
     
     # Create wrapper script for ovc

@@ -27,9 +27,17 @@ ENV HOME=/root
 ARG BACKEND=ONNX_RUNTIME
 
 RUN . /tmp/versions.env && \
-    wget https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_RUNTIME_VERSION}/onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION}.tgz && \
-    tar -xzvf onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION}.tgz -C $HOME && \
-    rm onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION}.tgz
+    cuda_major="${CUDA_VERSION%%.*}" && \
+    downloaded="" && \
+    for archive in "onnxruntime-linux-x64-gpu_cuda${cuda_major}-${ONNX_RUNTIME_VERSION}" "onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION}"; do \
+        if wget -q "https://github.com/microsoft/onnxruntime/releases/download/v${ONNX_RUNTIME_VERSION}/${archive}.tgz" -O /tmp/ort.tgz; then \
+            echo "Downloaded ${archive}"; downloaded="${archive}"; break; \
+        fi; \
+    done && \
+    test -n "${downloaded}" && \
+    tar -xzvf /tmp/ort.tgz -C /tmp && \
+    mv "/tmp/${downloaded}" "$HOME/onnxruntime-linux-x64-gpu-${ONNX_RUNTIME_VERSION}" && \
+    rm /tmp/ort.tgz
 
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder
