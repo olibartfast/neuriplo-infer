@@ -76,6 +76,10 @@ no `LITERT` / `EXECUTORCH` / `LLAMACPP` build job. `DRY-RUN` means the preset
 is listed by `--list-presets` and green in `e2e-example-emulation.yml`
 (dry-run validates command construction, not numerics).
 
+**Matrix-to-table rule:** who enters the Matrix enters the table — every
+explicit TaskFactory architecture with a terminal matrix result gets a
+gate-table row. No matrix-covered architecture stays table-less.
+
 Node counts, sha256 digests, and per-tensor tolerances belong to the
 exporting repo (`neuriplo-tasks`) and the engine repo (`neuriplo`), not here.
 This matrix gates the app seam: routed, run, rendered, tested.
@@ -99,12 +103,15 @@ evidence.
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | PASS | UNTESTED | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | KNOWN-BAD | [E4](#ev-ecdet) |
+| Object detection (`rfdetr`, no preset) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E5](#ev-seg) |
+| Instance segmentation (`rfdetrseg`, no preset) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E8](#ev-pose) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E13](#ev-rfdetr) |
 | Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E9](#ev-depth) |
 | Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | PASS | UNTESTED | [E11](#ev-gemma4) |
@@ -265,6 +272,25 @@ gated as alias.
 - Routed (`Capabilities.cpp`), no e2e preset, no emulation. Torch/OVINO
   cells are BUILDS-only. See Open item 6.
 
+### <a id="ev-rfdetr"></a>E13 — RF-DETR trio (`rfdetr`, `rfdetrseg`, `rfdetrpose`)
+
+- **Matrix PASS 2026-11-01 (0.11.6 stack).** Full cell matrix ran every
+  explicit TaskFactory architecture × backend; the trio was re-run on four
+  gates, all RUNTIME_PASS: opencv5-only gate (binary `49737e78`, OpenCV
+  5.0.0; runs `3557889f` / `bdd99c4e` / `2d038303`), onnx_runtime
+  (`793e80c7` / `54475a05` / `1c2a8aee`), openvino (`cd6f3259` /
+  `66d8b5db` / `62265dd2`), tensorrt (`25cd93dd` / `b8553c97` /
+  `80bb106c`). Render spot-check: bicycle/person/sheep correct with masks;
+  the dog is labeled `horse` ~0.94 on every backend (model-accuracy note,
+  same weights — not a harness failure).
+- **Pose alias live (see E8).** `rfdetr_keypoint` (alias of `rfdetrpose`)
+  renders skeleton pose 0.85 on DNN/ORT/TRT plus KServe HTTP; the new pose
+  row reuses that KServe PASS.
+- **No preset yet.** `rfdetr` / `rfdetrseg` / `rfdetrpose` have no e2e
+  preset and no emulation job (cf. Open item 2 for `rfdetr_keypoint`);
+  Torch/TF cells stay BUILDS, LiteRT/ExecT/LLaMA UNTESTED, KServe UNTESTED
+  except pose.
+
 ## Environments
 
 How each column was built and tested on 2026-10-23 (all CPU except TRT).
@@ -288,11 +314,11 @@ other columns were not re-run on the 0.11.5 stack.
 
 | Status | Count (task rows) | Rows |
 |---|---|---|
-| PASS (≥1 backend live-gated) | 9 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `owlv2`, `gemma4`, `yoloseg`, pose (`rfdetr_keypoint` alias), depth (`yolo26depth` alias) |
+| PASS (≥1 backend live-gated) | 12 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
 | KNOWN-BAD recorded | 2 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW |
 | DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
 | BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
-| **Total** | **14** | 10 task families; detection/segmentation/pose split by representative |
+| **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
 
 ## Open items
 
