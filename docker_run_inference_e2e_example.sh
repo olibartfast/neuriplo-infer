@@ -16,6 +16,9 @@
 #       Pinned releases before that point return "Unrecognized model type".
 #   - raft                  Optical flow
 #   - vitpose               Pose estimation
+#   - rfdetr                Object detection (RF-DETR medium, ONNX Runtime)
+#   - rfdetrseg             Instance segmentation (RF-DETR seg medium, ONNX Runtime)
+#   - rfdetr_keypoint       Pose estimation (RF-DETR keypoint preview, ONNX Runtime)
 #   - depth_anything_v2     Depth estimation
 #   - videomae              Video classification
 #   - gemma4                Image understanding (llama.cpp, Gemma 4 E2B IT GGUF)
@@ -98,6 +101,8 @@ edgecrafter_seg
 edgecrafter_pose
 raft
 vitpose
+rfdetr
+rfdetrseg
 rfdetr_keypoint
 depth_anything_v2
 videomae
@@ -473,6 +478,40 @@ print('Exported to', dest)
             "source \"${NEURIPLO_TASKS_DIR}/environments/vitpose-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/pose_estimation/vitpose/export_vitpose_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
         )
         RUNTIME_EXTRA_ARGS=()
+        ;;
+    rfdetr)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="rfdetr"
+        MODEL_BASENAME="rfdetr-medium"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/rfdetr-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/rfdetr-export/bin/activate\" && pip install --upgrade pip && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime rfdetr && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/detection/rfdetr/export.py\" --model_type medium --output_dir \"${WEIGHTS_DIR}\" --simplify && if [[ ! -f \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" ]]; then newest=\$(ls -t \"${WEIGHTS_DIR}\"/*.onnx 2>/dev/null | head -n 1); if [[ -n \"\${newest}\" && \"\${newest}\" != \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" ]]; then mv \"\${newest}\" \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\"; fi; fi"
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
+        ;;
+    rfdetrseg)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="rfdetrseg"
+        MODEL_BASENAME="rfdetrseg-medium"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/rfdetrseg-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/rfdetrseg-export/bin/activate\" && pip install --upgrade pip && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime rfdetr && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/segmentation/rfdetr/export.py\" --model_type medium --output_dir \"${WEIGHTS_DIR}\" --simplify && if [[ ! -f \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" ]]; then newest=\$(ls -t \"${WEIGHTS_DIR}\"/*.onnx 2>/dev/null | head -n 1); if [[ -n \"\${newest}\" && \"\${newest}\" != \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" ]]; then mv \"\${newest}\" \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\"; fi; fi"
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5" "--mask_threshold=0.5")
         ;;
     rfdetr_keypoint)
         if [[ "$BACKEND_SET" == false ]]; then

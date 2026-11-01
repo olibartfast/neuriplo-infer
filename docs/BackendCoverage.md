@@ -103,10 +103,10 @@ evidence.
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | PASS | UNTESTED | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | KNOWN-BAD | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, no preset) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E13](#ev-rfdetr) |
+| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, no preset) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E7](#ev-video) |
@@ -286,10 +286,11 @@ gated as alias.
 - **Pose alias live (see E8).** `rfdetr_keypoint` (alias of `rfdetrpose`)
   renders skeleton pose 0.85 on DNN/ORT/TRT plus KServe HTTP; the new pose
   row reuses that KServe PASS.
-- **No preset yet.** `rfdetr` / `rfdetrseg` / `rfdetrpose` have no e2e
-  preset and no emulation job (cf. Open item 2 for `rfdetr_keypoint`);
-  Torch/TF cells stay BUILDS, LiteRT/ExecT/LLaMA UNTESTED, KServe UNTESTED
-  except pose.
+- **Presets + emulation.** `rfdetr` / `rfdetrseg` / `rfdetr_keypoint`
+  presets exist in `docker_run_inference_e2e_example.sh --list-presets` and
+  are green in `e2e-example-emulation.yml` (dry-run validates command
+  construction, not numerics); Torch/TF cells stay BUILDS, LiteRT/ExecT/LLaMA
+  UNTESTED, KServe UNTESTED except pose.
 
 ## Environments
 
@@ -325,9 +326,10 @@ other columns were not re-run on the 0.11.5 stack.
 1. **Live-gate every DRY-RUN cell.** Closest first: `rtdetrv4` on TRT;
    `raft` / `vitpose` / `depth_anything_v2` / `videomae` on ORT.
    Needs model exports that don't exist locally yet.
-2. **`rfdetr_keypoint` missing from emulation.** The preset exists in
-   `docker_run_inference_e2e_example.sh --list-presets` but has no job in
-   `e2e-example-emulation.yml`. Add it (one-line matrix entry).
+2. **Closed — RF-DETR presets in emulation.** `rfdetr`, `rfdetrseg`, and
+   `rfdetr_keypoint` are listed by
+   `docker_run_inference_e2e_example.sh --list-presets` and have jobs in
+   `e2e-example-emulation.yml` (dry-run green).
 3. **Record Torch / OpenVINO `--backend` override runs as repeatable gates.**
    The DETR Torch run is a manual CLI invocation on `rtdetr.torchscript`, not
    a preset. Add presets and re-gate once the remaining TorchScript exports

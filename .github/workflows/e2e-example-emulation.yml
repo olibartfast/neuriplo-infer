@@ -42,6 +42,9 @@ jobs:
           - edgecrafter_pose
           - raft
           - vitpose
+          - rfdetr
+          - rfdetrseg
+          - rfdetr_keypoint
           - depth_anything_v2
           - videomae
           - gemma4
