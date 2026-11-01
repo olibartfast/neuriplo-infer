@@ -98,8 +98,9 @@ Evidence column points to the task's section below.
 
 The `Torch` column covers TorchScript. AOTInductor is a second runtime inside
 the same LibTorch backend, selected when the model path ends in `.pt2`. It is
-not covered by these cells yet; do not read a Torch cell as AOTInductor
-evidence.
+not covered by these cells yet — except E13, where RF-DETR's Torch PASS rests
+on AOTInductor because TorchScript tracing is broken for that architecture
+(see E13); do not read any other Torch cell as AOTInductor evidence.
 
 | Task (representative) | DNN | ORT | TRT | Torch | OVINO | TF | LiteRT | ExecT | LLaMA | KServe | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -107,15 +108,17 @@ evidence.
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E13](#ev-rfdetr) |
+| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | UNTESTED | [E13](#ev-rfdetr) |
+| Object detection (`yolov4`, no preset) | BUILDS | BUILDS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E14](#ev-launchjson) |
+| Object detection (`yolonas`, no preset) | BUILDS | BUILDS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E14](#ev-launchjson) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | UNTESTED | BLOCKED | N/A | UNTESTED | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E13](#ev-rfdetr) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | PASS | PASS | BUILDS | UNTESTED | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E9](#ev-depth) |
 | Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | PASS | UNTESTED | [E11](#ev-gemma4) |
@@ -293,8 +296,84 @@ gated as alias.
 - **Presets + emulation.** `rfdetr` / `rfdetrseg` / `rfdetr_keypoint`
   presets exist in `docker_run_inference_e2e_example.sh --list-presets` and
   are green in `e2e-example-emulation.yml` (dry-run validates command
-  construction, not numerics); Torch/TF cells stay BUILDS, LiteRT/ExecT/LLaMA
-  UNTESTED, KServe UNTESTED except pose.
+  construction, not numerics); LiteRT/ExecT/LLaMA N/A or UNTESTED per row,
+  KServe UNTESTED except pose.
+- **Torch PASS via AOTInductor (2026-11-01, neuriplo-infer 0.11.7-dev +
+  neuriplo 0.11.4-dev, LibTorch CPU, torch 2.14.0 AOTI packages).**
+  Exception to the AOTI policy above: TorchScript tracing is broken for this
+  architecture (see next bullet), so the Torch cells below rest on `.pt2`.
+  Detection `rfdetr-medium` (576, `--input_sizes=1,3,576,576`, 1026 ms):
+  bicycle 0.92, dog-as-`horse` 0.94, car 0.87 — same model-accuracy note as
+  the matrix. Pose `rfdetr-keypoint-preview-xlarge` (576,
+  `--input_sizes=1,3,576,576`, 2327 ms): skeleton + pose score 0.850784,
+  matching the E8 alias score. Renders inspected
+  (`data/output/processed_rfdetr_local.png`,
+  `data/output/processed_rfdetr-keypoint_local.png`).
+- **TorchScript (`.torchscript`) BLOCKED for this architecture.**
+  `torch.jit.trace` completes and loads, but inference fails in-interpreter
+  (`Dimension out of range` in the traced windowed-DINOv2 backbone) — trace
+  freezes a data-dependent branch. `torch.export` captures the same model
+  cleanly (detection 1220 nodes, seg 1611, keypoint 2250), hence the `.pt2`
+  route above. Do not serve RF-DETR as TorchScript.
+- **Seg Torch KNOWN-BAD (same stack).** `rfdetrseg-medium` (432,
+  `--input_sizes=1,3,432,432`): exit 0, outputs `(1,200,4)` + `(1,200,91)` +
+  `(1,200,108,108)`, 1296 ms — but the render is empty. Fault (tasks-side):
+  `RfDetrSegmentationPostprocessor::findOutputIndices`
+  (`neuriplo-tasks/src/instance_segmentation/rfdetr_segmentation_postprocessor.cpp`)
+  resolves outputs by name with a digit heuristic; the Torch backend's
+  synthetic names (`output0/1/2`) collapse `masks` and `labels` onto index 2,
+  so classification reads the masks tensor. Named (ONNX) outputs are
+  unaffected. Do not serve `rfdetrseg` on Torch until tasks maps by shape
+  or position for synthetic names.
+- **ORT / OpenVINO / TensorRT app-surface confirmation (same stack).**
+  Beyond the matrix: ORT 1.19.2 CPU (`build-ort`), OpenVINO 2025.2.0
+  (`build-openvino` linked runtime; `versions.env` pins 2026.3.0 — overridden
+  here via `OPENVINO_DIR`), TensorRT 10.14.1.48 (`build-trt`, FP16 `trtexec`
+  engines). Detection `rfdetr-medium` (ORT 1083 ms / OVINO 1120 ms): bicycle
+  0.92, horse 0.94, car 0.87. Detection `rfdetr-nano` (TRT FP16 246 ms):
+  bicycle 0.94, horse 0.93, car 0.85. Seg `rfdetrseg-medium` (OVINO 1648 ms):
+  bicycle 0.94, horse 0.91, car 0.86, all with masks, plus a spurious
+  `motorbike 0.57` background hit at 0.4 (model behavior, kept in the
+  record). Keypoint (OVINO 1912 ms): skeleton, pose 0.850784 — identical
+  across ORT, OVINO, Torch-AOTI and the E8 alias runs.
+- **LiteRT KNOWN-BAD (conversion fault, not runtime).** `rfdetr-nano.onnx`
+  → `onnx2tf` float32 `.tflite` converts cleanly and runs exit 0 in
+  `build-litert` (2445 ms) — but the render keeps a single wrong
+  `person 0.75` where ONNX finds bicycle/horse/car. Same failure class as
+  `ecdet` TFLite (E4): the converter breaks this architecture's numerics.
+  Do not serve RF-DETR on LiteRT.
+- **ExecuTorch BLOCKED (all three; runtime lacks `aten::linear.out`).**
+  `rfdetr-nano` / `rfdetrseg-medium` / `rfdetr-keypoint-preview-xlarge`
+  export cleanly to `.pte` (`format="executorch"`, `backend="xnnpack"`,
+  rfdetr 1.11.2 / executorch 1.3.1) and load in `build-executorch` — then
+  `forward()` fails: `Missing operator: aten::linear.out` (28 instructions
+  detection/seg, 29 keypoint). Since rfdetr 1.9.1 the exporter recombines
+  undelegated `addmm` into `aten::linear`; the local runtime
+  (ExecuTorch v1.2.0, portable kernels, no `optimized_native_cpu_ops_lib`)
+  does not register it — the exact case the reference
+  `rf-detr-cpp-inference` docs flag (`EXECUTORCH_BUILD_KERNELS_OPTIMIZED=ON`
+  rebuild). Fix path: rebuild the runtime with optimized kernels and wire
+  the lib into `neuriplo` (no such wiring exists today); re-test all three
+  `.pte` then. Export-side note: 1.11.2 appends the delegate without an
+  explicit `output_name` (`rfdetr-medium_xnnpack.pte`), pass it explicitly.
+
+### <a id="ev-launchjson"></a>E14 — Manually exercised debug configurations (`.vscode/launch.json`)
+
+The repo ships debugger launch configs accumulated Feb–Nov 2026 across many
+stacks — maintainer smoke runs, not current-stack gates. Weights paths are
+personal (`$HOME/...`, mostly stale); the data sources still exist in
+`data/`. Every config below was run by hand at some point; current-stack
+evidence is claimed only where this page cites a live run (E1–E13).
+
+| launch.json config | `--type` | Weights → backend | Source | Covered today by |
+|---|---|---|---|---|
+| YOLOv4 OpenCV DNN | `yolov4` | `.weights` → DNN | `horses.jpg` | New row (YOLO_V4 branch) |
+| YOLO NAS onnx | `yolonas` | `.onnx` → ORT | `dog.jpg` | New row (YOLO_NAS branch) |
+| YOLOv5/6/7/8/9 onnx, YOLO11/12 onnx, YOLOv8/11 libtorch, YOLOv5/8 libtorch video, YOLO12 torchscript, YOLOv5 openvino, YOLOv8/YOLOv10 saved-model, YOLOv10 onnx/openvino, YOLO11 libtorch | `yolo`/`yolov10`/`yolo11`/`yolov12` | `.onnx` → ORT, `.torchscript`/`.pt` → Torch, `.bin` → OVINO, dir → TF | `dog/horses/person.jpg`, `driving.mp4` | E1 (NMS-free: v10), E2 (standard) |
+| rtdetr onnx ×2, rtdetrul onnx/torchscript, DFINE onnx/tensorrt, DEIM onnx ×2 | `rtdetr`/`rtdetrul`/`dfine` | `.onnx` → ORT, `.engine` → TRT, `.torchscript` → Torch | `dog/horses/person.jpg` | E3 (RT_DETR_STYLE + UL + Torch PASS) |
+| rfdetr onnx/tensorrt/libtorch-`.pt`, rfdetr-seg onnx/tensorrt | `rfdetr`/`rfdetr-seg` | `.onnx` → ORT, `.engine`/`.plan` → TRT, `.pt` → Torch | `bus/dog/person.jpg` | E13 (ORT/TRT/Torch-AOTI PASS; the TorchScript `.pt` entry corroborates the E13 TorchScript BLOCKED) |
+| raft large onnx/trt | `raft` | `.onnx` → ORT, `.plan` → TRT | `frame_001/002.png` | E7 (ORT DRY-RUN; TRT BUILDS) |
+| Depth Anything V2 onnx | `depth_anything_v2` | `.onnx` → ORT | `dog.jpg` | E9 (ORT DRY-RUN) |
 
 ## Environments
 
@@ -320,10 +399,10 @@ other columns were not re-run on the 0.11.5 stack.
 | Status | Count (task rows) | Rows |
 |---|---|---|
 | PASS (≥1 backend live-gated) | 12 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
-| KNOWN-BAD recorded | 2 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW |
+| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH; `rfdetr` on LiteRT |
 | DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
-| BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
-| **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
+| BUILDS / UNTESTED best | 3 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only); `yolov4`, `yolonas` (launch.json smoke only, E14) |
+| **Total** | **19** | 10 task families; detection/segmentation/pose split by representative |
 
 ## Open items
 
