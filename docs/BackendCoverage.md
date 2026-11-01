@@ -43,8 +43,8 @@ Main limitations:
   (model-accuracy note, same weights — not a harness failure). Slurm
   session `2026-11-01-full-coverage-1` rebuilt the non-GenAI backend
   images in parallel from the same pins (`libtorch`, `libtensorflow`,
-  `openvino`, `litert` BUILD_OK; `executorch` FAILED at link —
-  `ld: cannot find -lxnnpack_backend`, owner infer Dockerfile linkage;
+  `openvino`, `litert`, `tensorrt` BUILD_OK; `executorch` FAILED at link
+  (`ld: cannot find -lxnnpack_backend`, owner infer Dockerfile linkage);
   `tensorrt` running); GenAI backends
   (`llamacpp`, `cactus`, `ggml`) are out of coverage scope, and
   `tvm`/`migraphx`/`dali` have no matrix pipeline. New
