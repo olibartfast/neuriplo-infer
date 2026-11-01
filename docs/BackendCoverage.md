@@ -69,6 +69,10 @@ See [Open items](#open-items) for remaining validation and fixes.
 - **KNOWN-BAD** — it loads and runs but the outputs are numerically wrong;
   the fault location is cited. Do not serve it.
 - **UNTESTED** — none of the above. No build, preset, or live evidence.
+  The combination could work; it just hasn't been tried.
+- **N/A** — the backend cannot serve this task by construction (e.g. LLaMA
+  is GGUF + `mmproj` only, so it never applies to detection/segmentation).
+  Not a coverage gap. Maps to the matrix's NOT_APPLICABLE.
 
 `BUILDS` means the `ci.yml` job for that backend is green (`OPENCV_DNN`,
 `ONNX_RUNTIME`, `LIBTORCH`, `LIBTENSORFLOW`, `TENSORRT`, `OPENVINO`); there is
@@ -99,23 +103,23 @@ evidence.
 
 | Task (representative) | DNN | ORT | TRT | Torch | OVINO | TF | LiteRT | ExecT | LLaMA | KServe | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | BLOCKED | PASS | BUILDS | PASS | UNTESTED | UNTESTED | PASS | [E1](#ev-yolo26) |
-| Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | PASS | UNTESTED | UNTESTED | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E3](#ev-rtdetr) |
-| Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | KNOWN-BAD | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E5](#ev-seg) |
-| Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E7](#ev-video) |
-| Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E7](#ev-video) |
-| Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E13](#ev-rfdetr) |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | PASS | [E10](#ev-owlv2) |
-| Image understanding (`gemma4`, `gemma4`) | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | PASS | UNTESTED | [E11](#ev-gemma4) |
-| Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | UNTESTED | UNTESTED | [E12](#ev-splatting) |
+| Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | BLOCKED | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E1](#ev-yolo26) |
+| Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
+| Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
+| Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
+| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E13](#ev-rfdetr) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
+| Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E13](#ev-rfdetr) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
+| Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
+| Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
+| Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E8](#ev-pose) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E13](#ev-rfdetr) |
+| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E9](#ev-depth) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
+| Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | PASS | UNTESTED | [E11](#ev-gemma4) |
+| Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | N/A | UNTESTED | [E12](#ev-splatting) |
 
 ## Evidence
 
