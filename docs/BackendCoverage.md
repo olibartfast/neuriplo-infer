@@ -9,9 +9,8 @@ claiming more than its evidence. Style follows the NERT
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
 are under [Environments](#environments). Matrix coverage is always reported
-here — never only in a sibling repo's working artifacts (standing rule, see
-`neuriplo-ui/AGENTS.md`). OpenCV DNN coverage is 5.x only; 4.x is not
-considered.
+here — never only in an external harness's working files. OpenCV DNN
+coverage is 5.x only; 4.x is not considered.
 
 Main limitations:
 
@@ -28,8 +27,8 @@ Main limitations:
   models — the DNN column below runs OpenCV 5.0.0 source-built (see
   [Environments](#environments)); KServe HTTP has live evidence, while the
   gRPC failure described in E1 remains blocked server-side.
-- **Full cell matrix (2026-11-01):** `neuriplo-ui/artifacts/model-matrix`
-  ran every explicit TaskFactory architecture × backend on the 0.11.6
+- **Full cell matrix (2026-11-01):** the external release cell-matrix
+  harness ran every explicit TaskFactory architecture × backend on the 0.11.6
   stack: 176 RUNTIME_PASS / 22 FAILED / 12 TIMEOUT / 10 KNOWN_BAD /
   159 EXPORT_BLOCKED / 51 NOT_APPLICABLE, with 13 triage decisions. On
   2026-11-01 the RF-DETR trio (detection `rfdetr`, segmentation
@@ -117,7 +116,7 @@ Live runs below were recorded on 2026-10-23 on `data/dog.jpg` (`person.jpg`
 for pose) with rendered outputs inspected, unless a bullet gives another date.
 The 2026-10-30 runs used the neuriplo-infer 0.11.5 release stack (neuriplo
 0.11.3, neuriplo-tasks 0.8.4); the 2026-10-31 cell matrix ran on the 0.11.6
-stack and is recorded in `neuriplo-ui/artifacts/model-matrix` (REPORT.md +
+stack and is recorded in the external cell-matrix report (REPORT.md +
 13 decisions).
 
 ### <a id="ev-yolo26"></a>E1 — Object detection (`yolo26`)
