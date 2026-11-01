@@ -109,8 +109,6 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
 | Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | UNTESTED | [E13](#ev-rfdetr) |
-| Object detection (`yolov4`, no preset) | BUILDS | BUILDS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E14](#ev-launchjson) |
-| Object detection (`yolonas`, no preset) | BUILDS | BUILDS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E14](#ev-launchjson) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | UNTESTED | BLOCKED | N/A | UNTESTED | [E13](#ev-rfdetr) |
@@ -171,8 +169,7 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
   dog 0.93, car 0.61. No CI build job for ExecT.
 - **TF PASS** (2026-11-01, TF 2.19 runtime `build-tensorflow`, CPU,
   1423 ms): `yolov8n_saved_model` (ultralytics SavedModel export) @ 0.4/0.5
-  — bicycle 0.89, dog 0.93, car 0.61 — the launch.json TF debug configs
-  still hold, no regression. Render inspected
+  — bicycle 0.89, dog 0.93, car 0.61 — no regression. Render inspected
   (`data/output/processed_yolo_local.png`).
 - **TF 2.21 BLOCKED at load (protobuf ABI, requested-version probe).**
   Same SavedModel under a 2.21-linked binary dies before `main`:
@@ -378,24 +375,6 @@ gated as alias.
   `.pte` then. Export-side note: 1.11.2 appends the delegate without an
   explicit `output_name` (`rfdetr-medium_xnnpack.pte`), pass it explicitly.
 
-### <a id="ev-launchjson"></a>E14 — Manually exercised debug configurations (`.vscode/launch.json`)
-
-The repo ships debugger launch configs accumulated Feb–Nov 2026 across many
-stacks — maintainer smoke runs, not current-stack gates. Weights paths are
-personal (`$HOME/...`, mostly stale); the data sources still exist in
-`data/`. Every config below was run by hand at some point; current-stack
-evidence is claimed only where this page cites a live run (E1–E13).
-
-| launch.json config | `--type` | Weights → backend | Source | Covered today by |
-|---|---|---|---|---|
-| YOLOv4 OpenCV DNN | `yolov4` | `.weights` → DNN | `horses.jpg` | New row (YOLO_V4 branch) |
-| YOLO NAS onnx | `yolonas` | `.onnx` → ORT | `dog.jpg` | New row (YOLO_NAS branch) |
-| YOLOv5/6/7/8/9 onnx, YOLO11/12 onnx, YOLOv8/11 libtorch, YOLOv5/8 libtorch video, YOLO12 torchscript, YOLOv5 openvino, YOLOv8/YOLOv10 saved-model, YOLOv10 onnx/openvino, YOLO11 libtorch | `yolo`/`yolov10`/`yolo11`/`yolov12` | `.onnx` → ORT, `.torchscript`/`.pt` → Torch, `.bin` → OVINO, dir → TF | `dog/horses/person.jpg`, `driving.mp4` | E1 (NMS-free: v10), E2 (standard) |
-| rtdetr onnx ×2, rtdetrul onnx/torchscript, DFINE onnx/tensorrt, DEIM onnx ×2 | `rtdetr`/`rtdetrul`/`dfine` | `.onnx` → ORT, `.engine` → TRT, `.torchscript` → Torch | `dog/horses/person.jpg` | E3 (RT_DETR_STYLE + UL + Torch PASS) |
-| rfdetr onnx/tensorrt/libtorch-`.pt`, rfdetr-seg onnx/tensorrt | `rfdetr`/`rfdetr-seg` | `.onnx` → ORT, `.engine`/`.plan` → TRT, `.pt` → Torch | `bus/dog/person.jpg` | E13 (ORT/TRT/Torch-AOTI PASS; the TorchScript `.pt` entry corroborates the E13 TorchScript BLOCKED) |
-| raft large onnx/trt | `raft` | `.onnx` → ORT, `.plan` → TRT | `frame_001/002.png` | E7 (ORT DRY-RUN; TRT BUILDS) |
-| Depth Anything V2 onnx | `depth_anything_v2` | `.onnx` → ORT | `dog.jpg` | E9 (ORT DRY-RUN) |
-
 ## Environments
 
 How each column was built and tested on 2026-10-23 (all CPU except TRT).
@@ -422,8 +401,8 @@ other columns were not re-run on the 0.11.5 stack.
 | PASS (≥1 backend live-gated) | 12 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
 | KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH; `rfdetr` on LiteRT |
 | DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
-| BUILDS / UNTESTED best | 3 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only); `yolov4`, `yolonas` (launch.json smoke only, E14) |
-| **Total** | **19** | 10 task families; detection/segmentation/pose split by representative |
+| BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
+| **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
 
 ## Open items
 
