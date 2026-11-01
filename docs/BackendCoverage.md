@@ -4,11 +4,14 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-10-31.** Coverage was refreshed against neuriplo-infer
+**Last updated: 2026-11-01.** Coverage was refreshed against neuriplo-infer
 0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.4. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
-are under [Environments](#environments).
+are under [Environments](#environments). Matrix coverage is always reported
+here — never only in a sibling repo's working artifacts (standing rule, see
+`neuriplo-ui/AGENTS.md`). OpenCV DNN coverage is 5.x only; 4.x is not
+considered.
 
 Main limitations:
 
@@ -25,10 +28,26 @@ Main limitations:
   models — the DNN column below runs OpenCV 5.0.0 source-built (see
   [Environments](#environments)); KServe HTTP has live evidence, while the
   gRPC failure described in E1 remains blocked server-side.
-- **Full cell matrix (2026-10-31):** `neuriplo-ui/artifacts/model-matrix`
+- **Full cell matrix (2026-11-01):** `neuriplo-ui/artifacts/model-matrix`
   ran every explicit TaskFactory architecture × backend on the 0.11.6
   stack: 176 RUNTIME_PASS / 22 FAILED / 12 TIMEOUT / 10 KNOWN_BAD /
-  159 EXPORT_BLOCKED / 51 NOT_APPLICABLE, with 13 triage decisions. New
+  159 EXPORT_BLOCKED / 51 NOT_APPLICABLE, with 13 triage decisions. On
+  2026-11-01 the RF-DETR trio (detection `rfdetr`, segmentation
+  `rfdetrseg`, pose `rfdetrpose`) was re-run on four gates, all
+  RUNTIME_PASS with statuses unchanged: opencv5-only gate (binary
+  `49737e78`, OpenCV 5.0.0; runs `3557889f` / `bdd99c4e` / `2d038303`),
+  onnx_runtime (`793e80c7` / `54475a05` / `1c2a8aee`), openvino
+  (`cd6f3259` / `66d8b5db` / `62265dd2`) and tensorrt (`25cd93dd` /
+  `b8553c97` / `80bb106c`). Render spot-check: bicycle/person/sheep
+  correct with masks; the dog is labeled `horse` ~0.94 on every backend
+  (model-accuracy note, same weights — not a harness failure). Slurm
+  session `2026-11-01-full-coverage-1` rebuilt the non-GenAI backend
+  images in parallel from the same pins (`libtorch`, `libtensorflow`,
+  `openvino`, `litert` BUILD_OK; `executorch` FAILED at link —
+  `ld: cannot find -lxnnpack_backend`, owner infer Dockerfile linkage;
+  `tensorrt` running); GenAI backends
+  (`llamacpp`, `cactus`, `ggml`) are out of coverage scope, and
+  `tvm`/`migraphx`/`dali` have no matrix pipeline. New
   blockers recorded there and not re-claimed here: OpenCV DNN single-input
   limit (DETR two-input, OWL three-input, `groundingdino` four-input),
   OpenCV DNN importer SIGSEGV on EdgeCrafter exact-GELU graphs, OpenVINO
