@@ -108,10 +108,10 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | UNTESTED | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | UNTESTED | [E13](#ev-rfdetr) |
+| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | UNTESTED | BLOCKED | N/A | UNTESTED | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | UNTESTED | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
@@ -306,11 +306,20 @@ gated as alias.
 - **Pose alias live (see E8).** `rfdetr_keypoint` (alias of `rfdetrpose`)
   renders skeleton pose 0.85 on DNN/ORT/TRT plus KServe HTTP; the new pose
   row reuses that KServe PASS.
+- **KServe PASS via `real-onnx` HTTP (2026-11-02, `neuriplo-kserve-runtime`
+  `build/real-onnx`, CPU ORT).** Detection `rfdetr-medium` (13.5 s):
+  bicycle 0.92, horse 0.94, car 0.87 — identical to every local backend;
+  `neuriplo_http_infer_requests_success_total{model="det"} 2`, failure 0;
+  render `data/output/processed_rfdetr_kserve-ort.png`. Seg
+  `rfdetrseg-medium` (18.8 s): same trio with masks plus the `motorbike
+  0.57` background artifact; success 1, failure 0; render
+  `data/output/processed_rfdetrseg_kserve-ort.png`. Pose was already PASS
+  via the `rfdetr_keypoint` alias (E8); the trio is now fully gated on
+  KServe HTTP.
 - **Presets + emulation.** `rfdetr` / `rfdetrseg` / `rfdetr_keypoint`
   presets exist in `docker_run_inference_e2e_example.sh --list-presets` and
   are green in `e2e-example-emulation.yml` (dry-run validates command
-  construction, not numerics); LiteRT/ExecT/LLaMA N/A or UNTESTED per row,
-  KServe UNTESTED except pose.
+  construction, not numerics); LiteRT/ExecT/LLaMA N/A or UNTESTED per row.
 - **Torch PASS via AOTInductor (2026-11-01, neuriplo-infer 0.11.7-dev +
   neuriplo 0.11.4-dev, LibTorch CPU, torch 2.14.0 AOTI packages).**
   Exception to the AOTI policy above: TorchScript tracing is broken for this
