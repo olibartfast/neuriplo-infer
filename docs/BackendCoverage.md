@@ -21,8 +21,9 @@ Main limitations:
   PASS.
 - **Incorrect outputs:** TensorFlow ResNet-50 classification and EdgeCrafter
   TFLite conversion are **KNOWN-BAD**; do not serve these combinations.
-- **Incomplete test coverage:** LiteRT has 21 failing death-tests;
-  OpenVINO and LLaMA native unit-test binaries do not link.
+- **Incomplete test coverage:** OpenVINO and LLaMA native unit-test binaries
+  do not link (LiteRT was in this list until the vendored-gtest prune;
+  see Open item 8).
 - **Backend and transport blockers:** apt OpenCV 4.6 cannot load current
   models — the DNN column below runs OpenCV 5.0.0 source-built (see
   [Environments](#environments)); KServe HTTP has live evidence, while the
@@ -398,7 +399,7 @@ other columns were not re-run on the 0.11.5 stack.
 | Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | TorchScript cells only; AOTInductor (`.pt2`) is a separate adapter and is not yet covered. KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
 | OVINO | 2025.2.0 | `OPENVINO`, tests OFF | — (not covered) | Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too (`Dockerfile.openvino`) |
 | TF | 2.19 | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
-| LiteRT | `~/dependencies/litert` | `LITERT` | 158/179 | 21 death-tests crash at subprocess exit (SEGV / `free(): invalid pointer`); live CLI exits 0 — see Open item 8 |
+| LiteRT | `~/dependencies/litert` | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) — see Open item 8 |
 | ExecT | `~/dependencies/executorch` | `EXECUTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | Same protobuf clash as Torch |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
@@ -446,10 +447,16 @@ other columns were not re-run on the 0.11.5 stack.
    SavedModel loads and runs, but the app's generic RGB `[0,1]` preprocessing
    does not satisfy ResNet-50's caffe-mode requirement (KNOWN-BAD). Fix belongs
    in neuriplo-tasks classification preprocessing, then re-gate.
-8. **LiteRT-linked `runUnitTests`: 21 death-tests crash at exit.** 158/179
-   pass; 21 death-style tests SEGV / `free(): invalid pointer` in the forked
-   child at teardown. Live CLI exits 0. Bisect with `ctest -R` on a minimal
-   link before trusting LiteRT CI.
+8. **LiteRT-linked `runUnitTests`: fixed (2026-11-02), 192/192 on the pinned
+   stack.** Root cause was not the backend: `setup_litert.sh` harvested the
+   TensorFlow build tree's vendored `gtest`/`gmock` headers into the SDK
+   include tree, and they shadowed the system gtest headers in every consumer
+   built with `-I$LITERT_DIR/include`. The vendored headers carry an older
+   `testing::internal::RE` layout (144 vs 168 bytes), so test binaries mixed
+   layouts with the system `libgtest` — an ODR violation that crashed all
+   21 death tests pre-fork in matcher construction. The script now prunes
+   `include/{gtest,gmock}` and `lib/libgtest*`/`libgmock*` on every run
+   (including no-op runs against an existing install).
 9. **Re-export the remaining TorchScript representatives.** neuriplo 0.11.3
    requires input-datatype metadata in the TorchScript archive. `yolo26` and
    `torchvisionclassifier` were gated on pre-contract files and are now
