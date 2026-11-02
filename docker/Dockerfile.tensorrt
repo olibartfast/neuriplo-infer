@@ -1,11 +1,13 @@
 
-# Stage 1: Cuda dependencies
-ARG UBUNTU_VERSION=24.04
-ARG NGC_CUDA_VERSION=13.0.0
-# Prebuilt SDK base override: defaults to the stage below so local builds are
-# unchanged; CI passes BASE_IMAGE=ghcr.io/<repo>/tensorrt-deps:<ver>.
-ARG BASE_IMAGE=cuda_dependencies
-FROM nvcr.io/nvidia/cuda:${NGC_CUDA_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS cuda_dependencies
+# Stage 1: TensorRT base image.
+# The TRT SDK lives in one place only: the NGC TensorRT image, shared with
+# neuriplo (which publishes no TRT GHCR package for the same reason — the NGC
+# image IS the shared base, so there is nothing to publish and no tarball to
+# download). NGC 26.08 bundles Ubuntu 24.04 + CUDA 13.4.1 + TensorRT 11.2.1.2
+# (NVIDIA container release notes). Move NGC_CONTAINER_TAG together with
+# TENSORRT_VERSION in neuriplo/versions.env.
+ARG NGC_CONTAINER_TAG=26.08
+FROM nvcr.io/nvidia/tensorrt:${NGC_CONTAINER_TAG}-py3 AS cuda_dependencies
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -18,7 +20,6 @@ RUN apt-get update && apt-get upgrade -y && \
     libopencv-dev \
     libgoogle-glog-dev \
     wget \
-    zstd \
     git \
     && rm -rf /var/lib/apt/lists/*
 
@@ -30,56 +31,31 @@ RUN dependency_ref=$(awk -F= '/^NEURIPLO_VERSION=/{gsub(/[ \t\r"]/,"",$2); print
         if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi; fi && \
     wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
 
-# Stage 2: Install TensorRT dependencies (published as tensorrt-deps, see
-# .github/workflows/base-images.yml)
-FROM ${BASE_IMAGE} AS backend_dependencies
+# Stage 2: Expose the bundled TensorRT at TENSORRT_DIR
+FROM cuda_dependencies AS backend_dependencies
 
 ARG BACKEND=TENSORRT
 
-# Set TensorRT environment variables early so the install check below and
-# downstream stages share the same paths.
+# The image installs TensorRT into the system paths. cmake and the CI jobs
+# (-DTENSORRT_DIR=/opt/tensorrt) expect an include/ + lib/ tree, so point one
+# at them, unless the image already provides it. Same layout as neuriplo's
+# Dockerfile.tensorrt — the two must stay in sync.
+RUN if [ ! -f /opt/tensorrt/include/NvInfer.h ]; then \
+        rm -rf /opt/tensorrt && mkdir -p /opt/tensorrt && \
+        ln -s /usr/include/x86_64-linux-gnu /opt/tensorrt/include && \
+        ln -s /usr/lib/x86_64-linux-gnu /opt/tensorrt/lib; \
+    fi && \
+    test -f /opt/tensorrt/include/NvInfer.h && \
+    test -f /opt/tensorrt/lib/libnvinfer.so && \
+    { grep -E "^#define (NV_TENSORRT|TRT)_(MAJOR|MINOR|PATCH|BUILD)" /opt/tensorrt/include/NvInferVersion.h || true; }
+
+# Set TensorRT environment variables (trtexec ships in /usr/src/tensorrt/bin
+# on the NGC image; keep TENSORRT_DIR first for the app build).
 ENV TENSORRT_DIR=/opt/tensorrt
 ENV LD_LIBRARY_PATH=${TENSORRT_DIR}/lib:${LD_LIBRARY_PATH:-}
 ENV LIBRARY_PATH=${TENSORRT_DIR}/lib:${LIBRARY_PATH:-}
 ENV CPATH=${TENSORRT_DIR}/include
-ENV PATH=${TENSORRT_DIR}/bin:${PATH}
-
-COPY VERSION /tmp/neuriplo-infer.VERSION
-COPY versions.env /tmp/neuriplo-infer.versions.env
-
-RUN dependency_ref=$(awk -F= '/^NEURIPLO_VERSION=/{gsub(/[ \t\r"]/,"",$2); print $2; exit}' /tmp/neuriplo-infer.versions.env) && \
-    if [ -z "$dependency_ref" ]; then dependency_ref=develop; \
-        if grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/neuriplo-infer.VERSION; then dependency_ref=master; fi; fi && \
-    wget -q -O /tmp/versions.env "https://raw.githubusercontent.com/olibartfast/neuriplo/${dependency_ref}/versions.env"
-
-# Download and install TensorRT, unless inheriting a published SDK base that
-# already carries this exact pin (checked via the version stamp below).
-RUN . /tmp/versions.env && \
-    TRT_SHORT=$(echo ${TENSORRT_VERSION} | cut -d. -f1-3) && \
-    TRT_CUDA=${TENSORRT_CUDA_VERSION:-$CUDA_VERSION} && \
-    STAMP="${TENSORRT_VERSION}-cuda-${TRT_CUDA}" && \
-    if [ -d "${TENSORRT_DIR}/lib" ] && [ "$(cat /opt/tensorrt-version.txt 2>/dev/null)" = "$STAMP" ]; then \
-        echo "TensorRT $STAMP already installed, skipping download."; \
-    else \
-        if [ "${TENSORRT_VERSION%%.*}" -ge 11 ]; then \
-            archive="TensorRT-Enterprise-${TENSORRT_VERSION}-Linux-x86_64-cuda-${TRT_CUDA}-Release-external.tar.zst"; \
-        else \
-            archive="TensorRT-${TENSORRT_VERSION}.Linux.x86_64-gnu.cuda-${TRT_CUDA}.tar.gz"; \
-        fi && \
-        wget --tries=3 --retry-connrefused \
-            "https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/${TRT_SHORT}/tars/${archive}" && \
-        tar -xf "$archive" -C /opt && \
-        rm "$archive" && \
-        ln -sfn /opt/TensorRT-${TENSORRT_VERSION} /opt/tensorrt && \
-        echo "$STAMP" > /opt/tensorrt-version.txt; \
-    fi
-
-# Fail fast if the SDK or the pin stamp is missing: the skip above must stay
-# in sync with the real toolkit layout.
-RUN . /tmp/versions.env && \
-    TRT_CUDA=${TENSORRT_CUDA_VERSION:-$CUDA_VERSION} && \
-    test "$(cat /opt/tensorrt-version.txt)" = "${TENSORRT_VERSION}-cuda-${TRT_CUDA}" && \
-    ls "${TENSORRT_DIR}/lib"/libnvinfer.so* >/dev/null
+ENV PATH=/usr/src/tensorrt/bin:${TENSORRT_DIR}/bin:${PATH}
 
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder
