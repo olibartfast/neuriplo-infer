@@ -109,7 +109,7 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | PASS | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
+| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
@@ -384,19 +384,31 @@ additionally gated as alias.
   artifact. Keypoint (292 ms): skeleton, pose **0.850754** — 3e-5 below the
   0.850784 every other backend reports (FP tactic selection, rounds to the
   same 0.85).
-- **LiteRT KNOWN-BAD (conversion fault, onnx2tf float32).** `rfdetrseg-medium`
-  (432, `--input_sizes=1,3,432,432`): exit 0, 3599 ms, masks render and
-  bicycle 0.94 / horse 0.91 / `motorbike 0.57` match — but the car reads
-  `truck 0.34`. Better than `rfdetr-nano` (single wrong `person`, no masks)
-  yet still wrong: do not serve RF-DETR-seg on LiteRT. Render inspected
-  (`data/output/processed_rfdetrseg_local.png`).
-- **Nano variant worse (same stack).** `rfdetr-nano` float32 `.tflite`
-  (2445 ms) keeps a single wrong `person 0.75` and no masks at all —
-  same converter failure class as `ecdet` TFLite (E4).
+- **LiteRT detection: PASS via upstream's native exporter, KNOWN-BAD via
+  generic `onnx2tf`.** `rfdetr-medium` through rfdetr's own `format="litert"`
+  route (`torch.export` + `litert-torch`, no ONNX/TF step; 576,
+  `--input_sizes=1,3,576,576`, 3207 ms): bicycle 0.92, horse 0.94,
+  car 0.87 at 0.4 — exact match with every other backend (same dog-as-horse
+  note). Render inspected (`data/output/processed_rfdetr_local.png`).
+  Upstream lists LiteRT as supported and it is — provided their exporter
+  is used: it rewrites the deformable-attention `grid_sample` ops that
+  generic `onnx2tf` mangles. The generic path stays KNOWN-BAD
+  (`rfdetr-nano` float32 `.tflite`: single wrong `person 0.75`, no masks).
+- **LiteRT seg KNOWN-BAD (two faults, both characterized).** Generic-`onnx2tf`
+  float32 (432): exit 0, masks render, bicycle 0.94 / horse 0.91 /
+  `motorbike 0.57` match — but the car reads `truck 0.34`: converter fault,
+  do not serve. Native `format="litert"` file (same shape, upstream's
+  grid-rewriting route): exit 0, 3632 ms, but the render is EMPTY — the
+  model itself is fine standalone (top class logit 2.8, correct shapes
+  `(1,200,4)/(1,200,91)/(1,200,108,108)`), while
+  `RfDetrSegmentationPostprocessor` matches outputs by name and cannot map
+  the positional `serving_default_output_<i>_output` names. Same tasks-side
+  fix as the Torch seg cell (match by position/shape for synthetic names).
+  Render inspected (`data/output/processed_rfdetrseg_local.png`).
 - **Pose LiteRT PASS (same stack).** `rfdetr-keypoint` float32 `.tflite`
   (576, `--input_sizes=1,3,576,576`, 6540 ms): skeleton, pose score
-  **0.850784** — identical to every other backend. The LiteRT column thus
-  splits by member: detection KNOWN-BAD, seg KNOWN-BAD, pose PASS.
+  **0.850784** — identical to every other backend (upstream notes keypoint
+  is unsupported by `litert-torch`, so the `onnx2tf` file stands).
 - **ExecuTorch BLOCKED (all three; runtime lacks `aten::linear.out`).**
   `rfdetr-nano` / `rfdetrseg-medium` / `rfdetr-keypoint-preview-xlarge`
   export cleanly to `.pte` (`format="executorch"`, `backend="xnnpack"`,
@@ -437,7 +449,7 @@ older dates are kept only where no newer run exists.
 | Status | Count (task rows) | Rows |
 |---|---|---|
 | PASS (≥1 backend live-gated) | 12 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
-| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH; `rfdetr` on LiteRT |
+| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH / LiteRT-`onnx2tf`; generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
 | DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
 | BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
 | **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
