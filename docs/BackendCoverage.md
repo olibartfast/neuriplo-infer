@@ -153,6 +153,8 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
   other backends are unaffected.
 - **OpenVINO PASS** (CPU, 267 ms): `yolo26s.onnx` read directly.
 - **LiteRT PASS** (CPU, 888 ms): `yolo26s.tflite` (`1x640x640x3`).
+  Re-verified 2026-11-02 after the vendored-gtest prune (915 ms):
+  bicycle 0.95, dog 0.94, car 0.52 — no regression.
 - **KServe PASS** (HTTP): YOLO26 `.tflite` over `litert`, validated locally
   2026-06-13 — [KserveCompatibility.md](KserveCompatibility.md#model-formats);
   live path is `kserve-runtime-yolo-e2e`
