@@ -106,19 +106,19 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Task (representative) | DNN | ORT | TRT | Torch | OVINO | TF | LiteRT | ExecT | LLaMA | KServe | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | BLOCKED | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E1](#ev-yolo26) |
-| Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | UNTESTED | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
+| Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | PASS | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
 | Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | UNTESTED | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
-| Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | PASS | PASS | BUILDS | UNTESTED | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | DRY-RUN | BUILDS | BUILDS | PASS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E9](#ev-depth) |
+| Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | PASS | UNTESTED | N/A | PASS | [E8](#ev-pose) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
+| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | PASS | BUILDS | BUILDS | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E9](#ev-depth) |
 | Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | PASS | UNTESTED | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | N/A | UNTESTED | [E12](#ev-splatting) |
@@ -170,6 +170,10 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
   dog 0.93, car 0.61. The 4.6 `Unsqueeze` blocker is gone on 5.x.
 - **ExecT PASS** (CPU, 320 ms): `yolov8n.pte` @ 0.4/0.5 — bicycle 0.89,
   dog 0.93, car 0.61. No CI build job for ExecT.
+- **LiteRT PASS** (2026-11-02, `build-litert`, CPU, 471 ms):
+  `yolov8n` float32 `.tflite` via `onnx2tf` @ 0.4/0.5 — bicycle 0.89,
+  dog 0.93, car 0.61, identical to DNN/ORT. Render inspected
+  (`data/output/processed_yolov8_local.png`).
 - **TF PASS** (2026-11-01, TF 2.19 runtime `build-tensorflow`, CPU,
   1423 ms): `yolov8n_saved_model` (ultralytics SavedModel export) @ 0.4/0.5
   — bicycle 0.89, dog 0.93, car 0.61 — no regression. Render inspected
@@ -250,6 +254,10 @@ as alias (see Open item 2 for the emulation gap).
   `person.jpg` renders skeleton, pose score 0.85.
 - **TRT alias live** (10.14.1.48 FP16 engine, 246 ms): same skeleton,
   score 0.85. Cell stays BUILDS for the unrun representative.
+- **LiteRT alias live** (CPU, 6540 ms): `rfdetr_keypoint` float32 `.tflite`
+  via `onnx2tf` renders skeleton, pose score 0.850784 — bit-identical to
+  every other backend. Render inspected
+  (`data/output/processed_rfdetr-keypoint_local.png`).
 - **KServe PASS** (`real-onnx` runtime, HTTP): same score 0.85 — task gated
   via alias.
 
@@ -272,6 +280,11 @@ additionally gated as alias.
   optiplex-3040, CPU, 434 ms): `yolo26depth` renders the same sane map,
   min/max 1.26/5.41 — the promo-video memory was right; the BUILDS cell
   was stale.
+- **LiteRT PASS** (2026-11-02, `build-litert`, CPU, 133 s):
+  `depth_anything_v2` float32 `.tflite` via `onnx2tf` renders the same sane
+  map, min/max -0.31/7.64 (identical to ORT to 5 decimals). Slow on CPU
+  XNNPACK, but numerically intact. Render inspected
+  (`data/output/processed_depth-anything-v2_local.png`).
 - **KServe PASS** (`real-onnx` runtime, HTTP): same sane map — task gated
   via alias.
 
@@ -371,12 +384,19 @@ additionally gated as alias.
   artifact. Keypoint (292 ms): skeleton, pose **0.850754** — 3e-5 below the
   0.850784 every other backend reports (FP tactic selection, rounds to the
   same 0.85).
-- **LiteRT KNOWN-BAD (conversion fault, not runtime).** `rfdetr-nano.onnx`
-  → `onnx2tf` float32 `.tflite` converts cleanly and runs exit 0 in
-  `build-litert` (2445 ms) — but the render keeps a single wrong
-  `person 0.75` where ONNX finds bicycle/horse/car. Same failure class as
-  `ecdet` TFLite (E4): the converter breaks this architecture's numerics.
-  Do not serve RF-DETR on LiteRT.
+- **LiteRT KNOWN-BAD (conversion fault, onnx2tf float32).** `rfdetrseg-medium`
+  (432, `--input_sizes=1,3,432,432`): exit 0, 3599 ms, masks render and
+  bicycle 0.94 / horse 0.91 / `motorbike 0.57` match — but the car reads
+  `truck 0.34`. Better than `rfdetr-nano` (single wrong `person`, no masks)
+  yet still wrong: do not serve RF-DETR-seg on LiteRT. Render inspected
+  (`data/output/processed_rfdetrseg_local.png`).
+- **Nano variant worse (same stack).** `rfdetr-nano` float32 `.tflite`
+  (2445 ms) keeps a single wrong `person 0.75` and no masks at all —
+  same converter failure class as `ecdet` TFLite (E4).
+- **Pose LiteRT PASS (same stack).** `rfdetr-keypoint` float32 `.tflite`
+  (576, `--input_sizes=1,3,576,576`, 6540 ms): skeleton, pose score
+  **0.850784** — identical to every other backend. The LiteRT column thus
+  splits by member: detection KNOWN-BAD, seg KNOWN-BAD, pose PASS.
 - **ExecuTorch BLOCKED (all three; runtime lacks `aten::linear.out`).**
   `rfdetr-nano` / `rfdetrseg-medium` / `rfdetr-keypoint-preview-xlarge`
   export cleanly to `.pte` (`format="executorch"`, `backend="xnnpack"`,
