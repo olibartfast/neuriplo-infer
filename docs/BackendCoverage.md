@@ -21,8 +21,9 @@ Main limitations:
   PASS.
 - **Incorrect outputs:** TensorFlow ResNet-50 classification and EdgeCrafter
   TFLite conversion are **KNOWN-BAD**; do not serve these combinations.
-- **Incomplete test coverage:** LiteRT has 21 failing death-tests;
-  OpenVINO and LLaMA native unit-test binaries do not link.
+- **Incomplete test coverage:** OpenVINO and LLaMA native unit-test binaries
+  do not link (LiteRT was in this list until the vendored-gtest prune;
+  see Open item 8).
 - **Backend and transport blockers:** apt OpenCV 4.6 cannot load current
   models — the DNN column below runs OpenCV 5.0.0 source-built (see
   [Environments](#environments)); KServe HTTP has live evidence, while the
@@ -152,6 +153,8 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
   other backends are unaffected.
 - **OpenVINO PASS** (CPU, 267 ms): `yolo26s.onnx` read directly.
 - **LiteRT PASS** (CPU, 888 ms): `yolo26s.tflite` (`1x640x640x3`).
+  Re-verified 2026-11-02 after the vendored-gtest prune (915 ms):
+  bicycle 0.95, dog 0.94, car 0.52 — no regression.
 - **KServe PASS** (HTTP): YOLO26 `.tflite` over `litert`, validated locally
   2026-06-13 — [KserveCompatibility.md](KserveCompatibility.md#model-formats);
   live path is `kserve-runtime-yolo-e2e`
@@ -252,8 +255,13 @@ as alias (see Open item 2 for the emulation gap).
 
 ### <a id="ev-depth"></a>E9 — Depth estimation (`depth_anything_v2`)
 
-Representative `depth_anything_v2` unrun everywhere below; `yolo26depth`
-gated as alias.
+Representative `depth_anything_v2` live-gated on ORT below; `yolo26depth`
+additionally gated as alias.
+
+- **ORT PASS** (2026-11-02, 1.19.2 CPU, 1310 ms): `depth_anything_v2.onnx`
+  on `data/dog.jpg` renders a sane map (near yellow dog/bicycle, far blue
+  background), min/max -0.31/7.64 — render inspected
+  (`data/output/processed_depth-anything-v2_local.png`).
 
 - **DNN PASS via alias** (5.0.0, CPU, 838 ms): `yolo26depth` renders sane
   depth map, min/max 1.26/5.41. (Apt 4.6 failed it on the YOLO `Split`
@@ -386,19 +394,20 @@ gated as alias.
 
 ## Environments
 
-How each column was built and tested on 2026-10-23 (all CPU except TRT).
-The TorchScript metadata rule and the DETR re-runs are from 2026-10-30; the
-other columns were not re-run on the 0.11.5 stack.
+How each column was built and tested (all CPU except TRT).
+Live app-surface runs below are from 2026-11-01/02 on the pinned stack
+(neuriplo-infer 0.11.7-dev + neuriplo 0.11.3 + neuriplo-tasks 0.8.4);
+older dates are kept only where no newer run exists.
 
 | Backend | Version / artifact | Build flags | Tests | Notes |
 |---|---|---|---|---|
 | DNN | OpenCV 5.0.0 source-built (`~/dependencies/opencv-5.0.0`, `scripts/setup_opencv.sh`) | `OPENCV_DNN` | 179/179 | New graph engine; `--input_sizes` required; apt 4.6 kept as fallback when the 5.x dir is absent |
-| ORT | 1.19.2 CPU | `ONNX_RUNTIME` | 179/179 | Full inference runs, renders inspected |
-| TRT | 10.14.1.48 FP16 | `TENSORRT` | 194/194 | Engines rebuilt from the same `.onnx`; stale `build-trt` dir (pinned videocapture v0.5.0) reconfigured to v0.6.0 |
-| Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | TorchScript cells only; AOTInductor (`.pt2`) is a separate adapter and is not yet covered. KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
-| OVINO | 2025.2.0 | `OPENVINO`, tests OFF | — (not covered) | Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too (`Dockerfile.openvino`) |
-| TF | 2.19 | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
-| LiteRT | `~/dependencies/litert` | `LITERT` | 158/179 | 21 death-tests crash at subprocess exit (SEGV / `free(): invalid pointer`); live CLI exits 0 — see Open item 8 |
+| ORT | 1.19.2 CPU (local SDK; pin 1.28.0 unfetchable upstream — `setup_dependencies.sh` handles the renamed `gpu_cuda<major>` archives) | `ONNX_RUNTIME` | 179/179 | Full inference runs, renders inspected |
+| TRT | 11.2.1.2 (NGC `tensorrt:26.08` base, `docker/Dockerfile.tensorrt`) | `TENSORRT` | image green in CI 2026-11-02 | Trio live-gated 2026-11-01 (det 109 ms, seg 380 ms + masks, keypoint 292 ms, pose 0.850754) — see E13. 11.2 `trtexec` dropped the `--fp16` shorthand; engines rebuilt from the same `.onnx` |
+| Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | TorchScript cells, except E13 where RF-DETR rests on AOTInductor (`.pt2`) because TorchScript tracing is broken for that arch. KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
+| OVINO | 2026.3.0 (pinned; `docker/Dockerfile.openvino`) | `OPENVINO`, tests OFF | — (not covered) | Trio live-gated 2026-11-01 (det 784 ms, seg 1184 ms + masks, keypoint 1566 ms, pose 0.850784) — see E13. Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too |
+| TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
+| LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) — see Open item 8 |
 | ExecT | `~/dependencies/executorch` | `EXECUTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | Same protobuf clash as Torch |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
@@ -446,10 +455,16 @@ other columns were not re-run on the 0.11.5 stack.
    SavedModel loads and runs, but the app's generic RGB `[0,1]` preprocessing
    does not satisfy ResNet-50's caffe-mode requirement (KNOWN-BAD). Fix belongs
    in neuriplo-tasks classification preprocessing, then re-gate.
-8. **LiteRT-linked `runUnitTests`: 21 death-tests crash at exit.** 158/179
-   pass; 21 death-style tests SEGV / `free(): invalid pointer` in the forked
-   child at teardown. Live CLI exits 0. Bisect with `ctest -R` on a minimal
-   link before trusting LiteRT CI.
+8. **LiteRT-linked `runUnitTests`: fixed (2026-11-02), 192/192 on the pinned
+   stack.** Root cause was not the backend: `setup_litert.sh` harvested the
+   TensorFlow build tree's vendored `gtest`/`gmock` headers into the SDK
+   include tree, and they shadowed the system gtest headers in every consumer
+   built with `-I$LITERT_DIR/include`. The vendored headers carry an older
+   `testing::internal::RE` layout (144 vs 168 bytes), so test binaries mixed
+   layouts with the system `libgtest` — an ODR violation that crashed all
+   21 death tests pre-fork in matcher construction. The script now prunes
+   `include/{gtest,gmock}` and `lib/libgtest*`/`libgmock*` on every run
+   (including no-op runs against an existing install).
 9. **Re-export the remaining TorchScript representatives.** neuriplo 0.11.3
    requires input-datatype metadata in the TorchScript archive. `yolo26` and
    `torchvisionclassifier` were gated on pre-contract files and are now
