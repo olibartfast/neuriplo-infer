@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.8] - 2026-11-02
+
+### Added
+- RF-DETR and RF-DETRSeg end-to-end presets
+  (`docker_run_inference_e2e_example.sh`), closing the emulation gap for
+  the RF-DETR trio.
+
+### Changed
+- The TensorRT image builds from the NGC `tensorrt:26.08-py3` base, like
+  neuriplo — it bundles the pinned 11.2.1.2 stack, so the 3.7 GB Enterprise
+  tarball download is gone and no GHCR base package is needed.
+
+### Fixed
+- Resolve the ONNX Runtime 1.28 GPU archive name from the pinned CUDA
+  version (`onnxruntime-linux-x64-gpu_cuda<major>-<ver>`, falling back to
+  the old name) in `scripts/setup_dependencies.sh` and
+  `docker/Dockerfile.onnxruntime`; the old name 404s for 1.28.
+- Build the OpenVINO setup URL from the pinned `OPENVINO_VERSION` /
+  `OPENVINO_FULL_ID` instead of the hardcoded 2025.2.0 archive, and pin
+  the Python tools wheel to the toolkit version.
+
+### Documentation
+- Refresh the backend coverage matrix: RF-DETR trio gates (Torch-AOTI,
+  LiteRT KNOWN-BAD, ExecuTorch BLOCKED), the pinned TRT 11.2 trio and
+  OpenVINO depth confirmations, the TensorFlow 2.19 PASS / 2.21 BLOCKED
+  notes, N/A cells for inapplicable backend-task pairs, and the
+  matrix-to-table rule. Manual launch.json runs are no longer documented
+  as coverage.
+
 ## [0.11.7] - 2026-10-31
 
 ### Fixed
@@ -845,7 +874,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.7...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.8...HEAD
+[0.11.8]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.6...v0.11.8
 [0.11.7]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.4...v0.11.5
