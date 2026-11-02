@@ -253,8 +253,13 @@ as alias (see Open item 2 for the emulation gap).
 
 ### <a id="ev-depth"></a>E9 — Depth estimation (`depth_anything_v2`)
 
-Representative `depth_anything_v2` unrun everywhere below; `yolo26depth`
-gated as alias.
+Representative `depth_anything_v2` live-gated on ORT below; `yolo26depth`
+additionally gated as alias.
+
+- **ORT PASS** (2026-11-02, 1.19.2 CPU, 1310 ms): `depth_anything_v2.onnx`
+  on `data/dog.jpg` renders a sane map (near yellow dog/bicycle, far blue
+  background), min/max -0.31/7.64 — render inspected
+  (`data/output/processed_depth-anything-v2_local.png`).
 
 - **DNN PASS via alias** (5.0.0, CPU, 838 ms): `yolo26depth` renders sane
   depth map, min/max 1.26/5.41. (Apt 4.6 failed it on the YOLO `Split`
