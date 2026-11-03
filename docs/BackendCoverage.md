@@ -110,7 +110,7 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 
 | Task (representative) | DNN | ORT | TRT | Torch | OVINO | TF | LiteRT | ExecT | LLaMA | KServe | Evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | BLOCKED | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E1](#ev-yolo26) |
+| Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E1](#ev-yolo26) |
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | PASS | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
@@ -118,7 +118,7 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | PASS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | PASS | UNTESTED | N/A | PASS | [E8](#ev-pose) |
@@ -154,13 +154,13 @@ infer pin move — the seg-LiteRT flip below is the first such flip
   identical outputs. The pre-existing `rfdetr-keypoint-preview.engine`
   (built with 10.13) does NOT deserialize on 10.14 — engines were rebuilt
   with 10.14 `trtexec`.
-- **Torch BLOCKED (2026-10-30).** The 2026-10-23 `yolo26s.torchscript`
-  (ultralytics export) ran PASS in 1083 ms with
-  `--input_sizes=1,3,640,640`, but that file predates the input-datatype
-  metadata requirement in neuriplo 0.11.3. It now stops at load with
-  `TorchScript input 'x.1' has no datatype metadata; re-export with the typed
-  input metadata helper`. Re-export with the helper to restore the cell; the
-  other backends are unaffected.
+- **Torch PASS (pinned re-gate 2026-11-03).** The typed resave of
+  `yolo26s.torchscript` (input-datatype metadata verified with
+  `has_torchscript_metadata`) loads and runs: 1242 ms,
+  `--input_sizes=1,3,640,640` — bicycle 0.95, dog 0.94, car 0.52,
+  exact match with DNN/ORT. Render inspected
+  (`data/output/processed_yolo26_local.png`). Cell flipped
+  BLOCKED → PASS.
 - **OpenVINO PASS** (CPU, 267 ms): `yolo26s.onnx` read directly.
 - **LiteRT PASS** (CPU, 888 ms): `yolo26s.tflite` (`1x640x640x3`).
   Re-verified 2026-11-02 after the vendored-gtest prune (915 ms):
@@ -250,11 +250,15 @@ infer pin move — the seg-LiteRT flip below is the first such flip
 
 ### <a id="ev-classification"></a>E6 — Classification (`torchvisionclassifier`)
 
-- **Torch BLOCKED (2026-10-30).** The traced `resnet50` (`torchvision`
-  IMAGENET1K_V2) ran PASS in 689 ms with `--input_sizes=1,3,224,224` —
-  malamute 0.44 — but the file has no input-datatype metadata and is now
-  rejected at load with the same error as E1. Re-export with the helper to
-  restore the cell.
+- **Torch PASS (pinned re-gate 2026-11-03).** The typed resave of the
+  `resnet50` (`torchvision` IMAGENET1K_V2) archive (metadata verified with
+  `has_torchscript_metadata`)
+  loads and runs: 687 ms, `--input_sizes=1,3,224,224` — top class 249 @
+  0.44 (same score as the pre-contract gate; proper preprocessing gives
+  0.55, so the app seam under-reports but ranks correctly). Render
+  inspected (`data/output/processed_torchvision-classifier_local.png`).
+  Cell flipped BLOCKED → PASS. The TF KNOWN-BAD below is a separate
+  preprocessing fault, untouched.
 - **TF KNOWN-BAD** (CPU, 2600 ms): ResNet-50 SavedModel (neuriplo-tasks
   export guide) loads and runs but labels `tiger shark`. The app's generic
   RGB `[0,1]` preprocessing lacks ResNet-50's caffe-mode preprocessing
@@ -537,12 +541,12 @@ older dates are kept only where no newer run exists.
    21 death tests pre-fork in matcher construction. The script now prunes
    `include/{gtest,gmock}` and `lib/libgtest*`/`libgmock*` on every run
    (including no-op runs against an existing install).
-9. **Re-export the remaining TorchScript representatives.** neuriplo 0.11.3
-   requires input-datatype metadata in the TorchScript archive. `yolo26` and
-   `torchvisionclassifier` were gated on pre-contract files and are now
-   BLOCKED until re-exported with
-   [torchscript_metadata.py](https://github.com/olibartfast/neuriplo/blob/master/scripts/lib/torchscript_metadata.py);
-   the DETR family has typed exports and was re-gated 2026-10-30.
+9. **Closed — TorchScript re-exports re-gated.** `yolo26` and
+   `torchvisionclassifier` now load typed archives (metadata verified)
+   and were re-gated PASS 2026-11-03 on the pinned stack (yolo26
+   1242 ms exact trio; classifier top class 249 @ 0.44); the DETR family
+   was re-gated 2026-10-30. E13's TorchScript exception (broken trace
+   for RF-DETR, AOTI route instead) stands.
 
 ## Integration-test evidence
 
