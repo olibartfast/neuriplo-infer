@@ -130,7 +130,11 @@ for pose) with rendered outputs inspected, unless a bullet gives another date.
 The 2026-10-30 runs used the neuriplo-infer 0.11.5 release stack (neuriplo
 0.11.3, neuriplo-tasks 0.8.4); the 2026-10-31 cell matrix ran on the 0.11.6
 stack and is recorded in the external cell-matrix report (REPORT.md +
-13 decisions).
+13 decisions). Develop-stack re-gates from 2026-11-02/03 ran on sibling
+checkouts (neuriplo-infer `develop` c7dd16b + neuriplo-tasks `develop`
+ea05454, which carries the RF-DETR synthetic-name mapping fix) and are
+labeled as such; cells only flip on the pinned stack once the tasks tag +
+infer pin move.
 
 ### <a id="ev-yolo26"></a>E1 — Object detection (`yolo26`)
 
@@ -257,7 +261,9 @@ as alias (see Open item 2 for the emulation gap).
 - **LiteRT alias live** (CPU, 6540 ms): `rfdetr_keypoint` float32 `.tflite`
   via `onnx2tf` renders skeleton, pose score 0.850784 — bit-identical to
   every other backend. Render inspected
-  (`data/output/processed_rfdetr-keypoint_local.png`).
+  (`data/output/processed_rfdetr-keypoint_local.png`). Re-verified
+  2026-11-02 on the develop stack (6898 ms, same 0.850784) — the tasks
+  mapping fix causes no regression here.
 - **KServe PASS** (`real-onnx` runtime, HTTP): same score 0.85 — task gated
   via alias.
 
@@ -307,6 +313,12 @@ additionally gated as alias.
 - **LLaMA PASS** (CPU, 64 s): `gemma-4-E2B-it-Q4_K_M.gguf` + `mmproj-F16.gguf`
   (HF `unsloth/gemma-4-E2B-it-GGUF`), preset prompt — accurate description.
   Only LLaMA applies (GGUF + mmproj). No CI build job.
+- **GGML is an independent backend, not the LLaMA column.** `neuriplo`
+  ships `docker/Dockerfile.ggml` (builder: `-DDEFAULT_BACKEND=GGML` +
+  engine tests, `docker/run_ggml_tests.sh`). Slurm-orchestrated builder
+  coverage dispatched 2026-11-02 (job 29, zenbook worker,
+  `neuriplo@develop` clone): outcome pending — the node went unreachable
+  before evidence retrieval, so nothing is claimed here yet.
 
 ### <a id="ev-splatting"></a>E12 — Gaussian splatting (`lgm`/`grm`)
 
@@ -366,8 +378,10 @@ additionally gated as alias.
   resolves outputs by name with a digit heuristic; the Torch backend's
   synthetic names (`output0/1/2`) collapse `masks` and `labels` onto index 2,
   so classification reads the masks tensor. Named (ONNX) outputs are
-  unaffected. Do not serve `rfdetrseg` on Torch until tasks maps by shape
-  or position for synthetic names.
+  unaffected. Fixed in neuriplo-tasks `develop` (PR #22, `ea05454`:
+  all-digits rule + shape-first resolution in `postprocess`); live Torch
+  re-gate pending, cell stays KNOWN-BAD until then. Do not serve
+  `rfdetrseg` on Torch on the pinned stack.
 - **OpenVINO app-surface confirmation (pinned 2026.3.0 runtime,
   `build-openvino`, no override).** Detection `rfdetr-medium` (784 ms):
   bicycle 0.92, horse 0.94, car 0.87. Seg `rfdetrseg-medium` (1184 ms):
@@ -394,17 +408,18 @@ additionally gated as alias.
   is used: it rewrites the deformable-attention `grid_sample` ops that
   generic `onnx2tf` mangles. The generic path stays KNOWN-BAD
   (`rfdetr-nano` float32 `.tflite`: single wrong `person 0.75`, no masks).
-- **LiteRT seg KNOWN-BAD (two faults, both characterized).** Generic-`onnx2tf`
-  float32 (432): exit 0, masks render, bicycle 0.94 / horse 0.91 /
-  `motorbike 0.57` match — but the car reads `truck 0.34`: converter fault,
-  do not serve. Native `format="litert"` file (same shape, upstream's
-  grid-rewriting route): exit 0, 3632 ms, but the render is EMPTY — the
-  model itself is fine standalone (top class logit 2.8, correct shapes
-  `(1,200,4)/(1,200,91)/(1,200,108,108)`), while
-  `RfDetrSegmentationPostprocessor` matches outputs by name and cannot map
-  the positional `serving_default_output_<i>_output` names. Same tasks-side
-  fix as the Torch seg cell (match by position/shape for synthetic names).
-  Render inspected (`data/output/processed_rfdetrseg_local.png`).
+- **LiteRT seg: generic-`onnx2tf` KNOWN-BAD (converter fault, stands);
+  native route PASS on the develop stack.** Generic float32 (432): exit 0,
+  masks render, bicycle 0.94 / horse 0.91 / `motorbike 0.57` match — but
+  the car reads `truck 0.34`: do not serve. Native `format="litert"` file
+  re-gated 2026-11-02 after the tasks mapping fix (develop stack,
+  `build-litert`, 3670 ms): bicycle 0.94, horse 0.91, car 0.86, all with
+  masks, plus the usual `motorbike 0.57` artifact — exact trio match with
+  ORT/TRT/OVINO. The pre-fix empty render was the same tasks-side
+  name-mapping gap as the Torch cell (positional
+  `serving_default_output_<i>_output` names), fixed by PR #22. Pinned-stack
+  gate (and cell flip) waits on the tasks tag + infer pin move. Render
+  inspected (`data/output/processed_rfdetrseg_local.png`).
 - **Pose LiteRT PASS (same stack).** `rfdetr-keypoint` float32 `.tflite`
   (576, `--input_sizes=1,3,576,576`, 6540 ms): skeleton, pose score
   **0.850784** — identical to every other backend (upstream notes keypoint
@@ -449,7 +464,7 @@ older dates are kept only where no newer run exists.
 | Status | Count (task rows) | Rows |
 |---|---|---|
 | PASS (≥1 backend live-gated) | 12 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
-| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH / LiteRT-`onnx2tf`; generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
+| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH (fix in tasks `develop`, re-gate pending) / LiteRT-`onnx2tf` (native route PASS on develop stack, pin pending); generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
 | DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
 | BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
 | **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
