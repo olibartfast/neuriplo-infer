@@ -4,8 +4,8 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-11-01.** Coverage was refreshed against neuriplo-infer
-0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.4. The
+**Last updated: 2026-11-03.** Coverage was refreshed against neuriplo-infer
+0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
 are under [Environments](#environments). Matrix coverage is always reported
@@ -335,8 +335,10 @@ additionally gated as alias.
   ships `docker/Dockerfile.ggml` (builder: `-DDEFAULT_BACKEND=GGML` +
   engine tests, `docker/run_ggml_tests.sh`). Slurm-orchestrated builder
   coverage dispatched 2026-11-02 (job 29, zenbook worker,
-  `neuriplo@develop` clone): outcome pending — the node went unreachable
-  before evidence retrieval, so nothing is claimed here yet.
+  `neuriplo@develop` clone): builder image verified present 2026-11-03
+  (`neuriplo:ggml-2026-11-02-ggml-coverage`, 995 MB, queue empty, node
+  idle) — build leg done, engine-test numbers still unretrieved (no
+  job log on the node), so nothing is claimed here yet.
 
 ### <a id="ev-splatting"></a>E12 — Gaussian splatting (`lgm`/`grm`)
 
