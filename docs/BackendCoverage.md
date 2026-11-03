@@ -47,7 +47,12 @@ Main limitations:
   (`ld: cannot find -lxnnpack_backend`, owner infer Dockerfile linkage);
   `tensorrt` running); GenAI backends
   (`llamacpp`, `cactus`, `ggml`) are out of coverage scope, and
-  `tvm`/`migraphx`/`dali` have no matrix pipeline. New
+  `tvm`/`migraphx`/`dali` have no matrix pipeline. Slurm session
+  `2026-11-03-backend-dispatch` (jobs 30/31/32, one backend per worker,
+  `neuriplo@develop` `06b6903`): `ggml` on zenbook BUILD_OK + `ctest`
+  77/77, `openvino` on optiplex-3040 BUILD_OK, `executorch` on
+  jetson-nano (aarch64) BUILD_OK — the ExecT baseline before the
+  optimized-kernel rebuild. New
   blockers recorded there and not re-claimed here: OpenCV DNN single-input
   limit (DETR two-input, OWL three-input, `groundingdino` four-input),
   OpenCV DNN importer SIGSEGV on EdgeCrafter exact-GELU graphs, OpenVINO
