@@ -112,7 +112,7 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
@@ -390,18 +390,16 @@ additionally gated as alias.
   freezes a data-dependent branch. `torch.export` captures the same model
   cleanly (detection 1220 nodes, seg 1611, keypoint 2250), hence the `.pt2`
   route above. Do not serve RF-DETR as TorchScript.
-- **Seg Torch KNOWN-BAD (same stack).** `rfdetrseg-medium` (432,
-  `--input_sizes=1,3,432,432`): exit 0, outputs `(1,200,4)` + `(1,200,91)` +
-  `(1,200,108,108)`, 1296 ms — but the render is empty. Fault (tasks-side):
-  `RfDetrSegmentationPostprocessor::findOutputIndices`
-  (`neuriplo-tasks/src/instance_segmentation/rfdetr_segmentation_postprocessor.cpp`)
-  resolves outputs by name with a digit heuristic; the Torch backend's
-  synthetic names (`output0/1/2`) collapse `masks` and `labels` onto index 2,
-  so classification reads the masks tensor. Named (ONNX) outputs are
-  unaffected. Fixed in neuriplo-tasks `v0.8.5` (PR #22, `ea05454`:
-  all-digits rule + shape-first resolution in `postprocess`); live Torch
-  re-gate pending, cell stays KNOWN-BAD until then. Do not serve
-  `rfdetrseg` on Torch.
+- **Seg Torch PASS (pinned re-gate 2026-11-03).** `rfdetrseg-medium` `.pt2`
+  (432, `--input_sizes=1,3,432,432`, 1370 ms, tasks `v0.8.5` tag content,
+  `build-libtorch`): bicycle 0.94, horse 0.91, car 0.86, all with masks,
+  plus the usual `motorbike 0.57` artifact — exact trio match with
+  ORT/TRT/OVINO. The PR #22 shape-first fix resolves the old empty
+  render. Detection regression clean on the same stack
+  (`rfdetr-medium` 1004 ms: bicycle 0.92, horse 0.94, car 0.87).
+  Renders inspected (`data/output/processed_rfdetrseg_local.png`,
+  `data/output/processed_rfdetr_local.png`). Cell flipped
+  KNOWN-BAD → PASS.
 - **OpenVINO app-surface confirmation (pinned 2026.3.0 runtime,
   `build-openvino`, no override).** Detection `rfdetr-medium` (784 ms):
   bicycle 0.92, horse 0.94, car 0.87. Seg `rfdetrseg-medium` (1184 ms):
@@ -484,7 +482,7 @@ older dates are kept only where no newer run exists.
 | Status | Count (task rows) | Rows |
 |---|---|---|
 | PASS (≥1 backend live-gated) | 12 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
-| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH (fix in tasks `v0.8.5`, re-gate pending) / LiteRT-`onnx2tf` (converter fault, stands; native route PASS); generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
+| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LiteRT-`onnx2tf` (converter fault, stands; native route PASS); generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
 | DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
 | BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
 | **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
