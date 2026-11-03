@@ -215,6 +215,23 @@ infer pin move — the seg-LiteRT flip below is the first such flip
 - **LiteRT / KServe KNOWN-BAD.** Same input over `litert` gives top ≈0.19,
   random labels — conversion fault (`onnx2tf`), not runtime. Do not serve
   `ecdet` as TFLite.
+- **Reconversion probe 2026-11-03 (develop stack, stays KNOWN-BAD).**
+  Reconverting the same `ecdet_s.onnx` with `onnx2tf` 2.6.9
+  (`flatbuffer_direct`, `tflite-export` env, TF 2.21) drops the
+  `ONNX_GRIDSAMPLE` custom op entirely (old June file embeds it; new file
+  has none — pure builtins) and restores the correct detection set:
+  standalone (`ai-edge-litert` 2.1.2, cv2 bilinear, `[[640,640]]`) gives
+  dog 0.93 / bicycle 0.927 / car 0.779 — exact match with ORT. But the
+  pinned C++ runtime (`build-litert`, LiteRT 2.19.0, CPU interpreter, no
+  delegate, 54 s) renders the same boxes/labels with deflated scores:
+  bicycle 0.71 / dog 0.79 / car 0.61 (+ `motorbike 0.57` artifact), while
+  `yolov8n` through the same binary still matches exactly — so the
+  artifact is faithful and the delta sits in the pinned runtime's
+  reference kernels on the lowered GridSample subgraph (or the missing
+  XNNPACK delegate), not in the file. Same-set-at-0.5 but not
+  exact-score: cell stays KNOWN-BAD. Next: wire XNNPACK delegate (backend
+  logs "delegate selection is not wired") or re-gate after a runtime
+  bump, then flip.
 
 ### <a id="ev-seg"></a>E5 — Instance segmentation (`yoloseg`, `ecseg`)
 
