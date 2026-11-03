@@ -335,10 +335,12 @@ additionally gated as alias.
   ships `docker/Dockerfile.ggml` (builder: `-DDEFAULT_BACKEND=GGML` +
   engine tests, `docker/run_ggml_tests.sh`). Slurm-orchestrated builder
   coverage dispatched 2026-11-02 (job 29, zenbook worker,
-  `neuriplo@develop` clone): builder image verified present 2026-11-03
-  (`neuriplo:ggml-2026-11-02-ggml-coverage`, 995 MB, queue empty, node
-  idle) — build leg done, engine-test numbers still unretrieved (no
-  job log on the node), so nothing is claimed here yet.
+  `neuriplo@develop` clone): builder image present
+  (`neuriplo:ggml-2026-11-02-ggml-coverage`, 995 MB) but no test log.
+  Re-gated 2026-11-03 (job 30, zenbook, `neuriplo@develop` `06b6903`):
+  `BUILD_OK` + builder-image `ctest` **77/77 pass** (`CTEST_EXIT 0`).
+  Builder + engine-test leg green; no app-surface gate claimed (GGML has
+  no matrix column).
 
 ### <a id="ev-splatting"></a>E12 — Gaussian splatting (`lgm`/`grm`)
 
