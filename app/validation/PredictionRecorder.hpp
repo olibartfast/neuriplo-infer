@@ -172,6 +172,31 @@ public:
             return {{"kind", "gaussian_splatting"},
                     {"count", r.num_gaussians},
                     {"primitives", primitives}};
+          } else if constexpr (std::is_same_v<T, KeypointMatching>) {
+            json source = json::array();
+            for (const auto &point : r.source_keypoints) {
+              source.push_back({{"x", point.x},
+                                {"y", point.y},
+                                {"confidence", point.confidence},
+                                {"visibility", point.visibility}});
+            }
+            json target = json::array();
+            for (const auto &point : r.target_keypoints) {
+              target.push_back({{"x", point.x},
+                                {"y", point.y},
+                                {"confidence", point.confidence},
+                                {"visibility", point.visibility}});
+            }
+            json pairs = json::array();
+            for (const auto &match : r.matches) {
+              pairs.push_back({{"source_index", match.source_index},
+                               {"target_index", match.target_index},
+                               {"score", match.score}});
+            }
+            return {{"kind", "keypoint_matching"},
+                    {"source_keypoints", source},
+                    {"target_keypoints", target},
+                    {"matches", pairs}};
           } else {
             static_assert(std::is_same_v<T, ImageUnderstanding>);
             return {{"kind", "image_understanding"}, {"text", r.text}};

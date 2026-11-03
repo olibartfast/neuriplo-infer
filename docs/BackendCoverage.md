@@ -112,7 +112,7 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | KNOWN-BAD | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | KNOWN-BAD | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | BLOCKED | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
@@ -134,7 +134,8 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
 checkouts (neuriplo-infer `develop` c7dd16b + neuriplo-tasks `develop`
 ea05454, which carries the RF-DETR synthetic-name mapping fix) and are
 labeled as such; cells only flip on the pinned stack once the tasks tag +
-infer pin move.
+infer pin move — the seg-LiteRT flip below is the first such flip
+(tasks `v0.8.5` tag + pin).
 
 ### <a id="ev-yolo26"></a>E1 — Object detection (`yolo26`)
 
@@ -378,10 +379,10 @@ additionally gated as alias.
   resolves outputs by name with a digit heuristic; the Torch backend's
   synthetic names (`output0/1/2`) collapse `masks` and `labels` onto index 2,
   so classification reads the masks tensor. Named (ONNX) outputs are
-  unaffected. Fixed in neuriplo-tasks `develop` (PR #22, `ea05454`:
+  unaffected. Fixed in neuriplo-tasks `v0.8.5` (PR #22, `ea05454`:
   all-digits rule + shape-first resolution in `postprocess`); live Torch
   re-gate pending, cell stays KNOWN-BAD until then. Do not serve
-  `rfdetrseg` on Torch on the pinned stack.
+  `rfdetrseg` on Torch.
 - **OpenVINO app-surface confirmation (pinned 2026.3.0 runtime,
   `build-openvino`, no override).** Detection `rfdetr-medium` (784 ms):
   bicycle 0.92, horse 0.94, car 0.87. Seg `rfdetrseg-medium` (1184 ms):
@@ -409,16 +410,16 @@ additionally gated as alias.
   generic `onnx2tf` mangles. The generic path stays KNOWN-BAD
   (`rfdetr-nano` float32 `.tflite`: single wrong `person 0.75`, no masks).
 - **LiteRT seg: generic-`onnx2tf` KNOWN-BAD (converter fault, stands);
-  native route PASS on the develop stack.** Generic float32 (432): exit 0,
-  masks render, bicycle 0.94 / horse 0.91 / `motorbike 0.57` match — but
-  the car reads `truck 0.34`: do not serve. Native `format="litert"` file
-  re-gated 2026-11-02 after the tasks mapping fix (develop stack,
-  `build-litert`, 3670 ms): bicycle 0.94, horse 0.91, car 0.86, all with
+  native route PASS (pinned tasks `v0.8.5`).** Generic float32 (432):
+  exit 0, masks render, bicycle 0.94 / horse 0.91 / `motorbike 0.57`
+  match — but the car reads `truck 0.34`: do not serve. Native
+  `format="litert"` file gated 2026-11-02 on the develop stack (3670 ms)
+  and re-gated 2026-11-03 on the pinned stack (tasks `v0.8.5` tag content,
+  `build-litert`, 4151 ms): bicycle 0.94, horse 0.91, car 0.86, all with
   masks, plus the usual `motorbike 0.57` artifact — exact trio match with
   ORT/TRT/OVINO. The pre-fix empty render was the same tasks-side
   name-mapping gap as the Torch cell (positional
-  `serving_default_output_<i>_output` names), fixed by PR #22. Pinned-stack
-  gate (and cell flip) waits on the tasks tag + infer pin move. Render
+  `serving_default_output_<i>_output` names), fixed by PR #22. Render
   inspected (`data/output/processed_rfdetrseg_local.png`).
 - **Pose LiteRT PASS (same stack).** `rfdetr-keypoint` float32 `.tflite`
   (576, `--input_sizes=1,3,576,576`, 6540 ms): skeleton, pose score
@@ -464,7 +465,7 @@ older dates are kept only where no newer run exists.
 | Status | Count (task rows) | Rows |
 |---|---|---|
 | PASS (≥1 backend live-gated) | 12 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
-| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH (fix in tasks `develop`, re-gate pending) / LiteRT-`onnx2tf` (native route PASS on develop stack, pin pending); generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
+| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LIBTORCH (fix in tasks `v0.8.5`, re-gate pending) / LiteRT-`onnx2tf` (converter fault, stands; native route PASS); generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
 | DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
 | BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
 | **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
