@@ -87,6 +87,14 @@ converted with a fixed onnx2tf) — there is nothing to fix in this repo. Simple
 CNN detectors (e.g. YOLO26) convert and serve correctly over `litert`; the
 issue is specific to the deformable/transformer architecture.
 
+> Update 2026-11-03: reconverting the same `.onnx` with `onnx2tf` 2.6.9
+> removes the `ONNX_GRIDSAMPLE` custom op (pure builtins) and restores the
+> correct set standalone (dog 0.93 / bicycle 0.927 / car 0.779, exact vs
+> ORT) — so the converter half of this note is fixed upstream. The pinned
+> C++ runtime (LiteRT 2.19.0, no delegate) still renders deflated scores
+> (0.71/0.79/0.61, same boxes), so the serving recommendation stands until
+> the delegate/runtime leg is re-gated. See `BackendCoverage.md` E4.
+
 ## Datatype coverage
 
 Input datatypes are taken from the server's model metadata (not hardcoded). The
