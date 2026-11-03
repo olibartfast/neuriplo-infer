@@ -19,6 +19,7 @@ The TaskFactory supports the following model type strings. Matching normalizes s
 
 - `"yolo"`, `"yolov7e2e"`, `"yolov10"`, `"yolo26"`, `"yolov4"` - YOLO-based variants
 - `"yolonas"` - YOLO-NAS
+- `"yoloworld"` - Ultralytics YOLO-World exported with a fixed class list (same output as YOLOv8; see the [YOLO-World export guide](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/yolo_world/README.md))
 - `"rtdetr"`, `"rtdetrv2"` - RT-DETR family (RT-DETR v1, v2, and v4; excludes v3)
 - `"dfine"`, `"deim"`, `"deimv2"` - D-FINE and DEIM; same export signature and postprocessing as RT-DETR, matched by prefix so later revisions resolve too
 - `"rtdetrul"`, `"rtdetrultralytics"` - RT-DETR (Ultralytics implementation)
@@ -54,6 +55,19 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 **Optical Flow:**
 - `"raft"` - RAFT optical flow
 
+**Keypoint Matching:**
+- `"superglue"` - SuperGlue-style end-to-end matching pipelines (any string starting with `superglue`)
+- `"lightglue"` - LightGlue matching pipelines, including the LightGlue-ONNX exports (any string starting with `lightglue`)
+- `"matchanything"` - MatchAnything detector-free matchers (EfficientLoFTR / RoMa backbones; any string starting with `matchanything`)
+
+One image pair per call — `getRequiredFrames()` returns 2. Results are `KeypointMatching` entries containing source/target keypoints and matched index pairs.
+
+`"superglue"` covers end-to-end `SuperGlueForKeypointMatching` exports (transformers/Optimum, e.g. `magic-leap-community/superglue_outdoor`). Those take the pair as **one** rank-5 input `pixel_values [1, 2, 3, 480, 640]` — grayscale replicated across three channels in `[0, 1]` — so `preprocess()` returns **one** packed buffer, source image first, and every buffer maps 1:1 onto a model input. Keypoints come back normalized (`x / width`, `y / height`) and are rescaled to each original image; matches at or below `TaskConfig::confidence_threshold` (default 0.25) are dropped, as are masked-out padding keypoints. The export carries no SuperPoint detector score, so `Keypoint::confidence` is 0 — use `KeypointMatch::score` for match quality.
+
+**LightGlue and MatchAnything decoding is not implemented yet**: their postprocessors throw `std::logic_error` until each family's output layout has been verified against a real ONNX export. Matcher-only exports (keypoints and descriptors in — the original SuperGlue matcher) do not fit the image-in task contract and are not supported.
+
+For export and verification details, see [export/keypoint_matching/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/keypoint_matching/README.md).
+
 **Pose Estimation:**
 - `"yolov8pose"`, `"yolov8-pose"` - YOLOv8 pose (single-stage, returns bbox + keypoints)
 - `"yolo11pose"`, `"yolo11-pose"` - YOLO11 pose
@@ -77,14 +91,17 @@ YOLO26 depth expects RGB NCHW float input normalized to `[0,1]` with YOLO letter
 - `"owlv2"` - OWLv2 open-vocabulary detection
 - `"owlvit"` - OWL-ViT compatible open-vocabulary detection
 - `"groundingdino"` - Grounding DINO text-conditioned detection
+- `"yoloworld"` - YOLO-World with the class list baked in at export time; no runtime prompts, so it routes to the YOLO detection task and returns `Detection` results (see the [YOLO-World export guide](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/yolo_world/README.md))
 
-Open-vocabulary models use text prompts supplied at runtime through `TaskConfig::text_prompts`. Tokenizer assets can be passed either as file paths (`tokenizer_vocab_path`, `tokenizer_merges_path`) or preloaded text blobs (`tokenizer_vocab_json`, `tokenizer_merges_text`).
+OWLv2, OWL-ViT, and Grounding DINO use text prompts supplied at runtime through `TaskConfig::text_prompts`. Tokenizer assets can be passed either as file paths (`tokenizer_vocab_path`, `tokenizer_merges_path`) or preloaded text blobs (`tokenizer_vocab_json`, `tokenizer_merges_text`).
 
-The expected ONNX contract is:
+Their expected ONNX contract is:
 - Inputs: `pixel_values`, `input_ids`, `attention_mask`
 - Outputs: `logits`, `pred_boxes`, and optional `objectness_logits`
 
 Results are returned as `OpenVocabDetection` entries containing `bbox`, `score`, `prompt_index`, and resolved `label`.
+
+YOLO-World exports instead use the YOLOv8 contract — `images` in, `output0` `[1, 4 + num_classes, 8400]` out — with class IDs in the exported class-list order; changing the vocabulary means re-exporting.
 
 For export details, see [export/open_vocab_detection/OWLv2.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/open_vocab_detection/OWLv2.md).
 
