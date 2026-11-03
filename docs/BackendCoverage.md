@@ -4,7 +4,7 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-11-03.** Coverage was refreshed against neuriplo-infer
+**Last updated: 2026-11-04.** Coverage was refreshed against neuriplo-infer
 0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
@@ -57,7 +57,16 @@ Main limitations:
   limit (DETR two-input, OWL three-input, `groundingdino` four-input),
   OpenCV DNN importer SIGSEGV on EdgeCrafter exact-GELU graphs, OpenVINO
   CPU SIGSEGV on 5D video inference, and NERT/OpenVINO setup-contract
-  rejections plus CPU-timeout video cells.
+  rejections plus CPU-timeout video cells. The later OpenVINO retest below
+  succeeds on a different CPU environment; the historical failures remain
+  scoped to their original environments.
+- **OpenVINO Slurm retest (2026-11-04, P-LNX-EDGE-CPU):** only the seven
+  non-passing, runnable cells were retried; 28 prior runtime passes were
+  skipped. `owlv2` / `owlvit` passed inference and render inspection;
+  `videomae` / `vivit` / `timesformer` passed inference without video-file
+  export. The two existing KNOWN-BAD decisions were retained. This uses
+  a derived validation image with missing runtime libraries added, not a
+  fresh source build or a pass of the original image; see [E14](#ev-ov-slurm).
 
 See [Open items](#open-items) for remaining validation and fixes.
 
@@ -65,6 +74,9 @@ See [Open items](#open-items) for remaining validation and fixes.
 
 - **PASS** — a live end-to-end run is recorded with its expected output
   (detections, labels, or round-trip log) in the task's evidence section.
+- **RUNTIME-PASS** — a live run completed with positive sample count and
+  inference timing, but output correctness or rendering is not fully gated.
+  This does not satisfy a full PASS.
 - **DRY-RUN** — an e2e preset exists for this task × backend and the
   `e2e-example-emulation.yml` dry-run is green. Commands are well-formed;
   no live inference is claimed.
@@ -102,6 +114,10 @@ Columns: `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
 `KServe` = remote `KserveEngine`. Representative preset in parentheses.
 Evidence column points to the task's section below.
 
+The OVINO cells marked **†** use the retained 0.11.6 campaign executable
+in a derived validation image on P-LNX-EDGE-CPU. They do not certify the
+current source pins or the original image packaging; see [E14](#ev-ov-slurm).
+
 The `Torch` column covers TorchScript. AOTInductor is a second runtime inside
 the same LibTorch backend, selected when the model path ends in `.pt2`. It is
 not covered by these cells yet — except E13, where RF-DETR's Torch PASS rests
@@ -119,12 +135,12 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | PASS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
+| Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | RUNTIME-PASS† | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | PASS | UNTESTED | N/A | PASS | [E8](#ev-pose) |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | PASS | BUILDS | BUILDS | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | PASS† | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | PASS | UNTESTED | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | N/A | UNTESTED | [E12](#ev-splatting) |
 
@@ -271,7 +287,14 @@ infer pin move — the seg-LiteRT flip below is the first such flip
 ### <a id="ev-video"></a>E7 — Video classification (`videomae`), optical flow (`raft`)
 
 - Preset + emulation green (ORT DRY-RUN). `vivit` / `timesformer` aliases
-  ride the same task path; no separate preset. No live runs yet.
+  ride the same task path; no separate preset.
+- **OVINO RUNTIME-PASS† (2026-11-04, Slurm job 35).** `videomae`, `vivit`
+  and `timesformer` completed on real moving clips with 16 / 32 / 8 frames:
+  one sample each, positive inference timing (9091 / 24992 / 9736 ms).
+  The build has `NEURIPLO_INFER_WITH_VIDEOWRITER=OFF`; removing the optional
+  `--output_video` argument enabled inference. Exported-video rendering and
+  numerical classification correctness remain unvalidated. See [E14](#ev-ov-slurm)
+  for image provenance and the per-model evidence. This does not cover `raft`.
 
 ### <a id="ev-pose"></a>E8 — Pose estimation (`vitpose`)
 
@@ -323,6 +346,11 @@ additionally gated as alias.
 
 ### <a id="ev-owlv2"></a>E10 — Open-vocabulary detection (`owlv2`)
 
+- **OVINO PASS† (2026-11-04, Slurm job 34).** Prompts
+  `a dog;a bicycle;a car`, confidence 0.25: `owlv2` rendered bicycle 0.34
+  and dog 0.27; `owlvit` rendered bicycle 0.39. Both renders were inspected;
+  inference stages were 30058 / 2788 ms. See [E14](#ev-ov-slurm) for the
+  derived-image limitation. No other open-vocabulary model was rerun.
 - **DNN BLOCKED** (5.0.0 importer loads both models, but multi-input
   inference fails): `owlv2.onnx` and `groundingdino.onnx` parse cleanly —
   the 4.6 `Mul`/`Identity` errors are gone — then fail in
@@ -468,6 +496,50 @@ additionally gated as alias.
   `.pte` then. Export-side note: 1.11.2 appends the delegate without an
   explicit `output_name` (`rfdetr-medium_xnnpack.pte`), pass it explicitly.
 
+### <a id="ev-ov-slurm"></a>E14 — OpenVINO Slurm retest of non-passing cells
+
+Recorded 2026-11-04 on profile `P-LNX-EDGE-CPU`, jobs 34 and 35. Models ran
+sequentially with two container CPUs, 3 GiB memory and a 300-second timeout
+per model. All input files were checked against a SHA-256 manifest.
+The [tracked evidence summary](evidence/openvino-slurm-2026-11-04.json)
+records image and binary hashes, fixture hashes, arguments, metrics and
+artifact hashes. Single-run timings are not benchmark claims.
+
+| Model | Previous cell | Retest result | Slurm job |
+|---|---|---|---|
+| `owlv2` | FAILED | PASS (runtime + inspected render) | 34 |
+| `owlvit` | FAILED | PASS (runtime + inspected render) | 34 |
+| `videomae` | FAILED | RUNTIME-PASS (no exported video) | 35 |
+| `vivit` | FAILED | RUNTIME-PASS (no exported video) | 35 |
+| `timesformer` | FAILED | RUNTIME-PASS (no exported video) | 35 |
+| `tensorflow-classifier` | KNOWN-BAD | KNOWN-BAD retained | 34 |
+| `rtdetrul` | KNOWN-BAD | KNOWN-BAD retained | 34 |
+
+Both KNOWN-BAD models completed inference, but their prior correctness
+decisions were not re-evaluated. These model-specific decisions do not
+change the representative `torchvisionclassifier` or `rtdetr` cells.
+Twenty-eight prior runtime passes, seven missing exports and one
+non-applicable cell were skipped.
+
+The retained image `neuriplo-infer:openvino-2026-11-01-full-coverage-1`
+could not launch its executable because OpenCV and glog shared libraries
+were missing. A derived image added `libopencv-highgui406`,
+`libopencv-imgcodecs406`, `libopencv-videoio406` and `libgoogle-glog0v6t64`.
+The executable SHA-256 remained
+`a31997f20450056a8c0c2378a693db8d33d0284542829262117e1eec311a1a2c`;
+the derived image ID is
+`sha256:cab51feff475b76d284012924d093fd7948489a97e68753d7b3e86a581f0fcd7`.
+Source-image filesystem layers were verified after import. This proves
+execution in the derived environment, not release-image readiness or a
+new source build. Packaging the missing runtime libraries remains open.
+
+Job 34 first rejected all three video commands because `--output_video`
+requires a VideoWriter-enabled build. Job 35 retried only those models
+without file export; weights, clips, frame counts and inference parameters
+were preserved. Job 35 completed with Slurm exit `0:0`. The historical
+video SIGSEGV and OWL setup failures in the earlier environment are not
+claimed fixed across all hardware by these successful runs.
+
 ## Environments
 
 How each column was built and tested (all CPU except TRT).
@@ -492,9 +564,10 @@ older dates are kept only where no newer run exists.
 
 | Status | Count (task rows) | Rows |
 |---|---|---|
-| PASS (≥1 backend live-gated) | 12 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
+| PASS (≥1 backend live-gated) | 13 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, `torchvisionclassifier`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
 | KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LiteRT-`onnx2tf` (converter fault, stands; native route PASS); generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
-| DRY-RUN best | 4 | `torchvisionclassifier`, `ecseg`, `videomae`, `raft` |
+| RUNTIME-PASS best | 1 | `videomae` (OVINO inference; video export unvalidated) |
+| DRY-RUN best | 2 | `ecseg`, `raft` |
 | BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
 | **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
 
