@@ -627,23 +627,194 @@ provide the staged manifest and resume commands. Two workers are selected
 for the repaired checks to permit overlap. Release pins, KServe gRPC,
 TensorFlow 2.21 ABI and historical RF-DETR TorchScript limitations are unchanged.
 
+#### Input tensors used for parity
+
+Names for RF-DETR below describe their image role; the PTE runtime supplies
+its own positional metadata names. The hashes are over preprocessed bytes,
+not JPEG files. Text inputs correspond to the three recorded OWLv2 prompts.
+
+| Case | Input index / role | Dtype | Shape | Bytes | SHA-256 |
+|---|---|---|---|---:|---|
+| `rtdetr-dnn` | 0 / images | FP32 | 1×3×640×640 | 4,915,200 | `00db0764f4922d1b560e7fb18e770b65941fcb2fe7afa0aa46f5d685e143e0e0` |
+| `rtdetr-dnn` | 1 / orig_target_sizes | INT64 | 1×2 | 16 | `9ae2a7b11ec45092ee082faa14507373560986cb09e909d8186a2eddaca3c1ca` |
+| `rtdetrv4-dnn` | 0 / images | FP32 | 1×3×640×640 | 4,915,200 | `00db0764f4922d1b560e7fb18e770b65941fcb2fe7afa0aa46f5d685e143e0e0` |
+| `rtdetrv4-dnn` | 1 / orig_target_sizes | INT64 | 1×2 | 16 | `9ae2a7b11ec45092ee082faa14507373560986cb09e909d8186a2eddaca3c1ca` |
+| `owlv2-dnn` | 0 / pixel_values | FP32 | 1×3×960×960 | 11,059,200 | `bdcca8d9ca8d008165d8d6104907869085aa56d012c10a91003bbc80ec5f1e66` |
+| `owlv2-dnn` | 1 / input_ids | INT64 | 3×16 | 384 | `4a3d5d9211841a7a77662ba96103b3919d2cd48e12e2083d15cc25f2a853dee1` |
+| `owlv2-dnn` | 2 / attention_mask | INT64 | 3×16 | 384 | `ff665388dfa173d26115f43949f342315cd246196dd5e8b27d48b90f643fd3c4` |
+| `rfdetr-executorch` | 0 / image | FP32 | 1×3×384×384 | 1,769,472 | `ba7e20ff2cf918a43b62f8996569b5f7b05852b74c8282d973f1e2cf1c613a8e` |
+| `rfdetrseg-executorch` | 0 / image | FP32 | 1×3×432×432 | 2,239,488 | `9e3e5e953cb4b8b20fe1973e64841e7778f468d68fcd788f0baae9a502bf9160` |
+| `rfdetr_keypoint-executorch` | 0 / image | FP32 | 1×3×576×576 | 3,981,312 | `d126bdd063cc86e69819506bd3068b3de4220f982e8112aae9159fd4d99a76da` |
+
+#### Complete tensor comparison results
+
+Every pair below received byte-identical preprocessed inputs, verified by SHA-256.
+RT-DETR and RT-DETRv4 labels are INT64 and match exactly; their comparison
+probe serializes label values as float32 without loss for these class IDs.
+Other compared outputs are float32. Shape, element count, maximum and mean
+absolute errors cover each complete output tensor, not just selected detections.
+`dog.jpg` is the input for detection/segmentation/open-vocabulary checks;
+keypoint results use `person.jpg`. Exact input/output buffer hashes remain in
+the linked evidence JSON.
+
+| Case | Output index / meaning | Shape | Elements | Max absolute error | Mean absolute error |
+|---|---|---|---:|---:|---:|
+| `rtdetr-dnn` | 0 / labels | 1×300 | 300 | 0 | 0 |
+| `rtdetr-dnn` | 1 / boxes (pixels) | 1×300×4 | 1,200 | 0.00386047363 | 3.7179987e-05 |
+| `rtdetr-dnn` | 2 / scores | 1×300 | 300 | 1.84029341e-06 | 2.16973319e-07 |
+| `rtdetrv4-dnn` | 0 / labels | 1×300 | 300 | 0 | 0 |
+| `rtdetrv4-dnn` | 1 / boxes (pixels) | 1×300×4 | 1,200 | 0.00355529785 | 3.47328169e-05 |
+| `rtdetrv4-dnn` | 2 / scores | 1×300 | 300 | 5.54323196e-06 | 3.50363564e-07 |
+| `owlv2-dnn` | 0 / logits | 1×3600×3 | 10,800 | 0.00106716156 | 4.55425507e-05 |
+| `owlv2-dnn` | 1 / objectness_logits | 1×3600 | 3,600 | 0.000742912292 | 2.91300112e-05 |
+| `owlv2-dnn` | 2 / pred_boxes (normalized) | 1×3600×4 | 14,400 | 0.000133812428 | 6.70462498e-07 |
+| `rfdetr-executorch` | 0 / dets (normalized) | 1×300×4 | 1,200 | 6.67870045e-05 | 1.06222581e-06 |
+| `rfdetr-executorch` | 1 / labels (logits) | 1×300×91 | 27,300 | 0.000302314758 | 7.89297337e-06 |
+| `rfdetrseg-executorch` | 0 / dets (normalized) | 1×200×4 | 800 | 0.000502377748 | 9.09557093e-06 |
+| `rfdetrseg-executorch` | 1 / labels (logits) | 1×200×91 | 18,200 | 0.00747203827 | 9.01507156e-05 |
+| `rfdetrseg-executorch` | 2 / masks (logits) | 1×200×108×108 | 2,332,800 | 0.212135315 | 0.00137989956 |
+| `rfdetr_keypoint-executorch` | 0 / dets (normalized) | 1×100×4 | 400 | 9.15527344e-05 | 6.84075076e-07 |
+| `rfdetr_keypoint-executorch` | 1 / labels (logits) | 1×100×2 | 200 | 2.7179718e-05 | 2.90632238e-06 |
+| `rfdetr_keypoint-executorch` | 2 / keypoints | 1×100×34×8 | 27,200 | 0.000644683838 | 2.70229248e-06 |
+
+RF-DETR segmentation has six sign disagreements among 2,332,800 mask-logit
+elements (agreement 99.999742798%). This is sign agreement at logit zero,
+not mask IoU or dataset accuracy. All other recorded output sign agreements
+are 100%; sign agreement alone is not a classification correctness criterion.
+The ORT and ExecuTorch person-image pose PNGs have identical SHA-256:
+`cc0d29f911cfaf5d5e8d13119ea6f3c8b73f5c4c7449857b7a62713e7df0e73d`.
+The inspected segmentation PNG hash is
+`cc5f0da28740560dd9ba6b52eb50d8b410ce1d64cc2f8fd9ef8de7bafa39f085`.
+
+#### Local execution samples and checks
+
+All E15 inference runs used CPU on Intel Core i5-11400H. A detected RTX 3060
+was not selected (`--use-gpu=false`). These are individual CLI inference-stage
+samples, not benchmarks, warm-run statistics, end-to-end latency or Slurm timings.
+
+| Backend / model | Source | CLI inference (ms) | Observed result |
+|---|---|---:|---|
+| OpenCV 5 / RT-DETR | `dog.jpg` | 2784 | dog/bicycle/car rendered; full ORT comparison above |
+| OpenCV 5 / prepared RT-DETRv4 | `dog.jpg` | 561 | bicycle/dog/truck rendered; full ORT comparison above |
+| OpenCV 5 / OWLv2 | `dog.jpg` | 23407 | prompts `a dog;a bicycle;a car`; bicycle 0.34, dog 0.27 |
+| ExecuTorch / RF-DETR nano | `dog.jpg` | 1430 | detections agree with paired nano ONNX |
+| ExecuTorch / RF-DETR seg medium | `dog.jpg` | 2632 | bicycle/horse/car and masks; scores above |
+| ExecuTorch / RF-DETR keypoint | `person.jpg` | 4777 | skeleton, pose 0.850784; paired ORT sample 1818 ms |
+
+| Validation scope | Result | Qualification |
+|---|---|---|
+| neuriplo / OpenCV 4.6 | 80/80 CTest entries | legacy compatibility; no 4.6 multi-input model claim |
+| neuriplo / OpenCV 5 | 80/80 CTest entries | includes real mixed FP32/INT64 fixture and integer raw-output checks |
+| neuriplo / ExecuTorch | 77/77 CTest entries | real nano fixture enabled; every output checked within 0.001 |
+| app / OpenCV 5 | 191/191 CTest entries | local build, KServe and gRPC compiled in |
+| app / ExecuTorch | 191/191 CTest entries | local build, KServe and gRPC compiled in; no live transport gate implied |
+| neuriplo-tasks | 31/31 CTest entries | no C++ task contract or model-type changes |
+| Vector-MatMul adapter | 3/3 Python tests | parity, unchanged I/O, shared weights, collision avoidance, idempotence and exclusions |
+| Slurm worker | 4/4 Python tests | real-process success/failure/timeout and missing-artifact cases |
+| Source quality | PASS | full-tree clang-format and cppcheck; owning-repo hooks also ran the act cppcheck job |
+| Model-type inventory | PASS | generated page checked against pinned tasks v0.8.5 README |
+
+#### Exact source, SDK and artifact provenance
+
+| Component | Revision / configuration |
+|---|---|
+| Application C++ base | `26d2e59ddfe553f6eb2b2ee8179c6559d5ee1687`; later app changes only add orchestration/docs |
+| neuriplo adapter fix | `042bcefc8a20771d7c40d54c86f8ea588fcde1b8` |
+| neuriplo-tasks export fix | `d38e8b3984386c93a053215a1a88964e6e054e74`; C++ task implementation unchanged |
+| ExecuTorch SDK | `v1.2.0`, source `0b0e2c5cdd67c8b4396a46ea1d1aa72ffb0128d7`, isolated prefix `/tmp/blocked-et-sdk` |
+| SDK build | optimized CPU kernels + XNNPACK, PIC, module/named-data-map/tensor/data-loader extensions; tests/examples OFF |
+| SDK logging | OFF in this isolated validation build; setup script enables logging; tests inherit the SDK definitions |
+| Toolchain | CMake 3.28.3; clang-format 18.1.3; Python codegen PyTorch 2.14.0+cpu |
+| Slurm protocol | local client 23.11.4; controller/workers 25.11.2; submissions made on controller over SSH |
+
+These builds use local sibling checkouts and an isolated SDK; they do not
+certify a released image or an isolated remote-fetch release. Source fixes
+are published on feature branches and release pins are unchanged. The combined
+optimized registration archive SHA-256 is
+`9c21120daa36e372b9c08ce0e28797481a27376f90794cbb05856fbefe1990bd`.
+
+Artifact paths below are relative to local staging root
+`/tmp/blocked-slurm-20261104`; the worker root is
+`/home/oli/slurm-blocked-20261104`. Full buffer hashes, original reference
+paths and exact command arguments are retained in the evidence JSON/plan.
+
+| Staged artifact | Bytes | SHA-256 |
+|---|---:|---|
+| `dnn/neuriplo-infer` | 2,477,768 | `6ca4c681008a66c75eef71fa31b64a1c4d7d7b59cddd331b049f11aeac291a3b` |
+| `dnn/lib/libneuriplo.so` | 246,696 | `854d676cff93891f25589ffdca1ef2220f25feaa7559076294de0f222e5548dc` |
+| `dnn/models/owlv2.onnx` | 618,774,288 | `7f176ee3e1e1bdb7d920c31775e665bdc041699adbbe052e552bc1ad04a2a384` |
+| `dnn/models/rtdetr.onnx` | 80,466,628 | `c114037232a26c67f1986505213358ef7bf3628b22714107bd333679b4495547` |
+| `dnn/models/rtdetrv4-opencv.onnx` | 41,760,455 | `09d861b58deaa325ec0fe140d88b2869c20a77a8cfb9eb28bc3a78f83a1a044e` |
+| `dnn/models/rtdetrv4.onnx` | 41,759,466 | `6b26f17e3de3cea3d5acb9b1eab6a4a40cfe03c8be1986215bba299220160590` |
+| `executorch/neuriplo-infer` | 2,461,384 | `85ff3c209d565b8467468dba36617fd46492dca047a2b8882bf9d02e1776dfeb` |
+| `executorch/lib/libneuriplo.so` | 13,976,952 | `51d079ffa46dfb120affe455b74f2c577798a1f7398d1e6f04433f1629bac6b3` |
+| `executorch/models/rfdetr-keypoint.pte` | 145,583,624 | `7cb8c7279d59b0a4a7a9a65ad06018da6c57da69f3996c6a121661ced1408882` |
+| `executorch/models/rfdetr-nano.pte` | 111,490,668 | `9181bd2d2b82494effcc23e8eee0d1223d208984c178b46ccc3ffbb7af57a7d7` |
+| `executorch/models/rfdetrseg-medium.pte` | 132,500,332 | `79313c4c79b24d18728b7f79ad1b7f7beb409d5852b54dd2737482f60838a3aa` |
+
+| Paired ONNX reference | SHA-256 |
+|---|---|
+| `rfdetr-nano.onnx` | `24eab284d5dffcb176219b8c386fdfc51450277145c8b95e15aeb6b26d4736ce` |
+| `rfdetrseg-medium.onnx` | `8923e09dfdf12f474d9d679d8894d1385705ace45f4f7207798d42e2c99abe55` |
+| `rfdetr-keypoint.onnx` | `daf251cb94d5001aeb08380c48986b21e12db616f41a3182ee0030eda2f0527b` |
+
+| Source image | SHA-256 |
+|---|---|
+| `data/dog.jpg` | `5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866` |
+| `data/person.jpg` | `cdcbab947e46110fc2b77784ac54ddbbab2640f1e44cb5e91fc8984a9793a7d1` |
+
+#### Slurm execution ledger and remaining gate
+
+Baseline controller times below are CET (UTC+01:00), as recorded by
+`scontrol`; the runner records UTC in its result JSON. Both jobs used
+`zenbook-ux425uaz`, two CPUs and a 20-minute allocation.
+
+| Job | Scope | Start (CET, 2026-11-04) | End (CET) | State / exit | Meaning |
+|---|---|---|---|---|---|
+| 39 | DNN baseline | 09:27:51 | 09:27:54 | FAILED / `1:0` | RT-DETR and OWLv2 reproduce input-count rejection; v4 used wrong CLI alias and is excluded as a backend reproduction |
+| 40 | ExecuTorch baseline | 09:27:54 | 09:27:56 | FAILED / `1:0` | all three PTE files reproduce missing `aten::linear.out` |
+
+Jobs 36–38 were staging/CLI preflight failures and are excluded. Jobs 39/40
+have no overlap. Accounting (`sacct`) is disabled. Cluster memory is advertised
+as a 1 MiB placeholder; its allocation record is not a real memory measurement.
+No repaired jobs were submitted after the controller became unavailable.
+This is the availability snapshot from the recorded attempt, not a fresh
+cluster probe performed for this documentation update.
+
+The pending six-case plan assigns DNN to `optiplex-3040` and ExecuTorch to
+`zenbook-ux425uaz`. Each case requests two CPUs, a 20-minute allocation, a
+300-second command timeout and an 8192 MiB address-space limit. Both thread
+variables `OMP_NUM_THREADS` and `OPENBLAS_NUM_THREADS` are 2. The address-space
+limit includes mapped files and is not an RSS measurement or a Slurm memory
+accounting result. Manifest SHA-256:
+`1a19693fb882b35cd049a67509fd402506d60d724c7c25dc6395a345eed27765`.
+
+Once the controller returns, synchronize the repaired capsule, person-image
+fixture, runner and manifest as described in the validation packet. Retain
+each job ID, node, start/end, exit code, runtime log and artifact hashes;
+check rendered task results and verify a real cross-backend interval overlap.
+Until then, repaired Slurm coverage is **PENDING_CONTROLLER_OFFLINE** and
+`parallel_overlap_verified=false`. No new live KServe gRPC, TensorFlow 2.21,
+GPU or released-image result is implied.
+
 ## Environments
 
 How each column was built and tested (all CPU except TRT).
-Live app-surface runs below are from 2026-11-01/02 on the pinned stack
-(neuriplo-infer 0.11.7-dev + neuriplo 0.11.3 + neuriplo-tasks 0.8.4);
-older dates are kept only where no newer run exists.
+Rows without an E15 qualification retain the 2026-11-01/02 pinned-stack
+evidence (neuriplo-infer 0.11.7-dev + neuriplo 0.11.3 + tasks 0.8.4).
+DNN and ExecT include the newer 2026-11-04 local E15 builds; their fixes
+are not released dependency pins. Older counts are retained only as historical evidence.
 
 | Backend | Version / artifact | Build flags | Tests | Notes |
 |---|---|---|---|---|
-| DNN | OpenCV 5.0.0 source-built (`~/dependencies/opencv-5.0.0`, `scripts/setup_opencv.sh`) | `OPENCV_DNN` | 179/179 | New graph engine; `--input_sizes` required; apt 4.6 kept as fallback when the 5.x dir is absent |
+| DNN | OpenCV 5.0.0 source-built (`~/dependencies/opencv-5.0.0`, `scripts/setup_opencv.sh`) | `OPENCV_DNN` | app 191/191; backend 80/80 (E15) | Named/typed graph inputs; explicit sizes only for unresolved dynamic dimensions; apt 4.6 legacy compatibility is separate |
 | ORT | 1.19.2 CPU (local SDK; pin 1.28.0 unfetchable upstream — `setup_dependencies.sh` handles the renamed `gpu_cuda<major>` archives) | `ONNX_RUNTIME` | 179/179 | Full inference runs, renders inspected |
 | TRT | 11.2.1.2 (NGC `tensorrt:26.08` base, `docker/Dockerfile.tensorrt`) | `TENSORRT` | image green in CI 2026-11-02 | Trio live-gated 2026-11-01 (det 109 ms, seg 380 ms + masks, keypoint 292 ms, pose 0.850754) — see E13. 11.2 `trtexec` dropped the `--fp16` shorthand; engines rebuilt from the same `.onnx` |
 | Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | TorchScript cells, except E13 where RF-DETR rests on AOTInductor (`.pt2`) because TorchScript tracing is broken for that arch. KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
 | OVINO | 2026.3.0 (pinned; `docker/Dockerfile.openvino`) | `OPENVINO`, tests OFF | — (not covered) | Trio live-gated 2026-11-01 (det 784 ms, seg 1184 ms + masks, keypoint 1566 ms, pose 0.850784) — see E13. Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too |
 | TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
 | LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) — see Open item 8 |
-| ExecT | `~/dependencies/executorch` | `EXECUTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | Same protobuf clash as Torch |
+| ExecT | v1.2.0 optimized SDK `/tmp/blocked-et-sdk` (E15); older `~/dependencies/executorch` portable-only baseline retained separately | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; old KServe-OFF 134/134 build is historical, not a current requirement; compiled transport is not live transport validation |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
 
