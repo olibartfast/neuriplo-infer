@@ -85,12 +85,12 @@ neuriplo-infer --capabilities
 | `--timings_csv=<path>` | — | Write one row per inference (`frame,latency_us`) for a video run; rejected for image, text, and metadata runs. Parent directories are created; the file is opened before the first frame. |
 | `--warmup` | `false` | GPU warmup before inference; single still-image runs only, rejected otherwise. |
 | `--benchmark`, `--iterations=<n>` | `false`, `10` | Repeat inference and report the average time; single still-image runs only, rejected otherwise. |
+| `--export_metadata` | `false` | Print model type, routed task, and input/output layers, then exit. Requires `--weights`, not `--source`. |
+| `--no_gif` | `false` | Reserved; current paths emit no GIFs. |
 
 Unknown options and malformed values (for example `--batch=abc`) are rejected
 rather than ignored or read as `0`, and `--output_video` / `--timings_csv` may
 not name a source file or the run report.
-| `--export_metadata` | `false` | Print model type, routed task, and input/output layers, then exit. Requires `--weights`, not `--source`. |
-| `--no_gif` | `false` | Reserved; current paths emit no GIFs. |
 
 ### Remote inference (KServe)
 

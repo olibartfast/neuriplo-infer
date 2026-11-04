@@ -12,7 +12,7 @@ Repo-local sources:
 - [`cmake/versions.cmake`](../cmake/versions.cmake): version loading and
   app-level sibling-ref selection.
 - [`versions.env`](../versions.env): repo-owned minimum system dependency
-  versions.
+  versions and concrete sibling release pins.
 
 External owners:
 
@@ -42,18 +42,20 @@ External owners:
 
 Those belong to `neuriplo`, `videocapture`, and `neuriplo-tasks`.
 
-## Shared Dependency Ref
+## Sibling Ref Selection
 
-`neuriplo-infer` does not manually pin independent versions for `neuriplo-tasks`,
-`neuriplo`, and `videocapture` in prose docs.
+[`cmake/versions.cmake`](../cmake/versions.cmake) resolves each sibling
+independently, including `neuriplo-kserve-client`, in this order:
 
-Instead, [`cmake/versions.cmake`](../cmake/versions.cmake) derives one shared
-ref for the app build:
+1. An explicit CMake `-D<REPO>_VERSION=<ref>` override.
+2. The corresponding pin in [`versions.env`](../versions.env).
+3. A shared fallback: `master` on the `master` branch, `develop` on other
+   branches. Detached checkouts use `master` for a plain release version and
+   `develop` otherwise.
 
-- `master` release builds resolve sibling repos to `master`.
-- all other branches resolve sibling repos to `develop`.
-
-If explicit per-repo overrides disagree with that derived ref, configure fails.
+Different sibling refs are supported and logged, not rejected. With concrete
+pins present, switching the app branch does not replace them with branch refs.
+Release pins must be concrete `vX.Y.Z` tags; see [Versioning.md](Versioning.md).
 
 ## Setup Scripts
 
