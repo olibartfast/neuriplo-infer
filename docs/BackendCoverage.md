@@ -6,7 +6,7 @@ claiming more than its evidence. Style follows the NERT
 
 **Last updated: 2026-11-04.** Baseline evidence uses neuriplo-infer
 0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. Newer local corrections
-are scoped in their evidence sections; unreleased backend fixes are marked ‡. The
+are scoped in their evidence sections; unreleased backend fixes are marked ‡ or §. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
 are under [Environments](#environments). Matrix coverage is always reported
@@ -17,9 +17,9 @@ Main limitations:
 
 - **TorchScript input metadata:** since neuriplo 0.11.3, TorchScript files
   must record their input datatypes. Files exported without the metadata
-  helper are rejected at load time and must be re-exported; some Torch cells
-  below are BLOCKED for that reason, while the re-exported DETR files are
-  PASS.
+  helper are rejected at load time and must be re-exported. Re-exported
+  DETR files use the supported PASS routes; the RF-DETR TorchScript
+  architecture limitation remains distinct from its passing AOTI route.
 - **Legacy incorrect artifacts:** old EdgeCrafter and generic-`onnx2tf`
   RF-DETR TFLite files must be replaced. EdgeCrafter now passes locally and
   over HTTP with a reconverted model and the local XNNPACK reshaping fix
@@ -58,8 +58,9 @@ Main limitations:
   77/77, `openvino` on optiplex-3040 BUILD_OK, `executorch` on
   jetson-nano (aarch64) BUILD_OK — the ExecT baseline before the
   optimized-kernel rebuild. New
-  blockers recorded there and not re-claimed here: OpenCV DNN single-input
-  limit (DETR two-input, OWL three-input, `groundingdino` four-input),
+  historical blockers recorded there: OpenCV DNN single-input
+  limit (DETR two-input, OWL three-input, `groundingdino` four-input;
+  local RT-DETR/OWLv2 fixes are recorded in E15),
   OpenCV DNN importer SIGSEGV on EdgeCrafter exact-GELU graphs, OpenVINO
   CPU SIGSEGV on 5D video inference, and NERT/OpenVINO setup-contract
   rejections plus CPU-timeout video cells. The later OpenVINO retest below
@@ -133,20 +134,20 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E1](#ev-yolo26) |
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | PASS | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
+| Object detection (`rtdetr`, `rtdetrv4`) | PASS§ | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | UNTESTED | PASS | UNTESTED | UNTESTED | PASS | UNTESTED | UNTESTED | UNTESTED | N/A | UNTESTED | [E14](#ev-ov-slurm) |
 | Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | PASS‡ | UNTESTED | N/A | PASS‡ | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
+| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | PASS§ | N/A | PASS | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | PASS§ | N/A | PASS | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | PASS | BUILDS | PASS | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | RUNTIME-PASS† | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | PASS | UNTESTED | N/A | PASS | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | PASS§ | N/A | PASS | [E13](#ev-rfdetr) |
 | Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | PASS | BUILDS | BUILDS | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | PASS† | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | PASS§ | PASS | BUILDS | BUILDS | PASS† | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | PASS | UNTESTED | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | N/A | UNTESTED | [E12](#ev-splatting) |
 
@@ -154,6 +155,12 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 and the unreleased neuriplo XNNPACK subgraph-reshaping fix
 [`9bde6c0`](https://github.com/olibartfast/neuriplo/commit/9bde6c0fd07ab88b70e1076f5fc667c20be41d7d).
 The app's released dependency pin does not contain that fix.
+
+§ Local 2026-11-04 fixes, not released pins: OpenCV 5 named/typed graph
+inputs, RT-DETRv4's prepared vector-MatMul export, and ExecuTorch v1.2.0
+rebuilt with optimized registrations. Identical-input ORT parity and renders
+are validated locally. Repaired parallel Slurm reruns are **pending controller
+availability**; these are not Slurm PASS claims. See [E15](#ev-blocked-slurm).
 
 ## Evidence
 
@@ -165,9 +172,9 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
 13 decisions). Develop-stack re-gates from 2026-11-02/03 ran on sibling
 checkouts (neuriplo-infer `develop` c7dd16b + neuriplo-tasks `develop`
 ea05454, which carries the RF-DETR synthetic-name mapping fix) and are
-labeled as such; cells only flip on the pinned stack once the tasks tag +
-infer pin move — the seg-LiteRT flip below is the first such flip
-(tasks `v0.8.5` tag + pin).
+labeled as such. The seg-LiteRT flip used tasks `v0.8.5` tag content. Later
+unreleased corrections have explicit ‡/§ scope notes and do not certify
+the app's released dependency pins.
 
 ### <a id="ev-yolo26"></a>E1 — Object detection (`yolo26`)
 
@@ -232,10 +239,13 @@ infer pin move — the seg-LiteRT flip below is the first such flip
   loaded on the 0.11.5 stack and rendered dog, bicycle and car correctly on
   `data/dog.jpg` at 0.25/0.45. The file records its input datatypes; the
   pre-contract export is rejected. `rtdetrv4` on Torch is still unrun.
-- **DNN BLOCKED (2026-10-30).** `rtdetr` and `rtdetrv4` take two inputs (image
-  and original size). OpenCV DNN accepts a single input only — the run stops
-  with `OpenCV DNN backend currently supports only single input models, got 2
-  inputs`. Same limitation as E10.
+- **DNN PASS§ (2026-11-04, local OpenCV 5).** The adapter binds the
+  real FP32 image and INT64 size inputs by name and preserves integer labels.
+  RT-DETR agrees with ORT (labels exact, max score error 1.84e-6, boxes
+  within 0.004 pixels). RT-DETRv4 additionally requires the prepared
+  vector-MatMul export; the original artifact still hits OpenCV's matrix-only
+  operator restriction. Use CLI type `rtdetr` for both files. See
+  [E15](#ev-blocked-slurm) for scope and pending Slurm validation.
 
 ### <a id="ev-ecdet"></a>E4 — Object detection (`ecdet`)
 
@@ -367,11 +377,11 @@ additionally gated as alias.
   and dog 0.27; `owlvit` rendered bicycle 0.39. Both renders were inspected;
   inference stages were 30058 / 2788 ms. See [E14](#ev-ov-slurm) for the
   derived-image limitation. No other open-vocabulary model was rerun.
-- **DNN BLOCKED** (5.0.0 importer loads both models, but multi-input
-  inference fails): `owlv2.onnx` and `groundingdino.onnx` parse cleanly —
-  the 4.6 `Mul`/`Identity` errors are gone — then fail in
-  `setMainGraphInput` (`net_impl2.cpp:1032`, needs single input). Apt 4.6
-  never got past the importer.
+- **DNN PASS§ (2026-11-04, local OpenCV 5).** Native graph metadata
+  provides the FP32 image and INT64 token/attention-mask inputs. The original
+  OWLv2 ONNX file passes ORT parity and renders bicycle 0.34 / dog 0.27.
+  This does not re-gate GroundingDINO or apt OpenCV 4.6. See
+  [E15](#ev-blocked-slurm).
 - **ORT PASS** (CPU, 14.3 s; CLIP vocab/merges from
   `openai/clip-vit-base-patch32`): prompts `cat;dog;bus` — dog 0.28; alias
   `groundingdino` also live (CPU, 28 s) — dog 0.68, van-as-bus 0.31.
@@ -498,20 +508,14 @@ additionally gated as alias.
   (576, `--input_sizes=1,3,576,576`, 6540 ms): skeleton, pose score
   **0.850784** — identical to every other backend (upstream notes keypoint
   is unsupported by `litert-torch`, so the `onnx2tf` file stands).
-- **ExecuTorch BLOCKED (all three; runtime lacks `aten::linear.out`).**
-  `rfdetr-nano` / `rfdetrseg-medium` / `rfdetr-keypoint-preview-xlarge`
-  export cleanly to `.pte` (`format="executorch"`, `backend="xnnpack"`,
-  rfdetr 1.11.2 / executorch 1.3.1) and load in `build-executorch` — then
-  `forward()` fails: `Missing operator: aten::linear.out` (28 instructions
-  detection/seg, 29 keypoint). Since rfdetr 1.9.1 the exporter recombines
-  undelegated `addmm` into `aten::linear`; the local runtime
-  (ExecuTorch v1.2.0, portable kernels, no `optimized_native_cpu_ops_lib`)
-  does not register it — the exact case the reference
-  `rf-detr-cpp-inference` docs flag (`EXECUTORCH_BUILD_KERNELS_OPTIMIZED=ON`
-  rebuild). Fix path: rebuild the runtime with optimized kernels and wire
-  the lib into `neuriplo` (no such wiring exists today); re-test all three
-  `.pte` then. Export-side note: 1.11.2 appends the delegate without an
-  explicit `output_name` (`rfdetr-medium_xnnpack.pte`), pass it explicitly.
+- **ExecuTorch PASS§ (2026-11-04, local rebuilt v1.2.0 SDK).** All
+  three original native XNNPACK PTE artifacts execute with the existing
+  optimized CPU kernels registered. No runtime version or model weights
+  changed. Nano detection, medium segmentation and keypoint raw tensors
+  agree with their same-model ORT references; selected detections/masks/pose
+  are checked in [E15](#ev-blocked-slurm). Older portable-only SDKs still
+  lack `aten::linear.out` and must be rebuilt. Explicit portable delegate
+  mode retains portable kernels and is not this gate.
 
 - **Supported export recipes fixed (2026-11-04).** Both `rfdetr` and
   `rfdetrseg` app presets now select native `format="litert"` with
@@ -576,6 +580,53 @@ were preserved. Job 35 completed with Slurm exit `0:0`. The historical
 video SIGSEGV and OWL setup failures in the earlier environment are not
 claimed fixed across all hardware by these successful runs.
 
+### <a id="ev-blocked-slurm"></a>E15 — Blocked cells: local fixes, Slurm rerun pending
+
+The five formerly BLOCKED representative cells now have local passing routes
+(§), covering six model/backend checks. The
+[evidence JSON](evidence/blocked-slurm-2026-11-04.json) records exact binaries,
+libraries, models, SDK source and identical-input numerical comparisons. The backend fix is
+[neuriplo 042bcef](https://github.com/olibartfast/neuriplo/commit/042bcefc8a20771d7c40d54c86f8ea588fcde1b8);
+the export adapter is
+[neuriplo-tasks d38e8b3](https://github.com/olibartfast/neuriplo-tasks/commit/d38e8b3984386c93a053215a1a88964e6e054e74).
+The [pending Slurm plan](evidence/blocked-slurm-plan-2026-11-04.json) contains
+all six exact commands and worker selections.
+
+| Backend / model | Local result versus same-model ORT | Required fix |
+|---|---|---|
+| OpenCV 5 / RT-DETR | labels exact; max scores 1.84e-6, boxes 0.003861 pixels | named FP32/INT64 inputs and integer outputs |
+| OpenCV 5 / RT-DETRv4 | detections agree; complete errors in JSON | same adapter plus prepared Unsqueeze/MatMul/Squeeze export |
+| OpenCV 5 / OWLv2 | max logits 0.001067, boxes 0.000134 normalized | image, token IDs and attention mask bound with graph metadata |
+| ExecuTorch / RF-DETR nano | max boxes 0.000067, logits 0.000303 | v1.2.0 optimized CPU registration with XNNPACK |
+| ExecuTorch / RF-DETR seg medium | max boxes 0.000503, logits 0.007473; mask sign agreement 99.9997428% | same SDK rebuild |
+| ExecuTorch / RF-DETR keypoint | person.jpg max keypoints 0.000645; pose score 0.850784 | same SDK rebuild |
+
+RT-DETRv4's prepared graph preserves external names, shapes and dtypes.
+Original versus prepared ORT differs by at most 0.000092 pixels / 9.54e-7
+score. Original vector-MatMul weights remain unsupported in OpenCV.
+The paired segmentation files in this re-gate give bicycle 0.943308, horse
+0.916267 and car 0.801956 on both runtimes; archived artifact scores in E13
+are separate evidence. The person.jpg pose renders show score 0.850784 on
+both ORT and ExecuTorch.
+Segmentation mask logits have maximum error 0.21214 and mean error 0.00138;
+the mask agreement claim is a tolerance check, not bitwise equality.
+
+Local checks: neuriplo CTest 80/80 on OpenCV 4.6 and 5, 77/77 on ExecuTorch
+(including a real RF-DETR parity fixture); app CTest 191/191 on each changed
+backend; tasks CTest 31/31; export adapter tests 3/3; Slurm worker tests 4/4.
+No new model type or task contract was added.
+
+**Slurm:** existing-controller jobs 39 and 40 reproduced the DNN input and
+ExecuTorch operator failures. They ran sequentially and are not parallel
+validation evidence. The controller then went offline before repaired
+submissions; no repaired job IDs or concurrent PASS are claimed. Accounting
+is disabled, so baseline states were captured with `scontrol`. The
+[Slurm runner guide](SlurmBackendCoverage.md) and
+[validation packet](../specs/2026-11-04-blocked-slurm-backends/validation.md)
+provide the staged manifest and resume commands. Two workers are selected
+for the repaired checks to permit overlap. Release pins, KServe gRPC,
+TensorFlow 2.21 ABI and historical RF-DETR TorchScript limitations are unchanged.
+
 ## Environments
 
 How each column was built and tested (all CPU except TRT).
@@ -620,14 +671,11 @@ older dates are kept only where no newer run exists.
    The DETR Torch run is a manual CLI invocation on `rtdetr.torchscript`, not
    a preset. Add presets and re-gate once the remaining TorchScript exports
    are refreshed (item 9).
-4. **OPENCV_DNN scope (now 5.0.0).** The YOLO `Split`/`Unsqueeze` blockers,
-   the `rfdetr` `BOOL` dtype failure, and the `owlv2`/`groundingdino`
-   importer errors are all gone on the 5.x importer. Remaining 5.x gap:
-   multi-input inference (`owlv2`, `groundingdino` and the two-input
-   `rtdetr`/`rtdetrv4` exports fail in `setMainGraphInput`). EdgeCrafter
-   exact-GELU graphs are a separate importer SIGSEGV, not the input-count
-   limit. `groundingdino` is confirmed 4-input (2026-10-31). Still unprobed on
-   5.x: `ecseg`, torchvision ResNet, `vitpose`,
+4. **OPENCV_DNN scope (5.0.0).** Named typed input binding resolves
+   RT-DETR and OWLv2 locally (§); v4 needs its compatible export. GroundingDINO
+   has not been re-gated, and EdgeCrafter exact-GELU remains a separate importer
+   SIGSEGV. Parallel repaired Slurm validation awaits the existing controller.
+   Still unprobed on 5.x: `ecseg`, torchvision ResNet, `vitpose`,
    `depth_anything_v2`.
 5. **KServe per-task gates.** Done for servable local models (`real-onnx`,
    HTTP): pose, depth, open-vocab — plus YOLO26-`litert` PASS and `ecdet`
