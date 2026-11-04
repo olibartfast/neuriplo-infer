@@ -27,45 +27,11 @@ Main limitations:
   passes with the corrected exporter (E6). The LiteRT backend fix is local
   and has not yet been released or pinned.
 - **Incomplete test coverage:** OpenVINO and LLaMA native unit-test binaries
-  do not link (LiteRT was in this list until the vendored-gtest prune;
-  see Open item 8).
+  do not link.
 - **Backend and transport blockers:** apt OpenCV 4.6 cannot load current
   models — the DNN column below runs OpenCV 5.0.0 source-built (see
   [Environments](#environments)); KServe HTTP has live evidence, while the
   gRPC failure described in E1 remains blocked server-side.
-- **Full cell matrix (2026-11-01):** the external release cell-matrix
-  harness ran every explicit TaskFactory architecture × backend on the 0.11.6
-  stack: 176 RUNTIME_PASS / 22 FAILED / 12 TIMEOUT / 10 KNOWN_BAD /
-  159 EXPORT_BLOCKED / 51 NOT_APPLICABLE, with 13 triage decisions. On
-  2026-11-01 the RF-DETR trio (detection `rfdetr`, segmentation
-  `rfdetrseg`, pose `rfdetrpose`) was re-run on four gates, all
-  RUNTIME_PASS with statuses unchanged: opencv5-only gate (binary
-  `49737e78`, OpenCV 5.0.0; runs `3557889f` / `bdd99c4e` / `2d038303`),
-  onnx_runtime (`793e80c7` / `54475a05` / `1c2a8aee`), openvino
-  (`cd6f3259` / `66d8b5db` / `62265dd2`) and tensorrt (`25cd93dd` /
-  `b8553c97` / `80bb106c`). Render spot-check: bicycle/person/sheep
-  correct with masks; the dog is labeled `horse` ~0.94 on every backend
-  (model-accuracy note, same weights — not a harness failure). Slurm
-  session `2026-11-01-full-coverage-1` rebuilt the non-GenAI backend
-  images in parallel from the same pins (`libtorch`, `libtensorflow`,
-  `openvino`, `litert`, `tensorrt` BUILD_OK; `executorch` FAILED at link
-  (`ld: cannot find -lxnnpack_backend`, owner infer Dockerfile linkage);
-  `tensorrt` running); GenAI backends
-  (`llamacpp`, `cactus`, `ggml`) are out of coverage scope, and
-  `tvm`/`migraphx`/`dali` have no matrix pipeline. Slurm session
-  `2026-11-03-backend-dispatch` (jobs 30/31/32, one backend per worker,
-  `neuriplo@develop` `06b6903`): `ggml` on zenbook BUILD_OK + `ctest`
-  77/77, `openvino` on optiplex-3040 BUILD_OK, `executorch` on
-  jetson-nano (aarch64) BUILD_OK — the ExecT baseline before the
-  optimized-kernel rebuild. New
-  historical blockers recorded there: OpenCV DNN single-input
-  limit (DETR two-input, OWL three-input, `groundingdino` four-input;
-  local RT-DETR/OWLv2 fixes are recorded in E15),
-  OpenCV DNN importer SIGSEGV on EdgeCrafter exact-GELU graphs, OpenVINO
-  CPU SIGSEGV on 5D video inference, and NERT/OpenVINO setup-contract
-  rejections plus CPU-timeout video cells. The later OpenVINO retest below
-  succeeds on a different CPU environment; the historical failures remain
-  scoped to their original environments.
 - **OpenVINO Slurm retest (2026-11-04, P-LNX-EDGE-CPU):** only the seven
   non-passing, runnable cells were retried; 28 prior runtime passes were
   skipped. `owlv2` / `owlvit` passed inference and render inspection;
@@ -325,7 +291,7 @@ the app's released dependency pins.
 ### <a id="ev-pose"></a>E8 — Pose estimation (`vitpose`)
 
 Representative `vitpose` unrun everywhere below; `rfdetr_keypoint` gated
-as alias (see Open item 2 for the emulation gap).
+as alias. RF-DETR presets are covered by emulation.
 
 - **DNN PASS via alias** (5.0.0, CPU, 3582 ms): `rfdetr_keypoint` renders
   skeleton, pose score 0.85. (Apt 4.6 failed this model on `BOOL` dtype —
@@ -360,8 +326,7 @@ additionally gated as alias.
   1.26/5.41.
 - **OVINO PASS via alias** (2026-11-01, pinned 2026.3.0 runtime on
   optiplex-3040, CPU, 434 ms): `yolo26depth` renders the same sane map,
-  min/max 1.26/5.41 — the promo-video memory was right; the BUILDS cell
-  was stale.
+  min/max 1.26/5.41.
 - **LiteRT PASS** (2026-11-02, `build-litert`, CPU, 133 s):
   `depth_anything_v2` float32 `.tflite` via `onnx2tf` renders the same sane
   map, min/max -0.31/7.64 (identical to ORT to 5 decimals). Slow on CPU
@@ -408,7 +373,7 @@ additionally gated as alias.
 ### <a id="ev-splatting"></a>E12 — Gaussian splatting (`lgm`/`grm`)
 
 - Routed (`Capabilities.cpp`), no e2e preset, no emulation. Torch/OVINO
-  cells are BUILDS-only. See Open item 6.
+  cells are BUILDS-only. See [Open items](#open-items).
 
 ### <a id="ev-rfdetr"></a>E13 — RF-DETR trio (`rfdetr`, `rfdetrseg`, `rfdetrpose`)
 
@@ -813,7 +778,7 @@ are not released dependency pins. Older counts are retained only as historical e
 | Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | TorchScript cells, except E13 where RF-DETR rests on AOTInductor (`.pt2`) because TorchScript tracing is broken for that arch. KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
 | OVINO | 2026.3.0 (pinned; `docker/Dockerfile.openvino`) | `OPENVINO`, tests OFF | — (not covered) | Trio live-gated 2026-11-01 (det 784 ms, seg 1184 ms + masks, keypoint 1566 ms, pose 0.850784) — see E13. Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too |
 | TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
-| LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) — see Open item 8 |
+| LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) |
 | ExecT | v1.2.0 optimized SDK `/tmp/blocked-et-sdk` (E15); older `~/dependencies/executorch` portable-only baseline retained separately | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; old KServe-OFF 134/134 build is historical, not a current requirement; compiled transport is not live transport validation |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
@@ -832,49 +797,23 @@ are not released dependency pins. Older counts are retained only as historical e
 ## Open items
 
 1. **Live-gate every DRY-RUN cell.** Closest first: `rtdetrv4` on TRT;
-   `raft` / `vitpose` / `depth_anything_v2` / `videomae` on ORT.
-   Needs model exports that don't exist locally yet.
-2. **Closed — RF-DETR presets in emulation.** `rfdetr`, `rfdetrseg`, and
-   `rfdetr_keypoint` are listed by
-   `docker_run_inference_e2e_example.sh --list-presets` and have jobs in
-   `e2e-example-emulation.yml` (dry-run green).
-3. **Record Torch / OpenVINO `--backend` override runs as repeatable gates.**
+   `raft` / `vitpose` / `videomae` on ORT.
+   Export or obtain the required artifacts before live validation.
+2. **Record Torch / OpenVINO `--backend` override runs as repeatable gates.**
    The DETR Torch run is a manual CLI invocation on `rtdetr.torchscript`, not
-   a preset. Add presets and re-gate once the remaining TorchScript exports
-   are refreshed (item 9).
-4. **OPENCV_DNN scope (5.0.0).** Named typed input binding resolves
+   a preset. Add repeatable preset gates using the typed TorchScript exports.
+3. **OPENCV_DNN scope (5.0.0).** Named typed input binding resolves
    RT-DETR and OWLv2 locally (§); v4 needs its compatible export. GroundingDINO
    has not been re-gated, and EdgeCrafter exact-GELU remains a separate importer
    SIGSEGV. Parallel repaired Slurm validation awaits the existing controller.
    Still unprobed on 5.x: `ecseg`, torchvision ResNet, `vitpose`,
    `depth_anything_v2`.
-5. **KServe per-task gates.** Done for servable local models (`real-onnx`,
+4. **KServe per-task gates.** Done for servable local models (`real-onnx`,
    HTTP): pose, depth, open-vocab — plus YOLO26-`litert` PASS and `ecdet`
    PASS with the local backend patch (E4). gRPC transport BLOCKED server-side. Still open: classification,
    video, flow, VLM serving.
-6. **Gaussian-splatting representative.** No preset exists. Export one `lgm`
+5. **Gaussian-splatting representative.** No preset exists. Export one `lgm`
    artifact, add a preset, then gate it.
-7. **LIBTENSORFLOW classification: resolved by re-export (2026-11-04).**
-   The corrected upstream ResNet50 export embeds mean subtraction and returns
-   logits. Local C++ and Python correctness now agree (E6). Old SavedModels
-   require re-export; KServe classification remains unvalidated.
-8. **LiteRT-linked `runUnitTests`: fixed (2026-11-02), 192/192 on the pinned
-   stack.** Root cause was not the backend: `setup_litert.sh` harvested the
-   TensorFlow build tree's vendored `gtest`/`gmock` headers into the SDK
-   include tree, and they shadowed the system gtest headers in every consumer
-   built with `-I$LITERT_DIR/include`. The vendored headers carry an older
-   `testing::internal::RE` layout (144 vs 168 bytes), so test binaries mixed
-   layouts with the system `libgtest` — an ODR violation that crashed all
-   21 death tests pre-fork in matcher construction. The script now prunes
-   `include/{gtest,gmock}` and `lib/libgtest*`/`libgmock*` on every run
-   (including no-op runs against an existing install).
-9. **Closed — TorchScript re-exports re-gated.** `yolo26` and
-   `torchvisionclassifier` now load typed archives (metadata verified)
-   and were re-gated PASS 2026-11-03 on the pinned stack (yolo26
-   1242 ms exact trio; classifier top class 249 @ 0.44); the DETR family
-   was re-gated 2026-10-30. E13's TorchScript exception (broken trace
-   for RF-DETR, AOTI route instead) stands.
-
 ## Integration-test evidence
 
 This section owns all app-surface test documentation. Each suite below
@@ -893,7 +832,7 @@ from `app/test/CMakeLists.txt`.
 | `local-inference-smoke` | DRY-RUN shape for every preset row (lists presets, dry-runs one) | `local_inference_smoke_runner` (`run.py --preset owlv2`) | — (dry-run only by design) | [README](../integration-tests/local-inference-smoke/README.md), [run.py](../integration-tests/local-inference-smoke/run.py) |
 | `kserve-runtime-yolo-e2e` | `yolo26` KServe PASS (YOLO26 `.tflite` over `litert`) | — (needs runtime binary + model) | `run.py` — starts `neuriplo-kserve-runtime`, readiness + metadata, app-binary HTTP infer, refreshed render, metrics 1/0 | [README](../integration-tests/kserve-runtime-yolo-e2e/README.md), [run.py](../integration-tests/kserve-runtime-yolo-e2e/run.py) |
 | `kserve-runtime-edgecrafter-e2e` | `ecdet` ORT/TRT PASS + OpenVINO/ExecT matrix; `ecdet` LiteRT/KServe HTTP replacement PASS with local backend patch (E4; separate manual gate) | — (needs per-backend runtime binaries + model repository + GPU for TRT) | `run.py --backend {onnx_runtime,tensorrt,openvino,executorch} [--transport {http,grpc}] [--mode {kserve,local}]`; `prepare_model_repository.py` lays out `ecdet_s_<backend>/1/` | [README](../integration-tests/kserve-runtime-edgecrafter-e2e/README.md), [BENCHMARK.md](../integration-tests/kserve-runtime-edgecrafter-e2e/BENCHMARK.md) |
-| `rfdetr-pose-local-vs-kserve` | Pose row scaffold for `rfdetr_keypoint` (covers the Open-items emulation gap with evidence tracking, not a live gate) | `rfdetr_pose_evidence_scaffold` (`run.py` — baselines + report exist) | Attested checks in [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml) (`kserve_grpc_smoke` still `skipped`) | [README](../integration-tests/rfdetr-pose-local-vs-kserve/README.md), [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml), [reports/latest.md](../integration-tests/rfdetr-pose-local-vs-kserve/reports/latest.md) |
+| `rfdetr-pose-local-vs-kserve` | Pose row scaffold for `rfdetr_keypoint` (evidence tracking, not a live gate) | `rfdetr_pose_evidence_scaffold` (`run.py` — baselines + report exist) | Attested checks in [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml) (`kserve_grpc_smoke` still `skipped`) | [README](../integration-tests/rfdetr-pose-local-vs-kserve/README.md), [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml), [reports/latest.md](../integration-tests/rfdetr-pose-local-vs-kserve/reports/latest.md) |
 
 KServe protocol-level legs (not app-surface suites, but they back the
 KServe column): `kserve_integration_dry_run` and
