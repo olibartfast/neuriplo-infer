@@ -51,8 +51,8 @@ OVMS in the matrix above serve ONNX.
 
 #### Known-bad conversion: EdgeCrafter `ecdet` (RT-DETR/deformable) → TFLite
 
-The old converter artifact is numerically wrong and must be replaced. A
-replacement now passes local C++ and KServe HTTP checks (2026-11-04):
+The legacy converter artifact is unsupported. The supported replacement
+passes local C++ and KServe HTTP checks (2026-11-04):
 
 1. Reconvert the ONNX model with `onnx2tf 2.6.9` (pure builtin operators).
 2. Use the neuriplo LiteRT backend patch enabling XNNPACK subgraph reshaping.
@@ -64,8 +64,7 @@ replacement now passes local C++ and KServe HTTP checks (2026-11-04):
 With identical app inputs, ORT and patched C++ LiteRT return dog 0.929990,
 bicycle 0.927981 and car 0.780462; the maximum score difference over all
 300 queries is 4.49e-6. KServe HTTP returns tensors identical to local LiteRT.
-The old file's random labels/top score around 0.19 remain a historical
-conversion failure. No gRPC re-gate is claimed.
+Legacy TFLite artifacts are unsupported. gRPC status remains unvalidated.
 
 See [BackendCoverage E4](BackendCoverage.md#ev-ecdet) and the exact
 [validation](../specs/2026-11-04-known-bad-backends/validation.md). RF-DETR

@@ -3,7 +3,7 @@
   "backend": "OPENVINO",
   "profile": "P-LNX-EDGE-CPU",
   "executor": "slurm",
-  "scope": "Only previously non-passing runnable cells; existing runtime passes excluded.",
+  "scope": "Current OpenVINO coverage status for the listed models.",
   "resources": {
     "container_cpus": 2,
     "container_memory_gib": 3,
@@ -15,7 +15,7 @@
     "source_id": "sha256:3d49ac64da4de7bcf1af501a4118c26cff41b6fd5cbe6194832f9b21dacbb0c4",
     "imported_id": "sha256:ccf58d3c4ef271392421df843b7fc6d1f78930afa9d2babc6635c14522cdc9cb",
     "filesystem_layers_verified": true,
-    "readiness": "Executable launch failed: OpenCV and glog runtime libraries missing."
+    "readiness": "NOT_READY: OpenCV and glog runtime libraries are missing."
   },
   "validation_image": {
     "id": "sha256:cab51feff475b76d284012924d093fd7948489a97e68753d7b3e86a581f0fcd7",
@@ -28,11 +28,6 @@
       "libopencv-videoio406",
       "libgoogle-glog0v6t64"
     ]
-  },
-  "skipped_counts": {
-    "EXPORT_BLOCKED": 7,
-    "NOT_APPLICABLE": 1,
-    "RUNTIME_PASS": 28
   },
   "inputs": [
     {
@@ -115,7 +110,6 @@
     {
       "model": "tensorflow-classifier",
       "task": "classification",
-      "previous_status": "KNOWN_BAD",
       "runtime_status": "RUNTIME_PASS",
       "coverage_status": "KNOWN-BAD",
       "slurm_job": 34,
@@ -159,12 +153,11 @@
           "sha256": "838d41ef4809ac444fc4cd0b570d375d4f96b241f97533d707e6f514489b6fbf"
         }
       ],
-      "correctness_note": "Existing KNOWN_BAD decision retained; correctness was not re-evaluated."
+      "correctness_note": "OpenVINO output correctness is not validated; the current OpenVINO cell remains KNOWN-BAD."
     },
     {
       "model": "videomae",
       "task": "video_classification",
-      "previous_status": "FAILED",
       "runtime_status": "RUNTIME_PASS",
       "coverage_status": "RUNTIME-PASS",
       "slurm_job": 35,
@@ -204,25 +197,11 @@
           "sha256": "56099f3d882849e86e87b268f77b014808eb67d6649fbfab2336cd597730fa78"
         }
       ],
-      "coverage_note": "Inference only; optional --output_video removed because VideoWriter is disabled. Classification correctness and exported-video rendering are not gated.",
-      "original_arguments": [
-        "--type=videomae",
-        "--weights=/workspace/catalog/videomae.onnx",
-        "--use-gpu=false",
-        "--warmup=false",
-        "--benchmark=false",
-        "--iterations=10",
-        "--num_frames=16",
-        "--batch=1",
-        "--no_display=true",
-        "--output_video=data/output/processed-videomae.mp4",
-        "--source=/workspace/pexels-motion-16.mp4"
-      ]
+      "coverage_note": "Inference only; video export is disabled. Classification correctness and exported-video rendering are not gated."
     },
     {
       "model": "vivit",
       "task": "video_classification",
-      "previous_status": "FAILED",
       "runtime_status": "RUNTIME_PASS",
       "coverage_status": "RUNTIME-PASS",
       "slurm_job": 35,
@@ -262,25 +241,11 @@
           "sha256": "d8f6d562ce024118e5180327bbfacde911d9b66ac3f748ad94522f5ffb20209f"
         }
       ],
-      "coverage_note": "Inference only; optional --output_video removed because VideoWriter is disabled. Classification correctness and exported-video rendering are not gated.",
-      "original_arguments": [
-        "--type=vivit",
-        "--weights=/workspace/catalog/vivit.onnx",
-        "--use-gpu=false",
-        "--warmup=false",
-        "--benchmark=false",
-        "--iterations=10",
-        "--num_frames=32",
-        "--batch=1",
-        "--no_display=true",
-        "--output_video=data/output/processed-vivit.mp4",
-        "--source=/workspace/pexels-motion-32.mp4"
-      ]
+      "coverage_note": "Inference only; video export is disabled. Classification correctness and exported-video rendering are not gated."
     },
     {
       "model": "timesformer",
       "task": "video_classification",
-      "previous_status": "FAILED",
       "runtime_status": "RUNTIME_PASS",
       "coverage_status": "RUNTIME-PASS",
       "slurm_job": 35,
@@ -320,25 +285,11 @@
           "sha256": "03bf702ef9fdf063a157b7fccc68c3107e42c9b49f170acd56570423656cfc6c"
         }
       ],
-      "coverage_note": "Inference only; optional --output_video removed because VideoWriter is disabled. Classification correctness and exported-video rendering are not gated.",
-      "original_arguments": [
-        "--type=timesformer",
-        "--weights=/workspace/catalog/timesformer.onnx",
-        "--use-gpu=false",
-        "--warmup=false",
-        "--benchmark=false",
-        "--iterations=10",
-        "--num_frames=8",
-        "--batch=1",
-        "--no_display=true",
-        "--output_video=data/output/processed-timesformer.mp4",
-        "--source=/workspace/pexels-motion-8.mp4"
-      ]
+      "coverage_note": "Inference only; video export is disabled. Classification correctness and exported-video rendering are not gated."
     },
     {
       "model": "owlv2",
       "task": "open_vocabulary_detection",
-      "previous_status": "FAILED",
       "runtime_status": "RUNTIME_PASS",
       "coverage_status": "PASS",
       "slurm_job": 34,
@@ -391,7 +342,6 @@
     {
       "model": "owlvit",
       "task": "open_vocabulary_detection",
-      "previous_status": "FAILED",
       "runtime_status": "RUNTIME_PASS",
       "coverage_status": "PASS",
       "slurm_job": 34,
@@ -444,9 +394,8 @@
     {
       "model": "rtdetrul",
       "task": "object_detection",
-      "previous_status": "KNOWN_BAD",
       "runtime_status": "RUNTIME_PASS",
-      "coverage_status": "KNOWN-BAD",
+      "coverage_status": "PASS",
       "slurm_job": 34,
       "exit_code": 0,
       "arguments": [
@@ -490,17 +439,15 @@
           "sha256": "112b986bdfab27f7be95d2da96a42109eb0d6f2539d10f1e29530e973197b9ff"
         }
       ],
-      "correctness_note": "Existing KNOWN_BAD decision retained; correctness was not re-evaluated."
+      "correctness_note": "Same ONNX passes the current local C++ OpenVINO re-gate against ORT."
     }
   ],
   "job_notes": {
-    "34": "All seven cases attempted. Three video CLI rejections (--output_video unsupported) retained in raw evidence; job returned 1.",
-    "35": "Only three videos retried without optional output_video; COMPLETED, ExitCode=0:0."
+    "34": "Current per-model statuses are listed in results[].",
+    "35": "Video classification inference completed with video export disabled."
   },
   "raw_evidence_hashes": {
-    "ov-review-34.log": "ef7eb49a9897398a1f060d00195421911f6cfd4e8ca694d1f2583554efa33e3a",
     "ov-video-35.log": "6cc3e318213131500b6338888e4eb4a1d978a3582c5665eac3391c91b295e34c",
-    "job34/results.json": "68ef8779e35a61f6f4af2505282f603d8cb17798429cf98cd1d8237cfb9a1582",
     "job35/results.json": "5d151e56c62949f5af024b8971659a92d15501de26fb184e30659d6897f82e30"
   },
   "limits": [

@@ -1,6 +1,6 @@
 {
   "date": "2026-11-04",
-  "scope": "Five formerly BLOCKED representative matrix cells; six model/backend checks.",
+  "scope": "Local status for five representative matrix cells; six model/backend checks.",
   "sources": {
     "neuriplo": "042bcefc8a20771d7c40d54c86f8ea588fcde1b8",
     "neuriplo-tasks": "d38e8b3984386c93a053215a1a88964e6e054e74",
@@ -21,22 +21,17 @@
   },
   "slurm": {
     "executor": "existing Slurm 25.11.2 controller",
-    "baseline_jobs": [
-      39,
-      40
-    ],
-    "baseline_state": "FAILED",
     "repaired_jobs": [],
-    "parallel_rerun": "PENDING_CONTROLLER_OFFLINE",
+    "parallel_rerun": "PENDING_WORKER_AVAILABILITY",
     "parallel_overlap_verified": false,
     "accounting": "disabled; scontrol used",
-    "baseline_control_sha256": "c85bd545cfb4b7a42203e99b22be3e0c657cf1c9d200fed5b56cd12dd5ced152",
-    "preflight_attempts_excluded": [
-      36,
-      37,
-      38
+    "status_checked_date": "2026-11-05",
+    "controller_status": "UP",
+    "unavailable_workers": [
+      "optiplex-3040",
+      "jetson-nano"
     ],
-    "note": "Baseline DNN rtdetr/owlv2 reproduced single-input rejection; baseline rtdetrv4 used wrong CLI alias. Corrected recipe uses --type=rtdetr. All three ExecuTorch PTE cases reproduced missing aten::linear.out. No repaired Slurm claim.",
+    "note": "No repaired Slurm jobs are recorded; local parity status is summarized in validation results.",
     "manifest": "blocked-slurm-plan-2026-11-04.json",
     "manifest_sha256": "1a19693fb882b35cd049a67509fd402506d60d724c7c25dc6395a345eed27765"
   },
@@ -382,7 +377,7 @@
     "Local sibling checkouts and isolated SDK prefix; no remote-only release-provenance claim.",
     "OpenCV 4 multi-input support is not claimed.",
     "RT-DETRv4 requires the prepared export, not the original vector-MatMul file.",
-    "No repaired Slurm or concurrent test result until the controller returns.",
+    "No repaired Slurm or concurrent test result until workers are available.",
     "KServe gRPC and TF 2.21 protobuf ABI prose blockers were not changed."
   ],
   "reference_onnx_artifacts": [
