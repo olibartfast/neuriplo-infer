@@ -7,10 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- Select the native RF-DETR LiteRT exporter for detection and segmentation
+  presets; pin the EdgeCrafter converter recipe to the re-gated version.
 - Build the LibTorch backend image on Ubuntu 24.04. Ubuntu 22.04 ships
   CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
 
 ### Documentation
+- Re-gate TensorFlow ResNet50 classification with the corrected neuriplo-tasks
+  exporter: C++ and Python agree on class 249 and confidence; record PASS and
+  the requirement to re-export older SavedModels.
 - Refresh the backend coverage matrix for the 0.11.6 stack (neuriplo
   0.11.3, neuriplo-tasks 0.8.4): record the OpenCV DNN single-input limit
   (including 4-input `groundingdino`), the EdgeCrafter exact-GELU importer
