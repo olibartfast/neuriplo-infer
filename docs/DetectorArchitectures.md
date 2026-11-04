@@ -34,6 +34,11 @@
 
 ---
 
+This architecture overview is not the application support matrix. Check the
+[generated model inventory](generated/supported-model-types.md),
+[backend coverage](BackendCoverage.md), and [export guides](ExportInstructions.md)
+before choosing a model artifact.
+
 ## At-a-Glance Selection
 
 * **Edge real-time (speed/accuracy balanced):** YOLOv8/YOLO11 (S/M), YOLO-NAS (with QAT) 
@@ -202,23 +207,15 @@ YOLO-NAS applies Neural Architecture Search to discover optimized accuracy–lat
 
 ### D-FINE
 
-Detail-oriented architecture optimized for fine-grained, small-object, or subtle-localization tasks.
-
-**Key Features**
-
-* Enhanced multi-scale fusion.
-* Strong detail preservation.
-* Precise localization.
+D-FINE and DEIM use the RT-DETR export signature and postprocessing in
+`neuriplo-tasks`; select `--type=dfine`, `--type=deim`, or `--type=deimv2`
+to match the exported model. These selectors route to object detection.
 
 ### DEIM
 
-Instance-focused model designed for complex, crowded scenes.
-
-**Key Features**
-
-* Enhanced instance representation.
-* Strong relational/context modeling.
-* Useful for segmentation or tracking pipelines.
+DEIM and DEIMv2 share the D-FINE / RT-DETR application wiring. Their names do
+not select segmentation or tracking tasks. Follow the upstream detection
+export guide for the model's required inputs.
 
 ### RF-DETR
 
@@ -254,8 +251,8 @@ A NAS‑optimized DETR variant exploring the accuracy–latency frontier using w
 | YOLOv10    | Single-stage              | No      | No               | T–XL     | Edge → Server       | Very Low → Very High |
 | RT-DETR    | CNN + Transformer         | N/A     | No               | S–XL     | Edge GPU → Server   | Medium → Very High   |
 | YOLO-NAS   | NAS CNN                   | Varies  | Yes              | S–L      | Edge → Server       | Low → High           |
-| D-FINE     | Detail-focused CNN        | Varies  | Usually          | T–L      | Precision tasks     | Very Low → High      |
-| DEIM       | Instance modeling         | Varies  | Usually          | S–L      | Cluttered scenes    | Low → High           |
+| D-FINE     | DETR refinement          | N/A     | No               | T–L      | Precision tasks     | Very Low → High      |
+| DEIM       | DETR training framework   | N/A     | No               | S–L      | Cluttered scenes    | Low → High           |
 | RF-DETR    | NAS DETR                  | N/A     | No               | Nano–2XL | Edge → Server       | Very Low → High      |
 
 ---
@@ -276,7 +273,7 @@ A NAS‑optimized DETR variant exploring the accuracy–latency frontier using w
 
 * Predictable latency.
 * Cleaner end-to-end graphs.
-* No threshold tuning.
+* NMS IoU tuning is unnecessary; confidence filtering still applies.
 
 ---
 

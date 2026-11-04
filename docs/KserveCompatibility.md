@@ -130,8 +130,9 @@ retry/auth/TLS plumbing. See [docs/KserveRuntime.md](KserveRuntime.md).
 # Dry-run (no docker needed) — what CI runs on every PR:
 bash app/test/kserve_integration.sh --dry-run
 
-# Live round-trip against both servers (needs docker + curl + grpcurl + onnx):
-bash app/test/kserve_integration.sh --live
+# Live round-trip against both servers (needs docker + curl + grpcurl + onnx).
+# --require-live fails if prerequisites are missing instead of skipping:
+bash app/test/kserve_integration.sh --live --require-live
 
 # Narrow it down:
 bash app/test/kserve_integration.sh --live --servers triton --transports http
