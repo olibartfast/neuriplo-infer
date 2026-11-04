@@ -43,7 +43,7 @@ When merging a PR into `develop`, add a line under `[Unreleased]` in the appropr
 
 ## Release workflow
 
-This project follows a [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) model. After a release, `master` and `develop` point at the **same** tagged commit; `develop` then moves ahead again as features land. The sibling repos (`neuriplo-tasks`, `neuriplo`, `videocapture`) follow the same scheme and must be released first.
+This project follows a [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) model. After a release, `master` and `develop` point at the **same** tagged commit; `develop` then moves ahead again as features land. The sibling repos (`neuriplo-tasks`, `neuriplo`, `videocapture`, `neuriplo-kserve-client`) follow the same scheme and must be released first.
 
 1. **Create a release branch** from `develop`:
    ```
@@ -55,7 +55,7 @@ This project follows a [Gitflow](https://www.atlassian.com/git/tutorials/compari
    ```
    scripts/cut_release.sh 0.3.0
    ```
-   This sets `VERSION` to `0.3.0` and rewrites `versions.env`, pinning `neuriplo`, `neuriplo-tasks`, and `videocapture` each to its **own current release tag**. Siblings version independently — videocapture may stay at an older tag while the others advance. Every pin must be a concrete `vX.Y.Z` tag, never a branch like `master`/`develop`. `scripts/validate_release_pins.sh` enforces this, as do the `pre-push` hook and the `release-guard` workflow. Tag the sibling repos *before* cutting the neuriplo-infer release so their tags exist on the remote.
+   This sets `VERSION` to `0.3.0` and rewrites `versions.env`, pinning `neuriplo`, `neuriplo-tasks`, `videocapture`, and `neuriplo-kserve-client` each to its **own current release tag**. Siblings version independently — videocapture may stay at an older tag while the others advance. Every pin must be a concrete `vX.Y.Z` tag, never a branch like `master`/`develop`. `scripts/validate_release_pins.sh` enforces this, as do the `pre-push` hook and the `release-guard` workflow. Tag the sibling repos *before* cutting the neuriplo-infer release so their tags exist on the remote.
 
 3. **Update CHANGELOG.md** — rename `[Unreleased]` to the new version with today's date, add a fresh empty `[Unreleased]`, and update the comparison links at the bottom.
 
@@ -78,3 +78,16 @@ This project follows a [Gitflow](https://www.atlassian.com/git/tutorials/compari
    ```
    git push origin master develop v0.3.0
    ```
+
+7. **Verify and publish**: run `scripts/validate_release_pins.sh v0.3.0`
+   before pushing. After Release Guard succeeds on the pushed tag, create the
+   GitHub Release with that version's changelog section as notes:
+   ```bash
+   gh release create v0.3.0 --title v0.3.0 --notes-file /tmp/release-notes.md
+   git push origin --delete release/0.3.0
+   git rev-list --left-right --count origin/develop...origin/master
+   # Immediately after release: 0 0
+   ```
+   Write `/tmp/release-notes.md` from the release's `CHANGELOG.md` section
+   first. A pushed tag alone does not create a GitHub Release. Agent commits
+   must include the co-author trailer required by [`AGENTS.md`](../AGENTS.md).

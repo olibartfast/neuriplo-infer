@@ -1,6 +1,10 @@
-### Export the model for the inference
+# Model Export
 
-Refer to:
+Model export and tensor contracts are owned by `neuriplo-tasks`. Start with its
+[export index](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/README.md)
+and the [supported model inventory](generated/supported-model-types.md).
+
+Task-specific guides:
 * [Object Detection](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/detection/ObjectDetection.md) 
 * [Classification](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/classification/Classification.md)
 * [Instance Segmentation](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/segmentation/InstanceSegmentation.md)
@@ -9,6 +13,6 @@ Refer to:
 For local export-plus-inference examples inside this repo, use [`docker_run_inference_e2e_example.sh`](../docker_run_inference_e2e_example.sh). It provides preset-driven end-to-end flows, including OWLv2 with ONNX Runtime.
 
 ## Note
-The opencv-dnn module is configured to load ONNX models(not dynamic axis) and .weights(i.e. darknet format) for YOLOv4.
+The opencv-dnn module is configured to load ONNX models with fixed input dimensions and `.weights` files (Darknet format) for YOLOv4.
 
 For detailed instructions on exporting each model, please refer to the linked documents above.

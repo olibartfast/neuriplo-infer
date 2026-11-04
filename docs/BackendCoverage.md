@@ -906,9 +906,10 @@ in [KserveCompatibility.md](KserveCompatibility.md).
 - **Opset / export policy lives upstream.** This repo consumes what
   `neuriplo-tasks` exports; conversion fidelity (e.g. `onnx2tf` for LiteRT)
   is judged at this seam but fixed upstream.
-- **Postprocessing stays here.** NMS, mask assembly, flow/depth resize, and
-  tokenization are app-side and outside any backend gate — same as NERT's
-  host-side rule.
+- **Task processing stays on the client by default.** `neuriplo-tasks` owns
+  NMS, mask assembly, flow/depth resize, and tokenization semantics; this app
+  wires those contracts into the pipeline. KServe input and postprocess modes
+  determine which processing is delegated to the server.
 - **One binary, one local backend.** Each image carries the backend it was
   built with (`DEFAULT_BACKEND`); switching means rebuilding. KServe mode is
   the only multi-backend workflow in one binary.
