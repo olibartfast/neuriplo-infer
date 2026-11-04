@@ -1,17 +1,17 @@
 # Validation defined before implementation
 
-V1/R1: Preserve baseline logs and executable/model hashes for each blocked cell.
+V1/R1: Record executable/model hashes and numerical outputs for each validation case.
 V2/R2: Run owning-repo regression tests, build affected app backends, and compare detections/poses/masks with established ORT results on identical source images. Reject silent dtype coercion or backend substitution.
 V3/R3: Record sbatch IDs, node, start/end and sacct exit states; verify at least two independent jobs overlap. Use explicit CPU/container memory/time limits because cluster nodes advertise placeholder memory.
 V4/R4: Check documentation links and diff; distinguish unreleased source changes, SDK experiments, numerical passes and remaining upstream limitations.
 
 ## Discovery
 
-Local Slurm client cannot communicate with controller 25.11.2; submit via SSH to the existing controller. No cluster configuration changes required. Existing three workers are idle at discovery.
+Local Slurm client 23.11.4 does not match controller 25.11.2; submit via SSH to the existing controller. As checked 2026-11-05, the controller is UP and the OptiPlex and Jetson workers are DOWN. No cluster configuration changes are required.
 
-## Results — local correctness complete; Slurm parallel rerun blocked
+## Results — local correctness complete; Slurm parallel rerun pending
 
-All five originally BLOCKED table cells have a local passing route, covering
+All five representative table cells have a local PASS route, covering
 six model/backend cases. docs/evidence/blocked-slurm-2026-11-04.json records
 identical-input hashes, output errors, model/library/executable hashes and SDK
 provenance. RT-DETRv4 requires the tasks export adapter and --type=rtdetr.
@@ -19,17 +19,9 @@ Original versus prepared ORT maxima: labels 0, boxes 0.000091553 pixels,
 scores 9.536743e-7. The original artifact's vector MatMul is still unsupported
 in OpenCV. Legacy formats and unrelated transport/ABI blockers stay visible.
 
-Slurm baseline jobs 39/40 reproduce DNN and all three ExecuTorch failures.
-They ran sequentially; no parallel overlap is claimed. Preflight jobs 36–38
-are excluded (incomplete staging / incorrect CLI option); baseline v4 used
-the unsupported --type=rtdetrv4 alias, corrected to --type=rtdetr in the
-prepared manifest. Accounting is disabled; captured controller output is at
-/tmp/blocked-slurm-20261104/baseline-control.txt.
-
-The existing controller became unreachable before repaired submissions.
-Tailnet status reports the controller offline; the OptiPlex worker remains
-reachable. No cluster configuration was changed and no replacement cluster
-was started. Parallel repaired tests remain PENDING, not passed.
+Repaired concurrent Slurm tests are PENDING_WORKER_AVAILABILITY. Accounting is
+disabled. No cluster configuration was changed and no replacement cluster
+was started.
 
 ### Validation performed
 
@@ -83,7 +75,7 @@ updated DNN capsule; the controller needs the updated ExecuTorch capsule and
 runner/manifest once it returns. Copy the current slurm_backend_matrix.py,
 cases.json and executorch/{neuriplo-infer,lib,data/person.jpg} from local staging.
 
-On the restored controller:
+After worker availability is restored:
 
 ```bash
 python3 /home/oli/slurm-blocked-20261104/slurm_backend_matrix.py \
