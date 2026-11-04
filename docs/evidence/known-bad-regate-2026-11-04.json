@@ -1,0 +1,112 @@
+{
+  "date": "2026-11-04",
+  "scope": "local uncommitted backend patch; not release-pin proof",
+  "provenance": {
+    "app": {
+      "base_sha": "eb48791ea245854e3e4e39475abae46682e0eceb",
+      "source_diff_paths": [
+        "docker_run_inference_e2e_example.sh",
+        ".github/workflows/e2e-example-emulation.yml"
+      ],
+      "source_diff_sha256": "2de72c85c4c96d1bdfd2671f0efa3ba5caea480f09dc9d5a84de4f3f89c1990f"
+    },
+    "neuriplo": {
+      "base_sha": "06b69034750a298f3fe62fc30d145bca9e59b107",
+      "source_diff_paths": [
+        "backends/litert",
+        "cmake/LiteRT.cmake"
+      ],
+      "source_diff_sha256": "341da5194f23ce65ca7ba1827ccd1e4083362c129728d7b67dfa40ba26649f44",
+      "fix_commit": "9bde6c0fd07ab88b70e1076f5fc667c20be41d7d"
+    },
+    "tasks": {
+      "base_sha": "1331639d56b6e275649dd9b4bc52df180e5025fa",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "artifacts": {
+    "ecdet_onnx": {
+      "path": "/home/oli/model_repository/ecdet_s_onnx/1/model.onnx",
+      "sha256": "0ce35962369931a1348313d5ab0568ee18f80a14d6e5bba9dafa301c7e069963"
+    },
+    "ecdet_reconverted": {
+      "path": "/tmp/opencode/ecdet-fix/ecdet_orig_reconvert/model_float32.tflite",
+      "sha256": "d0183ee821d240156e963badd14ab2234ad9d04cc0c56e5e78512a651ec7c56e"
+    },
+    "rfdetr_native": {
+      "path": "/tmp/opencode/litert-native/rfdetr-medium.tflite",
+      "sha256": "3e7ed1bdd4e862bf000fe4490976940d439bb3d81209c1f1f2ee2015e43ac8b7"
+    },
+    "rfdetrseg_native": {
+      "path": "/tmp/opencode/litert-native/rfdetr-seg-medium.tflite",
+      "sha256": "559049ea6492cd43ff4f59ea0a680c7d22f57d0f282876f88c7dbb0f027d9af6"
+    },
+    "rfdetr_generic_legacy": {
+      "path": "/tmp/opencode/rfdetr-torch-test/tflite/rfdetr-nano-tflite/rfdetr-nano_float32.tflite",
+      "sha256": "6b7d217e51274dcb2815c7f217672e95354992df25093b6bf6751d0301b624a4"
+    },
+    "rfdetrseg_generic_legacy": {
+      "path": "/tmp/opencode/tflite-out/rfdetrseg-medium/rfdetrseg-medium_float32.tflite",
+      "sha256": "cf35b9d9114d3818273921fb67585832a00924b5777bb23aed578b2c6bac77be"
+    },
+    "rtdetrul_onnx": {
+      "path": "/home/oli/repos/neuriplo-ui/artifacts/installer/workspace/catalog/rtdetrul.onnx",
+      "sha256": "293d1b78c30ce284893ca9c25ec37f09c858f450d86fa83c5685455b30c3e00d"
+    },
+    "litert_sdk": {
+      "path": "/home/oli/dependencies/litert/lib/libtensorflow-lite.so",
+      "sha256": "b66b024ff58e6e145fd077f6d476337f7eaf83370a76a461be6d1ed7b2d8121c"
+    },
+    "app_patched_library": {
+      "path": "/home/oli/repos/neuriplo-infer/build-litert/_deps/neuriplo-build/libneuriplo.so",
+      "sha256": "97267bb72172acecb7f0c7f10a10c0b7894f0b57c72c220c300cd3429ce2930b"
+    },
+    "export_rfdetr_litert.py": {
+      "path": "scripts/export_rfdetr_litert.py",
+      "sha256": "522c86c2b65a161abde4b153ff3427fa4e521adb5f8a74253897293e07df8469"
+    },
+    "test_export_rfdetr_litert.py": {
+      "path": "scripts/test_export_rfdetr_litert.py",
+      "sha256": "a3b55b071df2998de812f25dc6d05fd6227576bd96796f59ede50cf305377be6"
+    },
+    "rfdetr_fresh_export": {
+      "path": "/tmp/kb-native-export/rfdetr-medium.tflite",
+      "sha256": "3e7ed1bdd4e862bf000fe4490976940d439bb3d81209c1f1f2ee2015e43ac8b7"
+    },
+    "rfdetrseg_fresh_export": {
+      "path": "/tmp/kb-native-export/rfdetrseg-medium.tflite",
+      "sha256": "559049ea6492cd43ff4f59ea0a680c7d22f57d0f282876f88c7dbb0f027d9af6"
+    }
+  },
+  "results": {
+    "ecdet_scores": {
+      "dog": 0.92999,
+      "bicycle": 0.927981,
+      "car": 0.780462
+    },
+    "ecdet_all_scores_max_abs_error": 4.4815242e-06,
+    "ecdet_http_vs_local": "all raw tensors exactly equal",
+    "rtdetrul_ort_vs_openvino_max_abs_error": 1.0550022e-05,
+    "rfdetr_boxes_max_abs_error_normalized": 0.0002593398,
+    "rfdetr_logits_max_abs_error": 0.0016498566,
+    "rfdetrseg_boxes_max_abs_error_normalized": 0.0002951324,
+    "rfdetrseg_logits_max_abs_error": 0.006866455,
+    "rfdetrseg_masks_sign_agreement": 0.9999991426611797,
+    "backend_ctest_entries_passed": 77,
+    "focused_litert_tests": {
+      "passed": 8,
+      "optional_model_path_smoke_skipped": 1
+    },
+    "http_successful_requests": 2,
+    "http_failed_requests": 0,
+    "rfdetr_fresh_export_max_abs_errors": [
+      0.0002593398094177246,
+      0.0016498565673828125
+    ],
+    "rfdetrseg_fresh_export_max_abs_errors": [
+      0.0002951323986053467,
+      0.006866455078125,
+      0.20984268188476562
+    ]
+  }
+}

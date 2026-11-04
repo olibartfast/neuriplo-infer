@@ -1,0 +1,191 @@
+[
+  {
+    "name": "dnn-rtdetr",
+    "node": "optiplex-3040",
+    "command": [
+      "/home/oli/slurm-blocked-20261104/dnn/lib/ld-linux-x86-64.so.2",
+      "--library-path",
+      "/home/oli/slurm-blocked-20261104/dnn/lib",
+      "/home/oli/slurm-blocked-20261104/dnn/neuriplo-infer",
+      "--type=rtdetr",
+      "--weights=/home/oli/slurm-blocked-20261104/dnn/models/rtdetr.onnx",
+      "--source=/home/oli/slurm-blocked-20261104/dnn/data/dog.jpg",
+      "--use-gpu=false",
+      "--no_display=true",
+      "--warmup=false",
+      "--min_confidence=0.4",
+      "--labels=/home/oli/slurm-blocked-20261104/dnn/labels/coco.names"
+    ],
+    "artifacts": [
+      "/home/oli/slurm-blocked-20261104/dnn/neuriplo-infer",
+      "/home/oli/slurm-blocked-20261104/dnn/lib/libneuriplo.so",
+      "/home/oli/slurm-blocked-20261104/dnn/models/rtdetr.onnx",
+      "/home/oli/slurm-blocked-20261104/dnn/data/dog.jpg",
+      "/home/oli/slurm-blocked-20261104/dnn/labels/coco.names"
+    ],
+    "env": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    },
+    "timeout_seconds": 300,
+    "memory_mib": 8192
+  },
+  {
+    "name": "executorch-rfdetr",
+    "node": "zenbook-ux425uaz",
+    "command": [
+      "/home/oli/slurm-blocked-20261104/executorch/lib/ld-linux-x86-64.so.2",
+      "--library-path",
+      "/home/oli/slurm-blocked-20261104/executorch/lib",
+      "/home/oli/slurm-blocked-20261104/executorch/neuriplo-infer",
+      "--type=rfdetr",
+      "--weights=/home/oli/slurm-blocked-20261104/executorch/models/rfdetr-nano.pte",
+      "--source=/home/oli/slurm-blocked-20261104/executorch/data/dog.jpg",
+      "--use-gpu=false",
+      "--no_display=true",
+      "--warmup=false",
+      "--min_confidence=0.4",
+      "--labels=/home/oli/slurm-blocked-20261104/executorch/labels/coco.names"
+    ],
+    "artifacts": [
+      "/home/oli/slurm-blocked-20261104/executorch/neuriplo-infer",
+      "/home/oli/slurm-blocked-20261104/executorch/lib/libneuriplo.so",
+      "/home/oli/slurm-blocked-20261104/executorch/models/rfdetr-nano.pte",
+      "/home/oli/slurm-blocked-20261104/executorch/data/dog.jpg",
+      "/home/oli/slurm-blocked-20261104/executorch/labels/coco.names"
+    ],
+    "env": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    },
+    "timeout_seconds": 300,
+    "memory_mib": 8192
+  },
+  {
+    "name": "dnn-owlv2",
+    "node": "optiplex-3040",
+    "command": [
+      "/home/oli/slurm-blocked-20261104/dnn/lib/ld-linux-x86-64.so.2",
+      "--library-path",
+      "/home/oli/slurm-blocked-20261104/dnn/lib",
+      "/home/oli/slurm-blocked-20261104/dnn/neuriplo-infer",
+      "--type=owlv2",
+      "--weights=/home/oli/slurm-blocked-20261104/dnn/models/owlv2.onnx",
+      "--source=/home/oli/slurm-blocked-20261104/dnn/data/dog.jpg",
+      "--use-gpu=false",
+      "--no_display=true",
+      "--warmup=false",
+      "--min_confidence=0.25",
+      "--text_prompts=a dog;a bicycle;a car",
+      "--tokenizer_vocab=/home/oli/slurm-blocked-20261104/dnn/owl-vocab.json",
+      "--tokenizer_merges=/home/oli/slurm-blocked-20261104/dnn/owl-merges.txt"
+    ],
+    "artifacts": [
+      "/home/oli/slurm-blocked-20261104/dnn/neuriplo-infer",
+      "/home/oli/slurm-blocked-20261104/dnn/lib/libneuriplo.so",
+      "/home/oli/slurm-blocked-20261104/dnn/models/owlv2.onnx",
+      "/home/oli/slurm-blocked-20261104/dnn/data/dog.jpg",
+      "/home/oli/slurm-blocked-20261104/dnn/owl-vocab.json",
+      "/home/oli/slurm-blocked-20261104/dnn/owl-merges.txt"
+    ],
+    "env": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    },
+    "timeout_seconds": 300,
+    "memory_mib": 8192
+  },
+  {
+    "name": "executorch-rfdetrseg",
+    "node": "zenbook-ux425uaz",
+    "command": [
+      "/home/oli/slurm-blocked-20261104/executorch/lib/ld-linux-x86-64.so.2",
+      "--library-path",
+      "/home/oli/slurm-blocked-20261104/executorch/lib",
+      "/home/oli/slurm-blocked-20261104/executorch/neuriplo-infer",
+      "--type=rfdetrseg",
+      "--weights=/home/oli/slurm-blocked-20261104/executorch/models/rfdetrseg-medium.pte",
+      "--source=/home/oli/slurm-blocked-20261104/executorch/data/dog.jpg",
+      "--use-gpu=false",
+      "--no_display=true",
+      "--warmup=false",
+      "--min_confidence=0.4",
+      "--labels=/home/oli/slurm-blocked-20261104/executorch/labels/coco.names"
+    ],
+    "artifacts": [
+      "/home/oli/slurm-blocked-20261104/executorch/neuriplo-infer",
+      "/home/oli/slurm-blocked-20261104/executorch/lib/libneuriplo.so",
+      "/home/oli/slurm-blocked-20261104/executorch/models/rfdetrseg-medium.pte",
+      "/home/oli/slurm-blocked-20261104/executorch/data/dog.jpg",
+      "/home/oli/slurm-blocked-20261104/executorch/labels/coco.names"
+    ],
+    "env": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    },
+    "timeout_seconds": 300,
+    "memory_mib": 8192
+  },
+  {
+    "name": "dnn-rtdetrv4",
+    "node": "optiplex-3040",
+    "command": [
+      "/home/oli/slurm-blocked-20261104/dnn/lib/ld-linux-x86-64.so.2",
+      "--library-path",
+      "/home/oli/slurm-blocked-20261104/dnn/lib",
+      "/home/oli/slurm-blocked-20261104/dnn/neuriplo-infer",
+      "--type=rtdetr",
+      "--weights=/home/oli/slurm-blocked-20261104/dnn/models/rtdetrv4-opencv.onnx",
+      "--source=/home/oli/slurm-blocked-20261104/dnn/data/dog.jpg",
+      "--use-gpu=false",
+      "--no_display=true",
+      "--warmup=false",
+      "--min_confidence=0.4",
+      "--labels=/home/oli/slurm-blocked-20261104/dnn/labels/coco.names"
+    ],
+    "artifacts": [
+      "/home/oli/slurm-blocked-20261104/dnn/neuriplo-infer",
+      "/home/oli/slurm-blocked-20261104/dnn/lib/libneuriplo.so",
+      "/home/oli/slurm-blocked-20261104/dnn/models/rtdetrv4-opencv.onnx",
+      "/home/oli/slurm-blocked-20261104/dnn/data/dog.jpg",
+      "/home/oli/slurm-blocked-20261104/dnn/labels/coco.names"
+    ],
+    "env": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    },
+    "timeout_seconds": 300,
+    "memory_mib": 8192
+  },
+  {
+    "name": "executorch-rfdetr_keypoint",
+    "node": "zenbook-ux425uaz",
+    "command": [
+      "/home/oli/slurm-blocked-20261104/executorch/lib/ld-linux-x86-64.so.2",
+      "--library-path",
+      "/home/oli/slurm-blocked-20261104/executorch/lib",
+      "/home/oli/slurm-blocked-20261104/executorch/neuriplo-infer",
+      "--type=rfdetr_keypoint",
+      "--weights=/home/oli/slurm-blocked-20261104/executorch/models/rfdetr-keypoint.pte",
+      "--source=/home/oli/slurm-blocked-20261104/executorch/data/person.jpg",
+      "--use-gpu=false",
+      "--no_display=true",
+      "--warmup=false",
+      "--min_confidence=0.4",
+      "--labels=/home/oli/slurm-blocked-20261104/executorch/labels/coco.names"
+    ],
+    "artifacts": [
+      "/home/oli/slurm-blocked-20261104/executorch/neuriplo-infer",
+      "/home/oli/slurm-blocked-20261104/executorch/lib/libneuriplo.so",
+      "/home/oli/slurm-blocked-20261104/executorch/models/rfdetr-keypoint.pte",
+      "/home/oli/slurm-blocked-20261104/executorch/data/person.jpg",
+      "/home/oli/slurm-blocked-20261104/executorch/labels/coco.names"
+    ],
+    "env": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    },
+    "timeout_seconds": 300,
+    "memory_mib": 8192
+  }
+]

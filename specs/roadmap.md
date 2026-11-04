@@ -167,3 +167,30 @@ phase that grew a dependency, and delete a phase the work made unnecessary.
 ## Backend CI fail-fast — validation in progress
 
 Maintainer-requested CI correction: all six backend builds and four KServe configurations share one fail-fast matrix. See [requirements](2026-10-29-backend-ci-fail-fast/requirements.md) and [validation](2026-10-29-backend-ci-fail-fast/validation.md). Hosted cancellation behavior and the existing SDK download failures remain to be verified. No release is authorized by this work.
+
+## TensorFlow classification coverage — locally validated
+
+Maintainer-selected KNOWN-BAD follow-up: the corrected upstream export recipe
+passes C++/Python classification checks. See
+[validation](2026-11-04-tensorflow-classification-regate/validation.md). No release
+or remote-fetch provenance claim is made.
+
+## Remaining KNOWN-BAD backends — local validation
+
+EdgeCrafter LiteRT/local and KServe HTTP pass with a local neuriplo XNNPACK
+subgraph-reshaping patch and reconverted artifact. RF-DETR presets now use
+the native LiteRT exporter; old generic converter files remain unsupported.
+Historical rtdetrul OpenVINO failure is superseded by current ORT/OVINO parity.
+See [validation](2026-11-04-known-bad-backends/validation.md). The backend
+patch still needs normal GitFlow delivery and a released dependency pin.
+
+## Blocked coverage cells — local fixes complete, parallel Slurm pending
+
+OpenCV graph tensor wiring and pinned ExecuTorch optimized registrations
+resolve all five formerly BLOCKED representative cells locally. RT-DETRv4
+uses the tasks-owned compatible export adapter. Numerical evidence, exact
+artifacts and runner are in
+[validation](2026-11-04-blocked-slurm-backends/validation.md).
+Baseline Slurm failures are recorded; repaired concurrent reruns await the
+existing controller coming back online. No release pin or cluster configuration
+changes were made.
