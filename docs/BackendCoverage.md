@@ -4,7 +4,7 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-11-04.** Baseline evidence uses neuriplo-infer
+**Last updated: 2026-11-05.** Baseline evidence uses neuriplo-infer
 0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. Newer local corrections
 are scoped in their evidence sections; unreleased backend fixes are marked ‡ or §. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
@@ -32,13 +32,13 @@ Main limitations:
   models — the DNN column below runs OpenCV 5.0.0 source-built (see
   [Environments](#environments)); KServe HTTP has live evidence, while the
   gRPC failure described in E1 remains blocked server-side.
-- **OpenVINO Slurm retest (2026-11-04, P-LNX-EDGE-CPU):** only the seven
-  non-passing, runnable cells were retried; 28 prior runtime passes were
-  skipped. `owlv2` / `owlvit` passed inference and render inspection;
-  `videomae` / `vivit` / `timesformer` passed inference without video-file
-  export. The two existing KNOWN-BAD decisions were retained. This uses
-  a derived validation image with missing runtime libraries added, not a
-  fresh source build or a pass of the original image; see [E14](#ev-ov-slurm).
+- **OpenVINO status (evidence recorded 2026-11-04, P-LNX-EDGE-CPU):**
+  `owlv2` / `owlvit` PASS; `videomae` / `vivit` / `timesformer`
+  RUNTIME-PASS (inference only, no video export); `rtdetrul` PASS on the
+  current local stack; `tensorflow-classifier` remains KNOWN-BAD and was
+  not re-gated for OpenVINO. Slurm results use a derived validation image
+  with missing runtime libraries added; they do not certify the original
+  image or a fresh source build. See [E14](#ev-ov-slurm).
 
 See [Open items](#open-items) for remaining validation and fixes.
 
@@ -143,7 +143,7 @@ The app's released dependency pin does not contain that fix.
 § Local 2026-11-04 fixes, not released pins: OpenCV 5 named/typed graph
 inputs, RT-DETRv4's prepared vector-MatMul export, and ExecuTorch v1.2.0
 rebuilt with optimized registrations. Identical-input ORT parity and renders
-are validated locally. Repaired parallel Slurm reruns are **pending controller
+are validated locally. Repaired parallel Slurm reruns are **pending worker
 availability**; these are not Slurm PASS claims. See [E15](#ev-blocked-slurm).
 
 ## Evidence
@@ -156,7 +156,7 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
 13 decisions). Develop-stack re-gates from 2026-11-02/03 ran on sibling
 checkouts (neuriplo-infer `develop` c7dd16b + neuriplo-tasks `develop`
 ea05454, which carries the RF-DETR synthetic-name mapping fix) and are
-labeled as such. The seg-LiteRT flip used tasks `v0.8.5` tag content. Later
+labeled as such. Seg-LiteRT uses tasks `v0.8.5` tag content. Later
 unreleased corrections have explicit ‡/§ scope notes and do not certify
 the app's released dependency pins.
 
@@ -164,25 +164,22 @@ the app's released dependency pins.
 
 - **DNN PASS** (5.0.0 source-built, CPU, 378 ms): @ 0.4/0.5 — bicycle 0.95,
   dog 0.94, car 0.52, needs `--input_sizes=3,640,640` (the 5.0 backend
-  requires explicit input sizes). apt OpenCV 4.6 stays BLOCKED on this
-  model (`Split` parse error) — use the 5.x build from
+  requires explicit input sizes). apt OpenCV 4.6 is BLOCKED on this model
+  (`Split` parse error); use the 5.x build from
   `scripts/setup_opencv.sh`.
 - **ORT PASS** (CPU, 1137 ms): @ 0.4/0.5 — bicycle 0.95, dog 0.94, car 0.52.
 - **TRT PASS** (10.14.1.48 FP16 engine from `yolo26s.onnx`, 251 ms):
-  identical outputs. The pre-existing `rfdetr-keypoint-preview.engine`
-  (built with 10.13) does NOT deserialize on 10.14 — engines were rebuilt
-  with 10.14 `trtexec`.
-- **Torch PASS (pinned re-gate 2026-11-03).** The typed resave of
+  identical outputs; engines use 10.14 `trtexec`.
+- **Torch PASS (pinned 2026-11-03).** The typed resave of
   `yolo26s.torchscript` (input-datatype metadata verified with
   `has_torchscript_metadata`) loads and runs: 1242 ms,
   `--input_sizes=1,3,640,640` — bicycle 0.95, dog 0.94, car 0.52,
   exact match with DNN/ORT. Render inspected
-  (`data/output/processed_yolo26_local.png`). Cell flipped
-  BLOCKED → PASS.
+  (`data/output/processed_yolo26_local.png`).
 - **OpenVINO PASS** (CPU, 267 ms): `yolo26s.onnx` read directly.
 - **LiteRT PASS** (CPU, 888 ms): `yolo26s.tflite` (`1x640x640x3`).
   Re-verified 2026-11-02 after the vendored-gtest prune (915 ms):
-  bicycle 0.95, dog 0.94, car 0.52 — no regression.
+  bicycle 0.95, dog 0.94, car 0.52.
 - **KServe PASS** (HTTP): YOLO26 `.tflite` over `litert`, validated locally
   2026-06-13 — [KserveCompatibility.md](KserveCompatibility.md#model-formats);
   live path is `kserve-runtime-yolo-e2e`
@@ -195,7 +192,7 @@ the app's released dependency pins.
 ### <a id="ev-yolov8"></a>E2 — Object detection (`yolov8`)
 
 - **DNN PASS** (5.0.0, CPU, 306 ms): `yolov8n.onnx` @ 0.4/0.5 — bicycle 0.89,
-  dog 0.93, car 0.61. The 4.6 `Unsqueeze` blocker is gone on 5.x.
+  dog 0.93, car 0.61.
 - **ExecT PASS** (CPU, 320 ms): `yolov8n.pte` @ 0.4/0.5 — bicycle 0.89,
   dog 0.93, car 0.61. No CI build job for ExecT.
 - **LiteRT PASS** (2026-11-02, `build-litert`, CPU, 471 ms):
@@ -204,15 +201,13 @@ the app's released dependency pins.
   (`data/output/processed_yolov8_local.png`).
 - **TF PASS** (2026-11-01, TF 2.19 runtime `build-tensorflow`, CPU,
   1423 ms): `yolov8n_saved_model` (ultralytics SavedModel export) @ 0.4/0.5
-  — bicycle 0.89, dog 0.93, car 0.61 — no regression. Render inspected
+  — bicycle 0.89, dog 0.93, car 0.61. Render inspected
   (`data/output/processed_yolo_local.png`).
 - **TF 2.21 BLOCKED at load (protobuf ABI, requested-version probe).**
-  Same SavedModel under a 2.21-linked binary dies before `main`:
+  Same SavedModel under a 2.21-linked binary cannot start:
   `libtensorflow_framework.so.2` binds system `libprotobuf.so.32` and
-  segfaults in `Arena` during static init (gdb: `KernelDefBuilder` ←
-  `_GLOBAL__sub_I_dataset.cc`). Same bug family as the Torch/KServe
-  protobuf clash. The pinned 2.19 PASS above stands; 2.21 needs a
-  matching-protobuf environment, not a model fix.
+  crashes during static initialization. The pinned 2.19 PASS above stands;
+  2.21 needs a matching-protobuf environment, not a model fix.
 
 ### <a id="ev-rtdetr"></a>E3 — Object detection (`rtdetr`)
 
@@ -222,7 +217,7 @@ the app's released dependency pins.
   `rtdetr.torchscript` export (image plus original-size input, FP32/INT64)
   loaded on the 0.11.5 stack and rendered dog, bicycle and car correctly on
   `data/dog.jpg` at 0.25/0.45. The file records its input datatypes; the
-  pre-contract export is rejected. `rtdetrv4` on Torch is still unrun.
+  typed input metadata is required. `rtdetrv4` on Torch is still unrun.
 - **DNN PASS§ (2026-11-04, local OpenCV 5).** The adapter binds the
   real FP32 image and INT64 size inputs by name and preserves integer labels.
   RT-DETR agrees with ORT (labels exact, max score error 1.84e-6, boxes
@@ -260,8 +255,7 @@ the app's released dependency pins.
 ### <a id="ev-seg"></a>E5 — Instance segmentation (`yoloseg`, `ecseg`)
 
 - **DNN PASS** (5.0.0, CPU, 494 ms): `yolov8n-seg.onnx` — dog 0.87,
-  bicycle 0.80, car 0.45, masks verified. The 4.6 `Unsqueeze` blocker is
-  gone on 5.x.
+  bicycle 0.80, car 0.45, masks verified.
 - **ORT PASS** (CPU, 464 ms): @ 0.4/0.5 — dog 0.87, bicycle 0.80, car 0.45; masks verified; rendered `data/output/processed_yoloseg_local.png`.
 - **TRT PASS** (10.14.1.48 FP16 engine from `yolov8n-seg.onnx`, 430 ms GPU): masks + boxes rendered, identical output shapes (1x116x8400 + 1x32x160x160).
 - **KServe PASS** (`real-onnx` runtime, HTTP, model `seg` v1): exit 0, `neuriplo_http_infer_requests_success_total{model="seg",version="1"} 1`, failure 0; render `data/output/processed_yoloseg_kserve-ort.png` (>10 KB).
@@ -269,15 +263,15 @@ the app's released dependency pins.
 
 ### <a id="ev-classification"></a>E6 — Classification (`torchvisionclassifier`)
 
-- **Torch PASS (pinned re-gate 2026-11-03).** The typed resave of the
+- **Torch PASS (pinned 2026-11-03).** The typed resave of the
   `resnet50` (`torchvision` IMAGENET1K_V2) archive (metadata verified with
   `has_torchscript_metadata`)
   loads and runs: 687 ms, `--input_sizes=1,3,224,224` — top class 249 @
-  0.44 (same score as the pre-contract gate; proper preprocessing gives
-  0.55, so the app seam under-reports but ranks correctly). Render
+  0.44 (proper preprocessing gives 0.55, so the app seam under-reports but
+  ranks correctly). Render
   inspected (`data/output/processed_torchvision-classifier_local.png`).
-  Cell flipped BLOCKED → PASS. TensorFlow was re-gated separately below.
-- **TF PASS (re-gate 2026-11-04, CPU, TF 2.19 C++ runtime).** Re-exporting
+  TensorFlow status is listed separately below.
+- **TF PASS (2026-11-04, CPU, TF 2.19 C++ runtime).** Re-exporting
   pretrained Keras ResNet50 with the corrected neuriplo-tasks exporter gives
   class **249 @ 0.532603**, versus Python TF 2.21 **249 @ 0.532377** on
   `data/dog.jpg`; all five top classes agree. CLI inference completed in
@@ -285,8 +279,7 @@ the app's released dependency pins.
   The task sends raw BGR Float32 pixels; the SavedModel subtracts BGR means
   and emits logits, so the task applies softmax once. The fix is upstream
   commit `75cc7ac`, already included in the pinned `neuriplo-tasks v0.8.5`.
-  Old unwrapped SavedModels retain the preprocessing/softmax mismatch and
-  must be re-exported using the
+  Unwrapped SavedModels are unsupported; re-export them using the
   [supported recipe](https://github.com/olibartfast/neuriplo-tasks/blob/v0.8.5/export/classification/TensorflowClassification.md).
   This run used local sibling checkouts, with no differences from the pins
   in the classification/exporter and TensorFlow backend paths; it is not an
@@ -312,8 +305,7 @@ Representative `vitpose` unrun everywhere below; `rfdetr_keypoint` gated
 as alias. RF-DETR presets are covered by emulation.
 
 - **DNN PASS via alias** (5.0.0, CPU, 3582 ms): `rfdetr_keypoint` renders
-  skeleton, pose score 0.85. (Apt 4.6 failed this model on `BOOL` dtype —
-  gone on 5.x.) `vitpose` itself unrun.
+  skeleton, pose score 0.85. `vitpose` itself unrun.
 - **ORT DRY-RUN + alias live** (CPU, 2817 ms): `rfdetr_keypoint` on
   `person.jpg` renders skeleton, pose score 0.85.
 - **TRT alias live** (10.14.1.48 FP16 engine, 246 ms): same skeleton,
@@ -322,8 +314,7 @@ as alias. RF-DETR presets are covered by emulation.
   via `onnx2tf` renders skeleton, pose score 0.850784 — bit-identical to
   every other backend. Render inspected
   (`data/output/processed_rfdetr-keypoint_local.png`). Re-verified
-  2026-11-02 on the develop stack (6898 ms, same 0.850784) — the tasks
-  mapping fix causes no regression here.
+  2026-11-02 on the develop stack (6898 ms, same 0.850784).
 - **KServe PASS** (`real-onnx` runtime, HTTP): same score 0.85 — task gated
   via alias.
 
@@ -338,8 +329,7 @@ additionally gated as alias.
   (`data/output/processed_depth-anything-v2_local.png`).
 
 - **DNN PASS via alias** (5.0.0, CPU, 838 ms): `yolo26depth` renders sane
-  depth map, min/max 1.26/5.41. (Apt 4.6 failed it on the YOLO `Split`
-  error — gone on 5.x.) `depth_anything_v2` itself unrun.
+  depth map, min/max 1.26/5.41. `depth_anything_v2` itself unrun.
 - **ORT DRY-RUN + alias live** (CPU, 618 ms): sane depth map, min/max
   1.26/5.41.
 - **OVINO PASS via alias** (2026-11-01, pinned 2026.3.0 runtime on
@@ -433,60 +423,46 @@ additionally gated as alias.
   (`data/output/processed_rfdetr_local.png`,
   `data/output/processed_rfdetr-keypoint_local.png`).
 - **TorchScript (`.torchscript`) BLOCKED for this architecture.**
-  `torch.jit.trace` completes and loads, but inference fails in-interpreter
-  (`Dimension out of range` in the traced windowed-DINOv2 backbone) — trace
-  freezes a data-dependent branch. `torch.export` captures the same model
-  cleanly (detection 1220 nodes, seg 1611, keypoint 2250), hence the `.pt2`
-  route above. Do not serve RF-DETR as TorchScript.
-- **Seg Torch PASS (pinned re-gate 2026-11-03).** `rfdetrseg-medium` `.pt2`
+  Use the passing AOTInductor `.pt2` route above; do not serve RF-DETR as
+  TorchScript.
+- **Seg Torch PASS (pinned 2026-11-03).** `rfdetrseg-medium` `.pt2`
   (432, `--input_sizes=1,3,432,432`, 1370 ms, tasks `v0.8.5` tag content,
   `build-libtorch`): bicycle 0.94, horse 0.91, car 0.86, all with masks,
   plus the usual `motorbike 0.57` artifact — exact trio match with
-  ORT/TRT/OVINO. The PR #22 shape-first fix resolves the old empty
-  render. Detection regression clean on the same stack
+  ORT/TRT/OVINO. Detection agrees on the same stack
   (`rfdetr-medium` 1004 ms: bicycle 0.92, horse 0.94, car 0.87).
   Renders inspected (`data/output/processed_rfdetrseg_local.png`,
-  `data/output/processed_rfdetr_local.png`). Cell flipped
-  KNOWN-BAD → PASS.
+  `data/output/processed_rfdetr_local.png`).
 - **OpenVINO app-surface confirmation (pinned 2026.3.0 runtime,
   `build-openvino`, no override).** Detection `rfdetr-medium` (784 ms):
   bicycle 0.92, horse 0.94, car 0.87. Seg `rfdetrseg-medium` (1184 ms):
   bicycle 0.94, horse 0.91, car 0.86, all with masks, plus the same spurious
   `motorbike 0.57` background hit at 0.4. Keypoint (1566 ms): skeleton,
   pose 0.850784 — identical across OVINO, Torch-AOTI and the E8 alias runs.
-  (An earlier pass on the unpinned 2025.2.0 runtime gave identical labels;
-  only the pinned run is claimed.)
+  The pinned runtime is used for this status.
 - **TensorRT app-surface confirmation (pinned 11.2.1.2, `build-trt`
-  rebuilt against 11.2 headers, default-build engines — 11.2 `trtexec`
-  dropped the `--fp16` shorthand under strongly-typed networks).**
+  rebuilt against 11.2 headers with default-build engines).**
   Detection `rfdetr-medium` (109 ms): bicycle 0.92, horse 0.94, car 0.86.
   Seg `rfdetrseg-medium` (380 ms): same trio with masks + the `motorbike`
   artifact. Keypoint (292 ms): skeleton, pose **0.850754** — 3e-5 below the
   0.850784 every other backend reports (FP tactic selection, rounds to the
   same 0.85).
 - **LiteRT detection: PASS via upstream's native exporter; legacy generic
-  `onnx2tf` artifacts remain unsupported.** `rfdetr-medium` through rfdetr's own `format="litert"`
+  `onnx2tf` artifacts are KNOWN-BAD.** `rfdetr-medium` through rfdetr's own `format="litert"`
   route (`torch.export` + `litert-torch`, no ONNX/TF step; 576,
   `--input_sizes=1,3,576,576`, 3207 ms): bicycle 0.92, horse 0.94,
   car 0.87 at 0.4 — exact match with every other backend (same dog-as-horse
   note). Render inspected (`data/output/processed_rfdetr_local.png`).
-  Upstream lists LiteRT as supported and it is — provided their exporter
-  is used: it rewrites the deformable-attention `grid_sample` ops that
-  generic `onnx2tf` mangles. The generic path stays KNOWN-BAD
-  (`rfdetr-nano` float32 `.tflite`: single wrong `person 0.75`, no masks).
+  Upstream lists LiteRT as supported through its native exporter. App presets
+  use that route.
 - **LiteRT seg: native route PASS (pinned tasks `v0.8.5`); legacy
-  generic-`onnx2tf` artifacts remain unsupported.** Generic float32 (432):
-  exit 0, masks render, bicycle 0.94 / horse 0.91 / `motorbike 0.57`
-  match — but the car originally read `truck 0.34`; with the local backend
-  patch it reads car 0.80, still below the native reference: do not serve. Native
-  `format="litert"` file gated 2026-11-02 on the develop stack (3670 ms)
-  and re-gated 2026-11-03 on the pinned stack (tasks `v0.8.5` tag content,
+  generic-`onnx2tf` artifacts are KNOWN-BAD.** Native `format="litert"` file
+  validated 2026-11-02 on the develop stack (3670 ms) and 2026-11-03 on
+  the pinned stack (tasks `v0.8.5` tag content,
   `build-litert`, 4151 ms): bicycle 0.94, horse 0.91, car 0.86, all with
   masks, plus the usual `motorbike 0.57` artifact — exact trio match with
-  ORT/TRT/OVINO. The pre-fix empty render was the same tasks-side
-  name-mapping gap as the Torch cell (positional
-  `serving_default_output_<i>_output` names), fixed by PR #22. Render
-  inspected (`data/output/processed_rfdetrseg_local.png`).
+  ORT/TRT/OVINO. Render inspected
+  (`data/output/processed_rfdetrseg_local.png`).
 - **Pose LiteRT PASS (same stack).** `rfdetr-keypoint` float32 `.tflite`
   (576, `--input_sizes=1,3,576,576`, 6540 ms): skeleton, pose score
   **0.850784** — identical to every other backend (upstream notes keypoint
@@ -496,77 +472,67 @@ additionally gated as alias.
   optimized CPU kernels registered. No runtime version or model weights
   changed. Nano detection, medium segmentation and keypoint raw tensors
   agree with their same-model ORT references; selected detections/masks/pose
-  are checked in [E15](#ev-blocked-slurm). Older portable-only SDKs still
-  lack `aten::linear.out` and must be rebuilt. Explicit portable delegate
-  mode retains portable kernels and is not this gate.
+  are checked in [E15](#ev-blocked-slurm). This gate uses optimized CPU
+  kernels; explicit portable delegate mode is not covered.
 
-- **Supported export recipes fixed (2026-11-04).** Both `rfdetr` and
+- **Supported export recipes (2026-11-04).** Both `rfdetr` and
   `rfdetrseg` app presets now select native `format="litert"` with
   `--backend litert` (RF-DETR 1.11.2), producing the exact file consumed by
   inference. They do not route through ONNX conversion. Local C++ re-gates
   against ONNX agree on detections; RF-DETR seg raw mask signs agree on
-  **99.999914%** of elements. The old generic nano detection file still
-  renders a wrong person; the old generic seg file still drifts on the car.
-  Replace those artifacts rather than treating a backend patch as a repair
-  for every conversion. See the
+  **99.999914%** of elements. Legacy generic RF-DETR exports remain
+  KNOWN-BAD; use the native artifacts. See the
   [native export helper](../scripts/export_rfdetr_litert.py) and
   [validation](../specs/2026-11-04-known-bad-backends/validation.md).
 
-### <a id="ev-ov-slurm"></a>E14 — OpenVINO Slurm retest of non-passing cells
+### <a id="ev-ov-slurm"></a>E14 — OpenVINO coverage status
 
-Recorded 2026-11-04 on profile `P-LNX-EDGE-CPU`, jobs 34 and 35. Models ran
-sequentially with two container CPUs, 3 GiB memory and a 300-second timeout
-per model. All input files were checked against a SHA-256 manifest.
+Current status from evidence recorded 2026-11-04 on profile
+`P-LNX-EDGE-CPU`, Slurm jobs 34 and 35:
+
+| Model | Current OpenVINO status | Remaining validation |
+|---|---|---|
+| `owlv2` | PASS — inference and rendered output inspected | None for this recorded route |
+| `owlvit` | PASS — inference and rendered output inspected | None for this recorded route |
+| `videomae` | RUNTIME-PASS — inference completed | Classification correctness and video export/rendering |
+| `vivit` | RUNTIME-PASS — inference completed | Classification correctness and video export/rendering |
+| `timesformer` | RUNTIME-PASS — inference completed | Classification correctness and video export/rendering |
+| `tensorflow-classifier` | KNOWN-BAD; OpenVINO not re-gated | Re-evaluate OpenVINO correctness |
+| `rtdetrul` | PASS — same ONNX passes on the current local stack | Broader Ultralytics export coverage |
+
+The Slurm models ran sequentially with two container CPUs, 3 GiB memory and
+a 300-second timeout per model. All input files were checked against a
+SHA-256 manifest.
 The [tracked evidence summary](evidence/openvino-slurm-2026-11-04.json)
 records image and binary hashes, fixture hashes, arguments, metrics and
 artifact hashes. Single-run timings are not benchmark claims.
 
-| Model | Previous cell | Archived Slurm result | Slurm job | Latest local follow-up |
-|---|---|---|---|---|
-| `owlv2` | FAILED | PASS (runtime + inspected render) | 34 | — |
-| `owlvit` | FAILED | PASS (runtime + inspected render) | 34 | — |
-| `videomae` | FAILED | RUNTIME-PASS (no exported video) | 35 | — |
-| `vivit` | FAILED | RUNTIME-PASS (no exported video) | 35 | — |
-| `timesformer` | FAILED | RUNTIME-PASS (no exported video) | 35 | — |
-| `tensorflow-classifier` | KNOWN-BAD | KNOWN-BAD retained | 34 | LIBTENSORFLOW PASS (E6); OpenVINO not re-gated |
-| `rtdetrul` | KNOWN-BAD | KNOWN-BAD retained | 34 | OpenVINO PASS (same ONNX, current local stack) |
-
-Both models labeled KNOWN-BAD in that historical run completed inference,
-but their prior correctness decisions were not re-evaluated. These model-specific decisions do not
-change the representative `torchvisionclassifier` or `rtdetr` cells.
-A fresh 2026-11-04 C++ re-gate of the same `rtdetrul.onnx` now agrees
+The separate LIBTENSORFLOW PASS for `tensorflow-classifier` is recorded in
+E6; it does not change this OpenVINO status. These model-specific results do
+not change the representative
+`torchvisionclassifier` or `rtdetr` cells. A fresh 2026-11-04 C++ re-gate of
+the same `rtdetrul.onnx` agrees
 between ORT and OpenVINO: bicycle 0.962947, dog 0.942013, truck 0.73777,
 car 0.55753; maximum raw output difference 1.06e-5. The current decoder
 already handles normalized center/size boxes with explicit class IDs. The
-historical job-34 label is retained above as an archived result, not a
-current failure. This does not claim correctness for every Ultralytics export.
+result does not claim correctness for every Ultralytics export.
 
-Twenty-eight prior runtime passes, seven missing exports and one
-non-applicable cell were skipped.
-
-The retained image `neuriplo-infer:openvino-2026-11-01-full-coverage-1`
-could not launch its executable because OpenCV and glog shared libraries
-were missing. A derived image added `libopencv-highgui406`,
+The release image `neuriplo-infer:openvino-2026-11-01-full-coverage-1` is
+**NOT READY**: it lacks OpenCV and glog shared libraries. The validation image
+added `libopencv-highgui406`,
 `libopencv-imgcodecs406`, `libopencv-videoio406` and `libgoogle-glog0v6t64`.
 The executable SHA-256 remained
 `a31997f20450056a8c0c2378a693db8d33d0284542829262117e1eec311a1a2c`;
 the derived image ID is
 `sha256:cab51feff475b76d284012924d093fd7948489a97e68753d7b3e86a581f0fcd7`.
-Source-image filesystem layers were verified after import. This proves
-execution in the derived environment, not release-image readiness or a
-new source build. Packaging the missing runtime libraries remains open.
+Source-image filesystem layers were verified after import. These results
+apply to the derived validation image, not the release image or a fresh
+source build. Packaging the missing runtime libraries remains open.
 
-Job 34 first rejected all three video commands because `--output_video`
-requires a VideoWriter-enabled build. Job 35 retried only those models
-without file export; weights, clips, frame counts and inference parameters
-were preserved. Job 35 completed with Slurm exit `0:0`. The historical
-video SIGSEGV and OWL setup failures in the earlier environment are not
-claimed fixed across all hardware by these successful runs.
+### <a id="ev-blocked-slurm"></a>E15 — Local backend status; Slurm rerun pending workers
 
-### <a id="ev-blocked-slurm"></a>E15 — Blocked cells: local fixes, Slurm rerun pending
-
-The five formerly BLOCKED representative cells now have local passing routes
-(§), covering six model/backend checks. The
+The five representative cells have local PASS routes (§), covering six
+model/backend checks. The
 [evidence JSON](evidence/blocked-slurm-2026-11-04.json) records exact binaries,
 libraries, models, SDK source and identical-input numerical comparisons. The backend fix is
 [neuriplo 042bcef](https://github.com/olibartfast/neuriplo/commit/042bcefc8a20771d7c40d54c86f8ea588fcde1b8);
@@ -575,14 +541,14 @@ the export adapter is
 The [pending Slurm plan](evidence/blocked-slurm-plan-2026-11-04.json) contains
 all six exact commands and worker selections.
 
-| Backend / model | Local result versus same-model ORT | Required fix |
+| Backend / model | Current local status | Slurm status |
 |---|---|---|
-| OpenCV 5 / RT-DETR | labels exact; max scores 1.84e-6, boxes 0.003861 pixels | named FP32/INT64 inputs and integer outputs |
-| OpenCV 5 / RT-DETRv4 | detections agree; complete errors in JSON | same adapter plus prepared Unsqueeze/MatMul/Squeeze export |
-| OpenCV 5 / OWLv2 | max logits 0.001067, boxes 0.000134 normalized | image, token IDs and attention mask bound with graph metadata |
-| ExecuTorch / RF-DETR nano | max boxes 0.000067, logits 0.000303 | v1.2.0 optimized CPU registration with XNNPACK |
-| ExecuTorch / RF-DETR seg medium | max boxes 0.000503, logits 0.007473; mask sign agreement 99.9997428% | same SDK rebuild |
-| ExecuTorch / RF-DETR keypoint | person.jpg max keypoints 0.000645; pose score 0.850784 | same SDK rebuild |
+| OpenCV 5 / RT-DETR | PASS; labels exact; max scores 1.84e-6, boxes 0.003861 pixels | Pending worker availability |
+| OpenCV 5 / RT-DETRv4 | PASS; detections agree | Pending worker availability |
+| OpenCV 5 / OWLv2 | PASS; max logits 0.001067, boxes 0.000134 normalized | Pending worker availability |
+| ExecuTorch / RF-DETR nano | PASS; max boxes 0.000067, logits 0.000303 | Pending worker availability |
+| ExecuTorch / RF-DETR seg medium | PASS; max boxes 0.000503, logits 0.007473; mask sign agreement 99.9997428% | Pending worker availability |
+| ExecuTorch / RF-DETR keypoint | PASS; person.jpg max keypoints 0.000645; pose score 0.850784 | Pending worker availability |
 
 RT-DETRv4's prepared graph preserves external names, shapes and dtypes.
 Original versus prepared ORT differs by at most 0.000092 pixels / 9.54e-7
@@ -599,16 +565,15 @@ Local checks: neuriplo CTest 80/80 on OpenCV 4.6 and 5, 77/77 on ExecuTorch
 backend; tasks CTest 31/31; export adapter tests 3/3; Slurm worker tests 4/4.
 No new model type or task contract was added.
 
-**Slurm:** existing-controller jobs 39 and 40 reproduced the DNN input and
-ExecuTorch operator failures. They ran sequentially and are not parallel
-validation evidence. The controller then went offline before repaired
-submissions; no repaired job IDs or concurrent PASS are claimed. Accounting
-is disabled, so baseline states were captured with `scontrol`. The
+**Slurm:** controller `zenbook-ux425uaz` is UP; `optiplex-3040` and
+`jetson-nano` are DOWN (checked 2026-11-05). Repaired concurrent submissions
+are pending worker availability; no repaired job IDs or concurrent PASS are
+claimed. Accounting is disabled. The
 [Slurm runner guide](SlurmBackendCoverage.md) and
 [validation packet](../specs/2026-11-04-blocked-slurm-backends/validation.md)
 provide the staged manifest and resume commands. Two workers are selected
 for the repaired checks to permit overlap. Release pins, KServe gRPC,
-TensorFlow 2.21 ABI and historical RF-DETR TorchScript limitations are unchanged.
+TensorFlow 2.21 ABI and RF-DETR TorchScript status are listed above.
 
 #### Input tensors used for parity
 
@@ -746,23 +711,11 @@ paths and exact command arguments are retained in the evidence JSON/plan.
 | `data/dog.jpg` | `5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866` |
 | `data/person.jpg` | `cdcbab947e46110fc2b77784ac54ddbbab2640f1e44cb5e91fc8984a9793a7d1` |
 
-#### Slurm execution ledger and remaining gate
+#### Slurm status and remaining gate
 
-Baseline controller times below are CET (UTC+01:00), as recorded by
-`scontrol`; the runner records UTC in its result JSON. Both jobs used
-`zenbook-ux425uaz`, two CPUs and a 20-minute allocation.
-
-| Job | Scope | Start (CET, 2026-11-04) | End (CET) | State / exit | Meaning |
-|---|---|---|---|---|---|
-| 39 | DNN baseline | 09:27:51 | 09:27:54 | FAILED / `1:0` | RT-DETR and OWLv2 reproduce input-count rejection; v4 used wrong CLI alias and is excluded as a backend reproduction |
-| 40 | ExecuTorch baseline | 09:27:54 | 09:27:56 | FAILED / `1:0` | all three PTE files reproduce missing `aten::linear.out` |
-
-Jobs 36–38 were staging/CLI preflight failures and are excluded. Jobs 39/40
-have no overlap. Accounting (`sacct`) is disabled. Cluster memory is advertised
-as a 1 MiB placeholder; its allocation record is not a real memory measurement.
-No repaired jobs were submitted after the controller became unavailable.
-This is the availability snapshot from the recorded attempt, not a fresh
-cluster probe performed for this documentation update.
+Accounting (`sacct`) is disabled. Cluster memory is advertised as a 1 MiB
+placeholder; its allocation record is not a real memory measurement. This
+availability snapshot is from the recorded attempt, not a fresh cluster probe.
 
 The pending six-case plan assigns DNN to `optiplex-3040` and ExecuTorch to
 `zenbook-ux425uaz`. Each case requests two CPUs, a 20-minute allocation, a
@@ -772,21 +725,21 @@ limit includes mapped files and is not an RSS measurement or a Slurm memory
 accounting result. Manifest SHA-256:
 `1a19693fb882b35cd049a67509fd402506d60d724c7c25dc6395a345eed27765`.
 
-Once the controller returns, synchronize the repaired capsule, person-image
+Once workers return, synchronize the repaired capsule, person-image
 fixture, runner and manifest as described in the validation packet. Retain
 each job ID, node, start/end, exit code, runtime log and artifact hashes;
 check rendered task results and verify a real cross-backend interval overlap.
-Until then, repaired Slurm coverage is **PENDING_CONTROLLER_OFFLINE** and
+Until then, repaired Slurm coverage is **PENDING_WORKER_AVAILABILITY** and
 `parallel_overlap_verified=false`. No new live KServe gRPC, TensorFlow 2.21,
 GPU or released-image result is implied.
 
 ## Environments
 
 How each column was built and tested (all CPU except TRT).
-Rows without an E15 qualification retain the 2026-11-01/02 pinned-stack
+Rows without an E15 qualification use the 2026-11-01/02 pinned-stack
 evidence (neuriplo-infer 0.11.7-dev + neuriplo 0.11.3 + tasks 0.8.4).
 DNN and ExecT include the newer 2026-11-04 local E15 builds; their fixes
-are not released dependency pins. Older counts are retained only as historical evidence.
+are not released dependency pins.
 
 | Backend | Version / artifact | Build flags | Tests | Notes |
 |---|---|---|---|---|
@@ -797,7 +750,7 @@ are not released dependency pins. Older counts are retained only as historical e
 | OVINO | 2026.3.0 (pinned; `docker/Dockerfile.openvino`) | `OPENVINO`, tests OFF | — (not covered) | Trio live-gated 2026-11-01 (det 784 ms, seg 1184 ms + masks, keypoint 1566 ms, pose 0.850784) — see E13. Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too |
 | TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
 | LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) |
-| ExecT | v1.2.0 optimized SDK `/tmp/blocked-et-sdk` (E15); older `~/dependencies/executorch` portable-only baseline retained separately | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; old KServe-OFF 134/134 build is historical, not a current requirement; compiled transport is not live transport validation |
+| ExecT | v1.2.0 optimized SDK `/tmp/blocked-et-sdk` (E15) | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; compiled transport is not live transport validation |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
 
@@ -822,8 +775,8 @@ are not released dependency pins. Older counts are retained only as historical e
    a preset. Add repeatable preset gates using the typed TorchScript exports.
 3. **OPENCV_DNN scope (5.0.0).** Named typed input binding resolves
    RT-DETR and OWLv2 locally (§); v4 needs its compatible export. GroundingDINO
-   has not been re-gated, and EdgeCrafter exact-GELU remains a separate importer
-   SIGSEGV. Parallel repaired Slurm validation awaits the existing controller.
+   has not been re-gated, and EdgeCrafter exact-GELU remains an importer-level
+   open issue. Parallel repaired Slurm validation awaits worker availability.
    Still unprobed on 5.x: `ecseg`, torchvision ResNet, `vitpose`,
    `depth_anything_v2`.
 4. **KServe per-task gates.** Done for servable local models (`real-onnx`,

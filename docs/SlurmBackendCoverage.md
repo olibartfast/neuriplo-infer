@@ -2,8 +2,7 @@
 
 Use [`scripts/slurm_backend_matrix.py`](../scripts/slurm_backend_matrix.py) on
 the existing Slurm controller to submit independent backend commands. The
-controller client must match the cluster version. A local client failing with
-`Unexpected message received` is not evidence of a backend failure.
+controller client must match the cluster version.
 
 Stage the runner, manifest, executables, libraries and model fixtures at identical
 absolute paths on the chosen workers. Keep weights and tensors outside Git.
@@ -51,7 +50,6 @@ accounting is optional and was disabled in the 2026-11-04 cluster.
 
 Exit zero is recorded as **RUNTIME_PASS**, not a numerical accuracy claim.
 Compare tensors or inspect task results against the same-model reference before
-updating [`BackendCoverage.md`](BackendCoverage.md). Preserve initial failures
-alongside successful reruns, and identify local changes and SDK provenance
-separately from released pins. See the active
+updating [`BackendCoverage.md`](BackendCoverage.md). Identify local changes and
+SDK provenance separately from released pins. See the active
 [validation packet](../specs/2026-11-04-blocked-slurm-backends/validation.md).

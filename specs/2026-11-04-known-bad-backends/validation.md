@@ -5,7 +5,7 @@
 - RF-DETR LiteRT presets must use native exporter and dry-run without selecting generic conversion.
 - Focused automated tests cover changed routing/export/backend behavior; run owning-repo checks first.
 - Re-run app live gates, document runtime/model hashes, commands and limitations. Do not label an unrun transport PASS.
-- Historical incorrect artifacts remain visibly unsupported even when replacement recipes pass.
+- Legacy incorrect artifacts remain unsupported even when replacement recipes pass.
 
 ## Results — 2026-11-04
 
@@ -20,8 +20,8 @@
 - EdgeCrafter local CLI: 3005 ms inference, render inspected. KServe HTTP: 17139 ms end to end, render produced; a separate binary HTTP request returned all tensors exactly equal to the local LiteRT tensors. Server metrics: two successful inference requests, zero failures.
 - RF-DETR native medium versus ORT: same selected labels and scores; maximum normalized box error 0.00025934, logit error 0.00164986.
 - RF-DETR native seg medium versus ORT: maximum normalized box error 0.00029513, logit error 0.00686646, mask-logit maximum error 0.209843 (mean 0.00079385), mask sign agreement 0.9999991426611797. These are numerical tolerance checks, not bitwise equivalence.
-- Same historical rtdetrul ONNX on current ORT and OpenVINO: outputs [1,300,6], maximum raw difference 1.0550022e-5. The current tasks decoder already handles the normalized center-size/class-ID output; no new tasks code was needed.
-- Old generic RF-DETR nano TFLite still gives a wrong person 0.75. Old generic seg TFLite still drifts (car 0.80 instead of the native/ONNX result). Supported replacement: native LiteRT export, now wired into both presets. Those old artifacts are not reclassified as numerically correct.
+- Same `rtdetrul` ONNX on current ORT and OpenVINO: outputs [1,300,6], maximum raw difference 1.0550022e-5. The current tasks decoder already handles the normalized center-size/class-ID output; no new tasks code was needed.
+- Legacy generic RF-DETR LiteRT artifacts remain KNOWN-BAD. The supported replacement is the native LiteRT export, now wired into both presets.
 
 ### Provenance and exact artifacts
 
