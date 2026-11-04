@@ -4,8 +4,9 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-11-04.** Coverage was refreshed against neuriplo-infer
-0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. The
+**Last updated: 2026-11-04.** Baseline evidence uses neuriplo-infer
+0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. Newer local corrections
+are scoped in their evidence sections; unreleased backend fixes are marked ‡. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
 are under [Environments](#environments). Matrix coverage is always reported
@@ -19,8 +20,12 @@ Main limitations:
   helper are rejected at load time and must be re-exported; some Torch cells
   below are BLOCKED for that reason, while the re-exported DETR files are
   PASS.
-- **Incorrect outputs:** TensorFlow ResNet-50 classification and EdgeCrafter
-  TFLite conversion are **KNOWN-BAD**; do not serve these combinations.
+- **Legacy incorrect artifacts:** old EdgeCrafter and generic-`onnx2tf`
+  RF-DETR TFLite files must be replaced. EdgeCrafter now passes locally and
+  over HTTP with a reconverted model and the local XNNPACK reshaping fix
+  (E4); RF-DETR uses its native LiteRT exporter (E13). TensorFlow ResNet-50
+  passes with the corrected exporter (E6). The LiteRT backend fix is local
+  and has not yet been released or pinned.
 - **Incomplete test coverage:** OpenVINO and LLaMA native unit-test binaries
   do not link (LiteRT was in this list until the vendored-gtest prune;
   see Open item 8).
@@ -129,12 +134,13 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | UNTESTED | N/A | PASS | [E1](#ev-yolo26) |
 | Object detection (`yolov8`, `yolov8_executorch`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | PASS | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | BLOCKED | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
-| Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | KNOWN-BAD | UNTESTED | N/A | KNOWN-BAD | [E4](#ev-ecdet) |
+| Object detection (`rtdetrul`, Ultralytics RT-DETR) | UNTESTED | PASS | UNTESTED | UNTESTED | PASS | UNTESTED | UNTESTED | UNTESTED | N/A | UNTESTED | [E14](#ev-ov-slurm) |
+| Object detection (`ecdet`, `edgecrafter_det`) | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | PASS‡ | UNTESTED | N/A | PASS‡ | [E4](#ev-ecdet) |
 | Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | PASS | PASS | BUILDS | PASS | BLOCKED | N/A | PASS | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | PASS | BUILDS | KNOWN-BAD | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | DRY-RUN | BUILDS | PASS | BUILDS | PASS | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | RUNTIME-PASS† | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | PASS | UNTESTED | N/A | PASS | [E8](#ev-pose) |
@@ -143,6 +149,11 @@ on AOTInductor because TorchScript tracing is broken for that architecture
 | Open-vocabulary detection (`owlv2`, `owlv2`) | BLOCKED | PASS | BUILDS | BUILDS | PASS† | BUILDS | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | N/A | PASS | UNTESTED | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | UNTESTED | UNTESTED | N/A | UNTESTED | [E12](#ev-splatting) |
+
+‡ EdgeCrafter LiteRT and KServe HTTP PASS require the reconverted artifact
+and the unreleased neuriplo XNNPACK subgraph-reshaping fix
+[`9bde6c0`](https://github.com/olibartfast/neuriplo/commit/9bde6c0fd07ab88b70e1076f5fc667c20be41d7d).
+The app's released dependency pin does not contain that fix.
 
 ## Evidence
 
@@ -233,26 +244,24 @@ infer pin move — the seg-LiteRT flip below is the first such flip
   Live multi-backend path is `kserve-runtime-edgecrafter-e2e`
   ([§ Integration-test evidence](#integration-test-evidence),
   [BENCHMARK.md](../integration-tests/kserve-runtime-edgecrafter-e2e/BENCHMARK.md)).
-- **LiteRT / KServe KNOWN-BAD.** Same input over `litert` gives top ≈0.19,
-  random labels — conversion fault (`onnx2tf`), not runtime. Do not serve
-  `ecdet` as TFLite.
-- **Reconversion probe 2026-11-03 (develop stack, stays KNOWN-BAD).**
-  Reconverting the same `ecdet_s.onnx` with `onnx2tf` 2.6.9
-  (`flatbuffer_direct`, `tflite-export` env, TF 2.21) drops the
-  `ONNX_GRIDSAMPLE` custom op entirely (old June file embeds it; new file
-  has none — pure builtins) and restores the correct detection set:
-  standalone (`ai-edge-litert` 2.1.2, cv2 bilinear, `[[640,640]]`) gives
-  dog 0.93 / bicycle 0.927 / car 0.779 — exact match with ORT. But the
-  pinned C++ runtime (`build-litert`, LiteRT 2.19.0, CPU interpreter, no
-  delegate, 54 s) renders the same boxes/labels with deflated scores:
-  bicycle 0.71 / dog 0.79 / car 0.61 (+ `motorbike 0.57` artifact), while
-  `yolov8n` through the same binary still matches exactly — so the
-  artifact is faithful and the delta sits in the pinned runtime's
-  reference kernels on the lowered GridSample subgraph (or the missing
-  XNNPACK delegate), not in the file. Same-set-at-0.5 but not
-  exact-score: cell stays KNOWN-BAD. Next: wire XNNPACK delegate (backend
-  logs "delegate selection is not wired") or re-gate after a runtime
-  bump, then flip.
+- **LiteRT + KServe HTTP PASS (2026-11-04, local backend patch).**
+  Reconversion with `onnx2tf 2.6.9` removes the old custom GridSample op.
+  The remaining score drift was isolated with byte-identical app inputs:
+  Python LiteRT's builtin path reproduces C++'s dog 0.7985 / bicycle
+  0.7153 / car 0.6192; Python XNNPACK matches ONNX. The installed C++
+  runtime creates XNNPACK automatically but cannot delegate the dynamic
+  graph with its default options. Enabling XNNPACK subgraph reshaping in
+  `neuriplo` fixes the C++ run: dog **0.929990**, bicycle **0.927981**,
+  car **0.780462** (plus the same motorbike/truck/cup background hits as
+  ORT at 0.4). Scores differ from ORT by at most **4.49e-6** over all
+  300 queries; the six high-confidence labels and boxes agree. Two low-score
+  query ties swap labels/boxes, so full ordered box equality is not claimed.
+  CLI local inference: 3005 ms. Live KServe HTTP returns identical raw
+  tensors to local LiteRT and renders successfully (17139 ms end to end;
+  single-run timings, not a benchmark). The server loads the patched local
+  `libneuriplo.so`; this is not evidence for the unchanged released pin.
+  Old TFLite files remain unsupported and must be reconverted.
+  [Reproduction and provenance](../specs/2026-11-04-known-bad-backends/validation.md).
 
 ### <a id="ev-seg"></a>E5 — Instance segmentation (`yoloseg`, `ecseg`)
 
@@ -273,16 +282,23 @@ infer pin move — the seg-LiteRT flip below is the first such flip
   0.44 (same score as the pre-contract gate; proper preprocessing gives
   0.55, so the app seam under-reports but ranks correctly). Render
   inspected (`data/output/processed_torchvision-classifier_local.png`).
-  Cell flipped BLOCKED → PASS. The TF KNOWN-BAD below is a separate
-  preprocessing fault, untouched.
-- **TF KNOWN-BAD** (CPU, 2600 ms): ResNet-50 SavedModel (neuriplo-tasks
-  export guide) loads and runs but labels `tiger shark`. The app's generic
-  RGB `[0,1]` preprocessing lacks ResNet-50's caffe-mode preprocessing
-  (Python cross-check: app-style input → class 111 @ 0.12, proper
-  preprocessing → class 249 @ 0.55). Backend is bit-correct; do not serve
-  TF classification until neuriplo-tasks preprocessing covers it.
-  `tensorflow-classifier` / `vit-classifier` aliases have no preset —
-  same cells, no separate row.
+  Cell flipped BLOCKED → PASS. TensorFlow was re-gated separately below.
+- **TF PASS (re-gate 2026-11-04, CPU, TF 2.19 C++ runtime).** Re-exporting
+  pretrained Keras ResNet50 with the corrected neuriplo-tasks exporter gives
+  class **249 @ 0.532603**, versus Python TF 2.21 **249 @ 0.532377** on
+  `data/dog.jpg`; all five top classes agree. CLI inference completed in
+  2850 ms and rendered `processed_tensorflow-classifier_local.png`.
+  The task sends raw BGR Float32 pixels; the SavedModel subtracts BGR means
+  and emits logits, so the task applies softmax once. The fix is upstream
+  commit `75cc7ac`, already included in the pinned `neuriplo-tasks v0.8.5`.
+  Old unwrapped SavedModels retain the preprocessing/softmax mismatch and
+  must be re-exported using the
+  [supported recipe](https://github.com/olibartfast/neuriplo-tasks/blob/v0.8.5/export/classification/TensorflowClassification.md).
+  This run used local sibling checkouts, with no differences from the pins
+  in the classification/exporter and TensorFlow backend paths; it is not an
+  isolated remote-fetch release gate. Exact provenance and reproduction:
+  [validation](../specs/2026-11-04-tensorflow-classification-regate/validation.md).
+  `tensorflow-classifier` / `vit-classifier` aliases still have no preset.
 
 ### <a id="ev-video"></a>E7 — Video classification (`videomae`), optical flow (`raft`)
 
@@ -455,8 +471,8 @@ additionally gated as alias.
   artifact. Keypoint (292 ms): skeleton, pose **0.850754** — 3e-5 below the
   0.850784 every other backend reports (FP tactic selection, rounds to the
   same 0.85).
-- **LiteRT detection: PASS via upstream's native exporter, KNOWN-BAD via
-  generic `onnx2tf`.** `rfdetr-medium` through rfdetr's own `format="litert"`
+- **LiteRT detection: PASS via upstream's native exporter; legacy generic
+  `onnx2tf` artifacts remain unsupported.** `rfdetr-medium` through rfdetr's own `format="litert"`
   route (`torch.export` + `litert-torch`, no ONNX/TF step; 576,
   `--input_sizes=1,3,576,576`, 3207 ms): bicycle 0.92, horse 0.94,
   car 0.87 at 0.4 — exact match with every other backend (same dog-as-horse
@@ -465,10 +481,11 @@ additionally gated as alias.
   is used: it rewrites the deformable-attention `grid_sample` ops that
   generic `onnx2tf` mangles. The generic path stays KNOWN-BAD
   (`rfdetr-nano` float32 `.tflite`: single wrong `person 0.75`, no masks).
-- **LiteRT seg: generic-`onnx2tf` KNOWN-BAD (converter fault, stands);
-  native route PASS (pinned tasks `v0.8.5`).** Generic float32 (432):
+- **LiteRT seg: native route PASS (pinned tasks `v0.8.5`); legacy
+  generic-`onnx2tf` artifacts remain unsupported.** Generic float32 (432):
   exit 0, masks render, bicycle 0.94 / horse 0.91 / `motorbike 0.57`
-  match — but the car reads `truck 0.34`: do not serve. Native
+  match — but the car originally read `truck 0.34`; with the local backend
+  patch it reads car 0.80, still below the native reference: do not serve. Native
   `format="litert"` file gated 2026-11-02 on the develop stack (3670 ms)
   and re-gated 2026-11-03 on the pinned stack (tasks `v0.8.5` tag content,
   `build-litert`, 4151 ms): bicycle 0.94, horse 0.91, car 0.86, all with
@@ -496,6 +513,18 @@ additionally gated as alias.
   `.pte` then. Export-side note: 1.11.2 appends the delegate without an
   explicit `output_name` (`rfdetr-medium_xnnpack.pte`), pass it explicitly.
 
+- **Supported export recipes fixed (2026-11-04).** Both `rfdetr` and
+  `rfdetrseg` app presets now select native `format="litert"` with
+  `--backend litert` (RF-DETR 1.11.2), producing the exact file consumed by
+  inference. They do not route through ONNX conversion. Local C++ re-gates
+  against ONNX agree on detections; RF-DETR seg raw mask signs agree on
+  **99.999914%** of elements. The old generic nano detection file still
+  renders a wrong person; the old generic seg file still drifts on the car.
+  Replace those artifacts rather than treating a backend patch as a repair
+  for every conversion. See the
+  [native export helper](../scripts/export_rfdetr_litert.py) and
+  [validation](../specs/2026-11-04-known-bad-backends/validation.md).
+
 ### <a id="ev-ov-slurm"></a>E14 — OpenVINO Slurm retest of non-passing cells
 
 Recorded 2026-11-04 on profile `P-LNX-EDGE-CPU`, jobs 34 and 35. Models ran
@@ -505,19 +534,26 @@ The [tracked evidence summary](evidence/openvino-slurm-2026-11-04.json)
 records image and binary hashes, fixture hashes, arguments, metrics and
 artifact hashes. Single-run timings are not benchmark claims.
 
-| Model | Previous cell | Retest result | Slurm job |
-|---|---|---|---|
-| `owlv2` | FAILED | PASS (runtime + inspected render) | 34 |
-| `owlvit` | FAILED | PASS (runtime + inspected render) | 34 |
-| `videomae` | FAILED | RUNTIME-PASS (no exported video) | 35 |
-| `vivit` | FAILED | RUNTIME-PASS (no exported video) | 35 |
-| `timesformer` | FAILED | RUNTIME-PASS (no exported video) | 35 |
-| `tensorflow-classifier` | KNOWN-BAD | KNOWN-BAD retained | 34 |
-| `rtdetrul` | KNOWN-BAD | KNOWN-BAD retained | 34 |
+| Model | Previous cell | Archived Slurm result | Slurm job | Latest local follow-up |
+|---|---|---|---|---|
+| `owlv2` | FAILED | PASS (runtime + inspected render) | 34 | — |
+| `owlvit` | FAILED | PASS (runtime + inspected render) | 34 | — |
+| `videomae` | FAILED | RUNTIME-PASS (no exported video) | 35 | — |
+| `vivit` | FAILED | RUNTIME-PASS (no exported video) | 35 | — |
+| `timesformer` | FAILED | RUNTIME-PASS (no exported video) | 35 | — |
+| `tensorflow-classifier` | KNOWN-BAD | KNOWN-BAD retained | 34 | LIBTENSORFLOW PASS (E6); OpenVINO not re-gated |
+| `rtdetrul` | KNOWN-BAD | KNOWN-BAD retained | 34 | OpenVINO PASS (same ONNX, current local stack) |
 
-Both KNOWN-BAD models completed inference, but their prior correctness
-decisions were not re-evaluated. These model-specific decisions do not
+Both models labeled KNOWN-BAD in that historical run completed inference,
+but their prior correctness decisions were not re-evaluated. These model-specific decisions do not
 change the representative `torchvisionclassifier` or `rtdetr` cells.
+A fresh 2026-11-04 C++ re-gate of the same `rtdetrul.onnx` now agrees
+between ORT and OpenVINO: bicycle 0.962947, dog 0.942013, truck 0.73777,
+car 0.55753; maximum raw output difference 1.06e-5. The current decoder
+already handles normalized center/size boxes with explicit class IDs. The
+historical job-34 label is retained above as an archived result, not a
+current failure. This does not claim correctness for every Ultralytics export.
+
 Twenty-eight prior runtime passes, seven missing exports and one
 non-applicable cell were skipped.
 
@@ -564,12 +600,12 @@ older dates are kept only where no newer run exists.
 
 | Status | Count (task rows) | Rows |
 |---|---|---|
-| PASS (≥1 backend live-gated) | 13 | `yolo26`, `yolov8`, `rtdetr`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, `torchvisionclassifier`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
-| KNOWN-BAD recorded | 4 | `ecdet` on LiteRT / KServe-`litert`; `torchvisionclassifier` on LIBTENSORFLOW; `rfdetrseg` on LiteRT-`onnx2tf` (converter fault, stands; native route PASS); generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
+| PASS (≥1 backend live-gated) | 14 | `yolo26`, `yolov8`, `rtdetr`, `rtdetrul`, `ecdet`, `rfdetr`, `owlv2`, `gemma4`, `yoloseg`, `rfdetrseg`, `torchvisionclassifier`, pose (`vitpose` via `rfdetr_keypoint` alias, `rfdetrpose`), depth (`yolo26depth` alias) |
+| Legacy KNOWN-BAD artifacts (supported replacements available) | 2 | `rfdetrseg` on LiteRT-`onnx2tf` (converter fault, stands; native route PASS); generic-`onnx2tf` `rfdetr` (native-exporter route is PASS) |
 | RUNTIME-PASS best | 1 | `videomae` (OVINO inference; video export unvalidated) |
 | DRY-RUN best | 2 | `ecseg`, `raft` |
 | BUILDS / UNTESTED best | 1 | Gaussian splatting (no preset; Torch/OVINO BUILDS-only) |
-| **Total** | **17** | 10 task families; detection/segmentation/pose split by representative |
+| **Total** | **18** | 10 task families; detection/segmentation/pose split by representative |
 
 ## Open items
 
@@ -595,15 +631,14 @@ older dates are kept only where no newer run exists.
    `depth_anything_v2`.
 5. **KServe per-task gates.** Done for servable local models (`real-onnx`,
    HTTP): pose, depth, open-vocab — plus YOLO26-`litert` PASS and `ecdet`
-   KNOWN-BAD. gRPC transport BLOCKED server-side. Still open: classification,
+   PASS with the local backend patch (E4). gRPC transport BLOCKED server-side. Still open: classification,
    video, flow, VLM serving.
 6. **Gaussian-splatting representative.** No preset exists. Export one `lgm`
    artifact, add a preset, then gate it.
-7. **LIBTENSORFLOW classification needs ResNet preprocessing.** 2026-10-23:
-   the CLI seam is fixed (`--weights` accepts directories); the ResNet-50
-   SavedModel loads and runs, but the app's generic RGB `[0,1]` preprocessing
-   does not satisfy ResNet-50's caffe-mode requirement (KNOWN-BAD). Fix belongs
-   in neuriplo-tasks classification preprocessing, then re-gate.
+7. **LIBTENSORFLOW classification: resolved by re-export (2026-11-04).**
+   The corrected upstream ResNet50 export embeds mean subtraction and returns
+   logits. Local C++ and Python correctness now agree (E6). Old SavedModels
+   require re-export; KServe classification remains unvalidated.
 8. **LiteRT-linked `runUnitTests`: fixed (2026-11-02), 192/192 on the pinned
    stack.** Root cause was not the backend: `setup_litert.sh` harvested the
    TensorFlow build tree's vendored `gtest`/`gmock` headers into the SDK
@@ -638,7 +673,7 @@ from `app/test/CMakeLists.txt`.
 |---|---|---|---|---|
 | `local-inference-smoke` | DRY-RUN shape for every preset row (lists presets, dry-runs one) | `local_inference_smoke_runner` (`run.py --preset owlv2`) | — (dry-run only by design) | [README](../integration-tests/local-inference-smoke/README.md), [run.py](../integration-tests/local-inference-smoke/run.py) |
 | `kserve-runtime-yolo-e2e` | `yolo26` KServe PASS (YOLO26 `.tflite` over `litert`) | — (needs runtime binary + model) | `run.py` — starts `neuriplo-kserve-runtime`, readiness + metadata, app-binary HTTP infer, refreshed render, metrics 1/0 | [README](../integration-tests/kserve-runtime-yolo-e2e/README.md), [run.py](../integration-tests/kserve-runtime-yolo-e2e/run.py) |
-| `kserve-runtime-edgecrafter-e2e` | `ecdet` ORT/TRT PASS + OpenVINO/ExecT matrix; `ecdet` LiteRT/KServe KNOWN-BAD (conversion fault, not runtime) | — (needs per-backend runtime binaries + model repository + GPU for TRT) | `run.py --backend {onnx_runtime,tensorrt,openvino,executorch} [--transport {http,grpc}] [--mode {kserve,local}]`; `prepare_model_repository.py` lays out `ecdet_s_<backend>/1/` | [README](../integration-tests/kserve-runtime-edgecrafter-e2e/README.md), [BENCHMARK.md](../integration-tests/kserve-runtime-edgecrafter-e2e/BENCHMARK.md) |
+| `kserve-runtime-edgecrafter-e2e` | `ecdet` ORT/TRT PASS + OpenVINO/ExecT matrix; `ecdet` LiteRT/KServe HTTP replacement PASS with local backend patch (E4; separate manual gate) | — (needs per-backend runtime binaries + model repository + GPU for TRT) | `run.py --backend {onnx_runtime,tensorrt,openvino,executorch} [--transport {http,grpc}] [--mode {kserve,local}]`; `prepare_model_repository.py` lays out `ecdet_s_<backend>/1/` | [README](../integration-tests/kserve-runtime-edgecrafter-e2e/README.md), [BENCHMARK.md](../integration-tests/kserve-runtime-edgecrafter-e2e/BENCHMARK.md) |
 | `rfdetr-pose-local-vs-kserve` | Pose row scaffold for `rfdetr_keypoint` (covers the Open-items emulation gap with evidence tracking, not a live gate) | `rfdetr_pose_evidence_scaffold` (`run.py` — baselines + report exist) | Attested checks in [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml) (`kserve_grpc_smoke` still `skipped`) | [README](../integration-tests/rfdetr-pose-local-vs-kserve/README.md), [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml), [reports/latest.md](../integration-tests/rfdetr-pose-local-vs-kserve/reports/latest.md) |
 
 KServe protocol-level legs (not app-surface suites, but they back the

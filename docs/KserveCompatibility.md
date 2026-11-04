@@ -51,49 +51,27 @@ OVMS in the matrix above serve ONNX.
 
 #### Known-bad conversion: EdgeCrafter `ecdet` (RT-DETR/deformable) → TFLite
 
-> **TL;DR — do not serve `ecdet` as TFLite.** It loads and runs end-to-end but
-> the detections are numerically garbage. The fault is the ONNX→TFLite
-> conversion, not the runtime, the custom ops, or the serving path.
+The old converter artifact is numerically wrong and must be replaced. A
+replacement now passes local C++ and KServe HTTP checks (2026-11-04):
 
-`ecdet_s` is an RT-DETR/D-FINE-style detector (deformable attention +
-transformer: ~38 LayerNorm, ~148 MatMul, ~115 Transpose). Converting it with
-[`onnx2tf`](https://github.com/PINTO0309/onnx2tf) (`flatbuffer_direct` backend,
-the default) produces a `.tflite` that **runs but is numerically wrong**. To
-even get it to run, the `litert` backend had to gain two kernels (see
-`neuriplo/backends/litert/src/LiteRTInfer.cpp`):
+1. Reconvert the ONNX model with `onnx2tf 2.6.9` (pure builtin operators).
+2. Use the neuriplo LiteRT backend patch enabling XNNPACK subgraph reshaping.
+   The default TF 2.19 delegate cannot handle the dynamic graph; its builtin
+   execution produces deflated scores. This patch is not yet released
+   or included in the app's dependency pins.
+3. Re-gate against the original ONNX model before deploying a new artifact.
 
-- a custom `ONNX_GRIDSAMPLE` kernel (onnx2tf's lowering of ONNX `GridSample`;
-  NCHW, bilinear / `zeros` / `align_corners=false`), and
-- a `SIGN` builtin override that also accepts INT64 (the stock TFLite kernel is
-  float-only; onnx2tf's own evaluator dies on the same node).
+With identical app inputs, ORT and patched C++ LiteRT return dog 0.929990,
+bicycle 0.927981 and car 0.780462; the maximum score difference over all
+300 queries is 4.49e-6. KServe HTTP returns tensors identical to local LiteRT.
+The old file's random labels/top score around 0.19 remain a historical
+conversion failure. No gRPC re-gate is claimed.
 
-The `GridSample` kernel was validated against onnxruntime to `~2e-5`, so it is
-**not** the problem. The problem is conversion fidelity in the transformer body
-(onnx2tf's static shapes in the deformable region are even internally
-inconsistent; the alternative `tf_converter` backend crashes outright on
-NCHW→NHWC layout bugs).
-
-Verified end-to-end through the C++ `neuriplo-infer` client (same pre/post-
-processing, identical `data/dog.jpg` input), conf threshold 0.5:
-
-| Backend (C++ e2e) | Top detections |
-|-------------------|----------------|
-| TensorRT (engine) / ONNX (onnxruntime) | bicycle 0.93, dog 0.92, car 0.74 ✅ |
-| KServe `litert` (this `.tflite`)        | top score ≈0.19, random labels, nonsense boxes ❌ |
-
-**Recommendation:** serve `ecdet` via ONNX/TensorRT/OpenVINO, not TFLite. If
-TFLite is required, the model must be re-exported in a TFLite-friendly form (or
-converted with a fixed onnx2tf) — there is nothing to fix in this repo. Simpler
-CNN detectors (e.g. YOLO26) convert and serve correctly over `litert`; the
-issue is specific to the deformable/transformer architecture.
-
-> Update 2026-11-03: reconverting the same `.onnx` with `onnx2tf` 2.6.9
-> removes the `ONNX_GRIDSAMPLE` custom op (pure builtins) and restores the
-> correct set standalone (dog 0.93 / bicycle 0.927 / car 0.779, exact vs
-> ORT) — so the converter half of this note is fixed upstream. The pinned
-> C++ runtime (LiteRT 2.19.0, no delegate) still renders deflated scores
-> (0.71/0.79/0.61, same boxes), so the serving recommendation stands until
-> the delegate/runtime leg is re-gated. See `BackendCoverage.md` E4.
+See [BackendCoverage E4](BackendCoverage.md#ev-ecdet) and the exact
+[validation](../specs/2026-11-04-known-bad-backends/validation.md). RF-DETR
+detection and segmentation use their native LiteRT exporter instead of the
+known-bad generic conversion route; the app presets select that exporter
+with `--backend litert`.
 
 ## Datatype coverage
 
