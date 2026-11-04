@@ -136,7 +136,8 @@ mode. The two postprocess modes need different graphs:
 
 ### Environment variables
 
-Environment variables (the canonical list):
+These environment variables are consumed by `neuriplo-kserve-client`; check
+the pinned client revision for their parsing rules and retry defaults:
 
 | Variable | Effect |
 |----------|--------|
@@ -161,7 +162,7 @@ Two independent CMake switches (plus the gRPC gate):
   from the app-local headers in `app/inc/contract/` and `--kserve_endpoint`
   becomes mandatory at runtime.
 - `NEURIPLO_INFER_ENABLE_GRPC` — gates only the gRPC transport.
-- `NEURIPLO_INFER_ENABLE_KSERVE_TLS` (default `ON` when OpenSSL is found) —
+- `NEURIPLO_INFER_ENABLE_KSERVE_TLS` (default `ON`) —
   HTTPS for the HTTP client; without it `https://` endpoints fail fast with a
   clear "built without TLS support" error.
 

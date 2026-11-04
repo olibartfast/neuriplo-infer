@@ -20,13 +20,13 @@ libggml-cpu.so
 libmtmd.so      ← multimodal projector library (required for image input)
 ```
 
-The default install prefix used by this project's Dockerfile is `/usr/local/lib`.
+The default install prefix used by this project's Dockerfile is `/root/dependencies/llamacpp/lib`.
 For local development the path is typically `$HOME/dependencies/llamacpp/lib`.
 
 Build with:
 
 ```bash
-cmake -B build -DLLAMA_BUILD_TESTS=OFF -DGGML_NATIVE=OFF -DLLAMA_BUILD_EXAMPLES=ON
+cmake -B build -DBUILD_SHARED_LIBS=ON -DLLAMA_BUILD_TESTS=OFF -DGGML_NATIVE=OFF -DLLAMA_BUILD_EXAMPLES=ON
 cmake --build build --config Release -j$(nproc)
 cmake --install build --prefix $HOME/dependencies/llamacpp
 ```
@@ -35,8 +35,8 @@ cmake --install build --prefix $HOME/dependencies/llamacpp
 
 | File | Size | Description |
 |------|------|-------------|
-| `gemma-4-E4B-it-Q4_K_M.gguf` | ~5 GB | Language model weights |
-| `mmproj-gemma4-E4B-F16.gguf` | ~944 MB | Vision projector (SigLIP encoder) |
+| `gemma-4-E2B-it-Q4_K_M.gguf` | model-dependent | Language model weights |
+| `mmproj-F16.gguf` | model-dependent | Vision projector (SigLIP encoder) |
 
 Download via Hugging Face Hub or use the preset in `docker_run_inference_e2e_example.sh`.
 
@@ -58,8 +58,8 @@ cmake --build build-llamacpp -j$(nproc)
 LD_LIBRARY_PATH=/path/to/llamacpp/lib \
   build-llamacpp/app/neuriplo-infer \
   --type=gemma4 \
-  --weights=/path/to/gemma-4-E4B-it-Q4_K_M.gguf \
-  --mmproj=/path/to/mmproj-gemma4-E4B-F16.gguf \
+  --weights=/path/to/gemma-4-E2B-it-Q4_K_M.gguf \
+  --mmproj=/path/to/mmproj-F16.gguf \
   --source=data/dog.jpg \
   --prompt="Describe what you see in this image."
 ```
@@ -103,8 +103,9 @@ docker build \
   .
 ```
 
-The Dockerfile downloads model GGUFs from Hugging Face during the build
-(set `HF_TOKEN` as a build secret if the repo is gated).
+The Dockerfile attempts to download the language-model GGUF during the build.
+Mount both the language model and its matching projector for image input; the
+Dockerfile does not download the projector. The preset downloads both files.
 
 ### Run via preset
 
@@ -123,8 +124,8 @@ docker run --rm \
   -v /path/to/images:/data:ro \
   neuriplo-infer-llamacpp:latest \
   --type=gemma4 \
-  --weights=/models/gemma-4-E4B-it-Q4_K_M.gguf \
-  --mmproj=/models/mmproj-gemma4-E4B-F16.gguf \
+  --weights=/models/gemma-4-E2B-it-Q4_K_M.gguf \
+  --mmproj=/models/mmproj-F16.gguf \
   --source=/data/dog.jpg \
   --prompt="What breed is this dog?"
 ```

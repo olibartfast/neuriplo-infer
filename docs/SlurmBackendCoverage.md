@@ -44,7 +44,8 @@ No cluster configuration is changed.
 
 `submitted.json` records every accepted submission. Each job retains
 `runtime.log` and `result.json` with artifact SHA-256 hashes, node, UTC timestamps,
-exit status and duration. Preserve `scontrol show job` output while completed
+exit status and duration. Artifact hashing happens on the worker before
+execution; a missing artifact fails the case before inference. Preserve `scontrol show job` output while completed
 jobs remain in the controller's cache. Use `sacct` when accounting is enabled;
 accounting is optional and was disabled in the 2026-11-04 cluster.
 
