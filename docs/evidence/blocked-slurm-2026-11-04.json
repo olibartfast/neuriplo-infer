@@ -1,0 +1,432 @@
+{
+  "date": "2026-11-04",
+  "scope": "Five formerly BLOCKED representative matrix cells; six model/backend checks.",
+  "sources": {
+    "neuriplo": "042bcefc8a20771d7c40d54c86f8ea588fcde1b8",
+    "neuriplo-tasks": "d38e8b3984386c93a053215a1a88964e6e054e74",
+    "neuriplo-infer-base": "26d2e59ddfe553f6eb2b2ee8179c6559d5ee1687",
+    "owner_worktrees_clean": true,
+    "app_changes": "orchestration and documentation only; C++ app base is unchanged"
+  },
+  "sdk": {
+    "version": "v1.2.0",
+    "source_sha": "0b0e2c5cdd67c8b4396a46ea1d1aa72ffb0128d7",
+    "prefix": "/tmp/blocked-et-sdk",
+    "cmake_flags": [
+      "EXECUTORCH_BUILD_KERNELS_OPTIMIZED=ON",
+      "EXECUTORCH_BUILD_XNNPACK=ON",
+      "CMAKE_POSITION_INDEPENDENT_CODE=ON"
+    ],
+    "combined_registration_sha256": "9c21120daa36e372b9c08ce0e28797481a27376f90794cbb05856fbefe1990bd"
+  },
+  "slurm": {
+    "executor": "existing Slurm 25.11.2 controller",
+    "baseline_jobs": [
+      39,
+      40
+    ],
+    "baseline_state": "FAILED",
+    "repaired_jobs": [],
+    "parallel_rerun": "PENDING_CONTROLLER_OFFLINE",
+    "parallel_overlap_verified": false,
+    "accounting": "disabled; scontrol used",
+    "baseline_control_sha256": "c85bd545cfb4b7a42203e99b22be3e0c657cf1c9d200fed5b56cd12dd5ced152",
+    "preflight_attempts_excluded": [
+      36,
+      37,
+      38
+    ],
+    "note": "Baseline DNN rtdetr/owlv2 reproduced single-input rejection; baseline rtdetrv4 used wrong CLI alias. Corrected recipe uses --type=rtdetr. All three ExecuTorch PTE cases reproduced missing aten::linear.out. No repaired Slurm claim.",
+    "manifest": "blocked-slurm-plan-2026-11-04.json",
+    "manifest_sha256": "1a19693fb882b35cd049a67509fd402506d60d724c7c25dc6395a345eed27765"
+  },
+  "validation": {
+    "neuriplo_opencv46_ctest": "80/80",
+    "neuriplo_opencv5_ctest": "80/80",
+    "neuriplo_executorch_ctest": "77/77 including real parity fixture",
+    "app_opencv5_ctest": "191/191",
+    "app_executorch_ctest": "191/191",
+    "tasks_ctest": "31/31",
+    "python_export_adapter_tests": "3/3",
+    "python_slurm_worker_tests": "4/4"
+  },
+  "artifact_hashes": [
+    {
+      "path": "/tmp/blocked-slurm-20261104/dnn/neuriplo-infer",
+      "sha256": "6ca4c681008a66c75eef71fa31b64a1c4d7d7b59cddd331b049f11aeac291a3b",
+      "bytes": 2477768
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/dnn/lib/libneuriplo.so",
+      "sha256": "854d676cff93891f25589ffdca1ef2220f25feaa7559076294de0f222e5548dc",
+      "bytes": 246696
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/dnn/models/owlv2.onnx",
+      "sha256": "7f176ee3e1e1bdb7d920c31775e665bdc041699adbbe052e552bc1ad04a2a384",
+      "bytes": 618774288
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/dnn/models/rtdetr.onnx",
+      "sha256": "c114037232a26c67f1986505213358ef7bf3628b22714107bd333679b4495547",
+      "bytes": 80466628
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/dnn/models/rtdetrv4-opencv.onnx",
+      "sha256": "09d861b58deaa325ec0fe140d88b2869c20a77a8cfb9eb28bc3a78f83a1a044e",
+      "bytes": 41760455
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/dnn/models/rtdetrv4.onnx",
+      "sha256": "6b26f17e3de3cea3d5acb9b1eab6a4a40cfe03c8be1986215bba299220160590",
+      "bytes": 41759466
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/executorch/neuriplo-infer",
+      "sha256": "85ff3c209d565b8467468dba36617fd46492dca047a2b8882bf9d02e1776dfeb",
+      "bytes": 2461384
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/executorch/lib/libneuriplo.so",
+      "sha256": "51d079ffa46dfb120affe455b74f2c577798a1f7398d1e6f04433f1629bac6b3",
+      "bytes": 13976952
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/executorch/models/rfdetr-keypoint.pte",
+      "sha256": "7cb8c7279d59b0a4a7a9a65ad06018da6c57da69f3996c6a121661ced1408882",
+      "bytes": 145583624
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/executorch/models/rfdetr-nano.pte",
+      "sha256": "9181bd2d2b82494effcc23e8eee0d1223d208984c178b46ccc3ffbb7af57a7d7",
+      "bytes": 111490668
+    },
+    {
+      "path": "/tmp/blocked-slurm-20261104/executorch/models/rfdetrseg-medium.pte",
+      "sha256": "79313c4c79b24d18728b7f79ad1b7f7beb409d5852b54dd2737482f60838a3aa",
+      "bytes": 132500332
+    }
+  ],
+  "numerical_comparisons": [
+    {
+      "case": "rtdetr-dnn",
+      "status": "LOCAL_PARITY_PASS",
+      "inputs": [
+        {
+          "index": 0,
+          "sha256": "00db0764f4922d1b560e7fb18e770b65941fcb2fe7afa0aa46f5d685e143e0e0",
+          "bytes": 4915200
+        },
+        {
+          "index": 1,
+          "sha256": "9ae2a7b11ec45092ee082faa14507373560986cb09e909d8186a2eddaca3c1ca",
+          "bytes": 16
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "elements": 300,
+          "max_abs_error": 0.0,
+          "mean_abs_error": 0.0,
+          "sign_agreement": 1.0,
+          "reference_sha256": "c7c4e2a6b43c9b328b72afa0d7711fdde8ebe43d68942d3b1b64e27119020fb8",
+          "actual_sha256": "c7c4e2a6b43c9b328b72afa0d7711fdde8ebe43d68942d3b1b64e27119020fb8"
+        },
+        {
+          "index": 1,
+          "elements": 1200,
+          "max_abs_error": 0.0038604736328125,
+          "mean_abs_error": 3.71799869753886e-05,
+          "sign_agreement": 1.0,
+          "reference_sha256": "99f012def185eb4f25813497f88ffffca1cc991b6e86dcf674549306987854fc",
+          "actual_sha256": "21499ed48cf83555a3bf86e1c640aa6a64569e594528f189593d8244ada3b108"
+        },
+        {
+          "index": 2,
+          "elements": 300,
+          "max_abs_error": 1.8402934074401855e-06,
+          "mean_abs_error": 2.1697331931136432e-07,
+          "sign_agreement": 1.0,
+          "reference_sha256": "0d0d2adef53daaa89ad2ec183064340a764da1d2c06329991ca485456a0126ea",
+          "actual_sha256": "867b8112f6e13419dc0a09ebedc937fb23b8c8a5f4c9727db6f13427cc934361"
+        }
+      ],
+      "source_image": "data/dog.jpg"
+    },
+    {
+      "case": "rtdetrv4-dnn",
+      "status": "LOCAL_PARITY_PASS",
+      "inputs": [
+        {
+          "index": 0,
+          "sha256": "00db0764f4922d1b560e7fb18e770b65941fcb2fe7afa0aa46f5d685e143e0e0",
+          "bytes": 4915200
+        },
+        {
+          "index": 1,
+          "sha256": "9ae2a7b11ec45092ee082faa14507373560986cb09e909d8186a2eddaca3c1ca",
+          "bytes": 16
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "elements": 300,
+          "max_abs_error": 0.0,
+          "mean_abs_error": 0.0,
+          "sign_agreement": 1.0,
+          "reference_sha256": "8401d6989bc435115735b869a64bb0a44b1f53563a66e333f78f9f97502cf82f",
+          "actual_sha256": "8401d6989bc435115735b869a64bb0a44b1f53563a66e333f78f9f97502cf82f"
+        },
+        {
+          "index": 1,
+          "elements": 1200,
+          "max_abs_error": 0.0035552978515625,
+          "mean_abs_error": 3.47328168572858e-05,
+          "sign_agreement": 1.0,
+          "reference_sha256": "5bf19119bc85efe9ffc3e2709fbf28b22a782d4e427a691c287bb7934343a792",
+          "actual_sha256": "d6a25102723205d528178b050e7e24d717faf42e3d59b3203fffcf1d33fe1d5e"
+        },
+        {
+          "index": 2,
+          "elements": 300,
+          "max_abs_error": 5.543231964111328e-06,
+          "mean_abs_error": 3.503635639390268e-07,
+          "sign_agreement": 1.0,
+          "reference_sha256": "62ccdb1e13c6dc6ccd4cbeb89635d123b3e5b9bcaf1241a28ccb955d920daa6d",
+          "actual_sha256": "784d197185eb0066895129274a573ea80ddb69ea630690c7503ca206248e2aa2"
+        }
+      ],
+      "source_image": "data/dog.jpg"
+    },
+    {
+      "case": "owlv2-dnn",
+      "status": "LOCAL_PARITY_PASS",
+      "inputs": [
+        {
+          "index": 0,
+          "sha256": "bdcca8d9ca8d008165d8d6104907869085aa56d012c10a91003bbc80ec5f1e66",
+          "bytes": 11059200
+        },
+        {
+          "index": 1,
+          "sha256": "4a3d5d9211841a7a77662ba96103b3919d2cd48e12e2083d15cc25f2a853dee1",
+          "bytes": 384
+        },
+        {
+          "index": 2,
+          "sha256": "ff665388dfa173d26115f43949f342315cd246196dd5e8b27d48b90f643fd3c4",
+          "bytes": 384
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "elements": 10800,
+          "max_abs_error": 0.0010671615600585938,
+          "mean_abs_error": 4.554255065158941e-05,
+          "sign_agreement": 1.0,
+          "reference_sha256": "2df69320d7d3d65b79ff9b288e4d97a798fdbece8f21bae64afa3fdaedf345c4",
+          "actual_sha256": "926f76264ead5bd2d87f9e33c8193004fb1de88538999fb3b22d957f09cb6043"
+        },
+        {
+          "index": 1,
+          "elements": 3600,
+          "max_abs_error": 0.0007429122924804688,
+          "mean_abs_error": 2.913001117121894e-05,
+          "sign_agreement": 1.0,
+          "reference_sha256": "427cffadf6572a314ffbea121d50391f9caa4f3c31a777740bcef4164eabf89f",
+          "actual_sha256": "0bb122833215955f7a53dc33468b1db4ad69859e871fa79edb3bf8d57ae77a20"
+        },
+        {
+          "index": 2,
+          "elements": 14400,
+          "max_abs_error": 0.00013381242752075195,
+          "mean_abs_error": 6.704624979647633e-07,
+          "sign_agreement": 1.0,
+          "reference_sha256": "d2f917788bc89671a22b421b07ce909068fa6f6239a4e3e6b33dc98d5974ce2c",
+          "actual_sha256": "ff2832a756dd6605fdbbfb914f00171faaf95982be347f87cf48f7b26e990e0e"
+        }
+      ],
+      "source_image": "data/dog.jpg"
+    },
+    {
+      "case": "rfdetr-executorch",
+      "status": "LOCAL_PARITY_PASS",
+      "inputs": [
+        {
+          "index": 0,
+          "sha256": "ba7e20ff2cf918a43b62f8996569b5f7b05852b74c8282d973f1e2cf1c613a8e",
+          "bytes": 1769472
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "elements": 1200,
+          "max_abs_error": 6.67870044708252e-05,
+          "mean_abs_error": 1.062225805981143e-06,
+          "sign_agreement": 1.0,
+          "reference_sha256": "8325b81adb121e84ddc9cffd5c9b163971983b61e1c0130d7ce7b424c61eb76a",
+          "actual_sha256": "78712056890a89f9e5403df5be39c36d70bbb2c878272f9ba90f7b226fca41c1"
+        },
+        {
+          "index": 1,
+          "elements": 27300,
+          "max_abs_error": 0.00030231475830078125,
+          "mean_abs_error": 7.892973371781409e-06,
+          "sign_agreement": 1.0,
+          "reference_sha256": "db4d2e158c3f08d55be1f322d93d96623e7d0e305a8f9cc98a83f89e82f9cb7f",
+          "actual_sha256": "b236d63072da8a314d2b69ae088adea990e7feac46be77d9183ae14e3d1684a4"
+        }
+      ],
+      "source_image": "data/dog.jpg"
+    },
+    {
+      "case": "rfdetrseg-executorch",
+      "status": "LOCAL_PARITY_PASS",
+      "inputs": [
+        {
+          "index": 0,
+          "sha256": "9e3e5e953cb4b8b20fe1973e64841e7778f468d68fcd788f0baae9a502bf9160",
+          "bytes": 2239488
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "elements": 800,
+          "max_abs_error": 0.0005023777484893799,
+          "mean_abs_error": 9.095570931094699e-06,
+          "sign_agreement": 1.0,
+          "reference_sha256": "be4aea26eea6072674340f9b8bdfff3093a46fcbb461e7300a61e697e4509a62",
+          "actual_sha256": "a5ab1d664e395368ebadae332f442b5059ee358540dea6ea306597c8674f5912"
+        },
+        {
+          "index": 1,
+          "elements": 18200,
+          "max_abs_error": 0.007472038269042969,
+          "mean_abs_error": 9.015071555040777e-05,
+          "sign_agreement": 1.0,
+          "reference_sha256": "af56066b15a457163cc352edfac904fa1db3daf5b2aaeb0f4b6b14c94009b754",
+          "actual_sha256": "84d3bf55311004955427f933cb49a8c910b01d0b45df4c0aaac3163f63ae3bf2"
+        },
+        {
+          "index": 2,
+          "elements": 2332800,
+          "max_abs_error": 0.21213531494140625,
+          "mean_abs_error": 0.0013798995641991496,
+          "sign_agreement": 0.9999974279835391,
+          "reference_sha256": "d1d58e60dab1f8985f201eef2be4a343d64cc4d5b14815054bcdeba64f14c8a9",
+          "actual_sha256": "8037140b9f64c2080ecbdf168469c0b032cdf5f57a6acf07847ab7738112d724"
+        }
+      ],
+      "source_image": "data/dog.jpg"
+    },
+    {
+      "case": "rfdetr_keypoint-executorch",
+      "status": "LOCAL_PARITY_PASS",
+      "inputs": [
+        {
+          "index": 0,
+          "sha256": "d126bdd063cc86e69819506bd3068b3de4220f982e8112aae9159fd4d99a76da",
+          "bytes": 3981312
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "elements": 400,
+          "max_abs_error": 9.1552734375e-05,
+          "mean_abs_error": 6.840750756964553e-07,
+          "sign_agreement": 1.0,
+          "reference_sha256": "addf56e094289f07217670062ecbf5717b1f388d9b4e02ba5ed203d253f5b460",
+          "actual_sha256": "b3d70b80bc488d1d70ba0b712d1d290386f6f804f85025069958c887357a77ee"
+        },
+        {
+          "index": 1,
+          "elements": 200,
+          "max_abs_error": 2.7179718017578125e-05,
+          "mean_abs_error": 2.9063223792036297e-06,
+          "sign_agreement": 1.0,
+          "reference_sha256": "1de4beacdd9a2b42f64e2f4b9f3d05e717454bee60d879da793b8c7ef593c70c",
+          "actual_sha256": "65a7cc8256e3cea8b323e6403b2eccb6064a22bf4a854de26b22958fb3863966"
+        },
+        {
+          "index": 2,
+          "elements": 27200,
+          "max_abs_error": 0.000644683837890625,
+          "mean_abs_error": 2.702292476897128e-06,
+          "sign_agreement": 1.0,
+          "reference_sha256": "8d83493f534f420efdb8df03dee74cb8c299ea5c448c78edf5c650981c882bfd",
+          "actual_sha256": "5902e150281996e1355fac544bbd6830b39d42ff390c5252c3a6b259f5404cfc"
+        }
+      ],
+      "source_image": "data/person.jpg"
+    }
+  ],
+  "rtdetrv4_export": {
+    "nodes_adapted": 3,
+    "operation": "Unsqueeze constant RHS vector, MatMul matrix, Squeeze result",
+    "original_vs_adapted_ort_max_errors": {
+      "labels": 0.0,
+      "boxes_pixels": 9.1552734375e-05,
+      "scores": 9.5367431640625e-07
+    },
+    "original_artifact_opencv_status": "BLOCKED_VECTOR_MATMUL",
+    "task_type": "rtdetr"
+  },
+  "limits": [
+    "No release pins changed.",
+    "Local sibling checkouts and isolated SDK prefix; no remote-only release-provenance claim.",
+    "OpenCV 4 multi-input support is not claimed.",
+    "RT-DETRv4 requires the prepared export, not the original vector-MatMul file.",
+    "No repaired Slurm or concurrent test result until the controller returns.",
+    "KServe gRPC and TF 2.21 protobuf ABI prose blockers were not changed."
+  ],
+  "reference_onnx_artifacts": [
+    {
+      "path": "/tmp/opencode/rfdetr-torch-test/onnx/rfdetr-nano.onnx",
+      "sha256": "24eab284d5dffcb176219b8c386fdfc51450277145c8b95e15aeb6b26d4736ce"
+    },
+    {
+      "path": "/tmp/opencode/rfdetr-torch-test/onnx/rfdetrseg-medium.onnx",
+      "sha256": "8923e09dfdf12f474d9d679d8894d1385705ace45f4f7207798d42e2c99abe55"
+    },
+    {
+      "path": "/tmp/opencode/rfdetr-torch-test/onnx/rfdetr-keypoint.onnx",
+      "sha256": "daf251cb94d5001aeb08380c48986b21e12db616f41a3182ee0030eda2f0527b"
+    }
+  ],
+  "image_sources": [
+    {
+      "path": "data/dog.jpg",
+      "sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866"
+    },
+    {
+      "path": "data/person.jpg",
+      "sha256": "cdcbab947e46110fc2b77784ac54ddbbab2640f1e44cb5e91fc8984a9793a7d1"
+    }
+  ],
+  "toolchain": {
+    "local_slurm_client": "23.11.4",
+    "controller_slurm": "25.11.2",
+    "cmake": "3.28.3",
+    "clang_format": "18.1.3",
+    "python_codegen_torch": "2.14.0+cpu"
+  },
+  "render_checks": {
+    "segmentation": {
+      "labels_scores": "bicycle 0.943308 / horse 0.916267 / car 0.801956",
+      "path": "/tmp/blocked-local-cli/seg/data/output/processed_rfdetrseg_local.png",
+      "sha256": "cc5f0da28740560dd9ba6b52eb50d8b410ce1d64cc2f8fd9ef8de7bafa39f085"
+    },
+    "pose": {
+      "score": 0.850784,
+      "path": "/tmp/blocked-local-cli/pose-person/data/output/processed_rfdetr-keypoint_local.png",
+      "sha256": "cc0d29f911cfaf5d5e8d13119ea6f3c8b73f5c4c7449857b7a62713e7df0e73d",
+      "ort_render_sha256": "cc0d29f911cfaf5d5e8d13119ea6f3c8b73f5c4c7449857b7a62713e7df0e73d"
+    }
+  }
+}

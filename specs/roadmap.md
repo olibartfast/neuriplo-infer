@@ -183,3 +183,14 @@ the native LiteRT exporter; old generic converter files remain unsupported.
 Historical rtdetrul OpenVINO failure is superseded by current ORT/OVINO parity.
 See [validation](2026-11-04-known-bad-backends/validation.md). The backend
 patch still needs normal GitFlow delivery and a released dependency pin.
+
+## Blocked coverage cells — local fixes complete, parallel Slurm pending
+
+OpenCV graph tensor wiring and pinned ExecuTorch optimized registrations
+resolve all five formerly BLOCKED representative cells locally. RT-DETRv4
+uses the tasks-owned compatible export adapter. Numerical evidence, exact
+artifacts and runner are in
+[validation](2026-11-04-blocked-slurm-backends/validation.md).
+Baseline Slurm failures are recorded; repaired concurrent reruns await the
+existing controller coming back online. No release pin or cluster configuration
+changes were made.

@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
 
 ### Documentation
+- Record local fixes for five blocked OpenCV/ExecuTorch coverage cells with
+  ORT parity evidence, and add a Slurm backend runner. Repaired parallel Slurm
+  validation remains pending controller availability.
 - Re-gate TensorFlow ResNet50 classification with the corrected neuriplo-tasks
   exporter: C++ and Python agree on class 249 and confidence; record PASS and
   the requirement to re-export older SavedModels.
