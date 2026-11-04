@@ -107,7 +107,7 @@ Observed C++ scores:
 
 ## Limits
 
-No app source changed, so unrelated app configurations and its full test suite were not rebuilt. No hosted CI, remote-only build, KServe classification, GPU correctness or latency regression gate was run. Historical OpenVINO job 34 evidence retains its original KNOWN-BAD labels. Older unwrapped SavedModels remain incompatible and require re-export; this does not retroactively validate them.
+No app source changed, so unrelated app configurations and its full test suite were not rebuilt. No hosted CI, remote-only build, KServe classification, GPU correctness or latency gate was run. OpenVINO classification remains KNOWN-BAD and was not re-gated here. Older unwrapped SavedModels remain incompatible and require re-export.
 
 ### Final documentation checks
 
