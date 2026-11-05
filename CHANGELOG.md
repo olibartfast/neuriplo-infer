@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+- Remove the deprecated capabilities version 1 schema; the published capabilities
+  schema remains at version 2.
+
 ### Fixed
 - Select the native RF-DETR LiteRT exporter for detection and segmentation
   presets; pin the EdgeCrafter converter recipe to the re-gated version.

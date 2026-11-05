@@ -156,9 +156,8 @@ optional transport is compiled. The schema is documented in
 [`capabilities.schema.json`](capabilities.schema.json), currently at
 `schema_version` 2. Version 2 added the required `diagnostics` section; because
 the schema forbids unknown properties, that is a breaking change in both
-directions, so version 1 stays published as
-[`capabilities.schema.v1.json`](capabilities.schema.v1.json) for
-documents produced by an older binary.
+directions. Only the current version 2 schema is published; the legacy
+version 1 schema has been removed.
 
 ## Run diagnostics
 
