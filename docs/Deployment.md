@@ -47,7 +47,7 @@ not tested.
 
 | Backend | `-DDEFAULT_BACKEND=` | `setup_dependencies.sh --backend` | Dockerfile | Model file |
 |---------|----------------------|-----------------------------------|------------|------------|
-| OpenCV DNN | `OPENCV_DNN` (default) | `opencv` | — | `.onnx` with static shapes; Darknet `.weights` + `.cfg` |
+| OpenCV DNN | `OPENCV_DNN` (default) | `opencv` | — | `.onnx`; Darknet `.weights` + `.cfg` only with OpenCV 4.x; see [export guidance](ExportInstructions.md) for shapes |
 | ONNX Runtime | `ONNX_RUNTIME` | `onnx_runtime` | `docker/Dockerfile.onnxruntime` | `.onnx` |
 | TensorRT | `TENSORRT` | `tensorrt` | `docker/Dockerfile.tensorrt` | serialized `.engine` |
 | LibTorch | `LIBTORCH` | `libtorch` | `docker/Dockerfile.libtorch` | TorchScript `.pt` / `.torchscript`; AOTInductor `.pt2` |
