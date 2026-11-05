@@ -28,7 +28,8 @@ in the existing fail-fast CI matrix before releasing.
 Hosted job logs show Azure's Ubuntu HTTP archive downloading at about 40 KB/s,
 exhausting the 30-minute job budget before compilation. The shared install
 action switches that archive URL to the official Ubuntu HTTPS archive while
-preserving package names, version selection, and signed indexes.
+preserving package names, version selection, and signed indexes. Cover both
+direct apt sources and the hosted runner’s `/etc/apt/apt-mirrors.txt` indirection.
 
 ## Release gate
 

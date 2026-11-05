@@ -45,3 +45,9 @@ Master Release Check was similarly delayed. Change only that mirror URL in
 the shared action; hosted results after the correction remain pending.
 A supplemental parallel local CTest run collided on shared fixture directories;
 the canonical serial rerun passed 192/192. CI uses serial CTest.
+
+The first mirror correction missed apt's `mirror+file` indirection: the LibTorch
+log still showed `file:/etc/apt/apt-mirrors.txt` selecting the Azure HTTP archive.
+Include that file in the rewrite. Validate the complete action shell with mocked
+sudo/apt and fixtures for both direct sources and the mirror list, retaining
+suites and signing metadata. Hosted validation after this correction is pending.
