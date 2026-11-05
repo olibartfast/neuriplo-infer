@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.7] - 2026-11-05
+
 ### Changed
 - Use NERT as the default local backend in fresh builds and dependency setup;
   retain explicit backend overrides and OpenCV 4.6 minimum / 5.x preference.
