@@ -47,7 +47,8 @@ not tested.
 
 | Backend | `-DDEFAULT_BACKEND=` | `setup_dependencies.sh --backend` | Dockerfile | Model file |
 |---------|----------------------|-----------------------------------|------------|------------|
-| OpenCV DNN | `OPENCV_DNN` (default) | `opencv` | — | `.onnx`; Darknet `.weights` + `.cfg` only with OpenCV 4.x; see [export guidance](ExportInstructions.md) for shapes |
+| NERT | `NERT` (default) | `nert` (engine fetched by CMake) | — | `.onnx` |
+| OpenCV DNN | `OPENCV_DNN` | `opencv` | — | `.onnx`; Darknet `.weights` + `.cfg` only with OpenCV 4.x; see [export guidance](ExportInstructions.md) for shapes |
 | ONNX Runtime | `ONNX_RUNTIME` | `onnx_runtime` | `docker/Dockerfile.onnxruntime` | `.onnx` |
 | TensorRT | `TENSORRT` | `tensorrt` | `docker/Dockerfile.tensorrt` | serialized `.engine` |
 | LibTorch | `LIBTORCH` | `libtorch` | `docker/Dockerfile.libtorch` | TorchScript `.pt` / `.torchscript`; AOTInductor `.pt2` |
@@ -74,7 +75,12 @@ One binary carries one local backend; build again with another
 [ExportInstructions.md](ExportInstructions.md) and the
 [neuriplo-tasks export tools](https://github.com/olibartfast/neuriplo-tasks/tree/master/export).
 
-OpenCV DNN is the default. Ubuntu's apt OpenCV 4.6 rejects current
+NERT is the default local inference backend; neuriplo fetches and builds its
+pinned engine, with CPU execution by default. No separate NERT SDK setup is
+required. OpenCV remains required for app capture/rendering, with 4.6 as the
+minimum and a source-built 5.x installation preferred when present.
+
+For explicitly selected OpenCV DNN builds, Ubuntu's apt OpenCV 4.6 rejects current
 Ultralytics exports (YOLO11, and YOLOv8 even at opset 12), so the build
 prefers a source-built OpenCV 5 in `~/dependencies` when present
 (`scripts/setup_opencv.sh`; explicit `-DOpenCV_DIR` wins, otherwise apt
@@ -205,13 +211,14 @@ Ubuntu 24.04:
 
 ```bash
 sudo apt install -y cmake build-essential git wget curl libopencv-dev libgoogle-glog-dev
-./scripts/setup_dependencies.sh --backend <backend>          # see the Backends table
 
-cmake -S . -B build -DDEFAULT_BACKEND=<BACKEND> -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release  # NERT; add -DDEFAULT_BACKEND=<BACKEND> to override
 cmake --build build -j"$(nproc)"
 ./build/app/neuriplo-infer --help
 ```
 
+For an alternative backend, run `./scripts/setup_dependencies.sh --backend <backend>`
+and configure with `-DDEFAULT_BACKEND=<BACKEND>` using the Backends table.
 The setup script installs SDKs under `~/dependencies`, where CMake looks by
 default. `--backend all` installs every supported SDK; LibTorch also takes
 `--compute-platform <cpu|cuda|cu118|cu121|rocm6.0>` (default `cpu`). llama.cpp has
@@ -229,7 +236,7 @@ convenient for cross-repo work, surprising otherwise. See
 
 | Option | Default | Effect |
 |--------|---------|--------|
-| `DEFAULT_BACKEND` | `OPENCV_DNN` | Local inference backend compiled into the binary. |
+| `DEFAULT_BACKEND` | `NERT` | Local inference backend compiled into the binary. |
 | `USE_FFMPEG` | `OFF` | FFmpeg video backend — widest codec support. |
 | `USE_GSTREAMER` | `OFF` | GStreamer video backend. With both on, FFmpeg wins; with neither, OpenCV reads video. |
 | `NEURIPLO_INFER_WITH_VIDEOWRITER` | `OFF` | Builds the writer behind `--output_video`. Needs a C++20 standard library providing `std::jthread` and `std::osyncstream`, which is why `videocapture` ships its packaged macOS builds capture-only. The supported Linux toolchains are unaffected. |

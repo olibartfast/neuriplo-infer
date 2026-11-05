@@ -21,6 +21,8 @@ Never copy a version number out of them into prose:
 ## Language and build
 
 - C++20, CMake ≥ 3.24, single application target plus a test target.
+- Fresh builds default to CPU NERT through neuriplo; explicit backend overrides
+  remain supported. OpenCV 4.6 is the app minimum; source-built 5.x is preferred.
 - OpenCV ≥ 4.6 and glog are system dependencies.
 - Siblings (`neuriplo-tasks`, `neuriplo`, `videocapture`, `neuriplo-kserve-client`)
   arrive through `FetchContent`, pinned to concrete `vX.Y.Z` tags in `versions.env`.
@@ -46,7 +48,7 @@ through `CommandLineParser` → `NeuriploInfer` → `InferencePipelineBuilder` �
 - GoogleTest, discovered by CTest, built only under `-DENABLE_APP_TESTS=ON`.
 - Canonical local flow:
   ```bash
-  cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+  cmake -S . -B build-test -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
   cmake --build build-test
   ctest --test-dir build-test --output-on-failure
   ```

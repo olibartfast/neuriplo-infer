@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Use NERT as the default local backend in fresh builds and dependency setup;
+  retain explicit backend overrides and OpenCV 4.6 minimum / 5.x preference.
+
+### Added
+- Build and test the NERT default in the fail-fast CI matrix, including a
+  capabilities check; keep the explicit OpenCV DNN job.
+
 ### Removed
 - Remove the deprecated capabilities version 1 schema; the published capabilities
   schema remains at version 2.
