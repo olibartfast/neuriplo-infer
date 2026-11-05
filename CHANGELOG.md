@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
 
 ### Documentation
+- Expand the model export guide to cover all task categories and link backend
+  compatibility guidance and local export-plus-inference presets.
 - Record local fixes for five blocked OpenCV/ExecuTorch coverage cells with
   ORT parity evidence, and add a Slurm backend runner. Repaired parallel Slurm
   validation remains pending controller availability.
