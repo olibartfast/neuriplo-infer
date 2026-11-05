@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
 
 ### Documentation
+- Use `PASS` consistently for NERT coverage labels while retaining the scope and representative-model notes.
 - Consolidate repository agent rules in `AGENTS.md` and remove the Cursor rules folder.
 - Split export compatibility guidance into bullets and correct Darknet format
   support: OpenCV 5 requires conversion to ONNX.
