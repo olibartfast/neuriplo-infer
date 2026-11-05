@@ -64,7 +64,7 @@ See [Open items](#open-items) for remaining validation and fixes.
   is GGUF + `mmproj` only, so it never applies to detection/segmentation).
   Not a coverage gap. Maps to the matrix's NOT_APPLICABLE.
 
-`BUILDS` means the `ci.yml` job for that backend is green (`OPENCV_DNN`,
+`BUILDS` means the `ci.yml` job for that backend is green (`NERT`, `OPENCV_DNN`,
 `ONNX_RUNTIME`, `LIBTORCH`, `LIBTENSORFLOW`, `TENSORRT`, `OPENVINO`); there is
 no `LITERT` / `EXECUTORCH` / `LLAMACPP` build job. `DRY-RUN` means the preset
 is listed by `--list-presets` and green in `e2e-example-emulation.yml`

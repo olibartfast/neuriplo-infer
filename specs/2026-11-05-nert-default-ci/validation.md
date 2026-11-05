@@ -12,7 +12,7 @@ Written before implementation.
       OpenCV jobs with separate cache keys; NERT verifies its advertised backend.
 - [x] Generated model documentation matches the pinned tasks README.
 - [x] Relative and GitHub documentation links resolve; diff has no whitespace errors.
-- [ ] Hosted feature/develop CI and master release check are green before release.
+- [x] Hosted feature/develop CI and master release check are green before release.
 
 ## Limits
 
@@ -51,3 +51,13 @@ log still showed `file:/etc/apt/apt-mirrors.txt` selecting the Azure HTTP archiv
 Include that file in the rewrite. Validate the complete action shell with mocked
 sudo/apt and fixtures for both direct sources and the mirror list, retaining
 suites and signing metadata. Hosted validation after this correction is pending.
+
+## Release prerequisite checks
+
+- Feature CI: https://github.com/olibartfast/neuriplo-infer/actions/runs/42066115762 — passed all 11 configurations.
+- Develop CI at d636e88: https://github.com/olibartfast/neuriplo-infer/actions/runs/42096962112 — passed.
+- Develop lint and E2E at d636e88: passed.
+- Master Release Check: https://github.com/olibartfast/neuriplo-infer/actions/runs/42035967012 — passed on its retry.
+- The corrected mirror-list rewrite is validated by the complete hosted matrix.
+- Feature merged into develop through PR #102. Release metadata is prepared on
+  release/0.11.7; post-merge checks and Release Guard remain publishing gates.
