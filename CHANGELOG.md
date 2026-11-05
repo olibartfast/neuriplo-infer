@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
 
 ### Documentation
+- Correct the export guide's blanket fixed-shape ONNX restriction for the locally
+  validated OpenCV 5 adapter; distinguish that evidence from released pins.
 - Expand the model export guide to cover all task categories and link backend
   compatibility guidance and local export-plus-inference presets.
 - Record local fixes for five blocked OpenCV/ExecuTorch coverage cells with
