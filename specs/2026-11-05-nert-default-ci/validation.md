@@ -35,3 +35,13 @@ requires an interactive password; hosted CI covers the gRPC configuration.
 - Relative links resolve and all 15 existing GitHub documentation links return 200.
 - No C++ source changes; pre-commit was not run. Hosted lint remains a release gate.
 - No real model numerical gate was added; coverage statuses are unchanged.
+
+## Hosted installation diagnosis
+
+The synchronized run passed NERT, OpenCV, ONNX Runtime, TensorRT, TensorFlow,
+OpenVINO, E2E, and lint. KServe gRPC and LibTorch spent their install budget
+downloading Ubuntu packages from azure.archive.ubuntu.com at roughly 40 KB/s.
+Master Release Check was similarly delayed. Change only that mirror URL in
+the shared action; hosted results after the correction remain pending.
+A supplemental parallel local CTest run collided on shared fixture directories;
+the canonical serial rerun passed 192/192. CI uses serial CTest.
