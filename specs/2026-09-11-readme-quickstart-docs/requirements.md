@@ -35,7 +35,7 @@ the model-type inventory — lives in `docs/` and is linked, not repeated.
   Relative links in the upstream block are rewritten to absolute neuriplo-tasks
   URLs so the generated page has no broken links.
 - Every rule that names the README marker block is updated: `AGENTS.md`,
-  `.cursor/rules/new-task-type-checklist.mdc`, `specs/tech-stack.md`.
+  `AGENTS.md`, `specs/tech-stack.md`.
 - `.dockerignore` excludes `models/` and `environments/`, which the E2E script
   populates on the host and which no Dockerfile copies.
 - Known README drift corrected: backend list, Dockerfile count, the
