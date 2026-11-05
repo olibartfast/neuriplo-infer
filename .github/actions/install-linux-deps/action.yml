@@ -15,6 +15,14 @@ runs:
       env:
         INSTALL_GRPC: ${{ inputs.install-grpc }}
       run: |
+        # Some hosted runners reach the Azure HTTP mirror at only ~40 KB/s,
+        # exhausting job timeouts before compilation. Keep Ubuntu's signed
+        # package indexes and versions, but use the official archive over HTTPS.
+        for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
+          if [[ -f "$source_file" ]]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source_file"
+          fi
+        done
         # Bound idle mirror connections; retry transient acquisition failures.
         apt_options=(-o Acquire::Retries=3
                      -o Acquire::http::Timeout=30

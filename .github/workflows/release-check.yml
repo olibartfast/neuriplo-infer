@@ -31,7 +31,6 @@ jobs:
       - name: Configure
         run: |
           cmake -B build \
-            -DDEFAULT_BACKEND=OPENCV_DNN \
             -DENABLE_APP_TESTS=ON \
             -DCMAKE_BUILD_TYPE=Release
 
