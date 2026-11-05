@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   schema remains at version 2.
 
 ### Fixed
+- Use Ubuntu’s official HTTPS archive for shared CI dependencies instead of the
+  slow Azure HTTP mirror, preventing package downloads from consuming job timeouts.
 - Select the native RF-DETR LiteRT exporter for detection and segmentation
   presets; pin the EdgeCrafter converter recipe to the re-gated version.
 - Build the LibTorch backend image on Ubuntu 24.04. Ubuntu 22.04 ships

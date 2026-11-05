@@ -23,6 +23,13 @@ in the existing fail-fast CI matrix before releasing.
   inference implementation. No upstream or engine changes, CUDA enablement,
   model-coverage claims, Docker image, or dependency pin moves.
 
+## CI installation correction
+
+Hosted job logs show Azure's Ubuntu HTTP archive downloading at about 40 KB/s,
+exhausting the 30-minute job budget before compilation. The shared install
+action switches that archive URL to the official Ubuntu HTTPS archive while
+preserving package names, version selection, and signed indexes.
+
 ## Release gate
 
 The maintainer requires master and develop CI to be green before release.
