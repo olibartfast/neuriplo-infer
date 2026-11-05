@@ -36,11 +36,14 @@ to select a checkout containing the upstream export tools.
 Choose the export format for the backend you built; see the
 [backend format table](Deployment.md#backends) and
 [backend coverage](BackendCoverage.md) for tested combinations and limitations.
-For OpenCV DNN, shape handling depends on the OpenCV version and backend adapter.
-The locally validated OpenCV 5 adapter reads named, typed graph inputs and needs
-explicit input sizes only for unresolved dynamic dimensions; fixed-shape ONNX
-export is not a blanket requirement. These adapter changes are recorded as local
-fixes, outside the released dependency pins, in [backend coverage](BackendCoverage.md).
-Darknet `.weights` with a `.cfg` file remain an option for YOLOv4. Exporting a
-model to ONNX alone does not guarantee that its operators or inputs are supported
-by every backend.
+
+- **OpenCV 5 format:** use ONNX. Darknet `.weights` / `.cfg` loading was removed;
+  convert existing Darknet models to ONNX first. See the
+  [OpenCV migration guide](https://github.com/opencv/opencv/wiki/OpenCV-4-to-5-migration#darknet-and-caffe-parsers-removed).
+- **Input shapes:** the locally validated OpenCV 5 adapter reads named, typed
+  graph inputs. Explicit input sizes are needed only for unresolved dynamic
+  dimensions; fixed-shape ONNX export is not a blanket requirement.
+- **Release status:** these adapter changes are recorded as local fixes, outside
+  the released dependency pins, in [backend coverage](BackendCoverage.md).
+- **Compatibility:** ONNX export alone does not guarantee that a backend supports
+  the model's operators or inputs. Check the coverage for your model and build.
