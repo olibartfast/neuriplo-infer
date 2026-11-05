@@ -29,6 +29,9 @@ jobs:
       fail-fast: true
       matrix:
         include:
+        - variant: build-nert
+          display: Build & Test (NERT default)
+          timeout: 30
         - variant: build-opencv-dnn
           display: Build & Test (OPENCV_DNN)
           timeout: 30
@@ -81,46 +84,55 @@ jobs:
           timeout: 360
     steps:
     - uses: actions/checkout@v4
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Install shared dependencies
       uses: ./.github/actions/install-linux-deps
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Set up ccache
       uses: hendrikmuhs/ccache-action@v1
       with:
-        key: build-opencv-dnn-${{ runner.os }}
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+        key: ${{ matrix.variant }}-${{ runner.os }}
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Cache CMake build
       uses: actions/cache@v4
       with:
         path: build
-        key: ${{ runner.os }}-opencv-dnn-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt', 'versions.env') }}
-        restore-keys: ${{ runner.os }}-opencv-dnn-
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+        key: ${{ runner.os }}-${{ matrix.variant }}-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt', 'versions.env') }}
+        restore-keys: ${{ runner.os }}-${{ matrix.variant }}-
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Configure
       run: |
+        backend_args=()
+        if [[ "${{ matrix.variant }}" == 'build-opencv-dnn' ]]; then
+          backend_args=(-DDEFAULT_BACKEND=OPENCV_DNN)
+        fi
         cmake -B build -G Ninja \
-          -DDEFAULT_BACKEND=OPENCV_DNN \
+          "${backend_args[@]}" \
           -DENABLE_APP_TESTS=ON \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Test CI SDK version resolution
       run: python3 scripts/test_ci_sdk_versions.py
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Check model-type docs are in sync
       run: |
         python3 scripts/sync_supported_model_types.py \
           --neuriplo-tasks-readme build/_deps/neuriplo-tasks-src/README.md \
           --check
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Build
       run: cmake --build build --config Release --parallel $(nproc)
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Test
       working-directory: build
       run: ctest --output-on-failure
-      if: ${{ matrix.variant == 'build-opencv-dnn' }}
+      if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
+    - name: Verify NERT is the default local backend
+      if: ${{ matrix.variant == 'build-nert' }}
+      run: |
+        grep -qx 'DEFAULT_BACKEND:STRING=NERT' build/CMakeCache.txt
+        ./build/app/neuriplo-infer --capabilities | python3 -c 'import json, sys; workflows = json.load(sys.stdin)["execution"]["workflows"]; local = next(w for w in workflows if w["id"] == "local"); assert local["backends"] == ["nert"], local'
     - uses: actions/checkout@v4
       if: ${{ matrix.variant == 'kserve-build-matrix' }}
     - name: Install shared dependencies

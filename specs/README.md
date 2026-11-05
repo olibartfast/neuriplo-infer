@@ -70,10 +70,10 @@ git merge origin/develop --no-edit
 - [ ] **Re-run local checks** after the merge (build, tests, lint) — the merge commit can break things.
 
 ```bash
-cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
-cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build-test -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build build-test
 ctest --test-dir build-test --output-on-failure
 ```
