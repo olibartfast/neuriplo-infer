@@ -1,0 +1,459 @@
+{
+  "recorded_date": "2026-11-04",
+  "backend": "OPENVINO",
+  "profile": "P-LNX-EDGE-CPU",
+  "executor": "slurm",
+  "scope": "Current OpenVINO coverage status for the listed models.",
+  "resources": {
+    "container_cpus": 2,
+    "container_memory_gib": 3,
+    "timeout_seconds_per_model": 300,
+    "execution": "sequential"
+  },
+  "source_image": {
+    "tag": "neuriplo-infer:openvino-2026-11-01-full-coverage-1",
+    "source_id": "sha256:3d49ac64da4de7bcf1af501a4118c26cff41b6fd5cbe6194832f9b21dacbb0c4",
+    "imported_id": "sha256:ccf58d3c4ef271392421df843b7fc6d1f78930afa9d2babc6635c14522cdc9cb",
+    "filesystem_layers_verified": true,
+    "readiness": "NOT_READY: OpenCV and glog runtime libraries are missing."
+  },
+  "validation_image": {
+    "id": "sha256:cab51feff475b76d284012924d093fd7948489a97e68753d7b3e86a581f0fcd7",
+    "binary_sha256": "a31997f20450056a8c0c2378a693db8d33d0284542829262117e1eec311a1a2c",
+    "binary_unchanged": true,
+    "new_source_build": false,
+    "added_runtime_packages": [
+      "libopencv-highgui406",
+      "libopencv-imgcodecs406",
+      "libopencv-videoio406",
+      "libgoogle-glog0v6t64"
+    ]
+  },
+  "inputs": [
+    {
+      "path": "catalog/owlv2.onnx",
+      "sha256": "7f176ee3e1e1bdb7d920c31775e665bdc041699adbbe052e552bc1ad04a2a384",
+      "bytes": 618774288
+    },
+    {
+      "path": "catalog/owlvit.onnx",
+      "sha256": "47fd6bd6b35b650429e6240d0fd73eaa089083b0b23f94755304a970fdc7d5ed",
+      "bytes": 611739168
+    },
+    {
+      "path": "catalog/rtdetrul.onnx",
+      "sha256": "293d1b78c30ce284893ca9c25ec37f09c858f450d86fa83c5685455b30c3e00d",
+      "bytes": 129010758
+    },
+    {
+      "path": "catalog/tensorflow-classifier.onnx",
+      "sha256": "6997ff86f36c133a67aa457ad0655ade931cd0bfde77cee6e821b9c8ae913275",
+      "bytes": 102174642
+    },
+    {
+      "path": "catalog/timesformer.onnx",
+      "sha256": "a8be3c5c38fa6edc8bc898a7be438a06ac3faaaa2083c86f00f2f5610d54f797",
+      "bytes": 486591572
+    },
+    {
+      "path": "catalog/videomae.onnx",
+      "sha256": "aec5b848dc4b0b8f400f32bd7e80d1f84124bcf8aebb13a75af9c8c95b71da71",
+      "bytes": 351087858
+    },
+    {
+      "path": "catalog/vivit.onnx",
+      "sha256": "bd091f5da97ad30a93a7dfe493caaf04b0e7a0743b67c2f795177260bfded108",
+      "bytes": 355964068
+    },
+    {
+      "path": "coco.names",
+      "sha256": "b53100d68b84776c58ced22e1c4ac344edb97e56bafffe07a2de3e69385e4240",
+      "bytes": 626
+    },
+    {
+      "path": "dog.jpg",
+      "sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+      "bytes": 163759
+    },
+    {
+      "path": "imagenet.names",
+      "sha256": "ee4fa67b1dd46919ef87529b70e25bdd1ec9ebd350de3ad426e6640eb70320a1",
+      "bytes": 10488
+    },
+    {
+      "path": "owl-merges.txt",
+      "sha256": "9fd691f7c8039210e0fced15865466c65820d09b63988b0174bfe25de299051a",
+      "bytes": 524619
+    },
+    {
+      "path": "owl-vocab.json",
+      "sha256": "e089ad92ba36837a0d31433e555c8f45fe601ab5c221d4f607ded32d9f7a4349",
+      "bytes": 1059962
+    },
+    {
+      "path": "pexels-motion-16.mp4",
+      "sha256": "8f1e05c191a42cba63668d14595e14cb690f121006504b0f4648eea73b788732",
+      "bytes": 51655
+    },
+    {
+      "path": "pexels-motion-32.mp4",
+      "sha256": "f5ffad13cd3e0a2a4d44f380857ba23486fcdb372badb768fb2eac594c873491",
+      "bytes": 107746
+    },
+    {
+      "path": "pexels-motion-8.mp4",
+      "sha256": "edc3f1d1bcd798fc826603bdcf1522bef2360737124074e84412348e914d95f2",
+      "bytes": 24912
+    }
+  ],
+  "results": [
+    {
+      "model": "tensorflow-classifier",
+      "task": "classification",
+      "runtime_status": "RUNTIME_PASS",
+      "coverage_status": "KNOWN-BAD",
+      "slurm_job": 34,
+      "exit_code": 0,
+      "arguments": [
+        "--type=tensorflow-classifier",
+        "--weights=/workspace/catalog/tensorflow-classifier.onnx",
+        "--use-gpu=false",
+        "--warmup=false",
+        "--benchmark=false",
+        "--iterations=10",
+        "--labels=/workspace/imagenet.names",
+        "--batch=1",
+        "--no_display=true",
+        "--source=/workspace/dog.jpg"
+      ],
+      "metrics": {
+        "frames": null,
+        "samples": 1,
+        "stages_ms": {
+          "inference": 41.91092,
+          "model_load": 930.243711,
+          "postprocess": 0.307577,
+          "preprocess": 9.038893,
+          "render": 35.57957
+        },
+        "throughput_per_second": 23.860130009076396,
+        "wall_time_ms": 1027.974134
+      },
+      "artifacts": [
+        {
+          "path": "runtime.log",
+          "sha256": "7e987b2bb3b92bd56e0415d926b805e656ce2543e1348232effb2af44714811a"
+        },
+        {
+          "path": "data/output/run_report.json",
+          "sha256": "2137ad1fe3ed886dde893a15edeabbae8e138b27a9ad0d265a1a2c85a63a97ad"
+        },
+        {
+          "path": "data/output/processed_tensorflow-classifier_local.png",
+          "sha256": "838d41ef4809ac444fc4cd0b570d375d4f96b241f97533d707e6f514489b6fbf"
+        }
+      ],
+      "correctness_note": "OpenVINO output correctness is not validated; the current OpenVINO cell remains KNOWN-BAD."
+    },
+    {
+      "model": "videomae",
+      "task": "video_classification",
+      "runtime_status": "RUNTIME_PASS",
+      "coverage_status": "RUNTIME-PASS",
+      "slurm_job": 35,
+      "exit_code": 0,
+      "arguments": [
+        "--type=videomae",
+        "--weights=/workspace/catalog/videomae.onnx",
+        "--use-gpu=false",
+        "--warmup=false",
+        "--benchmark=false",
+        "--iterations=10",
+        "--num_frames=16",
+        "--batch=1",
+        "--no_display=true",
+        "--source=/workspace/pexels-motion-16.mp4"
+      ],
+      "metrics": {
+        "frames": 16,
+        "samples": 1,
+        "stages_ms": {
+          "inference": 9090.98135,
+          "model_load": 1971.459466,
+          "postprocess": 0.397348,
+          "preprocess": 210.116889,
+          "render": 0.333268
+        },
+        "throughput_per_second": 1.7599860107511935,
+        "wall_time_ms": 11317.487259
+      },
+      "artifacts": [
+        {
+          "path": "runtime.log",
+          "sha256": "c4dc14d986f273518dad4e58b6c9ad0959ffd2bbb9f34da15af77583b2500fd3"
+        },
+        {
+          "path": "data/output/run_report.json",
+          "sha256": "56099f3d882849e86e87b268f77b014808eb67d6649fbfab2336cd597730fa78"
+        }
+      ],
+      "coverage_note": "Inference only; video export is disabled. Classification correctness and exported-video rendering are not gated."
+    },
+    {
+      "model": "vivit",
+      "task": "video_classification",
+      "runtime_status": "RUNTIME_PASS",
+      "coverage_status": "RUNTIME-PASS",
+      "slurm_job": 35,
+      "exit_code": 0,
+      "arguments": [
+        "--type=vivit",
+        "--weights=/workspace/catalog/vivit.onnx",
+        "--use-gpu=false",
+        "--warmup=false",
+        "--benchmark=false",
+        "--iterations=10",
+        "--num_frames=32",
+        "--batch=1",
+        "--no_display=true",
+        "--source=/workspace/pexels-motion-32.mp4"
+      ],
+      "metrics": {
+        "frames": 32,
+        "samples": 1,
+        "stages_ms": {
+          "inference": 24991.753116,
+          "model_load": 1794.874757,
+          "postprocess": 0.189337,
+          "preprocess": 526.758372,
+          "render": 0.403329
+        },
+        "throughput_per_second": 1.2804223797934866,
+        "wall_time_ms": 27343.471027
+      },
+      "artifacts": [
+        {
+          "path": "runtime.log",
+          "sha256": "889f2a7f520ef4aa496c36c7e1b23848d96adf7949a2ff5f888ca0cce5e26c16"
+        },
+        {
+          "path": "data/output/run_report.json",
+          "sha256": "d8f6d562ce024118e5180327bbfacde911d9b66ac3f748ad94522f5ffb20209f"
+        }
+      ],
+      "coverage_note": "Inference only; video export is disabled. Classification correctness and exported-video rendering are not gated."
+    },
+    {
+      "model": "timesformer",
+      "task": "video_classification",
+      "runtime_status": "RUNTIME_PASS",
+      "coverage_status": "RUNTIME-PASS",
+      "slurm_job": 35,
+      "exit_code": 0,
+      "arguments": [
+        "--type=timesformer",
+        "--weights=/workspace/catalog/timesformer.onnx",
+        "--use-gpu=false",
+        "--warmup=false",
+        "--benchmark=false",
+        "--iterations=10",
+        "--num_frames=8",
+        "--batch=1",
+        "--no_display=true",
+        "--source=/workspace/pexels-motion-8.mp4"
+      ],
+      "metrics": {
+        "frames": 8,
+        "samples": 1,
+        "stages_ms": {
+          "inference": 9736.217306,
+          "model_load": 2442.215802,
+          "postprocess": 0.933003,
+          "preprocess": 118.285631,
+          "render": 1.093652
+        },
+        "throughput_per_second": 0.8216743472919358,
+        "wall_time_ms": 12342.396883
+      },
+      "artifacts": [
+        {
+          "path": "runtime.log",
+          "sha256": "20b93ab346356c8717e325b3523ebf299873b705a5f93017d9ef89e1341ea036"
+        },
+        {
+          "path": "data/output/run_report.json",
+          "sha256": "03bf702ef9fdf063a157b7fccc68c3107e42c9b49f170acd56570423656cfc6c"
+        }
+      ],
+      "coverage_note": "Inference only; video export is disabled. Classification correctness and exported-video rendering are not gated."
+    },
+    {
+      "model": "owlv2",
+      "task": "open_vocabulary_detection",
+      "runtime_status": "RUNTIME_PASS",
+      "coverage_status": "PASS",
+      "slurm_job": 34,
+      "exit_code": 0,
+      "arguments": [
+        "--type=owlv2",
+        "--weights=/workspace/catalog/owlv2.onnx",
+        "--use-gpu=false",
+        "--warmup=false",
+        "--benchmark=false",
+        "--iterations=10",
+        "--min_confidence=0.25",
+        "--nms_threshold=0.45",
+        "--batch=1",
+        "--no_display=true",
+        "--text_prompts=a dog;a bicycle;a car",
+        "--tokenizer_vocab=/workspace/owl-vocab.json",
+        "--tokenizer_merges=/workspace/owl-merges.txt",
+        "--source=/workspace/dog.jpg"
+      ],
+      "metrics": {
+        "frames": null,
+        "samples": 1,
+        "stages_ms": {
+          "inference": 30057.588441,
+          "model_load": 4290.846354,
+          "postprocess": 10.424968,
+          "preprocess": 160.258095,
+          "render": 86.18908
+        },
+        "throughput_per_second": 0.03326946877201738,
+        "wall_time_ms": 34618.991592
+      },
+      "artifacts": [
+        {
+          "path": "runtime.log",
+          "sha256": "e12506ce57950fec777c549bc02f51b9600ec242fd43bc7a9c574692225daae4"
+        },
+        {
+          "path": "data/output/run_report.json",
+          "sha256": "0e0b5e9792d149b31d0d54f08b86018a0201dde8686219a50c1f99618d6d8108"
+        },
+        {
+          "path": "data/output/processed_owlv2_local.png",
+          "sha256": "98dacc1b1823876c1dc7396aa306cccec1e4bef8d54dbacbb6a36650f16ef256"
+        }
+      ],
+      "coverage_note": "Inference completed and output image was visually inspected for consistency with text prompts."
+    },
+    {
+      "model": "owlvit",
+      "task": "open_vocabulary_detection",
+      "runtime_status": "RUNTIME_PASS",
+      "coverage_status": "PASS",
+      "slurm_job": 34,
+      "exit_code": 0,
+      "arguments": [
+        "--type=owlvit",
+        "--weights=/workspace/catalog/owlvit.onnx",
+        "--use-gpu=false",
+        "--warmup=false",
+        "--benchmark=false",
+        "--iterations=10",
+        "--min_confidence=0.25",
+        "--nms_threshold=0.45",
+        "--batch=1",
+        "--no_display=true",
+        "--text_prompts=a dog;a bicycle;a car",
+        "--tokenizer_vocab=/workspace/owl-vocab.json",
+        "--tokenizer_merges=/workspace/owl-merges.txt",
+        "--source=/workspace/dog.jpg"
+      ],
+      "metrics": {
+        "frames": null,
+        "samples": 1,
+        "stages_ms": {
+          "inference": 2788.361691,
+          "model_load": 3845.365819,
+          "postprocess": 1.067699,
+          "preprocess": 100.523632,
+          "render": 88.312813
+        },
+        "throughput_per_second": 0.3586335313771172,
+        "wall_time_ms": 6833.127776
+      },
+      "artifacts": [
+        {
+          "path": "runtime.log",
+          "sha256": "8bf1b6243f990aa2b5e76a9c91f49525874141856836db96d7df4540a0dbf5e1"
+        },
+        {
+          "path": "data/output/run_report.json",
+          "sha256": "e98a47482548d88ca0471536b4ea631cf9c054997b2d319afb13998a39e09be0"
+        },
+        {
+          "path": "data/output/processed_owlvit_local.png",
+          "sha256": "644b5e3184129041a0cb8e40a286d4cf898237564ef131947f71d3ca7762d490"
+        }
+      ],
+      "coverage_note": "Inference completed and output image was visually inspected for consistency with text prompts."
+    },
+    {
+      "model": "rtdetrul",
+      "task": "object_detection",
+      "runtime_status": "RUNTIME_PASS",
+      "coverage_status": "PASS",
+      "slurm_job": 34,
+      "exit_code": 0,
+      "arguments": [
+        "--type=rtdetrul",
+        "--weights=/workspace/catalog/rtdetrul.onnx",
+        "--use-gpu=false",
+        "--warmup=false",
+        "--benchmark=false",
+        "--iterations=10",
+        "--labels=/workspace/coco.names",
+        "--min_confidence=0.25",
+        "--nms_threshold=0.45",
+        "--batch=1",
+        "--no_display=true",
+        "--source=/workspace/dog.jpg"
+      ],
+      "metrics": {
+        "frames": null,
+        "samples": 1,
+        "stages_ms": {
+          "inference": 2111.966873,
+          "model_load": 1891.398294,
+          "postprocess": 0.290261,
+          "preprocess": 73.176411,
+          "render": 89.436844
+        },
+        "throughput_per_second": 0.4734922752739598,
+        "wall_time_ms": 4180.962238
+      },
+      "artifacts": [
+        {
+          "path": "runtime.log",
+          "sha256": "2949751924d257b208c8ceb4718b78c5a5b9ca093e763e6e1a43a68656826d79"
+        },
+        {
+          "path": "data/output/processed_rtdetrul_local.png",
+          "sha256": "b5fb7274deef180c7523281f9a7258fd4ae270dddfc1a42c2270e32cf09c0758"
+        },
+        {
+          "path": "data/output/run_report.json",
+          "sha256": "112b986bdfab27f7be95d2da96a42109eb0d6f2539d10f1e29530e973197b9ff"
+        }
+      ],
+      "correctness_note": "Same ONNX passes the current local C++ OpenVINO re-gate against ORT."
+    }
+  ],
+  "job_notes": {
+    "34": "Current per-model statuses are listed in results[].",
+    "35": "Video classification inference completed with video export disabled."
+  },
+  "raw_evidence_hashes": {
+    "ov-video-35.log": "6cc3e318213131500b6338888e4eb4a1d978a3582c5665eac3391c91b295e34c",
+    "job35/results.json": "5d151e56c62949f5af024b8971659a92d15501de26fb184e30659d6897f82e30"
+  },
+  "limits": [
+    "Original release-image packaging remains broken.",
+    "Results do not certify current source pins or all CPU hardware.",
+    "Video numerical classification correctness and file rendering remain unvalidated.",
+    "Timings are individual run-report samples, not benchmarks."
+  ]
+}

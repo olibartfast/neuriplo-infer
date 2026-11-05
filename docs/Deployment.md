@@ -47,7 +47,7 @@ not tested.
 
 | Backend | `-DDEFAULT_BACKEND=` | `setup_dependencies.sh --backend` | Dockerfile | Model file |
 |---------|----------------------|-----------------------------------|------------|------------|
-| OpenCV DNN | `OPENCV_DNN` (default) | `opencv` | — | `.onnx` with static shapes; Darknet `.weights` + `.cfg` |
+| OpenCV DNN | `OPENCV_DNN` (default) | `opencv` | — | `.onnx`; Darknet `.weights` + `.cfg` only with OpenCV 4.x; see [export guidance](ExportInstructions.md) for shapes |
 | ONNX Runtime | `ONNX_RUNTIME` | `onnx_runtime` | `docker/Dockerfile.onnxruntime` | `.onnx` |
 | TensorRT | `TENSORRT` | `tensorrt` | `docker/Dockerfile.tensorrt` | serialized `.engine` |
 | LibTorch | `LIBTORCH` | `libtorch` | `docker/Dockerfile.libtorch` | TorchScript `.pt` / `.torchscript`; AOTInductor `.pt2` |
@@ -95,7 +95,7 @@ family, NERT-style PASS / DRY-RUN / BUILDS / BLOCKED / KNOWN-BAD / UNTESTED.
 | `Dockerfile.onnxruntime` | `ubuntu:24.04` | CPU |
 | `Dockerfile.tensorrt` | `nvcr.io/nvidia/cuda:13.0.0-devel-ubuntu24.04` | NVIDIA GPU |
 | `Dockerfile.libtorch` | `ubuntu:22.04` | CPU; CUDA with `COMPUTE_PLATFORM` |
-| `Dockerfile.openvino` | `openvino/ubuntu24_runtime:2025.2.0` | CPU |
+| `Dockerfile.openvino` | `openvino/ubuntu24_runtime:2026.3.0` | CPU |
 | `Dockerfile.libtensorflow` | `ubuntu:24.04` | CPU |
 | `Dockerfile.litert` | `ubuntu:24.04` | CPU |
 | `Dockerfile.executorch` | `ubuntu:24.04` | CPU |
@@ -193,8 +193,11 @@ bash docker_run_inference_e2e_example.sh --preset owlv2 --neuriplo-tasks-dir ../
 ```
 
 `--backend` overrides a preset's backend; `--skip-export`, `--skip-convert`, and
-`--skip-infer` rerun single steps. EdgeCrafter models convert to LiteRT but
-produce wrong detections there — run them on ONNX Runtime or TensorRT.
+`--skip-infer` rerun single steps. EdgeCrafter LiteRT support depends on the
+converted artifact and backend: the replacement `ecdet` artifact passes local
+and HTTP checks with an unreleased neuriplo XNNPACK patch, which is not included
+in the app dependency pins. Use ONNX Runtime or TensorRT for the pinned build;
+see [the conversion validation](KserveCompatibility.md#known-bad-conversion-edgecrafter-ecdet-rtdetrdeformable--tflite).
 
 ## Native builds
 
@@ -233,7 +236,7 @@ convenient for cross-repo work, surprising otherwise. See
 | `NEURIPLO_INFER_ENABLE_KSERVE` | `ON` | Remote KServe client. |
 | `NEURIPLO_INFER_ENABLE_LOCAL_BACKENDS` | `ON` | Local backends; `OFF` gives a KServe-only build that does not fetch `neuriplo`. |
 | `NEURIPLO_INFER_ENABLE_GRPC` | `ON` | gRPC transport, when Protobuf and gRPC are found. |
-| `NEURIPLO_INFER_ENABLE_KSERVE_TLS` | `ON` when OpenSSL is found | HTTPS for the HTTP KServe client. |
+| `NEURIPLO_INFER_ENABLE_KSERVE_TLS` | `ON` | Requests HTTPS support for the HTTP KServe client (requires OpenSSL). |
 | `ENABLE_APP_TESTS` | `OFF` | Unit tests (`ctest --test-dir <build> --output-on-failure`). |
 | `WERROR` | `OFF` | Treat compiler warnings as errors. |
 

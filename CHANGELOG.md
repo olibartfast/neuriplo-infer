@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+- Remove the deprecated capabilities version 1 schema; the published capabilities
+  schema remains at version 2.
+
+### Fixed
+- Select the native RF-DETR LiteRT exporter for detection and segmentation
+  presets; pin the EdgeCrafter converter recipe to the re-gated version.
+- Build the LibTorch backend image on Ubuntu 24.04. Ubuntu 22.04 ships
+  CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
+
+### Documentation
+- Consolidate repository agent rules in `AGENTS.md` and remove the Cursor rules folder.
+- Split export compatibility guidance into bullets and correct Darknet format
+  support: OpenCV 5 requires conversion to ONNX.
+- Correct the export guide's blanket fixed-shape ONNX restriction for the locally
+  validated OpenCV 5 adapter; distinguish that evidence from released pins.
+- Expand the model export guide to cover all task categories and link backend
+  compatibility guidance and local export-plus-inference presets.
+- Record local fixes for five blocked OpenCV/ExecuTorch coverage cells with
+  ORT parity evidence, and add a Slurm backend runner. Repaired parallel Slurm
+  validation remains pending controller availability.
+- Re-gate TensorFlow ResNet50 classification with the corrected neuriplo-tasks
+  exporter: C++ and Python agree on class 249 and confidence; record PASS and
+  the requirement to re-export older SavedModels.
+- Refresh the backend coverage matrix for the 0.11.6 stack (neuriplo
+  0.11.3, neuriplo-tasks 0.8.4): record the OpenCV DNN single-input limit
+  (including 4-input `groundingdino`), the EdgeCrafter exact-GELU importer
+  crash, and the OpenVINO 5D video inference crash, and point at the 13
+  triage decisions in the external cell matrix.
+
 ## [0.11.6] - 2026-10-30
 
 ### Fixed

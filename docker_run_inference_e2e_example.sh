@@ -16,6 +16,9 @@
 #       Pinned releases before that point return "Unrecognized model type".
 #   - raft                  Optical flow
 #   - vitpose               Pose estimation
+#   - rfdetr                Object detection (RF-DETR medium, ONNX Runtime)
+#   - rfdetrseg             Instance segmentation (RF-DETR seg medium, ONNX Runtime)
+#   - rfdetr_keypoint       Pose estimation (RF-DETR keypoint preview, ONNX Runtime)
 #   - depth_anything_v2     Depth estimation
 #   - videomae              Video classification
 #   - gemma4                Image understanding (llama.cpp, Gemma 4 E2B IT GGUF)
@@ -98,6 +101,8 @@ edgecrafter_seg
 edgecrafter_pose
 raft
 vitpose
+rfdetr
+rfdetrseg
 rfdetr_keypoint
 depth_anything_v2
 videomae
@@ -390,17 +395,9 @@ print('Exported to', dest)
         EDGECRAFTER_VENV="${ROOT_DIR}/environments/edgecrafter-export"
         INPUT_SIZES="3,640,640;2"
         EXTRA_REQUIREMENTS=()
-        # EdgeCrafter has no native TFLite exporter, so a litert run lowers the
-        # exported ONNX graph to TFLite via onnx2tf (see the LiteRT convert step).
-        #
-        # WARNING (litert/TFLite): the onnx2tf conversion of these RT-DETR/
-        # deformable-attention models is numerically broken. The .tflite loads
-        # and runs end-to-end (the litert backend ships ONNX_GRIDSAMPLE + INT64
-        # SIGN kernels for it) but produces GARBAGE detections (top score ~0.19,
-        # random labels) vs correct ONNX/TensorRT output. The fault is the
-        # conversion, not this pipeline. Serve EdgeCrafter via onnxruntime/
-        # tensorrt/openvino instead. See docs/KserveCompatibility.md
-        # ("Known-bad conversion: EdgeCrafter ecdet -> TFLite").
+        # EdgeCrafter uses onnx2tf 2.6.9 and requires the neuriplo LiteRT
+        # XNNPACK subgraph-reshaping fix. Older converter artifacts are wrong;
+        # see BackendCoverage E4 for the validated replacement and runtime.
         LITERT_CONVERT_FROM_ONNX=true
         case "$PRESET" in
             edgecrafter_det)
@@ -473,6 +470,52 @@ print('Exported to', dest)
             "source \"${NEURIPLO_TASKS_DIR}/environments/vitpose-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/pose_estimation/vitpose/export_vitpose_to_onnx.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
         )
         RUNTIME_EXTRA_ARGS=()
+        ;;
+    rfdetr)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="rfdetr"
+        MODEL_BASENAME="rfdetr-medium"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/rfdetr-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/rfdetr-export/bin/activate\" && pip install --upgrade pip && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime rfdetr && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/detection/rfdetr/export.py\" --model_type medium --output_dir \"${WEIGHTS_DIR}\" --simplify && if [[ ! -f \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" ]]; then newest=\$(ls -t \"${WEIGHTS_DIR}\"/*.onnx 2>/dev/null | head -n 1); if [[ -n \"\${newest}\" && \"\${newest}\" != \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" ]]; then mv \"\${newest}\" \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\"; fi; fi"
+        )
+        if [[ "$BACKEND" == "litert" ]]; then
+            EXPORT_COMMANDS=(
+                "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/rfdetr-export\""
+                "source \"${NEURIPLO_TASKS_DIR}/environments/rfdetr-export/bin/activate\" && pip install 'rfdetr[litert]==1.11.2' && python \"${ROOT_DIR}/scripts/export_rfdetr_litert.py\" --task detection --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite\""
+            )
+        fi
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5")
+        ;;
+    rfdetrseg)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="onnxruntime"
+        fi
+        MODEL_TYPE="rfdetrseg"
+        MODEL_BASENAME="rfdetrseg-medium"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/coco.names"
+        HOST_LABELS_PATH="${LABELS_DIR}/coco.names"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/rfdetrseg-export\""
+            "source \"${NEURIPLO_TASKS_DIR}/environments/rfdetrseg-export/bin/activate\" && pip install --upgrade pip && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" onnx onnxruntime rfdetr && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/segmentation/rfdetr/export.py\" --model_type medium --output_dir \"${WEIGHTS_DIR}\" --simplify && if [[ ! -f \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" ]]; then newest=\$(ls -t \"${WEIGHTS_DIR}\"/*.onnx 2>/dev/null | head -n 1); if [[ -n \"\${newest}\" && \"\${newest}\" != \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\" ]]; then mv \"\${newest}\" \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\"; fi; fi"
+        )
+        if [[ "$BACKEND" == "litert" ]]; then
+            EXPORT_COMMANDS=(
+                "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/rfdetrseg-export\""
+                "source \"${NEURIPLO_TASKS_DIR}/environments/rfdetrseg-export/bin/activate\" && pip install 'rfdetr[litert]==1.11.2' && python \"${ROOT_DIR}/scripts/export_rfdetr_litert.py\" --task segmentation --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite\""
+            )
+        fi
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}" "--min_confidence=0.4" "--nms_threshold=0.5" "--mask_threshold=0.5")
         ;;
     rfdetr_keypoint)
         if [[ "$BACKEND_SET" == false ]]; then
@@ -634,7 +677,7 @@ if [[ "$BACKEND" == "litert" && "${LITERT_CONVERT_FROM_ONNX:-false}" == true && 
     # variants into the output dir (e.g. <model>_float32.tflite); copy the
     # float32 variant to the path the inference step expects.
     run_shell_cmd "${PYTHON_BIN} -m venv \"${LITERT_CONVERT_VENV}\""
-    run_shell_cmd "source \"${LITERT_CONVERT_VENV}/bin/activate\" && pip install --quiet --upgrade pip && pip install --quiet onnx onnxruntime onnx-graphsurgeon sng4onnx simple_onnx_processing_tools onnx2tf tensorflow && onnx2tf -i \"${ONNX_ARTIFACT}\" -o \"${TFLITE_OUTPUT_DIR}\" && cp \"${TFLITE_OUTPUT_DIR}/${MODEL_BASENAME}_float32.tflite\" \"${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite\""
+    run_shell_cmd "source \"${LITERT_CONVERT_VENV}/bin/activate\" && pip install --quiet --upgrade pip && pip install --quiet onnx onnxruntime onnx-graphsurgeon sng4onnx simple_onnx_processing_tools onnx2tf==2.6.9 tensorflow && onnx2tf -i \"${ONNX_ARTIFACT}\" -o \"${TFLITE_OUTPUT_DIR}\" && cp \"${TFLITE_OUTPUT_DIR}/${MODEL_BASENAME}_float32.tflite\" \"${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite\""
 fi
 
 if [[ "$SKIP_INFER" == false ]]; then

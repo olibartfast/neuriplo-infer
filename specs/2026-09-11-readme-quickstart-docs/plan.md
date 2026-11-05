@@ -13,7 +13,7 @@
    relative links in the upstream block to absolute neuriplo-tasks URLs.
 3. Regenerate `docs/generated/supported-model-types.md`; confirm `--check` passes.
 4. Update the rules that name the README block: `AGENTS.md`,
-   `.cursor/rules/new-task-type-checklist.mdc`, `specs/tech-stack.md`.
+   `AGENTS.md`, `specs/tech-stack.md`.
 
 ## Group 3 — Sub-docs
 

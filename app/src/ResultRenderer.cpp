@@ -337,5 +337,8 @@ void DefaultResultRenderer::render(
     break;
   case neuriplo_tasks::TaskType::GaussianSplatting:
     break;
+  case neuriplo_tasks::TaskType::KeypointMatching:
+    // No renderer yet: keypoint matches are recorded, not drawn.
+    break;
   }
 }

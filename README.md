@@ -10,7 +10,7 @@ an image or video, and get annotated results — on the backend of your choice.
 
 ## Key Features
 
-- **Multiple Computer Vision Tasks**: Supported via [neuriplo-tasks library](https://github.com/olibartfast/neuriplo-tasks/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM)
+- **Multiple Computer Vision Tasks**: Supported via [neuriplo-tasks library](https://github.com/olibartfast/neuriplo-tasks/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM, Keypoint Matching)
 - **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO, TensorFlow, LiteRT, ExecuTorch, llama.cpp (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Images, Video Files, and Streams**: via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
 - **A Docker Image for Most Backends**: no local SDK installs needed (the default `OPENCV_DNN` backend has no image; build it from source)
