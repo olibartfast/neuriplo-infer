@@ -80,74 +80,80 @@ This matrix gates the app seam: routed, run, rendered, tested.
 
 ## Gate table
 
-The same tasks appear in both tables. NERT is first; the other backends are
-split into groups to keep each table narrow. Each evidence link points to
+The same tasks appear in both tables. Backends are split into groups to
+keep each table narrow. Each evidence link points to
 the task's recorded results. [Scope and caveats](#scope-and-caveats) explain
 the NERT gates and the marked cells.
 
 `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
-`Torch` = LIBTORCH · `OVINO` = OPENVINO · `TF` = LIBTENSORFLOW.
+`TRC` = LIBTORCH · `OV` = OPENVINO · `TF` = LIBTENSORFLOW.
 `ExecT` = EXECUTORCH · `LLaMA` = LLAMACPP · `KServe` = remote `KserveEngine`.
 NERT is the first-party Neuriplo Engine Runtime. Representative presets
 appear in parentheses.
 
-### NERT and general-purpose local backends
+Table key: **P** = PASS · **U** = UNTESTED · **B** = BUILDS · **DR** = DRY-RUN.
+Footnote markers retain the scope explained below.
 
-| Task (representative) | NERT | DNN | ORT | TRT | Torch | OVINO | TF | Evidence |
+### Local inference backends
+
+| Task (representative) | NERT | DNN | ORT | TRT | TRC | OV | TF | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Object detection (`yolo26`, `yolo26s_tflite`) | PASS | PASS | PASS | PASS | PASS | PASS | BUILDS | [E1](#ev-yolo26) |
-| Object detection (`yolov8`, `yolov8_executorch`) | PASS | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | PASS | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | PASS* | PASS§ | DRY-RUN | DRY-RUN | PASS | BUILDS | BUILDS | [E3](#ev-rtdetr) |
-| Object detection (`rtdetrul`, Ultralytics RT-DETR) | UNTESTED | UNTESTED | PASS | UNTESTED | UNTESTED | PASS | UNTESTED | [E14](#ev-ov-slurm) |
-| Object detection (`ecdet`, `edgecrafter_det`) | PASS | UNTESTED | PASS | PASS | BUILDS | BUILDS | BUILDS | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS | PASS | PASS | PASS | PASS | BUILDS | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | PASS* | PASS | PASS | PASS | BUILDS | BUILDS | BUILDS | [E5](#ev-seg) |
-| Instance segmentation (`ecseg`, `edgecrafter_seg`) | PASS | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS | PASS | PASS | PASS | PASS | BUILDS | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | PASS* | UNTESTED | DRY-RUN | BUILDS | PASS | BUILDS | PASS | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | PASS | UNTESTED | DRY-RUN | BUILDS | BUILDS | RUNTIME-PASS† | BUILDS | [E7](#ev-video) |
-| Optical flow (`raft`, `raft`) | PASS | UNTESTED | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | [E7](#ev-video) |
-| Pose estimation (`vitpose`, `vitpose`) | PASS | PASS | DRY-RUN | BUILDS | BUILDS | BUILDS | BUILDS | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS | PASS | PASS | PASS | PASS | BUILDS | [E13](#ev-rfdetr) |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | PASS | PASS | BUILDS | BUILDS | PASS | BUILDS | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | PASS | PASS§ | PASS | BUILDS | BUILDS | PASS† | BUILDS | [E10](#ev-owlv2) |
+| Object detection (`yolo26`, `yolo26s_tflite`) | P | P | P | P | P | P | B | [E1](#ev-yolo26) |
+| Object detection (`yolov8`, `yolov8_executorch`) | P | P | DR | B | B | B | P | [E2](#ev-yolov8) |
+| Object detection (`rtdetr`, `rtdetrv4`) | P* | P§ | DR | DR | P | B | B | [E3](#ev-rtdetr) |
+| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | P | U | U | P | U | [E14](#ev-ov-slurm) |
+| Object detection (`ecdet`, `edgecrafter_det`) | P | U | P | P | B | B | B | [E4](#ev-ecdet) |
+| Object detection (`rfdetr`, `rfdetr`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | P* | P | P | P | B | B | B | [E5](#ev-seg) |
+| Instance segmentation (`ecseg`, `edgecrafter_seg`) | P | U | DR | B | B | B | B | [E5](#ev-seg) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | P* | U | DR | B | P | B | P | [E6](#ev-classification) |
+| Video classification (`videomae`, `videomae`) | P | U | DR | B | B | RUNTIME-PASS† | B | [E7](#ev-video) |
+| Optical flow (`raft`, `raft`) | P | U | DR | B | B | B | B | [E7](#ev-video) |
+| Pose estimation (`vitpose`, `vitpose`) | P | P | DR | B | B | B | B | [E8](#ev-pose) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
+| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | P | P | P | B | B | P | B | [E9](#ev-depth) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | P | P§ | P | B | B | P† | B | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | [E11](#ev-gemma4) |
-| Gaussian splatting (`lgm`/`grm`, no preset) | N/A | UNTESTED | UNTESTED | UNTESTED | BUILDS | BUILDS | UNTESTED | [E12](#ev-splatting) |
+| Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U | [E12](#ev-splatting) |
 
 ### Additional runtimes and remote execution
 
 | Task (representative) | LiteRT | ExecT | LLaMA | KServe | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| Object detection (`yolo26`, `yolo26s_tflite`) | PASS | UNTESTED | N/A | PASS | [E1](#ev-yolo26) |
-| Object detection (`yolov8`, `yolov8_executorch`) | PASS | PASS | N/A | UNTESTED | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | UNTESTED | UNTESTED | N/A | UNTESTED | [E3](#ev-rtdetr) |
-| Object detection (`rtdetrul`, Ultralytics RT-DETR) | UNTESTED | UNTESTED | N/A | UNTESTED | [E14](#ev-ov-slurm) |
-| Object detection (`ecdet`, `edgecrafter_det`) | PASS‡ | UNTESTED | N/A | PASS‡ | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | PASS | PASS§ | N/A | PASS | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | UNTESTED | UNTESTED | N/A | PASS | [E5](#ev-seg) |
-| Instance segmentation (`ecseg`, `edgecrafter_seg`) | UNTESTED | UNTESTED | N/A | UNTESTED | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | PASS | PASS§ | N/A | PASS | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | UNTESTED | UNTESTED | N/A | UNTESTED | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
-| Optical flow (`raft`, `raft`) | UNTESTED | UNTESTED | N/A | UNTESTED | [E7](#ev-video) |
-| Pose estimation (`vitpose`, `vitpose`) | PASS | UNTESTED | N/A | PASS | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | PASS | PASS§ | N/A | PASS | [E13](#ev-rfdetr) |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | PASS | UNTESTED | N/A | PASS | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | UNTESTED | UNTESTED | N/A | PASS | [E10](#ev-owlv2) |
-| Image understanding (`gemma4`, `gemma4`) | N/A | N/A | PASS | UNTESTED | [E11](#ev-gemma4) |
-| Gaussian splatting (`lgm`/`grm`, no preset) | UNTESTED | UNTESTED | N/A | UNTESTED | [E12](#ev-splatting) |
+| Object detection (`yolo26`, `yolo26s_tflite`) | P | U | N/A | P | [E1](#ev-yolo26) |
+| Object detection (`yolov8`, `yolov8_executorch`) | P | P | N/A | U | [E2](#ev-yolov8) |
+| Object detection (`rtdetr`, `rtdetrv4`) | U | U | N/A | U | [E3](#ev-rtdetr) |
+| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | N/A | U | [E14](#ev-ov-slurm) |
+| Object detection (`ecdet`, `edgecrafter_det`) | P‡ | U | N/A | P‡ | [E4](#ev-ecdet) |
+| Object detection (`rfdetr`, `rfdetr`) | P | P§ | N/A | P | [E13](#ev-rfdetr) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | U | U | N/A | P | [E5](#ev-seg) |
+| Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | N/A | U | [E5](#ev-seg) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | P | P§ | N/A | P | [E13](#ev-rfdetr) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | U | N/A | U | [E6](#ev-classification) |
+| Video classification (`videomae`, `videomae`) | U | U | N/A | U | [E7](#ev-video) |
+| Optical flow (`raft`, `raft`) | U | U | N/A | U | [E7](#ev-video) |
+| Pose estimation (`vitpose`, `vitpose`) | P | U | N/A | P | [E8](#ev-pose) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P§ | N/A | P | [E13](#ev-rfdetr) |
+| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | P | U | N/A | P | [E9](#ev-depth) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | N/A | P | [E10](#ev-owlv2) |
+| Image understanding (`gemma4`, `gemma4`) | N/A | N/A | P | U | [E11](#ev-gemma4) |
+| Gaussian splatting (`lgm`/`grm`, no preset) | U | U | N/A | U | [E12](#ev-splatting) |
+
+
+
 
 ### Scope and caveats
 
-The OVINO cells marked **†** use the retained 0.11.6 campaign executable
+The OV cells marked **†** use the retained 0.11.6 campaign executable
 in a derived validation image on P-LNX-EDGE-CPU. They do not certify the
 current source pins or the original image packaging; see [E14](#ev-ov-slurm).
 
-The `Torch` column covers TorchScript. AOTInductor is a second runtime inside
+The `TRC` column covers TorchScript. AOTInductor is a second runtime inside
 the same LibTorch backend, selected when the model path ends in `.pt2`. It is
-not covered by these cells yet — except E13, where RF-DETR's Torch PASS rests
+not covered by these cells yet — except E13, where RF-DETR's TRC PASS rests
 on AOTInductor because TorchScript tracing is broken for that architecture
-(see E13); do not read any other Torch cell as AOTInductor evidence.
+(see E13); do not read any other TRC cell as AOTInductor evidence.
 
 **NERT scope:** `PASS` records the upstream full-model reference gate
 on CPU, CUDA and OpenCL from the
