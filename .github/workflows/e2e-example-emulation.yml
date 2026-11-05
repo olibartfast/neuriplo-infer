@@ -42,12 +42,19 @@ jobs:
           - edgecrafter_pose
           - raft
           - vitpose
+          - rfdetr
+          - rfdetrseg
+          - rfdetr_keypoint
           - depth_anything_v2
           - videomae
           - gemma4
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Test native RF-DETR LiteRT export routing
+        if: matrix.preset == 'rfdetr'
+        run: python3 scripts/test_export_rfdetr_litert.py
 
       - name: Check shell syntax
         run: bash -n docker_run_inference_e2e_example.sh

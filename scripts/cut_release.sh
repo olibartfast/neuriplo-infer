@@ -116,7 +116,7 @@ echo "==> Staging changes..."
 git add VERSION versions.env
 
 echo ""
-echo "==> Done. Next steps (GitFlow — see .cursor/rules/gitflow-workflow.mdc):"
+echo "==> Done. Next steps (GitFlow — see AGENTS.md):"
 echo "  1. Update CHANGELOG.md for ${TAG} (on release/${VERSION_NUM})."
 echo "  2. git commit -m 'release: ${TAG}'"
 echo "  3. Merge release/${VERSION_NUM} → master; tag ${TAG} on master."

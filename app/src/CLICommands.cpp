@@ -880,6 +880,8 @@ std::string taskTypeName(neuriplo_tasks::TaskType task_type) {
     return "GaussianSplatting";
   case neuriplo_tasks::TaskType::ImageUnderstanding:
     return "ImageUnderstanding";
+  case neuriplo_tasks::TaskType::KeypointMatching:
+    return "KeypointMatching";
   }
   return "Unknown";
 }

@@ -19,9 +19,22 @@ SOURCE_DIR="$DEPENDENCY_ROOT/tensorflow-src-$LITERT_VERSION"
 BUILD_DIR="$SOURCE_DIR/litert-build"
 FORCE="${FORCE:-false}"
 
+# The TensorFlow build tree vendors googletest/googlemock headers for its own
+# tests, and the include/lib harvest below copies them into the SDK. Vendored
+# gtest headers (older RE layout) shadow the system gtest headers in any
+# consumer built with -I$LITERT_DIR/include, so test binaries mix the vendored
+# layout with the system libgtest and crash in every death test (ODR
+# violation). Prune them from the SDK; system gtest headers/libs stay the
+# consumer's own dependency.
+prune_vendored_test_headers() {
+    rm -rf "$INSTALL_DIR/include/gtest" "$INSTALL_DIR/include/gmock"
+    rm -f "$INSTALL_DIR/lib"/libgtest* "$INSTALL_DIR/lib"/libgmock*
+}
+
 if [[ -d "$INSTALL_DIR" && "$FORCE" != "true" ]]; then
     echo "LiteRT already exists at $INSTALL_DIR"
     echo "Set FORCE=true to rebuild."
+    prune_vendored_test_headers
     exit 0
 fi
 
@@ -71,5 +84,7 @@ if [[ ! -f "$INSTALL_DIR/lib/libtensorflow-lite.so" ]]; then
 fi
 
 ln -sf libtensorflow-lite.so "$INSTALL_DIR/lib/libtensorflowlite.so"
+
+prune_vendored_test_headers
 
 echo "LiteRT installed to $INSTALL_DIR"
