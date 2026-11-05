@@ -15,7 +15,7 @@ A sibling application repo, [neuriplo-track](https://github.com/olibartfast/neur
 
 Every agent taking ownership of this repo must know these easily-missed steps
 (see the full checklist under "Documentation checklist when wiring a new task
-type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
+type" below):
 
 1. **Supported-model-types docs are generated, not hand-written.**
    `docs/generated/supported-model-types.md` comes from the neuriplo-tasks README via
@@ -34,10 +34,10 @@ type" and the always-on rule `.cursor/rules/new-task-type-checklist.mdc`):
 ## Repository workflow (GitFlow — mandatory)
 
 Agents must follow the [Atlassian GitFlow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow).
-See `.cursor/rules/gitflow-workflow.mdc` for branch naming and merge order. In this
+The branch naming and merge rules below apply to all agents. In this
 repo GitFlow **`main`** is **`master`**; **`develop`** is the integration branch.
 
-- **`feature/*`** — branch from `develop`; merge back to `develop` via PR. Never
+- **`feature/*` / `feat/*`** — branch from `develop`; merge back to `develop` via PR. Never
   target `master`.
 - **`release/*`** — branch from `develop` when preparing a version; only release
   fixes/docs (no new features). Merge to `master`, tag `vX.Y.Z`, then merge the
@@ -70,6 +70,41 @@ Release prep on `release/<version>`:
   `master` at fetch time — builds drift.
 
 Do not suggest trunk-based or `main`-only workflows for this repository.
+Never commit feature work directly to `develop` or `master`, and never force-push
+`master`. GitFlow applies to the coding repos listed in
+`neuriplo-platform/ops/policies.yaml`; the architecture control plane
+`neuriplo-platform` uses `main` independently.
+
+### Before committing, pushing, or opening a PR
+
+1. Confirm the branch matches the change type and the target follows the rules above.
+2. Run owning-repo validation before committing.
+3. Only commit or push when the user explicitly asks.
+4. Include the agent/model co-author trailer described below.
+
+### Cleanup after integration
+
+- Delete merged `feature/*` / `feat/*` branches locally and on `origin`.
+- After a release or hotfix is merged to `master`, tagged, and back-merged into
+  `develop`, delete its topic branch locally and on `origin`. Do not leave
+  finished release/hotfix branches on the remote.
+- Use the `master` tag (`vX.Y.Z`) as the immutable release ref, rather than a
+  lingering release branch.
+- Do not push a release branch solely to watch CI when `develop` CI covers the
+  same commits; prefer the `develop`/`master` results unless the user asks for
+  a release-branch PR.
+- If the repo bumps a development `VERSION` after release, do so on `develop`.
+
+For example, after release integration and the immediate `master` back-merge:
+
+```bash
+git checkout develop
+git branch -d release/X.Y.Z
+git push origin --delete release/X.Y.Z
+git branch -a
+```
+
+Confirm the branch listing contains no finished release/hotfix branch.
 
 ## Agent Commit Signing
 
@@ -195,6 +230,23 @@ When a new task type is added end-to-end (neuriplo-tasks → neuriplo → neurip
 **neuriplo-infer:**
 4. `## Key Features` bullet in `README.md` — update the task list inline (not synced from neuriplo-tasks).
 5. Run `python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path>` and commit the updated `docs/generated/supported-model-types.md`.
+
+After generating the supported model types, verify the result with the same
+check used by CI. The README source can be a sibling checkout or
+`build/_deps/neuriplo-tasks-src/README.md`:
+
+```bash
+python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <path> --check
+```
+
+Keep routing rules aligned with TaskFactory, preferring matching substring rules
+where the factory uses them (for example, `find("pose")` and `find("seg")`), so
+model-family prefixes such as `ecpose` or `yolo*pose` reach `PoseEstimation`
+instead of the `Detection` default.
+
+When adding a preset to `docker_run_inference_e2e_example.sh`, also add it to
+`list_presets`, the `e2e-example-emulation.yml` CI matrix, and a dry-run block in
+`app/test/test_docker_run_inference_e2e_example.sh`.
 
 Missing any of these makes the task invisible to users reading the top-level READMEs.
 

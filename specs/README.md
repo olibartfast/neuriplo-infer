@@ -167,7 +167,8 @@ Three things stay where they are, deliberately:
 - **`AGENTS.md` and `CLAUDE.md` stay at the repository root.** Agents look for
   them there by convention; moving them would hide them. `AGENTS.md` remains the
   entry point, and points here.
-- **`.cursor/rules/*.mdc` stay in `.cursor/`.** Cursor loads rules from that path.
+- **Repository-wide agent rules live in `AGENTS.md`.** GitFlow, release cleanup,
+  and task/model wiring instructions apply to every agent.
 - **`docs/capabilities.schema.json` stays in `docs/`.** It is a published machine
   contract that `--capabilities` output is validated against by the
   `capabilities_schema_contract` test and that consumers such as
