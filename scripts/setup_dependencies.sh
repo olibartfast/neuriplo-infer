@@ -538,15 +538,15 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  --backend <backend>        Specify the inference backend to setup"
-    echo "                             Supported: opencv_dnn, opencv, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
-    echo "                             Default: opencv_dnn (no setup required)"
+    echo "                             Supported: nert, opencv_dnn, opencv, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
+    echo "                             Default: nert (fetched by neuriplo during CMake configuration)"
     echo "  --compute-platform <platform>  For LibTorch: cpu, gpu/cuda, cu118, cu121, rocm6.0"
     echo "                             Default: cpu"
     echo "                             Note: 'gpu' and 'cuda' are equivalent and auto-detect CUDA version"
     echo "  --help                     Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                                    # Setup default backend (OPENCV_DNN)"
+    echo "  $0                                    # Setup default backend (NERT)"
     echo "  $0 --backend onnx_runtime            # Setup ONNX Runtime"
     echo "  $0 --backend libtorch --compute-platform gpu  # Setup LibTorch with auto CUDA detection"
     echo "  $0 --backend libtorch --compute-platform cuda # Same as above"
@@ -558,7 +558,7 @@ show_usage() {
 
 # Main script
 main() {
-    local backend="opencv_dnn"  # Default to OPENCV_DNN
+    local backend="nert"  # Default to NERT
     local compute_platform="cpu"
     
     # Parse command line arguments
@@ -615,8 +615,11 @@ main() {
     
     # Setup based on backend
     case "$backend" in
+        nert)
+            print_status "NERT is fetched and built by neuriplo during CMake configuration"
+            ;;
         opencv_dnn)
-            print_status "OPENCV_DNN is the default backend - no additional setup required"
+            print_status "OPENCV_DNN selected - no additional SDK setup required"
             print_success "System dependencies (OpenCV) are already validated"
             ;;
         opencv)
@@ -660,7 +663,7 @@ main() {
             ;;
         *)
             print_error "Unknown backend: $backend"
-            print_status "Supported backends: opencv_dnn, opencv, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
+            print_status "Supported backends: nert, opencv_dnn, opencv, onnx_runtime, tensorrt, libtorch, openvino, tensorflow, litert, executorch, all"
             exit 1
             ;;
     esac
@@ -669,8 +672,8 @@ main() {
     print_status "These dependencies will be used by the neuriplo library."
     print_status "You can now build the project with:"
     print_status "mkdir build && cd build"
-    if [[ "$backend" == "opencv_dnn" ]]; then
-        print_status "cmake ..  # Uses OPENCV_DNN by default"
+    if [[ "$backend" == "nert" ]]; then
+        print_status "cmake ..  # Uses NERT by default"
     else
         print_status "cmake -DDEFAULT_BACKEND=${backend^^} .."
     fi

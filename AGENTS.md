@@ -199,9 +199,9 @@ in `specs/`, and a user-facing guide in `docs/`.
 Use the canonical repo-local commands:
 
 - Configure default build:
-  - `cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release`
+  - `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release`
 - Configure test build:
-  - `cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release`
+  - `cmake -S . -B build-test -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release`
 - Build default target:
   - `cmake --build build`
 - Build test target:
