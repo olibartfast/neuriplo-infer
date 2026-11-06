@@ -11,9 +11,9 @@ an image or video, and get annotated results — on the backend of your choice.
 ## Key Features
 
 - **Multiple Computer Vision Tasks**: Supported via [neuriplo-tasks library](https://github.com/olibartfast/neuriplo-tasks/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM, Keypoint Matching)
-- **Switchable Inference Backends**: OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO, TensorFlow, LiteRT, ExecuTorch, llama.cpp (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
+- **Switchable Inference Backends**: NERT (default), OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO, TensorFlow, LiteRT, ExecuTorch, llama.cpp (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
 - **Images, Video Files, and Streams**: via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
-- **A Docker Image for Most Backends**: no local SDK installs needed (the default `OPENCV_DNN` backend has no image; build it from source)
+- **A Docker Image for Most Backends**: no local SDK installs needed (NERT and OpenCV DNN are built from source)
 - **Remote KServe Mode**: keep pre/postprocessing here and send tensors to Triton, OpenVINO Model Server, KServe, or `neuriplo-kserve-runtime`
 
 ## Quickstart (Docker)
@@ -50,21 +50,22 @@ presets are in [docs/Deployment.md](docs/Deployment.md).
 
 ## Build from Source
 
-Ubuntu 24.04, ONNX Runtime backend, with the model from step 1 of the quickstart:
+Ubuntu 24.04, default NERT backend, with the ONNX model from step 1 of the quickstart:
 
 ```bash
 sudo apt install -y cmake build-essential git wget curl unzip libopencv-dev libgoogle-glog-dev
-./scripts/setup_dependencies.sh --backend onnx_runtime   # installs under ~/dependencies
 
-cmake -S . -B build -DDEFAULT_BACKEND=ONNX_RUNTIME -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j"$(nproc)"
 
 ./build/app/neuriplo-infer --type=yolo --weights=models/yolo11n.onnx \
   --source=data/dog.jpg --labels=labels/coco.names
 ```
 
-The default backend, `OPENCV_DNN`, needs no setup script, but Ubuntu's OpenCV 4.6
-cannot load current Ultralytics ONNX exports — prefer ONNX Runtime for a first run.
+The default backend is `NERT`, fetched and built through the pinned neuriplo
+library. Select another backend explicitly with `-DDEFAULT_BACKEND=<BACKEND>`.
+OpenCV remains required for capture and rendering: 4.6 is the minimum, and a
+source-built 5.x installation is preferred when available.
 Other backends, CMake options, and video backends: [docs/Deployment.md](docs/Deployment.md).
 
 ## Platform Support
@@ -116,7 +117,7 @@ and the [neuriplo-tasks export tools](https://github.com/olibartfast/neuriplo-ta
 `feature/*` from `develop` and open pull requests into `develop`. Run the tests with:
 
 ```bash
-cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build-test -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build build-test
 ctest --test-dir build-test --output-on-failure
 ```

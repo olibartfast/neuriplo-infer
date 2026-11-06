@@ -7,9 +7,9 @@
 ## Automated
 
 - [ ] Default build configures and builds:
-      `cmake -S . -B build -DDEFAULT_BACKEND=OPENCV_DNN -DCMAKE_BUILD_TYPE=Release && cmake --build build`
+      `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build`
 - [ ] Test build and full suite pass:
-      `cmake -S . -B build-test -DDEFAULT_BACKEND=OPENCV_DNN -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build-test && ctest --test-dir build-test --output-on-failure`
+      `cmake -S . -B build-test -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build-test && ctest --test-dir build-test --output-on-failure`
 - [ ] Focused tests cover the success path *and* the failure path this feature adds.
 - [ ] `pre-commit run --all-files` (clang-format, cppcheck) is clean.
 - [ ] Generated docs are in sync: `python3 scripts/sync_supported_model_types.py --check`

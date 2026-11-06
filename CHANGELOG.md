@@ -6,11 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.7] - 2026-11-05
+
+### Changed
+- Use NERT as the default local backend in fresh builds and dependency setup;
+  retain explicit backend overrides and OpenCV 4.6 minimum / 5.x preference.
+
+### Added
+- Build and test the NERT default in the fail-fast CI matrix, including a
+  capabilities check; keep the explicit OpenCV DNN job.
+
 ### Removed
 - Remove the deprecated capabilities version 1 schema; the published capabilities
   schema remains at version 2.
 
 ### Fixed
+- Use Ubuntu’s official HTTPS archive for shared CI dependencies instead of the
+  slow Azure HTTP mirror, preventing package downloads from consuming job timeouts.
 - Select the native RF-DETR LiteRT exporter for detection and segmentation
   presets; pin the EdgeCrafter converter recipe to the re-gated version.
 - Build the LibTorch backend image on Ubuntu 24.04. Ubuntu 22.04 ships

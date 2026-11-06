@@ -193,3 +193,12 @@ artifacts and runner are in
 [validation](2026-11-04-blocked-slurm-backends/validation.md).
 The controller is up; repaired concurrent Slurm reruns await worker
 availability. No release pin or cluster configuration changes were made.
+
+## NERT application default and CI — done
+
+Maintainer-requested prerequisite to the next release: default to CPU NERT,
+keep explicit backend selections, correct the default-backend documentation,
+and add NERT build/test CI. Merged through PR #102; all 11 CI configurations
+and develop lint/E2E passed. See
+[requirements](2026-11-05-nert-default-ci/requirements.md) and
+[validation](2026-11-05-nert-default-ci/validation.md).
