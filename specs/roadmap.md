@@ -202,3 +202,7 @@ and add NERT build/test CI. Merged through PR #102; all 11 CI configurations
 and develop lint/E2E passed. See
 [requirements](2026-11-05-nert-default-ci/requirements.md) and
 [validation](2026-11-05-nert-default-ci/validation.md).
+
+## LightGlue image-pair application path — validated development builds
+
+Maintainer-requested keypoint matching workflow: two still images through task preprocessing, backend inference, task decoding and app rendering. ORT CPU and Jetson TensorRT both execute Capitol and Sacré-Cœur through Slurm. The TensorRT allocator correction and tasks empty-match fix are unreleased sibling changes. See [validation](2026-11-07-lightglue-app-e2e/validation.md).

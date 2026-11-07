@@ -12,6 +12,7 @@ struct RenderContext {
   neuriplo_tasks::TaskType task_type;
   const std::vector<std::string> &classes;
   float confidence_threshold;
+  int pair_source_width{0};
 };
 
 class ResultRenderer {

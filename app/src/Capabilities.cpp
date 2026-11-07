@@ -287,6 +287,9 @@ json taskCapabilities() {
                       {"video"}, 1, 1,
                       withVideoRunParameters(
                           {"labels", "num_frames", "batch", "input_sizes"})),
+       taskCapability("keypoint_matching",
+                      {{"lightglue", {}, {"lightglue*"}, {}, {}}}, {"image"}, 2,
+                      2, {"min_confidence", "batch", "input_sizes"}),
        taskCapability("optical_flow", {{"raft", {}, {}, {}, {}}}, {"image"}, 2,
                       -1, {"input_sizes"}),
        taskCapability(

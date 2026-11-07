@@ -88,7 +88,7 @@ the NERT gates and the marked cells.
 `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
 `TRC` = LIBTORCH · `OV` = OPENVINO · `TF` = LIBTENSORFLOW.
 `ExecT` = EXECUTORCH · `LLaMA` = LLAMACPP · `KServe` = remote `KserveEngine`.
-`MIGraphX` = the independent `MIGRAPHX` backend in neuriplo, distinct from
+`MGX` = MIGraphX, the independent `MIGRAPHX` backend in neuriplo, distinct from
 ONNX Runtime's MIGraphX execution provider.
 NERT is the first-party Neuriplo Engine Runtime. Representative presets
 appear in parentheses.
@@ -118,10 +118,17 @@ Footnote markers retain the scope explained below.
 | Open-vocabulary detection (`owlv2`, `owlv2`) | P | P§ | P | B | B | P† | B | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U | [E12](#ev-splatting) |
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | P¶ | P¶ | U | U | U | [E17](#ev-keypoint-matching) |
 
 ### Additional runtimes and remote execution
 
-| Task (representative) | MIGraphX | LiteRT | ExecT | LLaMA | KServe | Evidence |
+**MGX backend contract tests: PASS, 6/6 (3 CPU + 3 MI300X GPU, zero
+skips).** These backend-level results are recorded in [E16](#ev-migraphx).
+The per-task MGX cells below report app validation separately: `U` means
+that task has no recorded app run, not that the backend tests failed or
+were never run.
+
+| Task (representative) | MGX | LiteRT | ExecT | LLaMA | KServe | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | U | P | U | N/A | P | [E1](#ev-yolo26) |
 | Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | N/A | U | [E2](#ev-yolov8) |
@@ -141,13 +148,11 @@ Footnote markers retain the scope explained below.
 | Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | U | N/A | P | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | P | U | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | N/A | U | [E12](#ev-splatting) |
-
-
-
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | U | N/A | U | [E17](#ev-keypoint-matching) |
 
 ### Scope and caveats
 
-The MIGraphX column tracks the app validation gap. Existing upstream CPU and
+The MGX column tracks the app validation gap. Existing upstream CPU and
 AMD GPU contract tests are recorded in [E16](#ev-migraphx); they do not promote
 any task cell to PASS, RUNTIME-PASS or BUILDS. No app build or preset gate is
 recorded for this backend. Its ONNX-only input format cannot serve the GGUF
@@ -797,6 +802,37 @@ GPU or released-image result is implied.
   ONNX Runtime MIGraphX execution provider is a separate configuration and
   has no recorded gate here.
 
+### <a id="ev-keypoint-matching"></a>E17 — Keypoint matching application coverage
+
+**ORT CPU: PASS¶. TensorRT FP16: PASS¶.** Both backends execute the
+`neuriplo-infer` CLI with task preprocessing, backend inference, task decoding,
+and app rendering of the two original images. The confidence filter is
+strictly **score > 0.2**.
+
+| Pair | ORT CPU matches | TRT FP16 matches |
+| --- | --- | --- |
+| United States Capitol | 77 | 74 |
+| Sacré-Cœur | 45 | 49 |
+
+- **Model:** `superpoint_lightglue_pipeline.onnx`, LightGlue-ONNX v2.0;
+  SHA256 `228994cea8c010146fa2aef933baa3ffaa4bcdc522bc8aa560087fcff8134526`.
+  Input `images`: FP32 `[2,1,512,512]`. The upstream task owns resize,
+  grayscale conversion, pair packing and per-image coordinate scaling.
+- **Dispatch:** ORT runs on `zenbook-ux425uaz`, Slurm job 60; TRT runs on
+  Jetson Orin through the Slurm 25.11.2 Docker worker, final job 65. The worker
+  launches the native ARM application over host SSH with the installed CUDA
+  and TensorRT libraries. Engine build provenance: job 56, TensorRT 10.16.2,
+  FP16, SHA256 `7dfc23f4dd0ead6aba7fd74473073efdeaf36efd174caf459c2480af06b78d41`.
+- **¶ Source scope:** application feature `feature/lightglue-app-e2e`,
+  neuriplo-tasks `6a5929f` (`feature/lightglue-app-e2e`) and neuriplo
+  `e504a15` (`feature/trt-data-dependent-outputs`).
+  These PASS cells certify the tested source builds; the current release
+  pins do not include all these changes. FP16 results are not numerically
+  identical to ORT.
+- **Evidence and reproduction:** see the
+  [application validation](../specs/2026-11-07-lightglue-app-e2e/validation.md)
+  and [CLI guide](KeypointMatching.md). Both image pairs are in `data/`.
+
 ## Environments
 
 How each column was built and tested. App gates are CPU except TRT;
@@ -816,7 +852,7 @@ are not released dependency pins.
 | TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
 | LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) |
 | ExecT | v1.2.0 optimized SDK `/tmp/blocked-et-sdk` (E15) | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; compiled transport is not live transport validation |
-| MIGraphX | Recorded upstream environment: 2.12.0.60401-83, ROCm 6.4.1, MI300X `gfx942` (E16) | upstream `MIGRAPHX`; app build unvalidated | backend contracts 6/6: 3 CPU + 3 GPU, zero skips | Synthetic typed fixtures only; no app or learned-model gate |
+| MGX | Recorded upstream environment: 2.12.0.60401-83, ROCm 6.4.1, MI300X `gfx942` (E16) | upstream `MIGRAPHX`; app build unvalidated | backend contracts 6/6: 3 CPU + 3 GPU, zero skips | Synthetic typed fixtures only; no app or learned-model gate |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
 
