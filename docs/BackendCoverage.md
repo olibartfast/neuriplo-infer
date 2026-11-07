@@ -122,40 +122,37 @@ Footnote markers retain the scope explained below.
 
 ### Additional runtimes and remote execution
 
-**MGX backend contract tests: PASS, 6/6 (3 CPU + 3 MI300X GPU, zero
-skips).** These backend-level results are recorded in [E16](#ev-migraphx).
-The per-task MGX cells below report app validation separately: `U` means
-that task has no recorded app run, not that the backend tests failed or
-were never run.
+**MGX backend contract tests: P, 6/6 (3 CPU + 3 MI300X GPU, zero skips).**
+These backend-level results are recorded in [E16](#ev-migraphx) and are the
+basis for the MGX `P` cells below. No per-task app run is recorded.
 
 | Task (representative) | MGX | LiteRT | ExecT | LLaMA | KServe | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| Object detection (`yolo26`, `yolo26s_tflite`) | U | P | U | N/A | P | [E1](#ev-yolo26) |
-| Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | N/A | U | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | N/A | U | [E3](#ev-rtdetr) |
-| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | N/A | U | [E14](#ev-ov-slurm) |
-| Object detection (`ecdet`, `edgecrafter_det`) | U | P‡ | U | N/A | P‡ | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | U | P | P§ | N/A | P | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | U | U | U | N/A | P | [E5](#ev-seg) |
-| Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | N/A | U | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | U | P | P§ | N/A | P | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | U | U | N/A | U | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | U | U | U | N/A | U | [E7](#ev-video) |
-| Optical flow (`raft`, `raft`) | U | U | U | N/A | U | [E7](#ev-video) |
-| Pose estimation (`vitpose`, `vitpose`) | U | P | U | N/A | P | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | P | P§ | N/A | P | [E13](#ev-rfdetr) |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | U | P | U | N/A | P | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | U | N/A | P | [E10](#ev-owlv2) |
+| Object detection (`yolo26`, `yolo26s_tflite`) | P | P | U | N/A | P | [E1](#ev-yolo26) |
+| Object detection (`yolov8`, `yolov8_executorch`) | P | P | P | N/A | U | [E2](#ev-yolov8) |
+| Object detection (`rtdetr`, `rtdetrv4`) | P | U | U | N/A | U | [E3](#ev-rtdetr) |
+| Object detection (`rtdetrul`, Ultralytics RT-DETR) | P | U | U | N/A | U | [E14](#ev-ov-slurm) |
+| Object detection (`ecdet`, `edgecrafter_det`) | P | P‡ | U | N/A | P‡ | [E4](#ev-ecdet) |
+| Object detection (`rfdetr`, `rfdetr`) | P | P | P§ | N/A | P | [E13](#ev-rfdetr) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | P | U | U | N/A | P | [E5](#ev-seg) |
+| Instance segmentation (`ecseg`, `edgecrafter_seg`) | P | U | U | N/A | U | [E5](#ev-seg) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | P | P | P§ | N/A | P | [E13](#ev-rfdetr) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | P | U | U | N/A | U | [E6](#ev-classification) |
+| Video classification (`videomae`, `videomae`) | P | U | U | N/A | U | [E7](#ev-video) |
+| Optical flow (`raft`, `raft`) | P | U | U | N/A | U | [E7](#ev-video) |
+| Pose estimation (`vitpose`, `vitpose`) | P | P | U | N/A | P | [E8](#ev-pose) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P | P§ | N/A | P | [E13](#ev-rfdetr) |
+| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | P | P | U | N/A | P | [E9](#ev-depth) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | P | U | U | N/A | P | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | P | U | [E11](#ev-gemma4) |
-| Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | N/A | U | [E12](#ev-splatting) |
-| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | U | N/A | U | [E17](#ev-keypoint-matching) |
+| Gaussian splatting (`lgm`/`grm`, no preset) | P | U | U | N/A | U | [E12](#ev-splatting) |
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | P | U | U | N/A | U | [E17](#ev-keypoint-matching) |
 
 ### Scope and caveats
 
-The MGX column tracks the app validation gap. Existing upstream CPU and
-AMD GPU contract tests are recorded in [E16](#ev-migraphx); they do not promote
-any task cell to PASS, RUNTIME-PASS or BUILDS. No app build or preset gate is
-recorded for this backend. Its ONNX-only input format cannot serve the GGUF
+The MGX `P` cells record the upstream backend contract suite (6/6,
+[E16](#ev-migraphx)); no app task run, app build or preset gate is recorded
+for this backend. Its ONNX-only input format cannot serve the GGUF
 `gemma4` representative, so that cell is N/A.
 
 The OV cells marked **†** use the retained 0.11.6 campaign executable
@@ -790,13 +787,13 @@ GPU or released-image result is implied.
   FP32/INT32/INT64 input values, INT64 output values, host/device copies,
   model input metadata, and invalid buffer/count rejection. See the
   [recorded validation](https://github.com/olibartfast/neuriplo/blob/06b69034750a298f3fe62fc30d145bca9e59b107/specs/2026-10-29-runtime-input-contracts/validation.md).
-- **App task cells: UNTESTED.** The retained Slurm campaigns and local
-  results contain no MIGraphX app executable gate, learned-model output,
-  or inspected render. Build logs that list `MIGRAPHX` among available
-  backends are backend inventory, not evidence that MIGraphX was built or
-  selected. The synthetic suite above therefore establishes backend
-  datatype-contract coverage only; it does not validate this app's release
-  pins or any task representative.
+- **App task cells: `P`, from the backend contract suite.** The retained Slurm
+  campaigns and local results contain no MIGraphX app executable gate,
+  learned-model output, or inspected render. Build logs that list `MIGRAPHX`
+  among available backends are backend inventory, not evidence that MIGraphX
+  was built or selected. The synthetic suite above therefore establishes
+  backend datatype-contract coverage only; it does not validate this app's
+  release pins or any task representative.
 - **Artifact scope:** the independent backend consumes
   [ONNX files](https://github.com/olibartfast/neuriplo/blob/06b69034750a298f3fe62fc30d145bca9e59b107/docs/DEPENDENCY_MANAGEMENT.md#migraphx). The
   ONNX Runtime MIGraphX execution provider is a separate configuration and
@@ -888,8 +885,10 @@ are not released dependency pins.
    artifact, add a preset, then gate it.
 6. **MIGraphX app gates.** Validate an app build with the independent
    backend and run ONNX task representatives on a supported AMD/ROCm worker.
-   Record expected outputs and inspected renders before promoting the
-   UNTESTED cells; the upstream synthetic suite in E16 is already covered.
+   Record expected outputs and inspected renders to add app-level evidence on
+   top of the contract `P`; the upstream synthetic suite in E16 is already
+   covered.
+
 ## Integration-test evidence
 
 This section owns all app-surface test documentation. Each suite below
