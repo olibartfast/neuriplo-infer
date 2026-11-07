@@ -88,12 +88,12 @@ the NERT gates and the marked cells.
 `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
 `TRC` = LIBTORCH · `OV` = OPENVINO · `TF` = LIBTENSORFLOW.
 `ExecT` = EXECUTORCH · `LLaMA` = LLAMACPP · `KServe` = remote `KserveEngine`.
-`MIGraphX` = the independent `MIGRAPHX` backend in neuriplo, distinct from
+`MGX` = MIGraphX, the independent `MIGRAPHX` backend in neuriplo, distinct from
 ONNX Runtime's MIGraphX execution provider.
 NERT is the first-party Neuriplo Engine Runtime. Representative presets
 appear in parentheses.
 
-Table key: **P** = PASS · **U** = UNTESTED · **B** = BUILDS · **DR** = DRY-RUN.
+Table key: **MR** = MODEL-RUN (raw model inference; app gate pending) · **P** = PASS · **U** = UNTESTED · **B** = BUILDS · **DR** = DRY-RUN.
 Footnote markers retain the scope explained below.
 
 ### Local inference backends
@@ -118,10 +118,11 @@ Footnote markers retain the scope explained below.
 | Open-vocabulary detection (`owlv2`, `owlv2`) | P | P§ | P | B | B | P† | B | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U | [E12](#ev-splatting) |
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | MR | MR | U | U | U | [E17](#ev-keypoint-matching) |
 
 ### Additional runtimes and remote execution
 
-| Task (representative) | MIGraphX | LiteRT | ExecT | LLaMA | KServe | Evidence |
+| Task (representative) | MGX | LiteRT | ExecT | LLaMA | KServe | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | U | P | U | N/A | P | [E1](#ev-yolo26) |
 | Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | N/A | U | [E2](#ev-yolov8) |
@@ -141,13 +142,11 @@ Footnote markers retain the scope explained below.
 | Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | U | N/A | P | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | P | U | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | N/A | U | [E12](#ev-splatting) |
-
-
-
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | U | N/A | U | [E17](#ev-keypoint-matching) |
 
 ### Scope and caveats
 
-The MIGraphX column tracks the app validation gap. Existing upstream CPU and
+The MGX column tracks the app validation gap. Existing upstream CPU and
 AMD GPU contract tests are recorded in [E16](#ev-migraphx); they do not promote
 any task cell to PASS, RUNTIME-PASS or BUILDS. No app build or preset gate is
 recorded for this backend. Its ONNX-only input format cannot serve the GGUF
@@ -797,6 +796,30 @@ GPU or released-image result is implied.
   ONNX Runtime MIGraphX execution provider is a separate configuration and
   has no recorded gate here.
 
+### <a id="ev-keypoint-matching"></a>E17 — Keypoint matching status
+
+- **Model inference: ORT CPU and TensorRT FP16 executed successfully.**
+  Representative: `superpoint_lightglue_pipeline.onnx` from
+  `fabio-sim/LightGlue-ONNX` v2.0; SHA256
+  `228994cea8c010146fa2aef933baa3ffaa4bcdc522bc8aa560087fcff8134526`.
+  Input `images`: FP32 `[2,1,512,512]`, resized grayscale images scaled to [0,1].
+- **Inputs:** the Capitol pair from the Hugging Face LightGlue example and
+  the Sacré-Cœur pair from CVG LightGlue assets. The
+  video showcase uses both image pairs and recorded ORT/TRT matches,
+  filtering strictly **score > 0.2**. YouTube publication is pending.
+
+| Pair | ORT CPU matches > 0.2 | TRT FP16 matches > 0.2 |
+| --- | --- | --- |
+| Capitol | 71 | 68 |
+| Sacré-Cœur | 54 | 52 |
+
+- **TRT environment:** TensorRT 10.16.2 on Jetson Orin, dispatched through
+  Slurm with the Docker worker; engine build job 56, inference jobs 58
+  (Sacré-Cœur) and 59 (Capitol). Capitol mean pair latency: 33.0012 ms.
+- **App integration: UNTESTED.** MR records raw model execution and rendered
+  correspondences. The C++ task preprocessing, decoding and app routing still
+  require integration validation before these cells qualify for PASS.
+
 ## Environments
 
 How each column was built and tested. App gates are CPU except TRT;
@@ -816,7 +839,7 @@ are not released dependency pins.
 | TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
 | LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) |
 | ExecT | v1.2.0 optimized SDK `/tmp/blocked-et-sdk` (E15) | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; compiled transport is not live transport validation |
-| MIGraphX | Recorded upstream environment: 2.12.0.60401-83, ROCm 6.4.1, MI300X `gfx942` (E16) | upstream `MIGRAPHX`; app build unvalidated | backend contracts 6/6: 3 CPU + 3 GPU, zero skips | Synthetic typed fixtures only; no app or learned-model gate |
+| MGX | Recorded upstream environment: 2.12.0.60401-83, ROCm 6.4.1, MI300X `gfx942` (E16) | upstream `MIGRAPHX`; app build unvalidated | backend contracts 6/6: 3 CPU + 3 GPU, zero skips | Synthetic typed fixtures only; no app or learned-model gate |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
 
