@@ -122,6 +122,12 @@ Footnote markers retain the scope explained below.
 
 ### Additional runtimes and remote execution
 
+**MGX backend contract tests: PASS, 6/6 (3 CPU + 3 MI300X GPU, zero
+skips).** These backend-level results are recorded in [E16](#ev-migraphx).
+The per-task MGX cells below report app validation separately: `U` means
+that task has no recorded app run, not that the backend tests failed or
+were never run.
+
 | Task (representative) | MGX | LiteRT | ExecT | LLaMA | KServe | Evidence |
 | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | U | P | U | N/A | P | [E1](#ev-yolo26) |

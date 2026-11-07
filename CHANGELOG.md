@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Documentation
+- Use `MGX` consistently in the backend coverage tables and surface its
+  passing CPU/GPU contract tests separately from untested app task gates.
+
 ## [0.11.7] - 2026-11-05
 
 ### Changed
