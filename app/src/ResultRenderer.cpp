@@ -338,7 +338,40 @@ void DefaultResultRenderer::render(
   case neuriplo_tasks::TaskType::GaussianSplatting:
     break;
   case neuriplo_tasks::TaskType::KeypointMatching:
-    // No renderer yet: keypoint matches are recorded, not drawn.
+    if (context.pair_source_width <= 0) {
+      throw std::invalid_argument(
+          "Keypoint matching rendering requires a pair canvas");
+    }
+    forEachResultOfType<neuriplo_tasks::KeypointMatching>(
+        results, [&](const auto &pair) {
+          int count = 0;
+          for (const auto &match : pair.matches) {
+            if (match.score <= context.confidence_threshold)
+              continue;
+            if (match.source_index < 0 || match.target_index < 0 ||
+                static_cast<size_t>(match.source_index) >=
+                    pair.source_keypoints.size() ||
+                static_cast<size_t>(match.target_index) >=
+                    pair.target_keypoints.size()) {
+              throw std::invalid_argument(
+                  "Keypoint match index is outside the pair");
+            }
+            const auto &a =
+                pair.source_keypoints[static_cast<size_t>(match.source_index)];
+            const auto &b =
+                pair.target_keypoints[static_cast<size_t>(match.target_index)];
+            const cv::Point source(cvRound(a.x), cvRound(a.y));
+            const cv::Point target(context.pair_source_width + cvRound(b.x),
+                                   cvRound(b.y));
+            const cv::Scalar color(64 + count * 71 % 192,
+                                   64 + count * 131 % 192,
+                                   64 + count * 43 % 192);
+            cv::line(image, source, target, color, 1, cv::LINE_AA);
+            cv::circle(image, source, 3, color, cv::FILLED, cv::LINE_AA);
+            cv::circle(image, target, 3, color, cv::FILLED, cv::LINE_AA);
+            ++count;
+          }
+        });
     break;
   }
 }

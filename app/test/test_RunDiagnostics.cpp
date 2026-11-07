@@ -720,3 +720,26 @@ TEST_F(RunDiagnostics, AClassificationVideoWritesEachSourceFrameExactlyOnce) {
 #endif
 
 } // namespace
+
+TEST_F(RunDiagnostics, KeypointMatchingRejectsIncompletePairBeforeInference) {
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.task_type = neuriplo_tasks::TaskType::KeypointMatching;
+  EXPECT_THROW(RunInferenceCommand().execute(pipeline), std::invalid_argument);
+  EXPECT_EQ(static_cast<FakeEngine *>(pipeline.engine.get())->calls, 0);
+}
+
+TEST_F(RunDiagnostics, KeypointMatchingProcessesBothImagesAsOneSample) {
+  RunReport collected;
+  auto pipeline = makePipeline(collected);
+  pipeline.config.sources.push_back(source_.string());
+  pipeline.task_type = neuriplo_tasks::TaskType::KeypointMatching;
+  ASSERT_EQ(RunInferenceCommand().execute(pipeline), 0);
+  EXPECT_EQ(static_cast<FakeEngine *>(pipeline.engine.get())->calls, 1);
+  EXPECT_EQ(static_cast<FakeTask *>(pipeline.task.get())->preprocess_calls, 1);
+  EXPECT_EQ(static_cast<FakeTask *>(pipeline.task.get())->postprocess_calls, 1);
+  EXPECT_EQ(static_cast<CountingRenderer *>(pipeline.renderer.get())->calls, 1);
+  EXPECT_TRUE(std::filesystem::exists("data/output/processed_fake_local.png"));
+  neuriplo_infer::writeRunReport(collected, RunReport::kDefaultPath);
+  EXPECT_EQ(report().at("metrics").at("samples"), 1);
+}

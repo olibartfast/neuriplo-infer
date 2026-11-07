@@ -1,4 +1,5 @@
 #include "CommandLineParser.hpp"
+#include "TaskRouting.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <cctype>
@@ -239,6 +240,12 @@ void validateRunModes(const cv::CommandLineParser &parser,
     } else {
       all_still_images = false;
     }
+  }
+  if (!is_metadata_export &&
+      getTaskTypeForModel(type) == neuriplo_tasks::TaskType::KeypointMatching &&
+      (sources.size() != 2 || !all_still_images)) {
+    rejectArguments(
+        "Keypoint matching requires exactly two still-image sources");
   }
   const bool frame_loop_run = !sources.empty() && !any_still_image &&
                               !is_text_task && !is_metadata_export;

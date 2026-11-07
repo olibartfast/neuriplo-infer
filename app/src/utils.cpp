@@ -12,7 +12,7 @@
 
 #if defined(_MSC_VER)
 #include <intrin.h>
-#else
+#elif defined(__i386__) || defined(__x86_64__)
 #include <cpuid.h>
 #endif
 
@@ -187,7 +187,7 @@ std::string getCPUInfo() {
     memcpy(brand + 32, cpuInfoRegs, sizeof(cpuInfoRegs));
     cpuInfo = brand;
   }
-#else
+#elif defined(__i386__) || defined(__x86_64__)
   unsigned int cpuInfoRegs[4];
   __cpuid(0x80000000, cpuInfoRegs[0], cpuInfoRegs[1], cpuInfoRegs[2],
           cpuInfoRegs[3]);
@@ -206,6 +206,11 @@ std::string getCPUInfo() {
     memcpy(brand + 32, cpuInfoRegs, sizeof(cpuInfoRegs));
     cpuInfo = brand;
   }
+#else
+  std::ifstream model("/proc/device-tree/model");
+  std::getline(model, cpuInfo, '\0');
+  if (cpuInfo.empty())
+    cpuInfo = "Unknown CPU";
 #endif
 
   return cpuInfo;
