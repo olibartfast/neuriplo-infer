@@ -197,6 +197,14 @@ public:
                     {"source_keypoints", source},
                     {"target_keypoints", target},
                     {"matches", pairs}};
+#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+          } else if constexpr (std::is_same_v<T, GazeEstimation>) {
+            return {{"kind", "gaze_estimation"},
+                    {"pitch", r.pitch},
+                    {"yaw", r.yaw},
+                    {"direction", r.direction},
+                    {"confidence", r.confidence}};
+#endif
           } else {
             static_assert(std::is_same_v<T, ImageUnderstanding>);
             return {{"kind", "image_understanding"}, {"text", r.text}};

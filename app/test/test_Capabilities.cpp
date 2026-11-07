@@ -42,6 +42,9 @@ neuriplo_tasks::TaskType taskTypeForId(const std::string &id) {
   if (id == "video_classification") {
     return TaskType::VideoClassification;
   }
+  if (id == "keypoint_matching") {
+    return TaskType::KeypointMatching;
+  }
   if (id == "optical_flow") {
     return TaskType::OpticalFlow;
   }
