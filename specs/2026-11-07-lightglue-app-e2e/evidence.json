@@ -7,12 +7,12 @@
   "scope": "neuriplo-infer CLI: source loading, task preprocessing, backend inference, task decoding, app rendering",
   "sources": {
     "infer": "feature/lightglue-app-e2e based on 1c4a037",
-    "tasks": "6a5929f (feature/lightglue-app-e2e)",
-    "neuriplo": "e504a15 (feature/trt-data-dependent-outputs)"
+    "tasks": "f867d5a (combined task features)",
+    "neuriplo": "07ebeae (combined backend features on current history)"
   },
   "slurm": {
-    "ort": 60,
-    "trt": 65,
+    "ort": 66,
+    "trt": 67,
     "trt_initial_application": 63,
     "trt_initial_contracts": 64
   },
@@ -32,8 +32,8 @@
   },
   "checks": {
     "tasks_suites": "31/31 PASS",
-    "app_local_tests": "149/149 PASS",
-    "app_jetson_tests": "149/149 PASS",
+    "app_local_tests": "150/150 PASS with combined features; 149/149 PASS with pinned tasks v0.8.5",
+    "app_jetson_tests": "150/150 PASS with combined features",
     "backend_jetson_tests": "76/76 PASS",
     "blank_pair_ort_matches": 0,
     "blank_pair_trt_matches": 0,

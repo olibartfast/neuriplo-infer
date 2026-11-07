@@ -2,8 +2,9 @@
 
 Build the application feature with a neuriplo-tasks checkout containing the
 LightGlue pipeline decoder and empty-match fix
-(`feature/lightglue-app-e2e`, commit `6a5929f`).
-TRT also needs the neuriplo `feature/trt-data-dependent-outputs` correction.
+(`develop` after integration of commit `f867d5a`).
+TRT also needs the neuriplo allocator correction in commit `8c95d5a`
+(or its successor on `develop`).
 The existing release pins are not yet an application validation claim for this task.
 
 ```bash

@@ -953,6 +953,10 @@ std::string taskTypeName(neuriplo_tasks::TaskType task_type) {
     return "ImageUnderstanding";
   case neuriplo_tasks::TaskType::KeypointMatching:
     return "KeypointMatching";
+#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+  case neuriplo_tasks::TaskType::GazeEstimation:
+    return "GazeEstimation";
+#endif
   }
   return "Unknown";
 }

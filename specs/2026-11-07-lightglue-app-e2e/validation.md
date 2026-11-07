@@ -60,3 +60,13 @@ Local artifacts: `/tmp/keypoint-matching/app-e2e/ort/`,
 The 32-second English video uses these real app PNGs, not raw-runtime outputs.
 
 These are validated development builds. No release pin or release tag moved.
+
+## Feature integration checks
+
+Combined task features at f867d5a and backend features at 07ebeae retain the
+validated LightGlue behavior: Slurm ORT job66 gives77/45, Jetson TRT job67
+gives74/49. App tests:150/150 on both machines. App built against the existing
+v0.8.5 task pin:149/149 PASS. Gaze is appended without renumbering existing
+result/TaskType alternatives; its optional feature macro keeps consumers
+compatible with older pins. Gaze/monocular cuboids introduce result contracts,
+not new runnable app model selectors.
