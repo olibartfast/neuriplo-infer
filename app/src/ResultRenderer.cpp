@@ -335,6 +335,10 @@ void DefaultResultRenderer::render(
   case neuriplo_tasks::TaskType::ImageUnderstanding:
     renderImageUnderstandingResults(results, image);
     break;
+#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+  case neuriplo_tasks::TaskType::GazeEstimation:
+    throw std::runtime_error("Gaze estimation rendering is not implemented");
+#endif
   case neuriplo_tasks::TaskType::GaussianSplatting:
     break;
   case neuriplo_tasks::TaskType::KeypointMatching:

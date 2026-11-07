@@ -818,14 +818,13 @@ strictly **score > 0.2**.
   SHA256 `228994cea8c010146fa2aef933baa3ffaa4bcdc522bc8aa560087fcff8134526`.
   Input `images`: FP32 `[2,1,512,512]`. The upstream task owns resize,
   grayscale conversion, pair packing and per-image coordinate scaling.
-- **Dispatch:** ORT runs on `zenbook-ux425uaz`, Slurm job 60; TRT runs on
-  Jetson Orin through the Slurm 25.11.2 Docker worker, final job 65. The worker
+- **Dispatch:** ORT runs on `zenbook-ux425uaz`, Slurm job 66; TRT runs on
+  Jetson Orin through the Slurm 25.11.2 Docker worker, final integration job 67. The worker
   launches the native ARM application over host SSH with the installed CUDA
   and TensorRT libraries. Engine build provenance: job 56, TensorRT 10.16.2,
   FP16, SHA256 `7dfc23f4dd0ead6aba7fd74473073efdeaf36efd174caf459c2480af06b78d41`.
-- **¶ Source scope:** application feature `feature/lightglue-app-e2e`,
-  neuriplo-tasks `6a5929f` (`feature/lightglue-app-e2e`) and neuriplo
-  `e504a15` (`feature/trt-data-dependent-outputs`).
+- **¶ Source scope:** application LightGlue integration, neuriplo-tasks `f867d5a`,
+  and neuriplo `07ebeae` (the TRT patch rebased onto current history).
   These PASS cells certify the tested source builds; the current release
   pins do not include all these changes. FP16 results are not numerically
   identical to ORT.
