@@ -83,6 +83,23 @@ TEST_F(ModelValidationRecorder, HandlesEveryResultVariant) {
   }
 }
 
+#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+TEST_F(ModelValidationRecorder, PreservesTheAppendedGazeContract) {
+  PredictionRecorder recorder(path_);
+  GazeEstimation gaze;
+  gaze.pitch = 0.1f;
+  gaze.yaw = -0.2f;
+  gaze.direction = {0, 0, 1};
+  gaze.confidence = 0.9f;
+  const auto result = recorder.result(Result{gaze});
+  EXPECT_EQ(result["kind"], "gaze_estimation");
+  EXPECT_FLOAT_EQ(result["pitch"].get<float>(), gaze.pitch);
+  EXPECT_FLOAT_EQ(result["yaw"].get<float>(), gaze.yaw);
+  EXPECT_EQ(result["direction"], (json{0, 0, 1}));
+  EXPECT_FLOAT_EQ(result["confidence"].get<float>(), gaze.confidence);
+}
+#endif
+
 TEST_F(ModelValidationRecorder, RejectsMixedTensorTypesAndExistingEvidence) {
   PredictionRecorder recorder(path_);
   EXPECT_THROW(recorder.tensor(Tensor({1.0f, int64_t{2}}, {1, 2})),

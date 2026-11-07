@@ -184,6 +184,7 @@ void requireEncodedImageSupport(neuriplo_tasks::TaskType task_type,
   // single IMAGE input, so --text_prompts can never reach the model and would
   // only relabel whatever queries the server baked in.
   if (task_type == neuriplo_tasks::TaskType::VideoClassification ||
+      task_type == neuriplo_tasks::TaskType::KeypointMatching ||
       task_type == neuriplo_tasks::TaskType::OpticalFlow ||
       task_type == neuriplo_tasks::TaskType::ImageUnderstanding ||
       task_type == neuriplo_tasks::TaskType::OpenVocabDetection) {
