@@ -51,6 +51,9 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"videomae"` - VideoMAE
 - `"vivit"` - ViViT
 - `"timesformer"` - TimeSformer
+- `"pevideo"` - PE Video (any string starting with `pevideo`; classification needs a fixed-vocabulary export, see the export guide)
+- `"vjepa"` - V-JEPA 2 (any string starting with `vjepa`, e.g. `vjepa2-vitl-fpc16-256-ssv2`)
+- `"videoprism"` - VideoPrism (any string starting with `videoprism`)
 
 **Optical Flow:**
 - `"raft"` - RAFT optical flow
@@ -64,11 +67,13 @@ One image pair per call — `getRequiredFrames()` returns 2. Results are `Keypoi
 
 `"superglue"` covers end-to-end `SuperGlueForKeypointMatching` exports (transformers/Optimum, e.g. `magic-leap-community/superglue_outdoor`). Those take the pair as **one** rank-5 input `pixel_values [1, 2, 3, 480, 640]` — grayscale replicated across three channels in `[0, 1]` — so `preprocess()` returns **one** packed buffer, source image first, and every buffer maps 1:1 onto a model input. Keypoints come back normalized (`x / width`, `y / height`) and are rescaled to each original image; matches at or below `TaskConfig::confidence_threshold` (default 0.25) are dropped, as are masked-out padding keypoints. The export carries no SuperPoint detector score, so `Keypoint::confidence` is 0 — use `KeypointMatch::score` for match quality.
 
-**LightGlue and MatchAnything decoding is not implemented yet**: their postprocessors throw `std::logic_error` until each family's output layout has been verified against a real ONNX export. Matcher-only exports (keypoints and descriptors in — the original SuperGlue matcher) do not fit the image-in task contract and are not supported.
+`"lightglue"` covers end-to-end LightGlue pipelines (extractor and matcher in one graph, e.g. `thomasonzhou/superpoint-lightglue`). Their single input is the pair interleaved on the batch axis, `images [2, C, H, W]`, so `preprocess()` again returns one packed buffer, source first, with the channel count taken from the model input (1 for the SuperPoint pipeline, 3 for ALIKED/DISK variants). Keypoints come back as input-space pixels (int64) and are rescaled to each original image; `matches [M, 3]` rows are `[pair_index, source_index, target_index]`, and rows for other pairs plus scores at or below `TaskConfig::confidence_threshold` are dropped. The decoder needs the model input size (from `ModelInfo`) to rescale correctly.
+
+**MatchAnything decoding is not implemented yet**: its postprocessor throws `std::logic_error` until its output layout has been verified against a real ONNX export. Matcher-only exports (keypoints and descriptors in — the original SuperGlue matcher) do not fit the image-in task contract and are not supported.
 
 For export and verification details, see [export/keypoint_matching/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/keypoint_matching/README.md).
 
-**Pose Estimation:**
+**Pose Estimation (2D Human Pose):**
 - `"yolov8pose"`, `"yolov8-pose"` - YOLOv8 pose (single-stage, returns bbox + keypoints)
 - `"yolo11pose"`, `"yolo11-pose"` - YOLO11 pose
 - `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
