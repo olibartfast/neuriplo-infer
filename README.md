@@ -98,6 +98,7 @@ and the [neuriplo-tasks export tools](https://github.com/olibartfast/neuriplo-ta
 | [KServe runtime](docs/KserveRuntime.md) | Remote inference against Triton, OVMS, KServe, `neuriplo-kserve-runtime` |
 | [KServe compatibility](docs/KserveCompatibility.md) | Tested server / transport / datatype matrix |
 | [Backend coverage](docs/BackendCoverage.md) | Task × backend gates, scoreboard, open items |
+| [AMD Developer Cloud](docs/AMDDeveloperCloud.md) | SSH setup, MIGraphX validation and private-data handling |
 | [Supported model types](docs/generated/supported-model-types.md) | Every `--type` string and its task |
 | [Export instructions](docs/ExportInstructions.md) | Producing model files for each backend |
 | [VLM image understanding](docs/VLMImageUnderstanding.md) | Vision-language models via llama.cpp |
