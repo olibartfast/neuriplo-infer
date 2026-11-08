@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Add an AMD Developer Cloud guide for SSH access, MIGraphX validation and sanitizing shared evidence.
+
 - Use `MGX` in coverage tables and report its passing backend contracts separately from app task gates.
 
 - Wire SuperPoint + LightGlue keypoint matching through the CLI for image pairs, with strict confidence filtering, pair rendering and application coverage on ORT CPU and Jetson TensorRT.
