@@ -1,0 +1,9 @@
+{
+  "description": "CPU reference top-5 for the TPU numeric comparison (data/dog.jpg, labels/imagenet_labels.txt). Null until measured.",
+  "source_image": "data/dog.jpg",
+  "labels": "labels/imagenet_labels.txt",
+  "model_type": "tensorflow-classifier",
+  "classes": null,
+  "scores": null,
+  "score_tolerance": 1e-4
+}
