@@ -109,20 +109,10 @@ Confirm the branch listing contains no finished release/hotfix branch.
 ## Agent Commit Signing
 
 Every commit produced by an AI agent MUST include a `Co-authored-by` trailer
-that identifies the agent, the LLM model used, and the agent vendor. This makes
-agent contributions visible in GitHub's contribution graph and `git shortlog`.
-
-Format: `Co-Authored-By: <Agent> <Model> <<vendor-email>>`
-
-| Agent | Vendor email | Example trailer |
-|-------|-------------|-----------------|
-| Cursor | `cursoragent@cursor.com` | `Co-authored-by: Cursor <cursoragent@cursor.com>` |
-| Claude Code | `noreply@anthropic.com` | `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` |
-| Opencode | `agent@opencode.ai` | `Co-Authored-By: Opencode via DeepSeek V4 Pro <agent@opencode.ai>` |
-
-The model name MUST match the LLM the agent is powered by (check the system
-prompt). If the model changes across sessions, the trailer must reflect the
-model used for that specific commit.
+that identifies the agent, the LLM model used, and the agent vendor. The
+canonical agent table, vendor emails, and the rule that vendor emails must not
+map to real GitHub profiles live in
+[`neuriplo-platform/AGENTS.md`](https://github.com/olibartfast/neuriplo-platform/blob/main/AGENTS.md#agent-commit-signing).
 
 Place the trailer in the commit body (after the subject line and blank line),
 not the subject.
