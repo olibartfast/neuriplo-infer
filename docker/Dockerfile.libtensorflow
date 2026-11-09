@@ -1,8 +1,16 @@
+# CPU (default):
 # docker build --rm -t neuriplo-infer:libtensorflow -f docker/Dockerfile.libtensorflow .
+#
+# GPU (opt-in; same TensorFlow 2.19 pip wheel on a CUDA/cuDNN runtime base):
+# docker build --rm -t neuriplo-infer:tensorflow-gpu \
+#   --build-arg TF_BASE_IMAGE=nvidia/cuda:12.6.1-cudnn-runtime-ubuntu24.04 \
+#   --build-arg TF_GPU=1 -f docker/Dockerfile.libtensorflow .
+
+# Base image for the CPU default; override with TF_BASE_IMAGE for the GPU image.
+ARG TF_BASE_IMAGE=ubuntu:24.04
 
 # Stage 1: Common dependencies
-ARG UBUNTU_VERSION=24.04
-FROM ubuntu:${UBUNTU_VERSION} AS common_dependencies
+FROM ${TF_BASE_IMAGE} AS common_dependencies
 
 # Set environment variable to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -34,12 +42,17 @@ FROM common_dependencies AS backend_dependencies
 ENV HOME=/root
 ARG BACKEND=LIBTENSORFLOW
 ENV TENSORFLOW_DIR=/root/dependencies/tensorflow
-ENV LD_LIBRARY_PATH=${TENSORFLOW_DIR}/lib
+
+# Keep the CUDA/cuDNN and NVIDIA driver library paths used by the GPU base
+# image. These directories do not exist in the CPU image, where the dynamic
+# loader simply ignores missing entries, so the CPU default is unaffected.
+ENV LD_LIBRARY_PATH=${TENSORFLOW_DIR}/lib:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
 # Stage 3: Copy application code and build
 FROM backend_dependencies AS builder
 
 ARG BACKEND=LIBTENSORFLOW
+ARG TF_GPU=0
 
 WORKDIR /app
 
@@ -48,12 +61,37 @@ COPY . .
 RUN cp /tmp/versions.env /app/versions.neuriplo.env && \
     ./scripts/setup_dependencies.sh --backend tensorflow
 
-# Build the project using CMake
+# Build the project using CMake. The GPU variant uses the same TensorFlow pip
+# wheel and application build; only the base image and runtime checks differ.
 RUN cmake -Bbuild -H. \
     -DDEFAULT_BACKEND=${BACKEND} \
     -DTENSORFLOW_DIR=${TENSORFLOW_DIR} \
     -DBUILD_INFERENCE_ENGINE_TESTS=OFF -DBUILD_TESTS=OFF && \
     cmake --build build --config Release
+
+# Verify the accelerator runtime and record linkage evidence. The CUDA/cuDNN
+# libraries come from the base image; no GPU is required at build time.
+RUN set -e; \
+    if [ "$TF_GPU" = "1" ]; then \
+        ldconfig; \
+        for lib in libcudart.so.12 libcublas.so.12 libcudnn.so.9; do \
+            if ldconfig -p | grep -q "$lib"; then \
+                echo "Found required GPU runtime library: $lib"; \
+            else \
+                echo "ERROR: required CUDA/cuDNN runtime library $lib not found via ldconfig -p" >&2; \
+                exit 1; \
+            fi; \
+        done; \
+    fi; \
+    test -x /app/build/app/neuriplo-infer || { \
+        echo "ERROR: /app/build/app/neuriplo-infer was not built" >&2; exit 1; \
+    }; \
+    tf_lib=/root/dependencies/tensorflow/lib/libtensorflow_cc.so.2; \
+    test -f "$tf_lib" || { \
+        echo "ERROR: TensorFlow library $tf_lib is missing" >&2; exit 1; \
+    }; \
+    ldd /app/build/app/neuriplo-infer | tee /tmp/ldd-neuriplo-infer.txt; \
+    ldd "$tf_lib" | tee /tmp/ldd-libtensorflow-cc.txt
 
 # Stage 4: Final image
 FROM backend_dependencies AS final
@@ -70,8 +108,9 @@ COPY --from=builder /root/dependencies/tensorflow /root/dependencies/tensorflow
 COPY --from=builder /app/build/_deps/neuriplo-build/libneuriplo.so /app/
 COPY --from=builder /app/build/_deps/videocapture-build/libVideoCapture.so /app/
 
-# Set the LD_LIBRARY_PATH to include the directory where the `.so` files are located
-ENV LD_LIBRARY_PATH=/app:${TENSORFLOW_DIR}/lib
+# Set the LD_LIBRARY_PATH to include the app, TensorFlow, and GPU runtime
+# library directories (the CUDA paths are ignored by the CPU image).
+ENV LD_LIBRARY_PATH=/app:${TENSORFLOW_DIR}/lib:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
 # Set the entry point to the compiled executable
 ENTRYPOINT ["./neuriplo-infer"]

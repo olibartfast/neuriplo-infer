@@ -32,6 +32,7 @@ Legend: ✅ exercised live in CI · 🟡 dry-run only (live behind manual dispat
 | Triton Inference Server | 🟡 (live: dispatch) | 🟡 (live: dispatch) | ONNX backend; `grpcurl` over `proto/kserve_grpc.proto` |
 | OpenVINO Model Server (OVMS) | 🟡 (live: dispatch) | 🟡 (live: dispatch) | same OIP endpoints; serves ONNX directly |
 | TorchServe (OIP) | ⏳ | ⏳ | version routing varies |
+| Custom TPU server (operator-supplied, KServe V2) | ⏳ (dry-run only) | ⏳ | client scaffold validated, not live-validated; HTTP is the first path, gRPC applies only if the operator service implements it; see the [TPU harness](../integration-tests/tpu-kserve/README.md) and [BackendCoverage E18](BackendCoverage.md#ev-accelerator) |
 
 "Live: dispatch" means the round-trip is implemented and run by the live job,
 which is gated behind a manual dispatch so routine CI never pulls multi-GB
