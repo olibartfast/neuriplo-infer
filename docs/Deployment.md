@@ -31,6 +31,13 @@ Build requirements: CMake ≥ 3.24, a C++20 compiler, OpenCV ≥ 4.6, and glog.
 - **ONNX Runtime**: the image has no CUDA runtime and runs on CPU. Native builds
   use the ONNX Runtime GPU package, which needs a CUDA installation compatible
   with the version `neuriplo` pins.
+- **TensorFlow**: the CPU image (`docker/Dockerfile.libtensorflow`) uses
+  `ubuntu:24.04` and exposes no GPU. Build the opt-in GPU image with
+  `--build-arg TF_BASE_IMAGE=nvidia/cuda:12.6.1-cudnn-runtime-ubuntu24.04
+  --build-arg TF_GPU=1`, tag it `neuriplo-infer:tensorflow-gpu`, and run it with
+  `--gpus all` and `--use-gpu`; no GPU image is published yet and the path is
+  not live-validated.
+  See [TensorFlow GPU and remote TPU](#tensorflow-gpu-and-remote-tpu-not-yet-validated).
 
 Backend package versions are owned by `neuriplo`; see its
 [`versions.env`](https://github.com/olibartfast/neuriplo/blob/master/versions.env).
@@ -102,7 +109,7 @@ family, NERT-style PASS / DRY-RUN / BUILDS / BLOCKED / KNOWN-BAD / UNTESTED.
 | `Dockerfile.tensorrt` | `nvcr.io/nvidia/cuda:13.0.0-devel-ubuntu24.04` | NVIDIA GPU |
 | `Dockerfile.libtorch` | `ubuntu:22.04` | CPU; CUDA with `COMPUTE_PLATFORM` |
 | `Dockerfile.openvino` | `openvino/ubuntu24_runtime:2026.3.0` | CPU |
-| `Dockerfile.libtensorflow` | `ubuntu:24.04` | CPU |
+| `Dockerfile.libtensorflow` | `ubuntu:24.04` (`TF_BASE_IMAGE`; optional `nvidia/cuda:12.6.1-cudnn-runtime-ubuntu24.04` with `TF_GPU=1`) | CPU by default; opt-in NVIDIA GPU |
 | `Dockerfile.litert` | `ubuntu:24.04` | CPU |
 | `Dockerfile.executorch` | `ubuntu:24.04` | CPU |
 | `Dockerfile.llamacpp` | `ubuntu:24.04` | CPU; downloads the Gemma 4 E2B GGUF while building |
@@ -183,6 +190,7 @@ bash docker_run_inference_e2e_example.sh --preset yolo26s_tflite
 | `rtdetrv4` | `rtdetr` | TensorRT | yes |
 | `owlv2` | `owlv2` | ONNX Runtime | yes (also its `vocab.json` / `merges.txt`) |
 | `torchvision_classifier` | `torchvisionclassifier` | ONNX Runtime | yes (and `labels/imagenet_labels.txt`) |
+| `tensorflow_classifier` | `tensorflow-classifier` | TensorFlow (CPU; `tensorflow-gpu` adds `--gpus`/`--use-gpu`) | yes (and `labels/imagenet_labels.txt`) |
 | `yoloseg` | `yoloseg` | ONNX Runtime | yes |
 | `raft` | `raft` | ONNX Runtime | yes |
 | `vitpose` | `vitpose` | ONNX Runtime | yes |
@@ -204,6 +212,63 @@ converted artifact and backend: the replacement `ecdet` artifact passes local
 and HTTP checks with an unreleased neuriplo XNNPACK patch, which is not included
 in the app dependency pins. Use ONNX Runtime or TensorRT for the pinned build;
 see [the conversion validation](KserveCompatibility.md#known-bad-conversion-edgecrafter-ecdet-rtdetrdeformable--tflite).
+
+### TensorFlow GPU and remote TPU (not yet validated)
+
+Neither path has a recorded live run; both are dry-run gated only. See
+[BackendCoverage E18](BackendCoverage.md#ev-accelerator).
+
+The `tensorflow` e2e backend runs the `tensorflow_classifier` preset on CPU
+with the `neuriplo-infer:tensorflow` image (the SavedModel directory is
+mounted at `/weights/<name>` and passed to `--weights` as a directory). The
+`tensorflow-gpu` backend adds `--gpus all` to `docker run` and `--use-gpu` to
+the CLI. The GPU image is an opt-in variant of the same Dockerfile:
+`TF_BASE_IMAGE` selects the CUDA/cuDNN runtime base and `TF_GPU=1` enables the
+CUDA library checks. It has not been built on a GPU host or live-validated.
+
+CPU image and dry-run (CPU-only, no GPU flags):
+
+```bash
+docker build -t neuriplo-infer:tensorflow -f docker/Dockerfile.libtensorflow .
+bash docker_run_inference_e2e_example.sh --preset tensorflow_classifier --dry-run
+```
+
+GPU app image (build-time CUDA/cuDNN library check; no GPU needed to build):
+
+```bash
+docker build -t neuriplo-infer:tensorflow-gpu --build-arg TF_BASE_IMAGE=nvidia/cuda:12.6.1-cudnn-runtime-ubuntu24.04 --build-arg TF_GPU=1 -f docker/Dockerfile.libtensorflow .
+```
+
+GPU run (requires an NVIDIA driver and the NVIDIA Container Toolkit on the
+host; the command is not live-validated):
+
+```bash
+docker run --rm --gpus all \
+  -v "$PWD/data:/app/data" -v "$PWD/models:/weights" -v "$PWD/labels:/labels" \
+  neuriplo-infer:tensorflow-gpu \
+  --type=tensorflow-classifier --weights=/weights/<savedmodel_dir> \
+  --source=/app/data/dog.jpg --labels=/labels/imagenet_labels.txt --use-gpu
+```
+
+The e2e script's GPU dry-run shows the same `--gpus=all` and `--use-gpu`
+flags:
+
+```bash
+bash docker_run_inference_e2e_example.sh --preset tensorflow_classifier --backend tensorflow-gpu --dry-run
+```
+
+For the remote-TPU path, run a KServe V2 classifier service on the TPU host
+(operator-supplied; see the
+[TPU harness](../integration-tests/tpu-kserve/README.md)), then point the
+existing KServe client at it — no `--weights`, no new device flag:
+
+```bash
+python3 integration-tests/tpu-kserve/run.py --dry-run   # scaffold check, no network
+python3 integration-tests/tpu-kserve/run.py --live \
+  --endpoint http://<tpu-host>:8000 --model-name <served-model> \
+  --infer-bin <path-to>/neuriplo-infer \
+  --source data/dog.jpg --labels labels/imagenet_labels.txt
+```
 
 ## Native builds
 

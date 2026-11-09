@@ -4,7 +4,7 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-11-07.** Baseline evidence uses neuriplo-infer
+**Last updated: 2026-11-09.** Baseline evidence uses neuriplo-infer
 0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. Newer local corrections
 are scoped in their evidence sections; unreleased backend fixes are marked with numbered notes. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
@@ -342,7 +342,8 @@ certify the app's released dependency pins.
   in the classification/exporter and TensorFlow backend paths; it is not an
   isolated remote-fetch release gate. Exact provenance and reproduction:
   [validation](../specs/2026-11-04-tensorflow-classification-regate/validation.md).
-  `tensorflow-classifier` / `vit-classifier` aliases still have no preset.
+  `tensorflow-classifier` CPU preset `tensorflow_classifier` exists (see E18);
+  `vit-classifier` still has no preset; no live GPU/TPU evidence is claimed.
 
 ### <a id="ev-video"></a>E7 — Video classification (`videomae`), optical flow (`raft`)
 
@@ -840,6 +841,28 @@ strictly **score > 0.2**.
   [application validation](../specs/2026-11-07-lightglue-app-e2e/validation.md)
   and [CLI guide](KeypointMatching.md). Both image pairs are in `data/`.
 
+### <a id="ev-accelerator"></a>E18 — Accelerator coverage (GPU TensorFlow, remote TPU)
+
+Neither path below has a recorded live run. Both are dry-run gated only;
+this section tracks commands and scaffolding without promoting any gate-table
+cell. The packet spec is
+[2026-11-09-tensorflow-gpu-remote-tpu](../specs/2026-11-09-tensorflow-gpu-remote-tpu/requirements.md).
+
+| Path | What is gated | Status |
+|---|---|---|
+| GPU TensorFlow (`tensorflow-gpu` backend, `--use-gpu`) | `tensorflow_classifier --backend tensorflow-gpu --dry-run` prints `--gpus=all`, `--use-gpu`, `neuriplo-infer:tensorflow-gpu`; emulation has a focused GPU dry-run job | UNTESTED — dry-run commands only; live not executed |
+| Remote TPU (KServe V2, operator-supplied service) | `integration-tests/tpu-kserve/run.py --dry-run` green, registered as CTest `tpu_kserve_dry_run` | UNTESTED — dry-run scaffold only; live not executed |
+
+- The CPU `tensorflow` preset path stays the default. E6 records backend/model
+  output evidence (2.19 runtime, SavedModel directory, class 249 @ 0.532603),
+  not preset/export/container evidence; the new preset flow is dry-run gated
+  only. The GPU path is a backend/image choice, not a new CLI contract
+  (`--use-gpu` already exists).
+- The TPU live check in `integration-tests/tpu-kserve/evidence.yaml` stays
+  `skipped` until an operator records the TPU type, runtime, endpoint,
+  command, exit status, output path, and top-5 classes/scores; the numeric
+  comparison additionally needs a populated `baselines/cpu_top5.json`.
+
 ## Environments
 
 How each column was built and tested. App gates are CPU except TRT;
@@ -918,6 +941,7 @@ from `app/test/CMakeLists.txt`.
 | `kserve-runtime-yolo-e2e` | `yolo26` KServe PASS (YOLO26 `.tflite` over `litert`) | — (needs runtime binary + model) | `run.py` — starts `neuriplo-kserve-runtime`, readiness + metadata, app-binary HTTP infer, refreshed render, metrics 1/0 | [README](../integration-tests/kserve-runtime-yolo-e2e/README.md), [run.py](../integration-tests/kserve-runtime-yolo-e2e/run.py) |
 | `kserve-runtime-edgecrafter-e2e` | `ecdet` ORT/TRT PASS + OpenVINO/ExecT matrix; `ecdet` LiteRT/KServe HTTP replacement PASS with local backend patch (E4; separate manual gate) | — (needs per-backend runtime binaries + model repository + GPU for TRT) | `run.py --backend {onnx_runtime,tensorrt,openvino,executorch} [--transport {http,grpc}] [--mode {kserve,local}]`; `prepare_model_repository.py` lays out `ecdet_s_<backend>/1/` | [README](../integration-tests/kserve-runtime-edgecrafter-e2e/README.md), [BENCHMARK.md](../integration-tests/kserve-runtime-edgecrafter-e2e/BENCHMARK.md) |
 | `rfdetr-pose-local-vs-kserve` | Pose row scaffold for `rfdetr_keypoint` (evidence tracking, not a live gate) | `rfdetr_pose_evidence_scaffold` (`run.py` — baselines + report exist) | Attested checks in [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml) (`kserve_grpc_smoke` still `skipped`) | [README](../integration-tests/rfdetr-pose-local-vs-kserve/README.md), [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml), [reports/latest.md](../integration-tests/rfdetr-pose-local-vs-kserve/reports/latest.md) |
+| `tpu-kserve` | Remote-TPU scaffold for `tensorflow-classifier` over KServe V2 (evidence tracking, not a live gate; E18) | `tpu_kserve_dry_run` (`run.py --dry-run` — scaffold files exist, live command prints, no network) | `run.py --live` against an operator-supplied TPU endpoint; attested checks in [evidence.yaml](../integration-tests/tpu-kserve/evidence.yaml) (both live checks `skipped`) | [README](../integration-tests/tpu-kserve/README.md), [run.py](../integration-tests/tpu-kserve/run.py), [evidence.yaml](../integration-tests/tpu-kserve/evidence.yaml) |
 
 KServe protocol-level legs (not app-surface suites, but they back the
 KServe column): `kserve_integration_dry_run` and

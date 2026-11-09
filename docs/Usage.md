@@ -51,7 +51,7 @@ neuriplo-infer --capabilities
 | `--weights`, `-w=<path>` | — | Local model file. Required for local inference and `--export_metadata`; not used with `--kserve_endpoint`. For LibTorch, a `.pt2` file selects AOTInductor and any other extension selects TorchScript. |
 | `--source`, `-s=<input>` | — | Image, video file, or stream URL (e.g. `rtsp://...`). Optical flow takes two comma-separated images. Omit for text-only image understanding and for `--export_metadata`. |
 | `--labels`, `--lb=<path>` | — | Class labels, one per line, for fixed-label models (`labels/` ships COCO and VOC lists). |
-| `--use-gpu` | `false` | Ask the backend to run on the GPU. Each backend chooses the device it can use; a GPU request no longer disables non-NVIDIA backends when no CUDA device is present. |
+| `--use-gpu` | `false` | Ask the backend to run on the GPU. Each backend chooses the device it can use; a GPU request no longer disables non-NVIDIA backends when no CUDA device is present. For the TensorFlow backend it requests a visible GPU and fails model load instead of falling back to CPU when no GPU is available. |
 | `--input_sizes`, `--is='<CHW;...>'` | — | Input sizes for models with dynamic axes, or for backends that cannot report input shapes (OpenCV DNN). E.g. `'3,224,224'`, or `'3,640,640;2'` for RT-DETR / D-FINE / DEIM. AOTInductor packages require the full static shape, batch included. |
 | `--batch`, `-b=<n>` | `1` | Batch size. Values above 1 are not currently supported. |
 
@@ -116,6 +116,14 @@ defaults and examples in
 ./neuriplo-infer --type=torchvision-classifier --weights=models/resnet50.onnx \
   --source=data/dog.jpg --labels=imagenet_labels.txt
 
+# Classification on TensorFlow (SavedModel directory; CPU)
+./neuriplo-infer --type=tensorflow-classifier --weights=models/tensorflow-classifier \
+  --source=data/dog.jpg --labels=labels/imagenet_labels.txt
+
+# Same TensorFlow model on a CUDA-enabled build (GPU image not yet validated)
+./neuriplo-infer --type=tensorflow-classifier --weights=models/tensorflow-classifier \
+  --source=data/dog.jpg --labels=labels/imagenet_labels.txt --use-gpu
+
 # Instance segmentation on the GPU
 ./neuriplo-infer --type=yoloseg --weights=models/yolov8n-seg.onnx \
   --source=data/dog.jpg --labels=labels/coco.names \
@@ -135,7 +143,9 @@ defaults and examples in
 ```
 
 Remote-inference examples are in [KserveRuntime.md](KserveRuntime.md#cli-flags);
-more invocations are in [`.vscode/launch.json`](../.vscode/launch.json), and
+the remote-TPU evidence harness (dry-run scaffold only, live not yet run) is in
+[`integration-tests/tpu-kserve`](../integration-tests/tpu-kserve/README.md).
+More invocations are in [`.vscode/launch.json`](../.vscode/launch.json), and
 runnable export-plus-inference flows in the
 [end-to-end presets](Deployment.md#end-to-end-presets).
 

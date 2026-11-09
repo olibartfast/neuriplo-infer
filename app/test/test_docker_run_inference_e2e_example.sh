@@ -143,3 +143,93 @@ grep -F -- "mmproj-F16.gguf" "${OUTPUT_FILE}"
 grep -F -- "--mmproj=/weights/mmproj-F16.gguf" "${OUTPUT_FILE}"
 grep -F -- "--prompt=Describe" "${OUTPUT_FILE}"
 grep -F -- "neuriplo-infer:llamacpp" "${OUTPUT_FILE}"
+
+# ── tensorflow_classifier dry-run (CPU default) ─────────────────────────────
+touch "${TMP_DIR}/labels/imagenet_labels.txt"
+OUTPUT_FILE="${TMP_DIR}/tensorflow_classifier_dry_run.txt"
+
+bash "${SCRIPT_PATH}" \
+    --preset tensorflow_classifier \
+    --neuriplo-tasks-dir "${NEURIPLO_TASKS_DIR}" \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --labels-dir "${TMP_DIR}/labels" \
+    --dry-run > "${OUTPUT_FILE}"
+
+grep -F -- "export/classification/tensorflow/export_tf_saved_model_classifier.py" "${OUTPUT_FILE}"
+grep -F -- "--type=tensorflow-classifier" "${OUTPUT_FILE}"
+# SavedModel is a directory, not a single file: no artifact suffix.
+grep -F -- "--weights=/weights/tensorflow-classifier" "${OUTPUT_FILE}"
+if grep -F -- "--weights=/weights/tensorflow-classifier." "${OUTPUT_FILE}"; then
+    echo "CPU TensorFlow weights path must be a directory, not a suffixed file" >&2
+    exit 1
+fi
+grep -F -- "neuriplo-infer:tensorflow" "${OUTPUT_FILE}"
+if grep -F -- "neuriplo-infer:tensorflow-gpu" "${OUTPUT_FILE}"; then
+    echo "CPU TensorFlow dry-run must not use the tensorflow-gpu image" >&2
+    exit 1
+fi
+# CPU default requests no GPU.
+if grep -F -- "--gpus" "${OUTPUT_FILE}"; then
+    echo "CPU TensorFlow dry-run must not contain --gpus" >&2
+    exit 1
+fi
+if grep -F -- "--use-gpu" "${OUTPUT_FILE}"; then
+    echo "CPU TensorFlow dry-run must not contain --use-gpu" >&2
+    exit 1
+fi
+
+# ── tensorflow_classifier dry-run (GPU backend override) ────────────────────
+OUTPUT_FILE="${TMP_DIR}/tensorflow_classifier_gpu_dry_run.txt"
+
+bash "${SCRIPT_PATH}" \
+    --preset tensorflow_classifier \
+    --backend tensorflow-gpu \
+    --neuriplo-tasks-dir "${NEURIPLO_TASKS_DIR}" \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --labels-dir "${TMP_DIR}/labels" \
+    --dry-run > "${OUTPUT_FILE}"
+
+grep -F -- "--type=tensorflow-classifier" "${OUTPUT_FILE}"
+grep -F -- "--weights=/weights/tensorflow-classifier" "${OUTPUT_FILE}"
+grep -F -- "--gpus=all" "${OUTPUT_FILE}"
+grep -F -- "--use-gpu" "${OUTPUT_FILE}"
+grep -F -- "neuriplo-infer:tensorflow-gpu" "${OUTPUT_FILE}"
+
+# ── TensorFlow backends are rejected for non-classifier presets ─────────────
+for backend in tensorflow tensorflow-gpu; do
+    OUTPUT_FILE="${TMP_DIR}/backend_guard_${backend}.txt"
+    if bash "${SCRIPT_PATH}" \
+        --preset owlv2 \
+        --backend "${backend}" \
+        --neuriplo-tasks-dir "${NEURIPLO_TASKS_DIR}" \
+        --weights-dir "${TMP_DIR}/weights" \
+        --data-dir "${TMP_DIR}/data" \
+        --labels-dir "${TMP_DIR}/labels" \
+        --dry-run > "${OUTPUT_FILE}" 2>&1; then
+        echo "expected --backend ${backend} with a non-classifier preset to fail" >&2
+        exit 1
+    fi
+    grep -F -- "only valid with --preset tensorflow_classifier" "${OUTPUT_FILE}"
+done
+
+# ── tensorflow_classifier fails before docker when the SavedModel is missing ─
+OUTPUT_FILE="${TMP_DIR}/tensorflow_classifier_missing_savedmodel.txt"
+if bash "${SCRIPT_PATH}" \
+    --preset tensorflow_classifier \
+    --neuriplo-tasks-dir "${NEURIPLO_TASKS_DIR}" \
+    --weights-dir "${TMP_DIR}/weights" \
+    --data-dir "${TMP_DIR}/data" \
+    --labels-dir "${TMP_DIR}/labels" \
+    --skip-export \
+    > "${OUTPUT_FILE}" 2>&1; then
+    echo "expected a missing SavedModel directory to fail" >&2
+    exit 1
+fi
+grep -F -- "Required SavedModel directory not found" "${OUTPUT_FILE}"
+# It must fail before reaching the docker invocation.
+if grep -F -- "+ docker run" "${OUTPUT_FILE}"; then
+    echo "missing SavedModel must fail before the docker run step" >&2
+    exit 1
+fi
