@@ -136,10 +136,10 @@ Cells may carry a numbered note, e.g. **P(2)**; see [Notes](#notes).
 | Object detection (`rtdetr`, `rtdetrv4`) | P(1) | P(2) | DR | DR | P | B | B | [E3](#ev-rtdetr) |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | P | U | U | P | U | [E14](#ev-ov-slurm) |
 | Object detection (`ecdet`, `edgecrafter_det`) | P | U | P | P | B | B | B | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
+| Object detection (`rfdetr`, `rfdetr-medium`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | P(1) | P | P | P | B | B | B | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | P | U | DR | B | B | B | B | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | P(1) | U | DR | B | P | B | P | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | P | U | DR | B | B | RUNTIME-PASS(3) | B | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | P | U | DR | B | B | B | B | [E7](#ev-video) |
@@ -166,10 +166,10 @@ no task representative has a recorded app run.
 | Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | N/A | U | [E3](#ev-rtdetr) |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | N/A | U | [E14](#ev-ov-slurm) |
 | Object detection (`ecdet`, `edgecrafter_det`) | U | P(5) | U | N/A | P(5) | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Object detection (`rfdetr`, `rfdetr-medium`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | U | U | U | N/A | P | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | N/A | U | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | U | U | N/A | U | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | U | U | U | N/A | U | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | U | U | U | N/A | U | [E7](#ev-video) |
