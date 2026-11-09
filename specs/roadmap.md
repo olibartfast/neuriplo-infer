@@ -136,6 +136,23 @@ Packet: [`2026-09-17-async-video-writer/`](2026-09-17-async-video-writer/require
 
 ---
 
+## Phase 8 — TensorFlow GPU and remote TPU coverage · in progress
+
+Local GPU execution for the TensorFlow backend uses the existing `--use-gpu`
+flag and a GPU image; remote TPU execution uses the existing KServe V2 client
+against an operator-supplied TPU service. The packet adds the e2e preset, the
+TPU evidence scaffold, and coverage documentation. It does not add an
+in-process TPU backend.
+
+Packet: [`2026-11-09-tensorflow-gpu-remote-tpu/`](2026-11-09-tensorflow-gpu-remote-tpu/requirements.md).
+
+- Depends on: `neuriplo` TensorFlow GPU backend and `neuriplo-tasks` TPU export
+  validation.
+- Done when: CPU and GPU dry-runs are well-formed, the TPU dry-run is registered,
+  and live GPU/TPU evidence is recorded or explicitly unattested.
+
+---
+
 ## Candidates — not scheduled
 
 Real, observed, small enough not to need a packet until someone picks one up:
