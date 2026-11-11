@@ -135,7 +135,7 @@ That is a deployment choice, not an adapter feature.
 
 ## Tested versus proposed
 
-- Unit (fake binary, no GPU): 36 tests in
+- Unit (fake binary, no GPU): 40 tests in
   `scripts/test_mcp_neuriplo_adapter.py` covering stdio framing and envelope
   behavior, strict schema validation with zero process spawns on rejection,
   per-run isolation as uniqueness-by-construction plus sequential processing
@@ -156,6 +156,22 @@ That is a deployment choice, not an adapter feature.
   in the workspace (only transformer node-test models in an unrelated uv cache
   and RF-DETR `.pt`/`.pth` checkpoints unusable with the NERT ONNX backend);
   no downloads were performed.
+- Real weighted run through the stdio adapter (2026-11-11): `build-lightglue-ort/app/neuriplo-infer`
+  with ONNX Runtime CPU, `type=rfdetr`, source `data/dog.jpg`, and the existing
+  RF-DETR Nano ONNX file at
+  `/home/oli/repos/meta-quest3-lab/tools/triton/model_repository/rfdetr_nano/1/model.onnx`.
+  The request exited 0; `run_report.json` has `status: success`, stage `render`,
+  one sample, and no report error. The rendered artifact is
+  `/tmp/neuriplo-mcp-lkv42egk/data/output/processed_rfdetr_local.png`.
+  Model SHA-256 is `1ac37bb3429380c7aee6b2c2778d20026db0ad18579cac119255d31f736dc760`,
+  matching the existing RF-DETR export manifest; the local image SHA-256 is
+  `5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866`.
+  The binary SHA-256 is
+  `e2126316c6fc3d382de739f7a0075808598947e170540b624f4f12c4fb44fd24`;
+  its build cache records neuriplo-tasks `v0.8.5` and neuriplo `v0.11.3`; the
+  exact sibling source revisions used by the build are unavailable because
+  temporary override checkouts were removed. The run logged ONNX Runtime
+  `1.19.2`. No assets were downloaded.
 - OpenCode v2.2.6 (sandbox project-local `opencode.json` in scratch space;
   real user configs verified untouched): `opencode mcp list` reports `neuriplo
   connected`, i.e. the host's own initialize plus catalog against the
@@ -169,9 +185,13 @@ That is a deployment choice, not an adapter feature.
   was available; no credentials configured or touched.
 - Hermes v0.23.0 (scratch `HOME`; real `~/.hermes` verified untouched):
   `hermes mcp test neuriplo` reports connected in 523 ms with 2 tools
-  discovered, both descriptions rendered. Discovery only; per-host TOOL
-  INVOCATION was not exercised (needs a provider-backed agent session; no
-  credentials configured or touched).
-- Proposed, not attested: live weighted inference end to end; Streamable HTTP
-  transport; structured detection output (blocked on the result-contract
-  Draft noted above).
+  discovered, both descriptions rendered. Discovery only. A deterministic
+  host-dispatch path was investigated through Hermes' local MCP registry, but
+  its scratch `HERMES_HOME` triggered first-run bootstrap and dependency setup;
+  the attempt was stopped before installation or download. Host-side TOOL
+  INVOCATION remains unattested.
+- OpenCode and Hermes model-driven tool invocation remain unattested. OpenCode's
+  local model emitted textual pseudo-calls in three sessions. No external
+  provider credentials were configured or used.
+- Proposed, not attested: Streamable HTTP transport; structured detection
+  output (blocked on the result-contract Draft noted above).

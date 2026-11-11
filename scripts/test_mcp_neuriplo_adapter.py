@@ -34,6 +34,10 @@ import json, os, subprocess, sys, time
 from pathlib import Path
 args = sys.argv[1:]
 if "--capabilities" in args:
+    cap_marker = os.environ.get("NEURIPLO_MCP_TEST_CAP_MARKER")
+    if cap_marker:
+        with open(cap_marker, "a") as fh:
+            fh.write("spawn\\n")
     cap_mode = os.environ.get("NEURIPLO_MCP_TEST_CAP_MODE", "")
     if cap_mode == "noisy":
         sys.stdout.write('{"schema_version": 2, "data": "')
@@ -185,6 +189,18 @@ class StdioFramingTest(unittest.TestCase):
             self.assertEqual(response["error"]["code"], -32700)
             response = stdio_call(server, "ping", {}, request_id="9")
             self.assertEqual(response["result"], {})
+        finally:
+            server.close()
+
+    def test_oversized_integer_id_is_parse_error_and_server_survives(self):
+        server = AdapterProcess()
+        try:
+            server.send_raw('{"jsonrpc":"2.0","id":' + "1" * 5000 +
+                            ',"method":"ping"}\n')
+            response = server.recv()
+            self.assertEqual(response["error"]["code"], -32700)
+            followup = stdio_call(server, "ping", {}, request_id="after-large-id")
+            self.assertEqual(followup["result"], {})
         finally:
             server.close()
 
@@ -370,13 +386,30 @@ class CapabilitiesTest(unittest.TestCase):
 
     def test_capabilities_rejects_arguments_without_spawning(self):
         marker = Path(self.temporary.name) / "marker"
+        cap_marker = Path(self.temporary.name) / "cap-marker"
         server = AdapterProcess(env_extra={"NEURIPLO_INFER_BIN": str(self.fake),
-                                           "NEURIPLO_MCP_TEST_MARKER": str(marker)})
+                                           "NEURIPLO_MCP_TEST_MARKER": str(marker),
+                                           "NEURIPLO_MCP_TEST_CAP_MARKER": str(cap_marker)})
         try:
             stdio_call(server, "initialize", {"protocolVersion": "2025-11-25"})
             response = server.call("neuriplo_capabilities",
                                    {"infer_bin": "/tmp/x"}, request_id="3")
             self.assertEqual(response["error"]["code"], -32602)
+            self.assertFalse(marker.exists())
+            self.assertFalse(cap_marker.exists())
+        finally:
+            server.close()
+
+    def test_capabilities_rejects_null_arguments_without_spawning(self):
+        marker = Path(self.temporary.name) / "cap-marker"
+        server = AdapterProcess(env_extra={
+            "NEURIPLO_INFER_BIN": str(self.fake),
+            "NEURIPLO_MCP_TEST_CAP_MARKER": str(marker)})
+        try:
+            stdio_call(server, "initialize", {"protocolVersion": "2025-11-25"})
+            response = server.call("neuriplo_capabilities", None, request_id="3")
+            self.assertEqual(response["error"]["code"], -32602)
+            self.assertIn("takes no arguments", response["error"]["message"])
             self.assertFalse(marker.exists())
         finally:
             server.close()
@@ -608,6 +641,24 @@ class RunTest(unittest.TestCase):
         finally:
             server.close()
 
+    def test_non_image_source_rejected_without_spawning(self):
+        video = self.dir_a / "clip.mpeg"
+        video.write_bytes(b"video")
+        server = AdapterProcess(env_extra=self.env)
+        try:
+            stdio_call(server, "initialize", {"protocolVersion": "2025-11-25"})
+            for suffix in (".mpeg", ".mpg", ".ts", ".unknown"):
+                source = self.dir_a / ("clip" + suffix)
+                source.touch()
+                response = server.call("neuriplo_run", {
+                    "type": "yolo", "source": str(source),
+                    "weights": str(self.weights)}, request_id=suffix)
+                self.assertEqual(response["error"]["code"], -32602)
+                self.assertIn("still image", response["error"]["message"])
+            self.assertEqual(self.spawns(), 0)
+        finally:
+            server.close()
+
     def test_strict_types_rejected_without_spawning(self):
         cases = [
             ({"use_gpu": "false"}, "--use_gpu"),
@@ -616,7 +667,11 @@ class RunTest(unittest.TestCase):
             ({"nms_threshold": "0.5"}, "--nms_threshold"),
             ({"min_confidence": 2}, "--min_confidence"),
             ({"labels": 123}, "--labels"),
+            ({"labels": None}, "--labels"),
             ({"workdir": 123}, "--workdir"),
+            ({"workdir": None}, "--workdir"),
+            ({"min_confidence": None}, "--min_confidence"),
+            ({"nms_threshold": None}, "--nms_threshold"),
             ({"timeout_s": "300"}, "--timeout_s"),
             ({"timeout_s": True}, "--timeout_s"),
             ({"timeout_s": 0}, "--timeout_s"),

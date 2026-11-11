@@ -77,7 +77,7 @@ RUN_DIR_PREFIX = "neuriplo-mcp-"
 CAPABILITIES_MAX_BYTES = 1048576
 DEFAULT_CAPABILITIES_TIMEOUT_S = 60
 
-VIDEO_SUFFIXES = frozenset({".mp4", ".avi", ".mov", ".mkv", ".webm", ".m4v"})
+IMAGE_SUFFIXES = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"})
 
 RUN_ARG_KEYS = frozenset({
     "type", "source", "weights", "labels", "min_confidence", "nms_threshold",
@@ -223,17 +223,17 @@ def validate_run_args(args):
         if not isinstance(value, str) or not value:
             return None, error_data("--" + key, "missing required string argument: " + key)
     labels = args.get("labels")
-    if labels is not None and not isinstance(labels, str):
+    if "labels" in args and not isinstance(labels, str):
         return None, error_data("--labels", "labels must be a path string")
     workdir = args.get("workdir")
-    if workdir is not None and not isinstance(workdir, str):
+    if "workdir" in args and not isinstance(workdir, str):
         return None, error_data("--workdir", "workdir must be a path string")
     use_gpu = args.get("use_gpu", False)
     if not isinstance(use_gpu, bool):
         return None, error_data("--use_gpu", "use_gpu must be a boolean")
     for key in ("min_confidence", "nms_threshold"):
         value = args.get(key)
-        if value is not None:
+        if key in args:
             if not _is_number(value):
                 return None, error_data("--" + key, "must be a number between 0 and 1")
             if not 0.0 <= float(value) <= 1.0:
@@ -248,10 +248,10 @@ def validate_run_args(args):
             "--source",
             "MVP supports exactly one still-image source; multi-source input "
             "is out of scope (optical flow / keypoint matching stay on the CLI)")
-    if Path(args["source"]).suffix.lower() in VIDEO_SUFFIXES:
+    if Path(args["source"]).suffix.lower() not in IMAGE_SUFFIXES:
         return None, error_data(
-            "--source",
-            "MVP supports still images only; video sources stay on the CLI")
+            "--source", "MVP source must be a still image with one of these "
+            "extensions: %s" % ", ".join(sorted(IMAGE_SUFFIXES)))
     source = os.path.abspath(args["source"])
     if not os.path.isfile(source):
         return None, error_data("--source", "source does not exist or is not a file: %s" % args["source"])
@@ -545,7 +545,7 @@ def handle_request(message, infer_bin):
                               "Invalid Request: jsonrpc must be exactly \"2.0\"")
     if "id" in message and not is_valid_request_id(message["id"]):
         return error_response(None, -32600,
-                              "Invalid Request: id must be a string, integer, or null")
+                              "Invalid Request: id must be a string or integer")
     method = message.get("method")
     if not isinstance(method, str):
         if "id" in message:
@@ -585,8 +585,6 @@ def handle_request(message, infer_bin):
         if not isinstance(name, str) or not name:
             return error_response(request_id, -32602, "Invalid params: missing tool name")
         args = params.get("arguments", {})
-        if args is None:
-            args = {}
         if name == "neuriplo_capabilities":
             if args != {}:
                 return error_response(request_id, -32602,
@@ -625,7 +623,7 @@ def serve(infer_bin):
             continue
         try:
             message = json.loads(line)
-        except json.JSONDecodeError as exc:
+        except (json.JSONDecodeError, ValueError) as exc:
             stdout.write(json.dumps(error_response(None, -32700,
                              "Parse error: %s" % exc)) + "\n")
             stdout.flush()
