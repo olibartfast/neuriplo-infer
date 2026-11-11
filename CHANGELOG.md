@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Harden the stdio MCP adapter's still-image allowlist, optional argument types,
+  and JSON-RPC parsing of oversized integer ids; reject invalid calls before
+  spawning the inference binary.
+- Validate a successful weighted RF-DETR Nano inference through the MCP adapter
+  with the existing ORT CPU build and local model artifact; see `docs/McpAdapter.md`.
 - Add an AMD Developer Cloud guide for SSH access, MIGraphX validation and sanitizing shared evidence.
 
 - Use `MGX` in coverage tables and report its passing backend contracts separately from app task gates.
