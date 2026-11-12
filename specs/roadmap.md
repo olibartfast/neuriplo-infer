@@ -223,3 +223,15 @@ and develop lint/E2E passed. See
 ## LightGlue image-pair application path — validated development builds
 
 Maintainer-requested keypoint matching workflow: two still images through task preprocessing, backend inference, task decoding and app rendering. ORT CPU and Jetson TensorRT both execute Capitol and Sacré-Cœur through Slurm. The TensorRT allocator correction and tasks empty-match fix are unreleased sibling changes. See [validation](2026-11-07-lightglue-app-e2e/validation.md).
+
+## Stdio MCP adapter for agent hosts — done
+
+Stdlib-only stdio MCP server (`scripts/mcp_neuriplo_adapter.py`) exposing
+`neuriplo_capabilities` and `neuriplo_run` (single still-image local
+inference) to Hermes Agent and OpenCode, with a 40-test stdio suite and host
+configs in `docs/McpAdapter.md`. A weighted RF-DETR Nano run through the
+adapter succeeds (exit 0, success run report, rendered artifact). Merged
+through PR #111. Host-driven tool invocation, HTTP transport, and structured
+detection JSON remain unattested / out of scope. See
+[requirements](2026-11-12-mcp-adapter/requirements.md) and
+[validation](2026-11-12-mcp-adapter/validation.md).
