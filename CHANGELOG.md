@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Add a stdlib-only stdio MCP adapter (`scripts/mcp_neuriplo_adapter.py`)
+  exposing `neuriplo_capabilities` and `neuriplo_run` (single still-image
+  local inference) to agent hosts, with host configs in `docs/McpAdapter.md`.
 - Harden the stdio MCP adapter's still-image allowlist, optional argument types,
   and JSON-RPC parsing of oversized integer ids; reject invalid calls before
   spawning the inference binary.
