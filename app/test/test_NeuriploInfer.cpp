@@ -101,3 +101,26 @@ TEST(ClassificationRendering, KeepsAllRankedResultsVisible) {
   EXPECT_EQ(text_rows, 5);
   EXPECT_EQ(cv::countNonZero(gray.col(gray.cols - 1)), 0);
 }
+
+TEST(KeypointMatchingRendering, AppliesStrictThresholdAndTargetOffset) {
+  cv::Mat image = cv::Mat::zeros(40, 100, CV_8UC3);
+  neuriplo_tasks::KeypointMatching pair;
+  neuriplo_tasks::Keypoint a, b;
+  a.x = 10;
+  a.y = 10;
+  b.x = 20;
+  b.y = 10;
+  pair.source_keypoints.push_back(a);
+  pair.target_keypoints.push_back(b);
+  pair.matches.emplace_back(0, 0, 0.2f);
+  DefaultResultRenderer renderer;
+  const std::vector<std::string> classes;
+  const RenderContext context{neuriplo_tasks::TaskType::KeypointMatching,
+                              classes, 0.2f, 50};
+  renderer.render({pair}, image, context);
+  EXPECT_EQ(cv::countNonZero(image.reshape(1)), 0);
+  pair.matches[0].score = 0.3f;
+  renderer.render({pair}, image, context);
+  EXPECT_GT(cv::countNonZero(image(cv::Rect(67, 7, 7, 7)).reshape(1)), 0);
+  EXPECT_EQ(cv::countNonZero(image(cv::Rect(17, 20, 7, 7)).reshape(1)), 0);
+}

@@ -219,6 +219,13 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_SOURCE_DIR}/integration-tests/rfdetr-pose-local-vs-kserve/run.py
     )
+    # TPU-via-KServe evidence scaffold: files exist, live command prints.
+    # No network access, no accelerator hardware; the live path stays manual.
+    add_test(
+        NAME tpu_kserve_dry_run
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_SOURCE_DIR}/integration-tests/tpu-kserve/run.py --dry-run
+    )
 endif()
 
 # KServe integration round-trip against containerized Triton + OVMS. Registered

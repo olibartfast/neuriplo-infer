@@ -4,9 +4,9 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-11-05.** Baseline evidence uses neuriplo-infer
+**Last updated: 2026-11-09.** Baseline evidence uses neuriplo-infer
 0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. Newer local corrections
-are scoped in their evidence sections; unreleased backend fixes are marked ‡ or §. The
+are scoped in their evidence sections; unreleased backend fixes are marked with numbered notes. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
 are under [Environments](#environments). Matrix coverage is always reported
@@ -66,7 +66,7 @@ See [Open items](#open-items) for remaining validation and fixes.
 
 `BUILDS` means the `ci.yml` job for that backend is green (`NERT`, `OPENCV_DNN`,
 `ONNX_RUNTIME`, `LIBTORCH`, `LIBTENSORFLOW`, `TENSORRT`, `OPENVINO`); there is
-no `LITERT` / `EXECUTORCH` / `LLAMACPP` build job. `DRY-RUN` means the preset
+no `LITERT` / `EXECUTORCH` / `LLAMACPP` / `MIGRAPHX` build job. `DRY-RUN` means the preset
 is listed by `--list-presets` and green in `e2e-example-emulation.yml`
 (dry-run validates command construction, not numerics).
 
@@ -88,11 +88,44 @@ the NERT gates and the marked cells.
 `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
 `TRC` = LIBTORCH · `OV` = OPENVINO · `TF` = LIBTENSORFLOW.
 `ExecT` = EXECUTORCH · `LLaMA` = LLAMACPP · `KServe` = remote `KserveEngine`.
+`MGX` = MIGraphX, the independent `MIGRAPHX` backend in neuriplo, distinct from
+ONNX Runtime's MIGraphX execution provider.
 NERT is the first-party Neuriplo Engine Runtime. Representative presets
 appear in parentheses.
 
 Table key: **P** = PASS · **U** = UNTESTED · **B** = BUILDS · **DR** = DRY-RUN.
-Footnote markers retain the scope explained below.
+Cells may carry a numbered note, e.g. **P(2)**; see [Notes](#notes).
+
+### Notes
+
+1. **Different representative.** Note 1 marks a different member of the row's
+   family: RT-DETRv4-s for `rtdetr`, YOLO11m-seg for `yoloseg`, and ResNet-50
+   for `torchvisionclassifier`. The ResNet-50 artifact has an untrained
+   replacement head: its gate proves numerical equivalence, not ImageNet class
+   correctness. RF-DETR, EdgeCrafter and YOLO26 results retain the
+   artifact-specific task and numerical deviations documented upstream; the
+   seg-nano counterfactual is not a deployable substitute. No result is
+   inferred for `rtdetrul`.
+2. **Local fixes, not released pins.** OpenCV 5 named/typed graph inputs,
+   RT-DETRv4's prepared vector-MatMul export, and ExecuTorch v1.2.0 rebuilt
+   with optimized registrations. Identical-input ORT parity and renders are
+   validated locally. Repaired parallel Slurm reruns are pending worker
+   availability; these are not Slurm PASS claims. See [E15](#ev-blocked-slurm).
+3. **Retained OpenVINO campaign image.** These cells use the retained 0.11.6
+   campaign executable in a derived validation image on P-LNX-EDGE-CPU. They
+   do not certify the current source pins or the original image packaging; see
+   [E14](#ev-ov-slurm).
+4. **Keypoint matching source scope.** Application LightGlue integration,
+   neuriplo-tasks `f867d5a`, and neuriplo `07ebeae` (the TRT patch rebased onto
+   current history). These cells certify the tested source builds; the current
+   release pins do not include all these changes. FP16 results are not
+   numerically identical to ORT. See [E17](#ev-keypoint-matching).
+5. **EdgeCrafter reconverted artifact and local XNNPACK fix.** LiteRT and
+   KServe HTTP PASS require the reconverted artifact and the unreleased
+   neuriplo XNNPACK subgraph-reshaping fix
+   [`9bde6c0`](https://github.com/olibartfast/neuriplo/commit/9bde6c0fd07ab88b70e1076f5fc667c20be41d7d).
+   The app's released dependency pin does not contain that fix. See
+   [E4](#ev-ecdet).
 
 ### Local inference backends
 
@@ -100,54 +133,61 @@ Footnote markers retain the scope explained below.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | P | P | P | P | P | P | B | [E1](#ev-yolo26) |
 | Object detection (`yolov8`, `yolov8_executorch`) | P | P | DR | B | B | B | P | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | P* | P§ | DR | DR | P | B | B | [E3](#ev-rtdetr) |
+| Object detection (`rtdetr`, `rtdetrv4`) | P(1) | P(2) | DR | DR | P | B | B | [E3](#ev-rtdetr) |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | P | U | U | P | U | [E14](#ev-ov-slurm) |
 | Object detection (`ecdet`, `edgecrafter_det`) | P | U | P | P | B | B | B | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | P* | P | P | P | B | B | B | [E5](#ev-seg) |
+| Object detection (`rfdetr`, `rfdetr-medium`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | P(1) | P | P | P | B | B | B | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | P | U | DR | B | B | B | B | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | P* | U | DR | B | P | B | P | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | P | U | DR | B | B | RUNTIME-PASS† | B | [E7](#ev-video) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | P(1) | U | DR | B | P | B | P | [E6](#ev-classification) |
+| Video classification (`videomae`, `videomae`) | P | U | DR | B | B | RUNTIME-PASS(3) | B | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | P | U | DR | B | B | B | B | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | P | P | DR | B | B | B | B | [E8](#ev-pose) |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
 | Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | P | P | P | B | B | P | B | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | P | P§ | P | B | B | P† | B | [E10](#ev-owlv2) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | P | P(2) | P | B | B | P(3) | B | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U | [E12](#ev-splatting) |
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | P(4) | P(4) | U | U | U | [E17](#ev-keypoint-matching) |
 
 ### Additional runtimes and remote execution
 
-| Task (representative) | LiteRT | ExecT | LLaMA | KServe | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| Object detection (`yolo26`, `yolo26s_tflite`) | P | U | N/A | P | [E1](#ev-yolo26) |
-| Object detection (`yolov8`, `yolov8_executorch`) | P | P | N/A | U | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | U | U | N/A | U | [E3](#ev-rtdetr) |
-| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | N/A | U | [E14](#ev-ov-slurm) |
-| Object detection (`ecdet`, `edgecrafter_det`) | P‡ | U | N/A | P‡ | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr`) | P | P§ | N/A | P | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | U | U | N/A | P | [E5](#ev-seg) |
-| Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | N/A | U | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg`) | P | P§ | N/A | P | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | U | N/A | U | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | U | U | N/A | U | [E7](#ev-video) |
-| Optical flow (`raft`, `raft`) | U | U | N/A | U | [E7](#ev-video) |
-| Pose estimation (`vitpose`, `vitpose`) | P | U | N/A | P | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P§ | N/A | P | [E13](#ev-rfdetr) |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | P | U | N/A | P | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | N/A | P | [E10](#ev-owlv2) |
-| Image understanding (`gemma4`, `gemma4`) | N/A | N/A | P | U | [E11](#ev-gemma4) |
-| Gaussian splatting (`lgm`/`grm`, no preset) | U | U | N/A | U | [E12](#ev-splatting) |
+**MGX backend contract tests: PASS, 6/6** — three contract cases (typed int
+inputs, buffer boundaries, integer outputs), each run on CPU and MI300X GPU,
+zero skips. These are backend datatype/buffer tests, not task-model runs; they
+are recorded in [E16](#ev-migraphx). The per-task MGX cells below stay `U`:
+no task representative has a recorded app run.
 
-
-
+| Task (representative) | MGX | LiteRT | ExecT | LLaMA | KServe | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| Object detection (`yolo26`, `yolo26s_tflite`) | U | P | U | N/A | P | [E1](#ev-yolo26) |
+| Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | N/A | U | [E2](#ev-yolov8) |
+| Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | N/A | U | [E3](#ev-rtdetr) |
+| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | N/A | U | [E14](#ev-ov-slurm) |
+| Object detection (`ecdet`, `edgecrafter_det`) | U | P(5) | U | N/A | P(5) | [E4](#ev-ecdet) |
+| Object detection (`rfdetr`, `rfdetr-medium`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | U | U | U | N/A | P | [E5](#ev-seg) |
+| Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | N/A | U | [E5](#ev-seg) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | U | U | N/A | U | [E6](#ev-classification) |
+| Video classification (`videomae`, `videomae`) | U | U | U | N/A | U | [E7](#ev-video) |
+| Optical flow (`raft`, `raft`) | U | U | U | N/A | U | [E7](#ev-video) |
+| Pose estimation (`vitpose`, `vitpose`) | U | P | U | N/A | P | [E8](#ev-pose) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | U | P | U | N/A | P | [E9](#ev-depth) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | U | N/A | P | [E10](#ev-owlv2) |
+| Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | P | U | [E11](#ev-gemma4) |
+| Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | N/A | U | [E12](#ev-splatting) |
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | U | N/A | U | [E17](#ev-keypoint-matching) |
 
 ### Scope and caveats
 
-The OV cells marked **†** use the retained 0.11.6 campaign executable
-in a derived validation image on P-LNX-EDGE-CPU. They do not certify the
-current source pins or the original image packaging; see [E14](#ev-ov-slurm).
+The MGX column tracks the app validation gap. Existing upstream CPU and
+AMD GPU contract tests are recorded in [E16](#ev-migraphx); they do not promote
+any task cell to PASS, RUNTIME-PASS or BUILDS. No app build or preset gate is
+recorded for this backend. Its ONNX-only input format cannot serve the GGUF
+`gemma4` representative, so that cell is N/A.
 
 The `TRC` column covers TorchScript. AOTInductor is a second runtime inside
 the same LibTorch backend, selected when the model path ends in `.pt2`. It is
@@ -163,25 +203,6 @@ released dependency pins. Neuriplo exposes CPU and opt-in CUDA; OpenCL and HIP
 are engine capabilities without consumer selection. Full-catalog AMD/HIP
 validation remains incomplete.
 
-`PASS*` uses a different representative within the row's family:
-RT-DETRv4-s for `rtdetr`, YOLO11m-seg for `yoloseg`, and ResNet-50 for
-`torchvisionclassifier`. The ResNet-50 artifact has an untrained replacement
-head: its gate proves numerical equivalence, not ImageNet class correctness.
-RF-DETR, EdgeCrafter and YOLO26 results retain the artifact-specific task
-and numerical deviations documented upstream; the seg-nano counterfactual
-is not a deployable substitute. No result is inferred for `rtdetrul`.
-
-‡ EdgeCrafter LiteRT and KServe HTTP PASS require the reconverted artifact
-and the unreleased neuriplo XNNPACK subgraph-reshaping fix
-[`9bde6c0`](https://github.com/olibartfast/neuriplo/commit/9bde6c0fd07ab88b70e1076f5fc667c20be41d7d).
-The app's released dependency pin does not contain that fix.
-
-§ Local 2026-11-04 fixes, not released pins: OpenCV 5 named/typed graph
-inputs, RT-DETRv4's prepared vector-MatMul export, and ExecuTorch v1.2.0
-rebuilt with optimized registrations. Identical-input ORT parity and renders
-are validated locally. Repaired parallel Slurm reruns are **pending worker
-availability**; these are not Slurm PASS claims. See [E15](#ev-blocked-slurm).
-
 ## Evidence
 
 Live runs below were recorded on 2026-10-23 on `data/dog.jpg` (`person.jpg`
@@ -192,9 +213,9 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
 13 decisions). Develop-stack re-gates from 2026-11-02/03 ran on sibling
 checkouts (neuriplo-infer `develop` c7dd16b + neuriplo-tasks `develop`
 ea05454, which carries the RF-DETR synthetic-name mapping fix) and are
-labeled as such. Seg-LiteRT uses tasks `v0.8.5` tag content. Later
-unreleased corrections have explicit ‡/§ scope notes and do not certify
-the app's released dependency pins.
+labeled as such. Seg-LiteRT uses tasks `v0.8.5` tag content. Later unreleased
+corrections have explicit numbered-note scope (notes 2 and 5) and do not
+certify the app's released dependency pins.
 
 ### <a id="ev-yolo26"></a>E1 — Object detection (`yolo26`)
 
@@ -219,7 +240,7 @@ the app's released dependency pins.
 - **KServe PASS** (HTTP): YOLO26 `.tflite` over `litert`, validated locally
   2026-06-13 — [KserveCompatibility.md](KserveCompatibility.md#model-formats);
   live path is `kserve-runtime-yolo-e2e`
-  ([§ Integration-test evidence](#integration-test-evidence)).
+  ([Integration-test evidence](#integration-test-evidence)).
 - **KServe gRPC BLOCKED (server-side).** Same `grpc-onnx` server + model
   answers HTTP 200, but gRPC `ModelInfer` fails 13 INTERNAL — reproduced
   with the sibling `kserve-client-conformance` oracle. Fault lives in
@@ -254,7 +275,7 @@ the app's released dependency pins.
   loaded on the 0.11.5 stack and rendered dog, bicycle and car correctly on
   `data/dog.jpg` at 0.25/0.45. The file records its input datatypes; the
   typed input metadata is required. `rtdetrv4` on Torch is still unrun.
-- **DNN PASS§ (2026-11-04, local OpenCV 5).** The adapter binds the
+- **DNN PASS(2) (2026-11-04, local OpenCV 5).** The adapter binds the
   real FP32 image and INT64 size inputs by name and preserves integer labels.
   RT-DETR agrees with ORT (labels exact, max score error 1.84e-6, boxes
   within 0.004 pixels). RT-DETRv4 additionally requires the prepared
@@ -267,7 +288,7 @@ the app's released dependency pins.
 - **ORT + TRT PASS.** C++ e2e `data/dog.jpg` @ 0.5 — bicycle 0.93, dog 0.92,
   car 0.74 — [KserveCompatibility.md](KserveCompatibility.md#known-bad-conversion-edgecrafter-ecdet--tflite).
   Live multi-backend path is `kserve-runtime-edgecrafter-e2e`
-  ([§ Integration-test evidence](#integration-test-evidence),
+  ([Integration-test evidence](#integration-test-evidence),
   [BENCHMARK.md](../integration-tests/kserve-runtime-edgecrafter-e2e/BENCHMARK.md)).
 - **LiteRT + KServe HTTP PASS (2026-11-04, local backend patch).**
   Reconversion with `onnx2tf 2.6.9` removes the old custom GridSample op.
@@ -321,13 +342,14 @@ the app's released dependency pins.
   in the classification/exporter and TensorFlow backend paths; it is not an
   isolated remote-fetch release gate. Exact provenance and reproduction:
   [validation](../specs/2026-11-04-tensorflow-classification-regate/validation.md).
-  `tensorflow-classifier` / `vit-classifier` aliases still have no preset.
+  `tensorflow-classifier` CPU preset `tensorflow_classifier` exists (see E18);
+  `vit-classifier` still has no preset; no live GPU/TPU evidence is claimed.
 
 ### <a id="ev-video"></a>E7 — Video classification (`videomae`), optical flow (`raft`)
 
 - Preset + emulation green (ORT DRY-RUN). `vivit` / `timesformer` aliases
   ride the same task path; no separate preset.
-- **OVINO RUNTIME-PASS† (2026-11-04, Slurm job 35).** `videomae`, `vivit`
+- **OVINO RUNTIME-PASS(3) (2026-11-04, Slurm job 35).** `videomae`, `vivit`
   and `timesformer` completed on real moving clips with 16 / 32 / 8 frames:
   one sample each, positive inference timing (9091 / 24992 / 9736 ms).
   The build has `NEURIPLO_INFER_WITH_VIDEOWRITER=OFF`; removing the optional
@@ -381,12 +403,12 @@ additionally gated as alias.
 
 ### <a id="ev-owlv2"></a>E10 — Open-vocabulary detection (`owlv2`)
 
-- **OVINO PASS† (2026-11-04, Slurm job 34).** Prompts
+- **OVINO PASS(3) (2026-11-04, Slurm job 34).** Prompts
   `a dog;a bicycle;a car`, confidence 0.25: `owlv2` rendered bicycle 0.34
   and dog 0.27; `owlvit` rendered bicycle 0.39. Both renders were inspected;
   inference stages were 30058 / 2788 ms. See [E14](#ev-ov-slurm) for the
   derived-image limitation. No other open-vocabulary model was rerun.
-- **DNN PASS§ (2026-11-04, local OpenCV 5).** Native graph metadata
+- **DNN PASS(2) (2026-11-04, local OpenCV 5).** Native graph metadata
   provides the FP32 image and INT64 token/attention-mask inputs. The original
   OWLv2 ONNX file passes ORT parity and renders bicycle 0.34 / dog 0.27.
   This does not re-gate GroundingDINO or apt OpenCV 4.6. See
@@ -503,7 +525,7 @@ additionally gated as alias.
   (576, `--input_sizes=1,3,576,576`, 6540 ms): skeleton, pose score
   **0.850784** — identical to every other backend (upstream notes keypoint
   is unsupported by `litert-torch`, so the `onnx2tf` file stands).
-- **ExecuTorch PASS§ (2026-11-04, local rebuilt v1.2.0 SDK).** All
+- **ExecuTorch PASS(2) (2026-11-04, local rebuilt v1.2.0 SDK).** All
   three original native XNNPACK PTE artifacts execute with the existing
   optimized CPU kernels registered. No runtime version or model weights
   changed. Nano detection, medium segmentation and keypoint raw tensors
@@ -567,7 +589,7 @@ source build. Packaging the missing runtime libraries remains open.
 
 ### <a id="ev-blocked-slurm"></a>E15 — Local backend status; Slurm rerun pending workers
 
-The five representative cells have local PASS routes (§), covering six
+The five representative cells have local PASS routes (note 2), covering six
 model/backend checks. The
 [evidence JSON](evidence/blocked-slurm-2026-11-04.json) records exact binaries,
 libraries, models, SDK source and identical-input numerical comparisons. The backend fix is
@@ -769,9 +791,82 @@ Until then, repaired Slurm coverage is **PENDING_WORKER_AVAILABILITY** and
 `parallel_overlap_verified=false`. No new live KServe gRPC, TensorFlow 2.21,
 GPU or released-image result is implied.
 
+### <a id="ev-migraphx"></a>E16 — MIGraphX coverage status
+
+- **Upstream contract suite: 6/6 PASS (recorded 2026-10-29).** The retained
+  `neuriplo` source snapshot `06b6903` records three CPU-reference and three
+  MI300X `gfx942` GPU cases, with zero skips. They validate mixed
+  FP32/INT32/INT64 input values, INT64 output values, host/device copies,
+  model input metadata, and invalid buffer/count rejection. See the
+  [recorded validation](https://github.com/olibartfast/neuriplo/blob/06b69034750a298f3fe62fc30d145bca9e59b107/specs/2026-10-29-runtime-input-contracts/validation.md).
+- **App task cells: UNTESTED.** The retained Slurm campaigns and local
+  results contain no MIGraphX app executable gate, learned-model output,
+  or inspected render. Build logs that list `MIGRAPHX` among available
+  backends are backend inventory, not evidence that MIGraphX was built or
+  selected. The synthetic suite above therefore establishes backend
+  datatype-contract coverage only; it does not validate this app's release
+  pins or any task representative.
+- **Artifact scope:** the independent backend consumes
+  [ONNX files](https://github.com/olibartfast/neuriplo/blob/06b69034750a298f3fe62fc30d145bca9e59b107/docs/DEPENDENCY_MANAGEMENT.md#migraphx). The
+  ONNX Runtime MIGraphX execution provider is a separate configuration and
+  has no recorded gate here.
+
+### <a id="ev-keypoint-matching"></a>E17 — Keypoint matching application coverage
+
+**ORT CPU: PASS(4). TensorRT FP16: PASS(4).** Both backends execute the
+`neuriplo-infer` CLI with task preprocessing, backend inference, task decoding,
+and app rendering of the two original images. The confidence filter is
+strictly **score > 0.2**.
+
+| Pair | ORT CPU matches | TRT FP16 matches |
+| --- | --- | --- |
+| United States Capitol | 77 | 74 |
+| Sacré-Cœur | 45 | 49 |
+
+- **Model:** `superpoint_lightglue_pipeline.onnx`, LightGlue-ONNX v2.0;
+  SHA256 `228994cea8c010146fa2aef933baa3ffaa4bcdc522bc8aa560087fcff8134526`.
+  Input `images`: FP32 `[2,1,512,512]`. The upstream task owns resize,
+  grayscale conversion, pair packing and per-image coordinate scaling.
+- **Dispatch:** ORT runs on `zenbook-ux425uaz`, Slurm job 66; TRT runs on
+  Jetson Orin through the Slurm 25.11.2 Docker worker, final integration job 67. The worker
+  launches the native ARM application over host SSH with the installed CUDA
+  and TensorRT libraries. Engine build provenance: job 56, TensorRT 10.16.2,
+  FP16, SHA256 `7dfc23f4dd0ead6aba7fd74473073efdeaf36efd174caf459c2480af06b78d41`.
+- **Note 4 — source scope:** application LightGlue integration, neuriplo-tasks `f867d5a`,
+  and neuriplo `07ebeae` (the TRT patch rebased onto current history).
+  These PASS cells certify the tested source builds; the current release
+  pins do not include all these changes. FP16 results are not numerically
+  identical to ORT.
+- **Evidence and reproduction:** see the
+  [application validation](../specs/2026-11-07-lightglue-app-e2e/validation.md)
+  and [CLI guide](KeypointMatching.md). Both image pairs are in `data/`.
+
+### <a id="ev-accelerator"></a>E18 — Accelerator coverage (GPU TensorFlow, remote TPU)
+
+Neither path below has a recorded live run. Both are dry-run gated only;
+this section tracks commands and scaffolding without promoting any gate-table
+cell. The packet spec is
+[2026-11-09-tensorflow-gpu-remote-tpu](../specs/2026-11-09-tensorflow-gpu-remote-tpu/requirements.md).
+
+| Path | What is gated | Status |
+|---|---|---|
+| GPU TensorFlow (`tensorflow-gpu` backend, `--use-gpu`) | `tensorflow_classifier --backend tensorflow-gpu --dry-run` prints `--gpus=all`, `--use-gpu`, `neuriplo-infer:tensorflow-gpu`; emulation has a focused GPU dry-run job | UNTESTED — dry-run commands only; live not executed |
+| Remote TPU (KServe V2, operator-supplied service) | `integration-tests/tpu-kserve/run.py --dry-run` green, registered as CTest `tpu_kserve_dry_run` | UNTESTED — dry-run scaffold only; live not executed |
+
+- The CPU `tensorflow` preset path stays the default. E6 records backend/model
+  output evidence (2.19 runtime, SavedModel directory, class 249 @ 0.532603),
+  not preset/export/container evidence; the new preset flow is dry-run gated
+  only. The GPU path is a backend/image choice, not a new CLI contract
+  (`--use-gpu` already exists).
+- The TPU live check in `integration-tests/tpu-kserve/evidence.yaml` stays
+  `skipped` until an operator records the TPU type, runtime, endpoint,
+  command, exit status, output path, and top-5 classes/scores; the numeric
+  comparison additionally needs a populated `baselines/cpu_top5.json`.
+
 ## Environments
 
-How each column was built and tested (all CPU except TRT).
+How each column was built and tested. App gates are CPU except TRT;
+the upstream MIGraphX contract suite has separate CPU and MI300X GPU results.
 Rows without an E15 qualification use the 2026-11-01/02 pinned-stack
 evidence (neuriplo-infer 0.11.7-dev + neuriplo 0.11.3 + tasks 0.8.4).
 DNN and ExecT include the newer 2026-11-04 local E15 builds; their fixes
@@ -787,6 +882,7 @@ are not released dependency pins.
 | TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
 | LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) |
 | ExecT | v1.2.0 optimized SDK `/tmp/blocked-et-sdk` (E15) | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; compiled transport is not live transport validation |
+| MGX | Recorded upstream environment: 2.12.0.60401-83, ROCm 6.4.1, MI300X `gfx942` (E16) | upstream `MIGRAPHX`; app build unvalidated | backend contracts 6/6: 3 CPU + 3 GPU, zero skips | Synthetic typed fixtures only; no app or learned-model gate |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
 
@@ -810,7 +906,7 @@ are not released dependency pins.
    The DETR Torch run is a manual CLI invocation on `rtdetr.torchscript`, not
    a preset. Add repeatable preset gates using the typed TorchScript exports.
 3. **OPENCV_DNN scope (5.0.0).** Named typed input binding resolves
-   RT-DETR and OWLv2 locally (§); v4 needs its compatible export. GroundingDINO
+   RT-DETR and OWLv2 locally (note 2); v4 needs its compatible export. GroundingDINO
    has not been re-gated, and EdgeCrafter exact-GELU remains an importer-level
    open issue. Parallel repaired Slurm validation awaits worker availability.
    Still unprobed on 5.x: `ecseg`, torchvision ResNet, `vitpose`,
@@ -821,6 +917,11 @@ are not released dependency pins.
    video, flow, VLM serving.
 5. **Gaussian-splatting representative.** No preset exists. Export one `lgm`
    artifact, add a preset, then gate it.
+6. **MIGraphX app gates.** Validate an app build with the independent
+   backend and run ONNX task representatives on a supported AMD/ROCm worker.
+   Record expected outputs and inspected renders before promoting the
+   UNTESTED cells; the upstream synthetic suite in E16 is already covered.
+
 ## Integration-test evidence
 
 This section owns all app-surface test documentation. Each suite below
@@ -840,6 +941,7 @@ from `app/test/CMakeLists.txt`.
 | `kserve-runtime-yolo-e2e` | `yolo26` KServe PASS (YOLO26 `.tflite` over `litert`) | — (needs runtime binary + model) | `run.py` — starts `neuriplo-kserve-runtime`, readiness + metadata, app-binary HTTP infer, refreshed render, metrics 1/0 | [README](../integration-tests/kserve-runtime-yolo-e2e/README.md), [run.py](../integration-tests/kserve-runtime-yolo-e2e/run.py) |
 | `kserve-runtime-edgecrafter-e2e` | `ecdet` ORT/TRT PASS + OpenVINO/ExecT matrix; `ecdet` LiteRT/KServe HTTP replacement PASS with local backend patch (E4; separate manual gate) | — (needs per-backend runtime binaries + model repository + GPU for TRT) | `run.py --backend {onnx_runtime,tensorrt,openvino,executorch} [--transport {http,grpc}] [--mode {kserve,local}]`; `prepare_model_repository.py` lays out `ecdet_s_<backend>/1/` | [README](../integration-tests/kserve-runtime-edgecrafter-e2e/README.md), [BENCHMARK.md](../integration-tests/kserve-runtime-edgecrafter-e2e/BENCHMARK.md) |
 | `rfdetr-pose-local-vs-kserve` | Pose row scaffold for `rfdetr_keypoint` (evidence tracking, not a live gate) | `rfdetr_pose_evidence_scaffold` (`run.py` — baselines + report exist) | Attested checks in [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml) (`kserve_grpc_smoke` still `skipped`) | [README](../integration-tests/rfdetr-pose-local-vs-kserve/README.md), [evidence.yaml](../integration-tests/rfdetr-pose-local-vs-kserve/evidence.yaml), [reports/latest.md](../integration-tests/rfdetr-pose-local-vs-kserve/reports/latest.md) |
+| `tpu-kserve` | Remote-TPU scaffold for `tensorflow-classifier` over KServe V2 (evidence tracking, not a live gate; E18) | `tpu_kserve_dry_run` (`run.py --dry-run` — scaffold files exist, live command prints, no network) | `run.py --live` against an operator-supplied TPU endpoint; attested checks in [evidence.yaml](../integration-tests/tpu-kserve/evidence.yaml) (both live checks `skipped`) | [README](../integration-tests/tpu-kserve/README.md), [run.py](../integration-tests/tpu-kserve/run.py), [evidence.yaml](../integration-tests/tpu-kserve/evidence.yaml) |
 
 KServe protocol-level legs (not app-surface suites, but they back the
 KServe column): `kserve_integration_dry_run` and
@@ -864,7 +966,7 @@ in [KserveCompatibility.md](KserveCompatibility.md).
 
 ## Sources
 
-- Backends and artifacts: [Deployment.md § Backends](Deployment.md#backends),
+- Backends and artifacts: [Deployment.md — Backends](Deployment.md#backends),
   `docker/Dockerfile.*`, `docker_run_inference_e2e_example.sh --list-presets`.
 - Emulation evidence: `.github/workflows/e2e-example-emulation.yml` matrix.
 - Build evidence: `.github/workflows/ci.yml` jobs.
@@ -875,7 +977,7 @@ in [KserveCompatibility.md](KserveCompatibility.md).
 - TorchScript input metadata:
   [torchscript_metadata.py](https://github.com/olibartfast/neuriplo/blob/master/scripts/lib/torchscript_metadata.py)
   (writes the datatype sidecar read by the libtorch backend).
-- App-surface integration tests: [§ Integration-test evidence](#integration-test-evidence)
+- App-surface integration tests: [Integration-test evidence](#integration-test-evidence)
   above owns them (moved from `neuriplo-platform`; live paths stay manual
   per each suite's README).
 - Style reference:

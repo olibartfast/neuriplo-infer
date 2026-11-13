@@ -136,6 +136,23 @@ Packet: [`2026-09-17-async-video-writer/`](2026-09-17-async-video-writer/require
 
 ---
 
+## Phase 8 — TensorFlow GPU and remote TPU coverage · in progress
+
+Local GPU execution for the TensorFlow backend uses the existing `--use-gpu`
+flag and a GPU image; remote TPU execution uses the existing KServe V2 client
+against an operator-supplied TPU service. The packet adds the e2e preset, the
+TPU evidence scaffold, and coverage documentation. It does not add an
+in-process TPU backend.
+
+Packet: [`2026-11-09-tensorflow-gpu-remote-tpu/`](2026-11-09-tensorflow-gpu-remote-tpu/requirements.md).
+
+- Depends on: `neuriplo` TensorFlow GPU backend and `neuriplo-tasks` TPU export
+  validation.
+- Done when: CPU and GPU dry-runs are well-formed, the TPU dry-run is registered,
+  and live GPU/TPU evidence is recorded or explicitly unattested.
+
+---
+
 ## Candidates — not scheduled
 
 Real, observed, small enough not to need a packet until someone picks one up:
@@ -202,3 +219,19 @@ and add NERT build/test CI. Merged through PR #102; all 11 CI configurations
 and develop lint/E2E passed. See
 [requirements](2026-11-05-nert-default-ci/requirements.md) and
 [validation](2026-11-05-nert-default-ci/validation.md).
+
+## LightGlue image-pair application path — validated development builds
+
+Maintainer-requested keypoint matching workflow: two still images through task preprocessing, backend inference, task decoding and app rendering. ORT CPU and Jetson TensorRT both execute Capitol and Sacré-Cœur through Slurm. The TensorRT allocator correction and tasks empty-match fix are unreleased sibling changes. See [validation](2026-11-07-lightglue-app-e2e/validation.md).
+
+## Stdio MCP adapter for agent hosts — done
+
+Stdlib-only stdio MCP server (`scripts/mcp_neuriplo_adapter.py`) exposing
+`neuriplo_capabilities` and `neuriplo_run` (single still-image local
+inference) to Hermes Agent and OpenCode, with a 40-test stdio suite and host
+configs in `docs/McpAdapter.md`. A weighted RF-DETR Nano run through the
+adapter succeeds (exit 0, success run report, rendered artifact). Merged
+through PR #111. Host-driven tool invocation, HTTP transport, and structured
+detection JSON remain unattested / out of scope. See
+[requirements](2026-11-12-mcp-adapter/requirements.md) and
+[validation](2026-11-12-mcp-adapter/validation.md).

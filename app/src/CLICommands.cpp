@@ -699,6 +699,77 @@ void processVideoClassification(InferencePipeline &pipeline,
   }
 }
 
+void processKeypointMatching(InferencePipeline &pipeline) {
+  using neuriplo_infer::RunStage;
+  using neuriplo_infer::StageTimer;
+  if (pipeline.config.sources.size() != 2 ||
+      !std::all_of(pipeline.config.sources.begin(),
+                   pipeline.config.sources.end(), isStillImageSource)) {
+    throw std::invalid_argument(
+        "Keypoint matching requires exactly two still-image sources");
+  }
+  if (pipeline.encoded_image || pipeline.config.enable_warmup ||
+      pipeline.config.enable_benchmark) {
+    throw std::invalid_argument("Keypoint matching currently requires local "
+                                "preprocessing without warmup or benchmark");
+  }
+  std::vector<cv::Mat> images;
+  {
+    StageTimer timer(pipeline.report, RunStage::Source);
+    for (const auto &source : pipeline.config.sources) {
+      auto image = cv::imread(source, cv::IMREAD_COLOR);
+      if (image.empty())
+        throw std::runtime_error("Could not read the image source: " + source);
+      images.push_back(std::move(image));
+    }
+  }
+  const auto inputs = [&] {
+    StageTimer timer(pipeline.report, RunStage::Preprocess);
+    return pipeline.task->preprocess(toTaskImages(images));
+  }();
+  const auto inferred = [&] {
+    StageTimer timer(pipeline.report, RunStage::Inference);
+    return pipeline.engine->get_infer_results(inputs);
+  }();
+  const auto results = [&] {
+    StageTimer timer(pipeline.report, RunStage::Postprocess);
+    return pipeline.task->postprocess(
+        toTaskSize(images[0]),
+        convertToTensors(std::get<0>(inferred), std::get<1>(inferred)));
+  }();
+  {
+    StageTimer timer(pipeline.report, RunStage::Render);
+    cv::Mat canvas(std::max(images[0].rows, images[1].rows),
+                   images[0].cols + images[1].cols, CV_8UC3,
+                   cv::Scalar::all(0));
+    images[0].copyTo(canvas(cv::Rect(0, 0, images[0].cols, images[0].rows)));
+    images[1].copyTo(
+        canvas(cv::Rect(images[0].cols, 0, images[1].cols, images[1].rows)));
+    pipeline.renderer->render(results, canvas,
+                              {pipeline.task_type, pipeline.classes,
+                               pipeline.config.confidenceThreshold,
+                               images[0].cols});
+    for (const auto &result : results) {
+      const auto &pair = std::get<neuriplo_tasks::KeypointMatching>(result);
+      const auto count = std::count_if(
+          pair.matches.begin(), pair.matches.end(), [&](const auto &match) {
+            return match.score > pipeline.config.confidenceThreshold;
+          });
+      LOG(INFO) << "Keypoint matching: " << count << " matches with score > "
+                << pipeline.config.confidenceThreshold << " ("
+                << pair.matches.size() << " total)";
+    }
+    std::filesystem::create_directories("data/output");
+    const auto path = "data/output/" + processedImageName(pipeline);
+    if (!cv::imwrite(path, canvas))
+      throw std::runtime_error("Failed to save keypoint matching image: " +
+                               path);
+    LOG(INFO) << "Saved processed image to: " << path;
+  }
+  if (pipeline.report != nullptr)
+    pipeline.report->addSample();
+}
+
 void processOpticalFlow(InferencePipeline &pipeline) {
   LOG(INFO) << "Processing optical flow for image pairs";
 
@@ -882,6 +953,10 @@ std::string taskTypeName(neuriplo_tasks::TaskType task_type) {
     return "ImageUnderstanding";
   case neuriplo_tasks::TaskType::KeypointMatching:
     return "KeypointMatching";
+#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+  case neuriplo_tasks::TaskType::GazeEstimation:
+    return "GazeEstimation";
+#endif
   }
   return "Unknown";
 }
@@ -959,6 +1034,10 @@ int BenchmarkCommand::execute(InferencePipeline &pipeline) {
 }
 
 int RunInferenceCommand::execute(InferencePipeline &pipeline) {
+  if (pipeline.task_type == neuriplo_tasks::TaskType::KeypointMatching) {
+    processKeypointMatching(pipeline);
+    return 0;
+  }
   if (pipeline.task_type == neuriplo_tasks::TaskType::ImageUnderstanding) {
     processImageUnderstanding(pipeline);
     return 0;

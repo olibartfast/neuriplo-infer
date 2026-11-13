@@ -15,6 +15,12 @@ bool contains(const std::string &value, const std::string &needle) {
 neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
   std::string normalized = normalizeModelType(model_type);
 
+  if (startsWith(normalized, "lightglue") ||
+      startsWith(normalized, "superglue") ||
+      startsWith(normalized, "matchanything")) {
+    return neuriplo_tasks::TaskType::KeypointMatching;
+  }
+
   // Video classification models (temporal, multi-frame)
   if (normalized == "timesformer" || normalized == "videomae" ||
       normalized == "vivit") {
