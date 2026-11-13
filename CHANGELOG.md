@@ -6,46 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-## [0.12.0] - 2026-11-12
+## [0.12.0] - 2026-11-13
 
-- Add a stdlib-only stdio MCP adapter (`scripts/mcp_neuriplo_adapter.py`)
-  exposing `neuriplo_capabilities` and `neuriplo_run` (single still-image
-  local inference) to agent hosts, with host configs in `docs/McpAdapter.md`.
-- Harden the stdio MCP adapter's still-image allowlist, optional argument types,
-  and JSON-RPC parsing of oversized integer ids; reject invalid calls before
-  spawning the inference binary.
-- Validate a successful weighted RF-DETR Nano inference through the MCP adapter
-  with the existing ORT CPU build and local model artifact; see `docs/McpAdapter.md`.
-- Add an AMD Developer Cloud guide for SSH access, MIGraphX validation and sanitizing shared evidence.
+### Added
 
-- Use `MGX` in coverage tables and report its passing backend contracts separately from app task gates.
+- Add a stdio MCP adapter for capability discovery and still-image inference,
+  with host configuration examples in `docs/McpAdapter.md`.
+- Add SuperPoint + LightGlue keypoint matching for image pairs, including
+  confidence filtering and pair rendering.
+- Add an AMD Developer Cloud guide for SSH access, MIGraphX validation, and
+  sanitizing shared evidence.
+- Add CPU and GPU TensorFlow classifier presets and a dry-run harness for
+  TensorFlow inference through a remote TPU KServe endpoint. Live GPU and TPU
+  inference remain unattested.
 
-- Wire SuperPoint + LightGlue keypoint matching through the CLI for image pairs, with strict confidence filtering, pair rendering and application coverage on ORT CPU and Jetson TensorRT.
-- Fix ARM CPU information collection and respect explicit task-source build overrides.
+### Changed
+
+- Distinguish MIGraphX backend contract coverage from application task gates.
+
+### Fixed
+
+- Validate MCP requests before starting inference, including image-path
+  allowlisting, argument types, and oversized JSON-RPC ids.
+- Correct ARM CPU information collection and honor explicit task-source build
+  overrides.
 
 ## [0.11.7] - 2026-11-05
 
-### Changed
-- Use NERT as the default local backend in fresh builds and dependency setup;
-  retain explicit backend overrides and OpenCV 4.6 minimum / 5.x preference.
-
 ### Added
+
 - Build and test the NERT default in the fail-fast CI matrix, including a
   capabilities check; keep the explicit OpenCV DNN job.
 
-### Removed
-- Remove the deprecated capabilities version 1 schema; the published capabilities
-  schema remains at version 2.
+### Changed
 
-### Fixed
-- Use Ubuntu’s official HTTPS archive for shared CI dependencies instead of the
-  slow Azure HTTP mirror, preventing package downloads from consuming job timeouts.
-- Select the native RF-DETR LiteRT exporter for detection and segmentation
-  presets; pin the EdgeCrafter converter recipe to the re-gated version.
-- Build the LibTorch backend image on Ubuntu 24.04. Ubuntu 22.04 ships
-  CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
-
-### Documentation
+- Use NERT as the default local backend in fresh builds and dependency setup;
+  retain explicit backend overrides and OpenCV 4.6 minimum / 5.x preference.
 - Split the backend gate matrix into narrower tables; use
   `PASS` consistently while retaining scope and representative-model notes.
 - Consolidate repository agent rules in `AGENTS.md` and remove the Cursor rules folder.
@@ -67,34 +63,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   crash, and the OpenVINO 5D video inference crash, and point at the 13
   triage decisions in the external cell matrix.
 
-## [0.11.6] - 2026-10-30
+### Removed
+
+- Remove the deprecated capabilities version 1 schema; the published capabilities
+  schema remains at version 2.
 
 ### Fixed
-- Download the LibTorch archive name that 2.14 publishes, so
-  `docker/Dockerfile.libtorch` builds again. The previous name still exists for
-  older releases but returns 404 for the pinned 2.14.0.
 
-### Documentation
+- Use Ubuntu’s official HTTPS archive for shared CI dependencies instead of the
+  slow Azure HTTP mirror, preventing package downloads from consuming job timeouts.
+- Select the native RF-DETR LiteRT exporter for detection and segmentation
+  presets; pin the EdgeCrafter converter recipe to the re-gated version.
+- Build the LibTorch backend image on Ubuntu 24.04. Ubuntu 22.04 ships
+  CMake 3.22, below the project's 3.24 minimum; 24.04 ships CMake 3.28.
+
+## [0.11.6] - 2026-10-30
+
+### Changed
+
 - Explain how the LibTorch backend chooses between TorchScript and
   AOTInductor: the `.pt2` extension selects AOTInductor, everything else is
   TorchScript. Note the static input shapes and device metadata AOTInductor
   requires, and that the coverage matrix currently exercises TorchScript only.
 
+### Fixed
+
+- Download the LibTorch archive name that 2.14 publishes, so
+  `docker/Dockerfile.libtorch` builds again. The previous name still exists for
+  older releases but returns 404 for the pinned 2.14.0.
+
 ## [0.11.5] - 2026-10-30
 
-### Fixed
-- Point the release pins in `versions.env` at real release tags (neuriplo
-  v0.11.3, neuriplo-tasks v0.8.4) instead of candidate commit SHAs. Checking
-  out the release tag now builds against the code the release was cut from.
+### Changed
 
-### Documentation
 - Refresh the backend coverage matrix for the 0.11.5 stack: record the
   TorchScript input-datatype requirement, the DETR TorchScript and OpenCV DNN
   results, and the per-backend device selection.
 
+### Fixed
+
+- Point the release pins in `versions.env` at real release tags (neuriplo
+  v0.11.3, neuriplo-tasks v0.8.4) instead of candidate commit SHAs. Checking
+  out the release tag now builds against the code the release was cut from.
+
 ## [0.11.4] - 2026-10-30
 
 ### Fixed
+
 - Pass the requested device to the chosen backend. Asking for a GPU no longer
   disables MIGraphX, OpenVINO or other GPU backends simply because no NVIDIA
   device was found; each backend now decides which device it can use.
@@ -107,26 +122,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.11.3] - 2026-10-28
 
 ### Fixed
+
 - Render ranked classification results on separate lines fitted to the image instead of clipping one concatenated label.
 - Restore an omitted batch axis for video-classification input shapes, so task preprocessing packs the full temporal window.
 
 ## [0.11.2] - 2026-10-26
 
-### Fixed
-- Apply apt network timeouts and acquisition retries in CI dependency setup;
-  install optional gRPC packages in the shared transaction to avoid a second
-  package-index update.
-
 ### Changed
+
 - Pin neuriplo to v0.11.1, including explicit OpenCV 5 GPU-request rejection
   before model loading and stricter real-model classifier checks.
 - Pin videocapture to v0.6.1, including documented OpenCV 4.6/5.0
   compatibility and bounded macOS CI/release dependency installation.
 - Keep neuriplo-tasks at v0.8.2 and neuriplo-kserve-client at v0.4.0.
 
+### Fixed
+
+- Apply apt network timeouts and acquisition retries in CI dependency setup;
+  install optional gRPC packages in the shared transaction to avoid a second
+  package-index update.
+
 ## [0.11.1] - 2026-10-25
 
 ### Fixed
+
 - TensorRT Docker builds use the pinned neuriplo release metadata, the
   declared TensorRT CUDA build, and the TensorRT 11 Enterprise zstd archive.
   This fixes the SDK download 404 in the 0.11.0 backend CI matrix.
@@ -137,27 +156,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.11.0] - 2026-10-25
 
-### Changed
-- Pin neuriplo to v0.11.0, including NERT v0.2.0 and the corrected OpenCV
-  5.0.0 recommendation with OpenCV 4.6+ compatibility retained.
-- Prefer the source-built OpenCV 5 installation for OPENCV_DNN; an explicit
-  OpenCV_DIR still selects the supported OpenCV 4.x installation. Add
-  scripts/setup_opencv.sh to build the selected source dependency.
-- Keep videocapture pinned to v0.6.0, validated with both OpenCV 4.6 and 5.0.
+**Known limitations**
 
-### Known limitations
-- Native AMD GPU cloud coverage and persistent AMD CI remain accepted missing
-  validation in the NERT dependency. This release does not claim that coverage.
-- Live model/runtime coverage retains the BLOCKED, KNOWN-BAD and UNTESTED
-  entries documented in docs/BackendCoverage.md.
-
-### Fixed
-- `--weights` accepts a directory as well as a file (mirroring `--source`),
-  so TensorFlow SavedModel directories can be passed to the `LIBTENSORFLOW`
-  backend, which needs the directory for `LoadSavedModel`. File behavior is
-  unchanged.
+> - Native AMD GPU cloud coverage and persistent AMD CI remain accepted missing
+>   validation in the NERT dependency. This release does not claim that coverage.
+> - Live model/runtime coverage retains the BLOCKED, KNOWN-BAD and UNTESTED
+>   entries documented in docs/BackendCoverage.md.
 
 ### Added
+
 - `integration-tests/` hosts the app-surface suites moved from
   `neuriplo-platform`: `local-inference-smoke` (E2E runner dry-run),
   `kserve-runtime-yolo-e2e`, `rfdetr-pose-local-vs-kserve`, and
@@ -165,50 +172,69 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   CTest (`local_inference_smoke_runner`, `rfdetr_pose_evidence_scaffold`);
   live runtime/model/GPU paths stay manual per each suite's README.
 
-### Documentation
+### Changed
+
+- Pin neuriplo to v0.11.0, including NERT v0.2.0 and the corrected OpenCV
+  5.0.0 recommendation with OpenCV 4.6+ compatibility retained.
+- Prefer the source-built OpenCV 5 installation for OPENCV_DNN; an explicit
+  OpenCV_DIR still selects the supported OpenCV 4.x installation. Add
+  scripts/setup_opencv.sh to build the selected source dependency.
+- Keep videocapture pinned to v0.6.0, validated with both OpenCV 4.6 and 5.0.
+
 - `docs/BackendCoverage.md` adds a NERT-style task × backend coverage matrix
   (10 task families × 9 local backends + KServe) with PASS / DRY-RUN / BUILDS /
   BLOCKED / KNOWN-BAD / UNTESTED definitions, a scoreboard, and open items.
   Linked from `README.md` and `docs/Deployment.md`.
 
+### Fixed
+
+- `--weights` accepts a directory as well as a file (mirroring `--source`),
+  so TensorFlow SavedModel directories can be passed to the `LIBTENSORFLOW`
+  backend, which needs the directory for `LoadSavedModel`. File behavior is
+  unchanged.
+
 ## [0.10.3] - 2026-10-05
 
+### Changed
+
+- `docs/KserveRuntime.md` states the runtime version `encoded-image` needs and
+  which ensemble graph each `--postprocess_mode` expects (`cpu` needs a
+  preprocess-plus-model graph, without a postprocess step).
+
 ### Fixed
+
 - The `--input_mode=encoded-image` known limitation of 0.10.0 to 0.10.2 is
   resolved on the server side: neuriplo-kserve-runtime v0.4.0 treats a negative
   metadata dimension as a wildcard and serves ensemble models, so the
   encoded-image path works against it over HTTP and gRPC with either
   `--postprocess_mode`. No client change was needed.
 
-### Documentation
-- `docs/KserveRuntime.md` states the runtime version `encoded-image` needs and
-  which ensemble graph each `--postprocess_mode` expects (`cpu` needs a
-  preprocess-plus-model graph, without a postprocess step).
-
 ## [0.10.2] - 2026-10-03
 
-### Known limitations
-- `--input_mode=encoded-image` against a model whose input declares a dynamic
-  dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
-  request shape to equal the metadata exactly. This client sends a concrete
-  extent; it needs a runtime release that treats negative metadata dimensions as
-  wildcards.
-- `--output_video` writes at a fixed 30 fps, since the pinned videocapture
-  capture interface still does not report the source frame rate.
-- The run report has no separate figure for time spent waiting on the video
-  writer. Backpressure is accumulated into the render stage, so a run slowed by
-  the encoder is indistinguishable there from a run slowed by drawing
-  ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)).
-- A frame that fails to encode is reported by the first `--output_video` write
-  after the failure, not by the write that submitted it, so the frame index in
-  the error message is where the run noticed rather than the frame that failed.
-- neuriplo-platform's capabilities contract still documents schema version 1;
-  this release emits version 2.
-- A video whose read fails mid-stream (an I/O error, a dropped network stream)
-  is indistinguishable from its end through the pinned videocapture interface,
-  so it is reported as read to its end.
+**Known limitations**
+
+> - `--input_mode=encoded-image` against a model whose input declares a dynamic
+>   dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
+>   request shape to equal the metadata exactly. This client sends a concrete
+>   extent; it needs a runtime release that treats negative metadata dimensions as
+>   wildcards.
+> - `--output_video` writes at a fixed 30 fps, since the pinned videocapture
+>   capture interface still does not report the source frame rate.
+> - The run report has no separate figure for time spent waiting on the video
+>   writer. Backpressure is accumulated into the render stage, so a run slowed by
+>   the encoder is indistinguishable there from a run slowed by drawing
+>   ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)).
+> - A frame that fails to encode is reported by the first `--output_video` write
+>   after the failure, not by the write that submitted it, so the frame index in
+>   the error message is where the run noticed rather than the frame that failed.
+> - neuriplo-platform's capabilities contract still documents schema version 1;
+>   this release emits version 2.
+> - A video whose read fails mid-stream (an I/O error, a dropped network stream)
+>   is indistinguishable from its end through the pinned videocapture interface,
+>   so it is reported as read to its end.
 
 ### Changed
+
 - Pinned `neuriplo` to `v0.10.0` (was `v0.9.1`). It hardens the plugin loader:
   malformed plugin metadata or outputs are rejected with a diagnostic instead of
   being read, plugin outputs are released on every path, and descriptor lookup
@@ -217,28 +243,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.10.1] - 2026-09-18
 
-### Known limitations
-- `--input_mode=encoded-image` against a model whose input declares a dynamic
-  dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
-  request shape to equal the metadata exactly. This client sends a concrete
-  extent; it needs a runtime release that treats negative metadata dimensions as
-  wildcards.
-- `--output_video` writes at a fixed 30 fps, since the pinned videocapture
-  capture interface still does not report the source frame rate.
-- The run report has no separate figure for time spent waiting on the video
-  writer. Backpressure is accumulated into the render stage, so a run slowed by
-  the encoder is indistinguishable there from a run slowed by drawing
-  ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)).
-- A frame that fails to encode is reported by the first `--output_video` write
-  after the failure, not by the write that submitted it, so the frame index in
-  the error message is where the run noticed rather than the frame that failed.
-- neuriplo-platform's capabilities contract still documents schema version 1;
-  this release emits version 2.
-- A video whose read fails mid-stream (an I/O error, a dropped network stream)
-  is indistinguishable from its end through the pinned videocapture interface,
-  so it is reported as read to its end.
+**Known limitations**
+
+> - `--input_mode=encoded-image` against a model whose input declares a dynamic
+>   dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
+>   request shape to equal the metadata exactly. This client sends a concrete
+>   extent; it needs a runtime release that treats negative metadata dimensions as
+>   wildcards.
+> - `--output_video` writes at a fixed 30 fps, since the pinned videocapture
+>   capture interface still does not report the source frame rate.
+> - The run report has no separate figure for time spent waiting on the video
+>   writer. Backpressure is accumulated into the render stage, so a run slowed by
+>   the encoder is indistinguishable there from a run slowed by drawing
+>   ([#49](https://github.com/olibartfast/neuriplo-infer/issues/49)).
+> - A frame that fails to encode is reported by the first `--output_video` write
+>   after the failure, not by the write that submitted it, so the frame index in
+>   the error message is where the run noticed rather than the frame that failed.
+> - neuriplo-platform's capabilities contract still documents schema version 1;
+>   this release emits version 2.
+> - A video whose read fails mid-stream (an I/O error, a dropped network stream)
+>   is indistinguishable from its end through the pinned videocapture interface,
+>   so it is reported as read to its end.
 
 ### Changed
+
 - Pinned `videocapture` to `v0.6.0` (was `v0.5.0`). `--output_video` now encodes
   on the writer's own thread behind a bounded queue instead of on the frame
   loop, which resolves the `[0.10.0]` known limitation that every annotated
@@ -258,6 +286,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   builds capture-only. Linux is unaffected; capture-only builds are unchanged.
 
 ### Fixed
+
 - `--output_video` fails the run when its destination could not be completed.
   The writer reports at `release()` whether every accepted frame was encoded
   and the container finalized; that result was discarded, so a truncated file
@@ -271,26 +300,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.10.0] - 2026-09-14
 
-### Known limitations
-- `--input_mode=encoded-image` against a model whose input declares a dynamic
-  dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
-  request shape to equal the metadata exactly. This client sends a concrete
-  extent; it needs a runtime release that treats negative metadata dimensions as
-  wildcards.
-- `--output_video` writes at a fixed 30 fps, since the pinned videocapture
-  capture interface does not report the source frame rate.
-- `--output_video` encodes frames synchronously on the frame loop's thread
-  (about 11 / 23 / 39 ms per frame at 720p / 1080p / 1440p `.mp4` on an
-  i5-11400H). Per-inference latency figures are unaffected; end-to-end
-  throughput is not. Moving the writer off that thread is tracked in #49.
-- neuriplo-platform's capabilities contract still documents schema version 1;
-  this release emits version 2.
-- A video whose read fails mid-stream (an I/O error, a dropped network stream)
-  is indistinguishable from its end through the pinned videocapture interface,
-  so it is reported as read to its end. Likewise a container that cannot be
-  finalized is logged by the writer but not reported to the caller.
+**Known limitations**
+
+> - `--input_mode=encoded-image` against a model whose input declares a dynamic
+>   dimension is rejected by neuriplo-kserve-runtime v0.3.2, which requires the
+>   request shape to equal the metadata exactly. This client sends a concrete
+>   extent; it needs a runtime release that treats negative metadata dimensions as
+>   wildcards.
+> - `--output_video` writes at a fixed 30 fps, since the pinned videocapture
+>   capture interface does not report the source frame rate.
+> - `--output_video` encodes frames synchronously on the frame loop's thread
+>   (about 11 / 23 / 39 ms per frame at 720p / 1080p / 1440p `.mp4` on an
+>   i5-11400H). Per-inference latency figures are unaffected; end-to-end
+>   throughput is not. Moving the writer off that thread is tracked in #49.
+> - neuriplo-platform's capabilities contract still documents schema version 1;
+>   this release emits version 2.
+> - A video whose read fails mid-stream (an I/O error, a dropped network stream)
+>   is indistinguishable from its end through the pinned videocapture interface,
+>   so it is reported as read to its end. Likewise a container that cannot be
+>   finalized is logged by the writer but not reported to the caller.
 
 ### Added
+
 - `--output_video <path>` writes the annotated video output of a video run to a
   playable file (fixed 30 fps, codec auto-selected, container inferred from the
   extension). Opt-in: build with `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON`.
@@ -355,7 +386,120 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   independent of the ensemble's own `--kserve_model_version`, since a graph
   may reference a different inner version.
 
+### Changed
+
+- Pinned `neuriplo` to `v0.9.1` (was `v0.8.0`). Its `LayerInfo::datatype` carries
+  the input datatypes the #44 fix reads, and it advertises `INT8` / `BOOL` DALI
+  inputs instead of reporting them as `Float32`. neuriplo 0.9.0 also changed two
+  consumer contracts — TensorRT reports batch-inclusive shapes, and public headers
+  no longer include OpenCV transitively; this app builds and passes its full test
+  suite against the new pin.
+- Pinned `neuriplo-tasks` to `v0.8.2` (was `v0.8.0`), which carries the image-input
+  pixel-type handling the #44 fix depends on (`Preprocessor::applyImageInputType`,
+  `isImageInputShape`). The pin also pulls in the `v0.8.1` preprocessing changes:
+  RT-DETR / RT-DETRv2 / D-FINE / DEIM no longer apply ImageNet mean/std
+  normalization, and YOLO NMS-free detection now detects normalized vs
+  input-pixel coordinates. Detector outputs on those model types change as a
+  result of the pin.
+- The README is now a plug-and-play entry point — a Docker quickstart and a
+  build-from-source quickstart, both run as written on Ubuntu 24.04 with ONNX
+  Runtime, plus platform support — and links to new user guides instead of
+  embedding reference material (#38, #39). `docs/Usage.md` holds the full CLI
+  reference, examples, `--capabilities`, and the run report, and now covers flags
+  the README never listed (`--no_display`, `--timings_csv`, `--num_frames`,
+  `--mmproj`, `--bert_tokenizer_vocab`, `--task_model_version`).
+  `docs/Deployment.md` covers platforms, every backend and Docker image, GPU
+  runs, the end-to-end presets, native builds, and build options. The KServe
+  flags moved to `docs/KserveRuntime.md`, which also corrects the documented
+  `--kserve_transport` default to `grpc` (HTTP in builds without gRPC).
+- `scripts/sync_supported_model_types.py` writes only
+  `docs/generated/supported-model-types.md`; the README links to it instead of
+  embedding the list. Relative links in the upstream block are rewritten to
+  absolute neuriplo-tasks URLs, fixing a broken segmentation-outputs link.
+- `.dockerignore` excludes `models/`, `environments/`, and `build-*/`: after an
+  end-to-end preset run they sent gigabytes of host artifacts to every
+  `docker build`.
+- Pinned `videocapture` to `v0.5.0` (was `v0.4.0`), which adds the optional
+  video writer sink module (`-DUSE_VIDEOWRITER=ON`); the `Frame` capture API is
+  unchanged.
+- Pinned `videocapture` to `v0.4.0` (was `v0.3.0`), a breaking release for
+  consumers: `VideoCaptureInterface::readFrame()` now fills a
+  `videocapture::Frame` instead of a `cv::Mat`. `Frame` is dependency-free and
+  carries an explicit pixel format, per-plane row strides, a presentation
+  timestamp, and a sequence number. Video capture also no longer hangs at end
+  of stream on the GStreamer backend, and `GStreamerOpenCV` was renamed to
+  `GStreamerPipeline`.
+  - Frames are bridged to OpenCV in one place, `neuriplo_infer::toBgrMat()`
+    (`app/inc/FrameConversion.hpp`), rather than teaching every pipeline stage
+    a second image type. For packed BGR8 -- what all three capture backends
+    produce today -- the returned `cv::Mat` aliases the frame's own storage, so
+    the common path copies nothing and the rendered overlay still lands in the
+    frame's buffer. Other formats, including planar NV12 and YUV420P, are
+    converted; a 4:2:0 frame whose layout is not the canonical packed one is
+    rejected rather than reinterpreted.
+  - The app no longer injects OpenCV into the fetched `VideoCapture` target.
+    Up to v0.3.0 that was required, because `cv::Mat` was in the library's
+    public API; since v0.4.0 OpenCV is internal to its OpenCV capture backend,
+    which finds and links it itself. Keeping the injection would have put
+    OpenCV back into the FFmpeg and GStreamer builds that release exists to
+    free of it.
+- **Breaking:** the capabilities document is now `schema_version` 2. It gained
+  the required `diagnostics` section, and because the schema forbids unknown
+  properties that is breaking in both directions; version 1 is preserved as
+  `docs/capabilities.schema.v1.json`. Consumers should accept both and treat a
+  version 1 document as a build that publishes no run report.
+- Run diagnostics now cover the paths that do not go through `inferFrame`.
+  Optical flow and image understanding time their own preprocess, inference,
+  postprocess, and render stages and count their samples; video frame reads are
+  attributed to the source stage and video rendering to the render stage; a
+  completed video and a processed optical-flow pair each count as one sample.
+- Warmup and benchmark iterations no longer contribute to the reported stage
+  timings. They repeat inference without producing a sample, so their time
+  inflated every stage total and collapsed `throughput_per_second`.
+- A failure while constructing the application (log setup) now writes a
+  configuration-stage report, like a failure while parsing arguments.
+- A run report that cannot be flushed to disk is now detected and logged;
+  `writeRunReport` returns whether the complete document was written. Only the
+  open was checked before, so a full disk left truncated JSON behind silently.
+- An unreadable image source now fails with an explicit error attributed to the
+  source stage, instead of surfacing later as a confusing downstream failure.
+  This now includes an optical-flow pair with an unreadable half, which was
+  logged and skipped: the run exited 0 and reported success with no samples and
+  no artifact, which a consumer cannot distinguish from having nothing to do.
+- `throughput_per_second` is now `null` on a failed run. Counts are added only
+  after work succeeds while the stage timer still records the attempt that
+  threw, so the numerator and the denominator covered different work — the same
+  mismatch already excluded for warmup and benchmark. The counts and the stage
+  sums are still published; only the ratio is withheld.
+- A video stopped early with `q` or Escape no longer counts as a completed
+  sample. `samples` is documented as sources processed to completion, and an
+  interrupted video is not one. Its frames still count, because they ran.
+- `capabilities_cli_contract` now parses the emitted document and asserts the
+  top-level `schema_version`. It matched a regular expression before, which the
+  nested `diagnostics.run_report.schema_version` satisfied on its own, so the
+  test would have passed whatever the capabilities version said.
+- Pinned neuriplo-tasks to `v0.8.0` (was `v0.6.1`), picking up polygon
+  segmentation output, the YOLO26 depth task, and the vision preprocessing
+  fast paths.
+
+### Removed
+
+- `app/src/NeuriploInferProcessing.cpp` and `app/src/NeuriploInferRendering.cpp`,
+  leftovers from the command refactor. They held second copies of the image,
+  video, optical-flow, and image-understanding paths and of the per-task
+  renderers, but were in no build target, referenced nowhere, and no longer
+  compiled against their own headers. Their live counterparts are
+  `CLICommands.cpp` and `ResultRenderer.cpp`. Uncompiled, they were invisible
+  to every gate — formatting, lint, warnings, tests — while still reading like
+  the code that runs, so a fix to one of these paths could land in the copy
+  nothing executes. The run diagnostics were the concrete case: none of that
+  duplicate processing code was instrumented.
+- New `no_orphan_sources` test: a source under `app/src` that is named nowhere
+  in `app/CMakeLists.txt` now fails the suite. Being excluded from a particular
+  build (KServe, a backend) stays fine; being in no build at all does not.
+
 ### Fixed
+
 - `--input_mode=encoded-image` is rejected at pipeline setup for video
   classification, optical flow, and image understanding. Those paths
   preprocess locally and sent dense tensors to an ensemble expecting an encoded
@@ -514,129 +658,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   now expanded into a frame-sized image at the detection's box origin, matching
   what the local postprocessor produces.
 
-### Changed
-- Pinned `neuriplo` to `v0.9.1` (was `v0.8.0`). Its `LayerInfo::datatype` carries
-  the input datatypes the #44 fix reads, and it advertises `INT8` / `BOOL` DALI
-  inputs instead of reporting them as `Float32`. neuriplo 0.9.0 also changed two
-  consumer contracts — TensorRT reports batch-inclusive shapes, and public headers
-  no longer include OpenCV transitively; this app builds and passes its full test
-  suite against the new pin.
-- Pinned `neuriplo-tasks` to `v0.8.2` (was `v0.8.0`), which carries the image-input
-  pixel-type handling the #44 fix depends on (`Preprocessor::applyImageInputType`,
-  `isImageInputShape`). The pin also pulls in the `v0.8.1` preprocessing changes:
-  RT-DETR / RT-DETRv2 / D-FINE / DEIM no longer apply ImageNet mean/std
-  normalization, and YOLO NMS-free detection now detects normalized vs
-  input-pixel coordinates. Detector outputs on those model types change as a
-  result of the pin.
-- The README is now a plug-and-play entry point — a Docker quickstart and a
-  build-from-source quickstart, both run as written on Ubuntu 24.04 with ONNX
-  Runtime, plus platform support — and links to new user guides instead of
-  embedding reference material (#38, #39). `docs/Usage.md` holds the full CLI
-  reference, examples, `--capabilities`, and the run report, and now covers flags
-  the README never listed (`--no_display`, `--timings_csv`, `--num_frames`,
-  `--mmproj`, `--bert_tokenizer_vocab`, `--task_model_version`).
-  `docs/Deployment.md` covers platforms, every backend and Docker image, GPU
-  runs, the end-to-end presets, native builds, and build options. The KServe
-  flags moved to `docs/KserveRuntime.md`, which also corrects the documented
-  `--kserve_transport` default to `grpc` (HTTP in builds without gRPC).
-- `scripts/sync_supported_model_types.py` writes only
-  `docs/generated/supported-model-types.md`; the README links to it instead of
-  embedding the list. Relative links in the upstream block are rewritten to
-  absolute neuriplo-tasks URLs, fixing a broken segmentation-outputs link.
-- `.dockerignore` excludes `models/`, `environments/`, and `build-*/`: after an
-  end-to-end preset run they sent gigabytes of host artifacts to every
-  `docker build`.
-- Pinned `videocapture` to `v0.5.0` (was `v0.4.0`), which adds the optional
-  video writer sink module (`-DUSE_VIDEOWRITER=ON`); the `Frame` capture API is
-  unchanged.
-- Pinned `videocapture` to `v0.4.0` (was `v0.3.0`), a breaking release for
-  consumers: `VideoCaptureInterface::readFrame()` now fills a
-  `videocapture::Frame` instead of a `cv::Mat`. `Frame` is dependency-free and
-  carries an explicit pixel format, per-plane row strides, a presentation
-  timestamp, and a sequence number. Video capture also no longer hangs at end
-  of stream on the GStreamer backend, and `GStreamerOpenCV` was renamed to
-  `GStreamerPipeline`.
-  - Frames are bridged to OpenCV in one place, `neuriplo_infer::toBgrMat()`
-    (`app/inc/FrameConversion.hpp`), rather than teaching every pipeline stage
-    a second image type. For packed BGR8 -- what all three capture backends
-    produce today -- the returned `cv::Mat` aliases the frame's own storage, so
-    the common path copies nothing and the rendered overlay still lands in the
-    frame's buffer. Other formats, including planar NV12 and YUV420P, are
-    converted; a 4:2:0 frame whose layout is not the canonical packed one is
-    rejected rather than reinterpreted.
-  - The app no longer injects OpenCV into the fetched `VideoCapture` target.
-    Up to v0.3.0 that was required, because `cv::Mat` was in the library's
-    public API; since v0.4.0 OpenCV is internal to its OpenCV capture backend,
-    which finds and links it itself. Keeping the injection would have put
-    OpenCV back into the FFmpeg and GStreamer builds that release exists to
-    free of it.
-- **Breaking:** the capabilities document is now `schema_version` 2. It gained
-  the required `diagnostics` section, and because the schema forbids unknown
-  properties that is breaking in both directions; version 1 is preserved as
-  `docs/capabilities.schema.v1.json`. Consumers should accept both and treat a
-  version 1 document as a build that publishes no run report.
-- Run diagnostics now cover the paths that do not go through `inferFrame`.
-  Optical flow and image understanding time their own preprocess, inference,
-  postprocess, and render stages and count their samples; video frame reads are
-  attributed to the source stage and video rendering to the render stage; a
-  completed video and a processed optical-flow pair each count as one sample.
-- Warmup and benchmark iterations no longer contribute to the reported stage
-  timings. They repeat inference without producing a sample, so their time
-  inflated every stage total and collapsed `throughput_per_second`.
-- A failure while constructing the application (log setup) now writes a
-  configuration-stage report, like a failure while parsing arguments.
-- A run report that cannot be flushed to disk is now detected and logged;
-  `writeRunReport` returns whether the complete document was written. Only the
-  open was checked before, so a full disk left truncated JSON behind silently.
-- An unreadable image source now fails with an explicit error attributed to the
-  source stage, instead of surfacing later as a confusing downstream failure.
-  This now includes an optical-flow pair with an unreadable half, which was
-  logged and skipped: the run exited 0 and reported success with no samples and
-  no artifact, which a consumer cannot distinguish from having nothing to do.
-- `throughput_per_second` is now `null` on a failed run. Counts are added only
-  after work succeeds while the stage timer still records the attempt that
-  threw, so the numerator and the denominator covered different work — the same
-  mismatch already excluded for warmup and benchmark. The counts and the stage
-  sums are still published; only the ratio is withheld.
-- A video stopped early with `q` or Escape no longer counts as a completed
-  sample. `samples` is documented as sources processed to completion, and an
-  interrupted video is not one. Its frames still count, because they ran.
-- `capabilities_cli_contract` now parses the emitted document and asserts the
-  top-level `schema_version`. It matched a regular expression before, which the
-  nested `diagnostics.run_report.schema_version` satisfied on its own, so the
-  test would have passed whatever the capabilities version said.
-- Pinned neuriplo-tasks to `v0.8.0` (was `v0.6.1`), picking up polygon
-  segmentation output, the YOLO26 depth task, and the vision preprocessing
-  fast paths.
-
-### Removed
-- `app/src/NeuriploInferProcessing.cpp` and `app/src/NeuriploInferRendering.cpp`,
-  leftovers from the command refactor. They held second copies of the image,
-  video, optical-flow, and image-understanding paths and of the per-task
-  renderers, but were in no build target, referenced nowhere, and no longer
-  compiled against their own headers. Their live counterparts are
-  `CLICommands.cpp` and `ResultRenderer.cpp`. Uncompiled, they were invisible
-  to every gate — formatting, lint, warnings, tests — while still reading like
-  the code that runs, so a fix to one of these paths could land in the copy
-  nothing executes. The run diagnostics were the concrete case: none of that
-  duplicate processing code was instrumented.
-- New `no_orphan_sources` test: a source under `app/src` that is named nowhere
-  in `app/CMakeLists.txt` now fails the suite. Being excluded from a particular
-  build (KServe, a backend) stays fine; being in no build at all does not.
-
 ## [0.9.1] - 2026-07-16
 
+### Changed
+
+- Pinned neuriplo-tasks to `v0.6.1` for the canonical documentation source.
+
 ### Fixed
+
 - EdgeCrafter export documentation links now appear inside their corresponding
   detection, segmentation, and pose supported-model subsections instead of
   after the generated model list.
 
-### Changed
-- Pinned neuriplo-tasks to `v0.6.1` for the canonical documentation source.
-
 ## [0.9.0] - 2026-07-15
 
 ### Changed
+
 - Migrated application task boundaries from OpenCV types to native
   neuriplo-tasks vision images, sizes, and pixel types across image, video,
   optical-flow, image-understanding, warmup, and benchmark execution paths.
@@ -647,6 +684,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.8.0] - 2026-06-24
 
 ### Added
+
 - RF-DETR keypoint pose routing. The CLI/E2E path now routes `rfdetrpose`,
   `rfdetr-pose`, `rfdetrkeypoint`, `rfdetr-keypoint`, `rfdetrkpt`, and
   `rfdetr-kpt` to `PoseEstimation`, mirroring the `RfDetrPose` family added in
@@ -656,6 +694,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - PR branch-policy workflow.
 
 ### Changed
+
 - KServe remote-runtime client now defaults to the gRPC transport.
 - Sibling pins: neuriplo-tasks v0.5.0, neuriplo v0.8.0,
   neuriplo-kserve-client v0.4.0, videocapture v0.3.0.
@@ -663,6 +702,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.7.0] - 2026-06-14
 
 ### Added
+
 - KServe output images are tagged with the backend the server actually used to
   run the model: `processed_<model>_kserve_<backend>.png` (rendered with a
   filename-safe separator, e.g. `processed_yolo26_kserve-litert.png`). The tag
@@ -679,16 +719,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `neuriplo-infer` KServe client producing a rendered image.
 
 ### Changed
+
 - Sibling release pins bumped: `neuriplo` v0.7.0 -> v0.8.0,
   `neuriplo-tasks` v0.4.0 -> v0.4.1, `neuriplo-kserve-client` v0.3.0 -> v0.4.0.
 
 ## [0.6.2] - 2026-06-13
 
 ### Added
+
 - CLI output images are named `processed_<model>_<backend>.png` instead of a
   fixed `processed.png`, making multi-run local output easier to distinguish.
 
 ### Changed
+
 - Sibling release pin bumped: `neuriplo` v0.6.0 -> v0.7.0 (tensor datatype
   metadata on `InferenceMetadata`). `videocapture` (v0.3.0), `neuriplo-tasks`
   (v0.4.0), and `neuriplo-kserve-client` (v0.3.0) unchanged.
@@ -697,12 +740,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   datatypes in model metadata).
 
 ### Removed
+
 - Auto-publish GitHub Release workflow (`.github/workflows/publish-github-release.yml`);
   release notes are published manually after Release Guard validates sibling pins.
 
 ## [0.6.1] - 2026-06-12
 
 ### Fixed
+
 - `InferencePipelineBuilderTest` adapted to the neuriplo v0.6.0 load-failure
   contract: `setup_inference_engine` no longer lets vendor exceptions
   (e.g. `cv::Exception`) propagate -- it logs them and returns `nullptr`, so
@@ -713,6 +758,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.6.0] - 2026-06-12
 
 ### Changed
+
 - Sibling release pins bumped: `neuriplo` v0.5.0 -> v0.6.0 (multi-backend
   builds, dlopen plugin ABI, raw typed-buffer output API) and
   `neuriplo-kserve-client` v0.1.0 -> v0.3.0 (proto profiles, gRPC
@@ -725,6 +771,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.5.0] - 2026-06-11
 
 ### Added
+
 - KServe V2 remote runtime mode: run task preprocessing/postprocessing locally
   while sending inference tensors to a KServe V2 endpoint (`--kserve_endpoint`,
   `--kserve_model_name`, `--kserve_transport`, etc.), with HTTP and optional gRPC
@@ -743,6 +790,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `docs/KserveRuntime.md`.
 
 ### Changed
+
 - Closed out the KServe production roadmap: `feature/neuriplo-kserve-runtime`
   merged into `develop` (2026-06-09) with all phases complete. The roadmap doc
   was then transformed into `docs/KserveRuntime.md`, a reference for agents and
@@ -766,18 +814,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Removed the deprecated Acknowledgments section from `README.md`.
 
 ### Fixed
+
 - CLI now exits cleanly when `--source` is missing instead of surfacing a
   confusing downstream error.
 
 ## [0.4.1] - 2026-06-07
 
 ### Changed
+
 - Slimmed `README.md` and removed deprecated docs (`PROGRESS.md`,
   `docs/Roadmap.md`, `docs/FasterCompilationPlan.md`) and the deprecated local
   `ops/` compatibility pointer.
 - Dropped the stale `neuriplo-tasks` branch pin in the OPENCV_DNN CI job.
 
 ### Fixed
+
 - Removed the stale YOLO26 LiteRT Docker build override that pinned `neuriplo`
   to commit `8cf93e6`, so release builds use the `versions.env` pin
   `NEURIPLO_VERSION=v0.5.0` with the LiteRT NCHW→NHWC transpose fix.
@@ -787,6 +838,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.4.0] - 2026-06-07
 
 ### Changed
+
 - Renamed application entry class to `NeuriploInfer` and aligned related
   source/test filenames with the `NeuriploInfer*` prefix.
 - Renamed repository identity per ADR 0004: `neuriplo-infer` CMake project,
@@ -803,6 +855,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.3.2] - 2026-05-28
 
 ### Changed
+
 - Pinned `neuriplo` to `v0.4.0` (LiteRT NCHW→NHWC transpose fix, new LiteRT
   backend) and `neuriplo-tasks` to `v0.3.2` (YOLO26 normalized coordinate scaling
   fix). `videocapture` pin unchanged at `v0.2.0`.
@@ -810,34 +863,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.3.1] - 2026-05-21
 
 ### Changed
+
 - Pinned `neuriplo-tasks` to `v0.3.1` in `versions.env` (README ↔ TaskFactory contract fixes and test hardening; no API change). `neuriplo` and `videocapture` pins unchanged.
 - Re-synced `README.md` and `docs/generated/supported-model-types.md` from neuriplo-tasks v0.3.1's model-type block
 
 ## [0.3.0] - 2026-05-21
 
 ### Added
+
 - Gemma4 VLM image understanding wired via llama.cpp + libmtmd
 - Grounding DINO open-vocabulary detection wired as `OpenVocabDetection` with BERT tokenizer support
 - Multimodal CLI parameters and task routing
 - VLM image understanding how-to and agentic wiring runbook
 
 ### Changed
+
 - Sibling refs (`neuriplo`, `neuriplo-tasks`, `videocapture`) pinned in `versions.env` to each sibling's own release tag for reproducible tag checkouts; siblings now version independently
 - Release tooling reworked for per-sibling pins: `cut_release.sh` detects each sibling's latest release tag, `validate_release_pins.sh` rejects branch-name pins (e.g. `master`/`develop`), enforced by the pre-push hook and the release-guard workflow
 - Supported model types synced from neuriplo-tasks (adds ImageUnderstanding)
 - CI skips on docs-only pushes; frees disk space before Docker builds
 
 ### Fixed
+
 - Pre-push hook no longer runs `act` (no locally-runnable CI jobs for this repo)
 
 ## [0.2.3] - 2026-04-03
 
 ### Fixed
+
 - Restored build dependency fetching through declared refs instead of relying on local sibling checkouts
 
 ## [0.2.2] - 2026-04-03
 
 ### Changed
+
 - Derive the shared dependency ref inside CMake and release-aware tooling instead of carrying `DEPENDENCIES_VERSION` in `versions.env`
 - Single source of truth for model types via sync script (`sync_supported_model_types.py`)
 - Sync generated supported model types into `README.md` and `docs/generated/supported-model-types.md`
@@ -847,11 +906,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Reduced duplicated documentation by rewriting architecture and dependency docs around canonical sources of truth
 
 ### Fixed
+
 - Removed the stale hand-maintained compatibility matrix and replaced its remaining references with generated or code-owned sources
 
 ## [0.2.1] - 2026-04-01
 
 ### Fixed
+
 - Dependency ref selection now follows the neuriplo-infer release line: `master` uses dependency `master`, all other branches use dependency `develop`
 - Reject invalid `VERSION` contents early during CMake configure
 - Require `--tokenizer_vocab` and `--tokenizer_merges` explicitly for open-vocabulary detection
@@ -864,22 +925,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.2.0] - 2026-03-31
 
 ### Added
+
 - TensorRT Docker build job in CI workflow
 - OWLv2 open-vocabulary detection support (via neuriplo-tasks)
 - Dependency branch ref validation in CMake (ensures neuriplo, videocapture, neuriplo-tasks target the same ref)
 
+### Changed
+
+- Unified dependency versioning via `DEPENDENCIES_VERSION` in `versions.env` (replaces per-library version pins)
+- CI workflow targets `develop` branch instead of `main`/`master`
+
 ### Fixed
+
 - CMake validation function name collision with neuriplo (renamed to `validate_project_dependencies`)
 - Dockerfile.libtensorflow pip-based build and trailing newline issues
 - Dependency ref resolution and GitHub Actions branch detection
 
-### Changed
-- Unified dependency versioning via `DEPENDENCIES_VERSION` in `versions.env` (replaces per-library version pins)
-- CI workflow targets `develop` branch instead of `main`/`master`
-
 ## [0.1.0] - 2026-03-02
 
 ### Added
+
 - Confidence, NMS, and mask threshold CLI flags (`--confidence`, `--nms`, `--mask_threshold`)
 - Threshold passthrough from CLI → `AppConfig` → `TaskConfig` → task constructors
 - Depth estimation task support
@@ -893,14 +958,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dockerfiles source backend versions from neuriplo `versions.env`
 - Migrated from per-backend detector classes to unified `TaskInterface`/`TaskFactory` (via neuriplo-tasks)
 
-[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.6...HEAD
+[Unreleased]: https://github.com/olibartfast/neuriplo-infer/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.7...v0.12.0
+[0.11.7]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.11.0...v0.11.1
-[0.11.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.2...v0.11.0
+[0.11.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.3...v0.11.0
+[0.10.3]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.9.1...v0.10.0
@@ -912,6 +980,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 [0.6.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/olibartfast/neuriplo-infer/compare/v0.3.0...v0.3.1
