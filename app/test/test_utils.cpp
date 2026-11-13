@@ -83,6 +83,11 @@ TEST(UtilsStandalone, NormalizeModelType) {
 }
 
 TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
+  for (const auto *name :
+       {"LightGlue", "lightglue_v2", "superglue", "MatchAnything-EloFTR"}) {
+    EXPECT_EQ(getTaskTypeForModel(name),
+              neuriplo_tasks::TaskType::KeypointMatching);
+  }
   EXPECT_EQ(getTaskTypeForModel("yolo26"), neuriplo_tasks::TaskType::Detection);
   EXPECT_EQ(getTaskTypeForModel("rtdetrultralytics"),
             neuriplo_tasks::TaskType::Detection);

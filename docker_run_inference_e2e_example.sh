@@ -5,6 +5,7 @@
 #   - rtdetrv4              Object detection
 #   - owlv2                 Open-vocabulary detection
 #   - torchvision_classifier Classification
+#   - tensorflow_classifier  Classification (TensorFlow SavedModel; tensorflow-gpu adds --gpus/--use-gpu)
 #   - yoloseg               Instance segmentation
 #   - yolov8_executorch     Object detection (YOLOv8n, ExecuTorch backend)
 #   - yolo26s_tflite        Object detection (YOLO26s, LiteRT backend)
@@ -71,7 +72,7 @@ Usage:
 Options:
   --preset <name>            Task preset to run. Default: rtdetrv4
                              Use --list-presets to see all available presets.
-  --backend <name>           Runtime backend: onnxruntime, tensorrt, litert, executorch, or llamacpp
+  --backend <name>           Runtime backend: onnxruntime, tensorrt, litert, executorch, llamacpp, tensorflow, or tensorflow-gpu
   --neuriplo-tasks-dir <path>   Path to a neuriplo-tasks checkout with export tooling
   --weights-dir <path>       Export/model output directory. Default: ./models/e2e
   --data-dir <path>          Host data directory to mount. Default: ./data
@@ -93,6 +94,7 @@ list_presets() {
 rtdetrv4
 owlv2
 torchvision_classifier
+tensorflow_classifier
 yoloseg
 yolov8_executorch
 yolo26s_tflite
@@ -299,6 +301,23 @@ case "$PRESET" in
         EXPORT_COMMANDS=(
             "${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/classification-export\""
             "source \"${NEURIPLO_TASKS_DIR}/environments/classification-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/requirements.txt\" -r \"${NEURIPLO_TASKS_DIR}/export/classification/torchvision/requirements.txt\" onnx onnxruntime && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/classification/torchvision/export_torchvision_classifier.py\" --library torchvision --model resnet50 --export_format onnx --output_onnx \"${WEIGHTS_DIR}/${MODEL_BASENAME}.onnx\""
+        )
+        RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}")
+        ;;
+    tensorflow_classifier)
+        if [[ "$BACKEND_SET" == false ]]; then
+            BACKEND="tensorflow"
+        fi
+        MODEL_TYPE="tensorflow-classifier"
+        MODEL_BASENAME="tensorflow-classifier"
+        SOURCE_IN_CONTAINER="/app/data/dog.jpg"
+        HOST_SOURCE_PATH="${DATA_DIR}/dog.jpg"
+        LABELS_IN_CONTAINER="/labels/imagenet_labels.txt"
+        HOST_LABELS_PATH="${LABELS_DIR}/imagenet_labels.txt"
+        EXTRA_REQUIREMENTS=()
+        EXPORT_COMMANDS=(
+            "if [[ ! -d \"${NEURIPLO_TASKS_DIR}/environments/tf-classifier-export\" ]]; then ${PYTHON_BIN} -m venv \"${NEURIPLO_TASKS_DIR}/environments/tf-classifier-export\"; fi"
+            "source \"${NEURIPLO_TASKS_DIR}/environments/tf-classifier-export/bin/activate\" && pip install -r \"${NEURIPLO_TASKS_DIR}/export/classification/tensorflow/requirements.txt\" && ${PYTHON_BIN} \"${NEURIPLO_TASKS_DIR}/export/classification/tensorflow/export_tf_saved_model_classifier.py\" --output \"${WEIGHTS_DIR}/${MODEL_BASENAME}\""
         )
         RUNTIME_EXTRA_ARGS=("--labels=${LABELS_IN_CONTAINER}")
         ;;
@@ -587,6 +606,21 @@ print('Exported to', dest)
         ;;
 esac
 
+# TensorFlow SavedModel is only wired for the classifier preset. Reject the
+# backend for other presets instead of silently building an unusable command.
+if [[ "$BACKEND" == "tensorflow" || "$BACKEND" == "tensorflow-gpu" ]]; then
+    if [[ "$PRESET" != "tensorflow_classifier" ]]; then
+        echo "Backend '$BACKEND' is only valid with --preset tensorflow_classifier (got '$PRESET')." >&2
+        exit 1
+    fi
+fi
+
+# The TensorFlow GPU path is a backend/image choice, not a new CLI contract:
+# only tensorflow-gpu requests the GPU. The CPU tensorflow backend stays default.
+if [[ "$BACKEND" == "tensorflow-gpu" ]]; then
+    RUNTIME_EXTRA_ARGS+=("--use-gpu")
+fi
+
 if [[ -z "$DOCKER_IMAGE" ]]; then
     if [[ "$BACKEND" == "tensorrt" ]]; then
         DOCKER_IMAGE="neuriplo-infer:tensorrt"
@@ -615,6 +649,13 @@ case "$BACKEND" in
     litert)
         MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}.tflite"
         MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}.tflite"
+        ;;
+    tensorflow|tensorflow-gpu)
+        # TensorFlow serves a SavedModel directory, not a single file. The
+        # weights dir is mounted at /weights, so the directory is addressable
+        # in-container at the same relative path.
+        MODEL_ARTIFACT="${WEIGHTS_DIR}/${MODEL_BASENAME}"
+        MODEL_ARTIFACT_IN_CONTAINER="/weights/${MODEL_BASENAME}"
         ;;
     *)
         echo "Unsupported backend: $BACKEND" >&2
@@ -683,7 +724,14 @@ fi
 if [[ "$SKIP_INFER" == false ]]; then
     echo "=== Step 3: Running inference ==="
     if [[ "$DRY_RUN" == false ]]; then
-        ensure_file "$MODEL_ARTIFACT"
+        if [[ "$BACKEND" == tensorflow* ]]; then
+            if [[ ! -d "$MODEL_ARTIFACT" ]]; then
+                echo "Required SavedModel directory not found: $MODEL_ARTIFACT" >&2
+                exit 1
+            fi
+        else
+            ensure_file "$MODEL_ARTIFACT"
+        fi
     fi
 
     DOCKER_ARGS=(
@@ -702,7 +750,7 @@ if [[ "$SKIP_INFER" == false ]]; then
         DOCKER_ARGS+=(-v "${TOKENIZER_MERGES_HOST}:${TOKENIZER_MERGES_IN_CONTAINER}")
     fi
 
-    if [[ "$BACKEND" == "tensorrt" ]]; then
+    if [[ "$BACKEND" == "tensorrt" || "$BACKEND" == "tensorflow-gpu" ]]; then
         DOCKER_ARGS+=(--gpus=all)
     fi
 

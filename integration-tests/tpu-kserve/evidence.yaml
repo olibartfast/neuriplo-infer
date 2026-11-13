@@ -1,0 +1,38 @@
+# Attested validation evidence for the remote-TPU KServe path.
+#
+# The live check requires a Cloud TPU VM serving KServe V2 and is NOT
+# executed by routine CI. It is attested by the operator who runs it and
+# recorded here. Routine CI runs only the --dry-run scaffold check,
+# registered as the tpu_kserve_dry_run CTest.
+#
+# Per-check schema:
+#   status: pass | fail | skipped | not_attested
+#   detail: short human-readable description of what was run
+#   source: optional pointer to the runbook, command, or CI log
+
+compatibility_set: tpu-kserve-classifier
+last_attested: null
+attested_by: null
+
+checks:
+  dry_run_scaffold:
+    status: pass
+    detail: >
+      run.py --dry-run validates the scaffold files and prints the live
+      command without network access; registered as CTest tpu_kserve_dry_run.
+    source: integration-tests/tpu-kserve/run.py
+  live_tpu_infer:
+    status: skipped
+    detail: >
+      NOT EXECUTED: no Cloud TPU VM was available. Promote to pass only
+      after serving the classifier through a KServe V2 TPU endpoint and
+      running run.py --live end to end, recording the TPU type, runtime,
+      endpoint, command, exit status, output path, and top-5 classes/scores.
+    source: integration-tests/tpu-kserve/README.md
+  live_numeric_parity:
+    status: skipped
+    detail: >
+      NOT EXECUTED: compares the served top-5 classes/scores against
+      baselines/cpu_top5.json. Requires a populated CPU baseline and a live
+      TPU run; see the numeric mode in run.py --help.
+    source: integration-tests/tpu-kserve/baselines/cpu_top5.json
