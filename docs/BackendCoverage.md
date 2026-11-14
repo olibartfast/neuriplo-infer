@@ -175,9 +175,8 @@ with a top-5 that matches ORT exactly (E6), `yolov8` detection passes with
 bicycle 0.89 / dog 0.93 / car 0.61 (E2), and `yoloseg` passes with dog 0.87 /
 bicycle 0.80 / car 0.45 plus masks (E5). The remaining GGML task cells stay
 `U` because the loader only implements ResNet-18/50 and the YOLOv8n
-detection/segmentation graphs; see [E19](#ev-ggml). The 2026-11-13 brev
-attempt was blocked at SSH transport and is retained as historical evidence,
-not as a PASS.
+detection/segmentation graphs; see [E19](#ev-ggml). These are local
+sibling-checkout runs, not isolated remote-release gates.
 
 | Task (representative) | MGX | GGML | LiteRT | ExecT | LLaMA | KServe | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -985,12 +984,6 @@ tests, `docker/run_ggml_tests.sh`).
     gray/zeros/gradient, all ≤1e-2. Render:
     `data/output/processed_yoloseg_local.png`. Full command and evidence:
     E5, `scripts/ggml_app_gate.py`, and the spec packet's `validation.md`.
-- **Historical brev attempt (2026-11-13): BLOCKED at SSH transport.** Instance
-  `ggml-matrix-coverage` (`cpu-e2.4vcpu-16gb`, nebius, 4 vCPU / 16 GB /
-  x86_64) reached HEALTHY/READY, but every `brev exec` timed out at SSH, so
-  no remote command executed. Teardown was verified (`brev ls` → no
-  instances). This attempt is retained as the reason the rerun happened
-  locally, not as a PASS.
 - **Matrix verdict:** classification, `yolov8`, and `yoloseg` are the only
   GGML cells promoted to PASS. `yolo26` is blocked at the converter because
   its `model.23` head uses attention ops the GGML YOLOv8 path does not
@@ -1066,10 +1059,8 @@ are not released dependency pins.
    graph importer; the op-level attention helpers in
    `neuriplo/specs/2026-11-14-ggml-attention-ops` are the foundation, not a
    model gate. The other transformer representatives need the same importer
-   work. Re-gate here after that lands. A remote isolated rerun is still
-   open — the 2026-11-13 brev attempt was blocked at SSH transport; retry
-   from a network that reaches the instance, or via a cloud-init startup
-   script that needs no inbound SSH.
+   work. Re-gate here after that lands. These local runs are
+   sibling-checkout evidence, not isolated remote-release gates.
 
 ## Integration-test evidence
 

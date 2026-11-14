@@ -28,22 +28,18 @@ Written before implementation; execute from this file, do not summarize from mem
       — no new absolute URLs in the diff; 1x `<a id="ev-ggml">` anchor +
       4x `#ev-ggml` references, all internal.
 
-## Manual (brev live attempt — evidence, not aspiration)
+## Manual (superseded)
 
-- [ ] Brev instance created cheap CPU-only: `brev create ggml-matrix-coverage --type cpu-e2.4vcpu-16gb` (~$0.14/hr, 4 vCPU / 16 GB / x86_64). Record `brev exec ggml-matrix-coverage "nproc && free -g && uname -m"` output. V-1.
-- [ ] Configure attempt on brev: `cmake -S . -B build-ggml -DDEFAULT_BACKEND=GGML -DCMAKE_BUILD_TYPE=Release`. Record exact stdout/stderr tail + exit code. If it fails, the failure text is the evidence (expected: missing `LinkBackend.cmake` GGML branch). V-2.
-- [ ] If V-2 fails: smallest wiring probe applied, configure re-run, verbatim result recorded. No other build files touched. V-3.
-- [ ] If configure passes: `cmake --build build-ggml` result + single-shape run (`3x224x224 F32 → 1000`) stdout/stderr, exit code, output values recorded. Zeros output = `BLOCKED`/placeholder confirmed, not `PASS`. No cell promoted above its proof. V-4.
-- [x] Brev teardown: `brev delete ggml-matrix-coverage` executed; `brev ls` no longer lists it. Record both outputs. V-5 (required even if V-2/V-4 fail — no orphan instances).
-      — 2026-11-13 re-verified: `brev ls` → `No instances in org olibartfast-hq`.
-      Teardown complete, nothing billable remains.
+The planned brev attempt was blocked at SSH transport; no remote command
+executed. Local sibling-checkout gates superseded it in Phase 2 below, and
+teardown was verified (`brev ls` → no instances).
 
 ## Matrix honesty (reviewer checks against `requirements.md` R-1..R-4)
 
 - [x] R-1: `GGML` column exists in second gate table; legend disambiguates
       GGML from LLAMACPP. Phase 1 state was every cell `U`; Phase 2 promotes
       classification, `yolov8`, and `yoloseg` — see V-7/V-8/V-14.
-- [x] R-2: `E19` records upstream builder + `77/77` engine tests AND the brev attempt (V-2..V-4 excerpts); `E11` keeps LLaMA PASS with cross-ref. `Environments` GGML row + `Open items` follow-up present. Scoreboard counts unchanged.
+- [x] R-2: `E19` records upstream builder + `77/77` engine tests; `E11` keeps LLaMA PASS with cross-ref. `Environments` GGML row + `Open items` follow-up present. Scoreboard counts unchanged.
 - [x] R-3: no `neuriplo` inference-semantics change, no `versions.env` pin move, no CLI/`--capabilities`/schema/generated-docs change.
 - [x] R-4: Phase 1 `CHANGELOG.md` described the docs-only column. Phase 2
       supersedes that wording: the entry now records the three local PASSes and
@@ -56,40 +52,20 @@ Written before implementation; execute from this file, do not summarize from mem
 - [x] Deviations recorded here with what ran instead.
 - [x] `CHANGELOG.md` + `../roadmap.md` status consistent with shipped work (roadmap: no phase closed by this packet; Open-items pointer only).
 - [ ] Spec, code, changelog, roadmap tell the same story in `feature/ggml-matrix-coverage` → `develop`.
-- [x] No running brev instance remains (`brev ls` verified post-teardown).
 
 ## Deviations (2026-11-13, orchestrator record)
 
-- V-1 partial: instance `ggml-matrix-coverage` (`cpu-e2.4vcpu-16gb`, nebius,
-  4 vCPU / 16 GB / x86_64, ~$0.14/hr) was created and reached
-  HEALTHY/READY, but `nproc/free/uname` verification never returned —
-  all `brev exec` calls timed out at SSH (connection timed out, retries
-  exhausted; ephemeral host IP omitted). No remote command executed.
-- V-2/V-3/V-4 not executed remotely: configure, build, and single-shape run
-  never started on brev. Substituted with source-level bounds recorded in
-  E19 (`GGMLInfer.cpp:91,94,97-98` placeholder graph, `:77-89` no model
-  bytes parsed, `:61-70` CPU-forced, `:179-185` zeros return), which already
-  prove no cell can promote above `U` without a sibling-side loader.
-- V-5 in-flight: `brev delete ggml-matrix-coverage` issued and acknowledged,
-  but `brev ls` still listed the instance RUNNING minutes later (delete is
-  async: "can take a few minutes"). Teardown must be re-verified with
-  `brev ls` before merge; do not merge with the instance still present.
-- Automated checks (default build, test suite, `sync_supported_model_types
-  --check` against the pinned `v0.8.5` README, `capabilities_schema_contract`,
-  `pre-commit`) not yet run — docs-only diff so far, code untouched. Run
-  them before opening the PR.
-- Superseded 2026-11-14: V-2/V-3/V-4 were not executed remotely, but the
-  equivalent app-surface gates ran locally against the sibling loader; see
-  Phase 2 below. The blocked brev attempt stays recorded as the reason for
-  the local rerun, not as a PASS.
+- The planned brev attempt never executed a remote command (SSH timeouts);
+  it is superseded by the local Phase 2 gates below. Teardown was verified.
+- V-2/V-3/V-4 source-level bounds were replaced by real local runs; no cell
+  was promoted without a recorded run.
 
 ## Cross-repo follow-up (2026-11-13, `neuriplo` real-loader packet)
 
 - `neuriplo` branch `feature/ggml-real-loader`: real head-only loader
   (pool + real FC through ggml), converter emitting NGGL, hardened tests —
   local gates green (77/77 ctest, golden + F2 orientation probe exact vs
-  numpy). Brev live gate in progress on `ggml-real-loader` (cpu-e2.4vcpu-16gb);
-  teardown required before any merge.
+  numpy).
 - App-side wiring probe in this branch (no semantics change): `GGML` branch in
   `cmake/LinkBackend.cmake` + test mirror in `app/test/CMakeLists.txt` +
   `DEFAULT_BACKEND` help string. `cmake -S . -B build-ggml
