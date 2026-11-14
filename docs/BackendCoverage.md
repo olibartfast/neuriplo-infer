@@ -4,7 +4,7 @@ One gated representative per task family, one status per backend, no cell
 claiming more than its evidence. Style follows the NERT
 [coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md).
 
-**Last updated: 2026-11-09.** Baseline evidence uses neuriplo-infer
+**Last updated: 2026-11-14.** Baseline evidence uses neuriplo-infer
 0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. Newer local corrections
 are scoped in their evidence sections; unreleased backend fixes are marked with numbered notes. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
@@ -66,7 +66,7 @@ See [Open items](#open-items) for remaining validation and fixes.
 
 `BUILDS` means the `ci.yml` job for that backend is green (`NERT`, `OPENCV_DNN`,
 `ONNX_RUNTIME`, `LIBTORCH`, `LIBTENSORFLOW`, `TENSORRT`, `OPENVINO`); there is
-no `LITERT` / `EXECUTORCH` / `LLAMACPP` / `MIGRAPHX` build job. `DRY-RUN` means the preset
+no `LITERT` / `EXECUTORCH` / `LLAMACPP` / `MIGRAPHX` / `GGML` build job. `DRY-RUN` means the preset
 is listed by `--list-presets` and green in `e2e-example-emulation.yml`
 (dry-run validates command construction, not numerics).
 
@@ -90,6 +90,8 @@ the NERT gates and the marked cells.
 `ExecT` = EXECUTORCH · `LLaMA` = LLAMACPP · `KServe` = remote `KserveEngine`.
 `MGX` = MIGraphX, the independent `MIGRAPHX` backend in neuriplo, distinct from
 ONNX Runtime's MIGraphX execution provider.
+`GGML` = GGML, the independent `GGML` backend in neuriplo, distinct from
+the `LLAMACPP` (llama.cpp) column.
 NERT is the first-party Neuriplo Engine Runtime. Representative presets
 appear in parentheses.
 
@@ -125,6 +127,15 @@ Cells may carry a numbered note, e.g. **P(2)**; see [Notes](#notes).
    [`9bde6c0`](https://github.com/olibartfast/neuriplo/commit/9bde6c0fd07ab88b70e1076f5fc667c20be41d7d).
    The app's released dependency pin does not contain that fix. See
    [E4](#ev-ecdet).
+6. **GGML classification weights.** The GGML PASS uses ONNX Model Zoo
+   `resnet50-v1-12` (pretrained head) because the GGML loader consumes that
+   topology; the Torch PASS (note 1) uses a torchvision resave with an
+   untrained replacement head. Same task family and ResNet-50 architecture,
+   different weight files; neither result is inferred for the other artifact.
+7. **GGML segmentation artifact.** The GGML `yoloseg` PASS uses
+   `yolov8n-seg` (the same artifact as the DNN/ORT/TRT PASSes in E5), not
+   the YOLO11m-seg member named in note 1. Both are `yoloseg` task-family
+   representatives; neither result is inferred for the other artifact.
 
 ### Local inference backends
 
@@ -158,27 +169,41 @@ zero skips. These are backend datatype/buffer tests, not task-model runs; they
 are recorded in [E16](#ev-migraphx). The per-task MGX cells below stay `U`:
 no task representative has a recorded app run.
 
-| Task (representative) | MGX | LiteRT | ExecT | LLaMA | KServe | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-| Object detection (`yolo26`, `yolo26s_tflite`) | U | P | U | N/A | P | [E1](#ev-yolo26) |
-| Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | N/A | U | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | N/A | U | [E3](#ev-rtdetr) |
-| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | N/A | U | [E14](#ev-ov-slurm) |
-| Object detection (`ecdet`, `edgecrafter_det`) | U | P(5) | U | N/A | P(5) | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr-medium`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | U | U | U | N/A | P | [E5](#ev-seg) |
-| Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | N/A | U | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | U | U | N/A | U | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | U | U | U | N/A | U | [E7](#ev-video) |
-| Optical flow (`raft`, `raft`) | U | U | U | N/A | U | [E7](#ev-video) |
-| Pose estimation (`vitpose`, `vitpose`) | U | P | U | N/A | P | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | U | P | U | N/A | P | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | U | N/A | P | [E10](#ev-owlv2) |
-| Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | P | U | [E11](#ev-gemma4) |
-| Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | N/A | U | [E12](#ev-splatting) |
-| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | U | N/A | U | [E17](#ev-keypoint-matching) |
+**GGML upstream builder + engine tests: 77/77 PASS, zero skips** — the
+upstream `docker/Dockerfile.ggml` builder image plus `docker/run_ggml_tests.sh`
+engine suite, Slurm-gated (see [E19](#ev-ggml)). Those are upstream build and
+engine tests. On 2026-11-14 the app surface was gated locally against the
+unreleased sibling loader (`neuriplo` `feature/ggml-yolo-family` @ `9ee2bde`
+plus the unreleased `2026-11-14-ggml-yoloseg` work): classification passes
+with a top-5 that matches ORT exactly (E6), `yolov8` detection passes with
+bicycle 0.89 / dog 0.93 / car 0.61 (E2), and `yoloseg` passes with dog 0.87 /
+bicycle 0.80 / car 0.45 plus masks (E5). The remaining GGML task cells stay
+`U` because the loader only implements ResNet-18/50 and the YOLOv8n
+detection/segmentation graphs; see [E19](#ev-ggml). The 2026-11-13 brev
+attempt was blocked at SSH transport and is retained as historical evidence,
+not as a PASS.
+
+| Task (representative) | MGX | GGML | LiteRT | ExecT | LLaMA | KServe | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Object detection (`yolo26`, `yolo26s_tflite`) | U | U | P | U | N/A | P | [E1](#ev-yolo26) |
+| Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | P | N/A | U | [E2](#ev-yolov8) |
+| Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | U | N/A | U | [E3](#ev-rtdetr) |
+| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | U | N/A | U | [E14](#ev-ov-slurm) |
+| Object detection (`ecdet`, `edgecrafter_det`) | U | U | P(5) | U | N/A | P(5) | [E4](#ev-ecdet) |
+| Object detection (`rfdetr`, `rfdetr-medium`) | U | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | U | P(7) | U | U | N/A | P | [E5](#ev-seg) |
+| Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | U | N/A | U | [E5](#ev-seg) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | P(6) | U | U | N/A | U | [E6](#ev-classification) |
+| Video classification (`videomae`, `videomae`) | U | U | U | U | N/A | U | [E7](#ev-video) |
+| Optical flow (`raft`, `raft`) | U | U | U | U | N/A | U | [E7](#ev-video) |
+| Pose estimation (`vitpose`, `vitpose`) | U | U | P | U | N/A | P | [E8](#ev-pose) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | U | U | P | U | N/A | P | [E9](#ev-depth) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | U | U | N/A | P | [E10](#ev-owlv2) |
+| Image understanding (`gemma4`, `gemma4`) | N/A | U | N/A | N/A | P | U | [E11](#ev-gemma4) |
+| Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | U | N/A | U | [E12](#ev-splatting) |
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | U | U | N/A | U | [E17](#ev-keypoint-matching) |
 
 ### Scope and caveats
 
@@ -187,6 +212,16 @@ AMD GPU contract tests are recorded in [E16](#ev-migraphx); they do not promote
 any task cell to PASS, RUNTIME-PASS or BUILDS. No app build or preset gate is
 recorded for this backend. Its ONNX-only input format cannot serve the GGUF
 `gemma4` representative, so that cell is N/A.
+
+The GGML column records three local app-surface PASSes — classification (E6),
+`yolov8` detection (E2), and `yoloseg` (E5) — plus the upstream builder and
+engine-test evidence in [E19](#ev-ggml). All runs used the unreleased sibling
+loader (`neuriplo` `feature/ggml-yolo-family` @ `9ee2bde` plus the unreleased
+`2026-11-14-ggml-yoloseg` work), because the pinned `neuriplo v0.11.3` predates it. No CI
+build job and no preset gate are claimed. The loader implements ResNet-18/50
+and the YOLOv8n detection/segmentation graphs only; every other GGML task cell
+stays `U` until sibling graph work lands. `gemma4` stays `U`: GGML serves no
+VLM, and the VLM evidence belongs to the `LLaMA` column.
 
 The `TRC` column covers TorchScript. AOTInductor is a second runtime inside
 the same LibTorch backend, selected when the model path ends in `.pt2`. It is
@@ -244,6 +279,13 @@ certify the app's released dependency pins.
   answers HTTP 200, but gRPC `ModelInfer` fails 13 INTERNAL — reproduced
   with the sibling `kserve-client-conformance` oracle. Fault lives in
   `neuriplo-kserve-runtime`'s gRPC respond path, not here.
+- **GGML BLOCKED at converter (2026-11-14).** `yolo26n.onnx` (ultralytics
+  8.4.213; 368 nodes including attention `MatMul`/`Softmax`, head
+  `model.23`, output `[1,84,8400]`) is rejected by `neuriplo`'s converter:
+  it requires the YOLOv8 `model.22.dfl.conv.weight` head, and the GGML
+  YOLOv8 graph builder has no attention or `model.23` path. Owner:
+  `neuriplo` (converter + graph builder); no app run is possible. The GGML
+  cell stays `U` until that lands.
 
 ### <a id="ev-yolov8"></a>E2 — Object detection (`yolov8`)
 
@@ -259,6 +301,14 @@ certify the app's released dependency pins.
   1423 ms): `yolov8n_saved_model` (ultralytics SavedModel export) @ 0.4/0.5
   — bicycle 0.89, dog 0.93, car 0.61. Render inspected
   (`data/output/processed_yolo_local.png`).
+- **GGML PASS (2026-11-14, local, CPU, 495 ms).** `yolov8n.onnx`
+  (ultralytics 8.4.213 export, opset 12, static 640) converted to NGGL
+  (132 float initializers), loaded by the unreleased sibling loader
+  (`neuriplo` `feature/ggml-yolo-family` @ `9ee2bde`), and run through
+  `--type=yolov8` on `data/dog.jpg` @ 0.4/0.5: bicycle 0.89, dog 0.93,
+  car 0.61 — identical to the DNN, ExecT, LiteRT, and TF PASSes above.
+  Render inspected (`data/output/processed_yolov8_local.png`). No CI build
+  job; the sibling loader is not a release pin.
 - **TF 2.21 BLOCKED at load (protobuf ABI, requested-version probe).**
   Same SavedModel under a 2.21-linked binary cannot start:
   `libtensorflow_framework.so.2` binds system `libprotobuf.so.32` and
@@ -281,6 +331,14 @@ certify the app's released dependency pins.
   vector-MatMul export; the original artifact still hits OpenCV's matrix-only
   operator restriction. Use CLI type `rtdetr` for both files. See
   [E15](#ev-blocked-slurm) for scope and pending Slurm validation.
+- **GGML BLOCKED before load (2026-11-14).** `rtdetrv4.onnx` is opset 18,
+  1928 nodes, with two inputs (FP32 image + INT64 `orig_target_sizes`),
+  three outputs, and `GridSample`/`TopK`/`GatherElements`/dynamic-shape ops.
+  `GGMLInfer` is still a single-FP32-input, hand-written topology loader.
+  The new `GGMLOps` helpers cover LayerNorm/GELU/MatMul/attention/Gather/TopK
+  at the op level (sibling packet `2026-11-14-ggml-attention-ops`), but a
+  multi-input/INT64 graph importer is required before any RT-DETR run.
+  Owner: `neuriplo`; no app run attempted. The GGML cell stays `U`.
 
 ### <a id="ev-ecdet"></a>E4 — Object detection (`ecdet`)
 
@@ -314,6 +372,16 @@ certify the app's released dependency pins.
   bicycle 0.80, car 0.45, masks verified.
 - **ORT PASS** (CPU, 464 ms): @ 0.4/0.5 — dog 0.87, bicycle 0.80, car 0.45; masks verified; rendered `data/output/processed_yoloseg_local.png`.
 - **TRT PASS** (10.14.1.48 FP16 engine from `yolov8n-seg.onnx`, 430 ms GPU): masks + boxes rendered, identical output shapes (1x116x8400 + 1x32x160x160).
+- **GGML PASS (2026-11-14, local, CPU, ~0.7 s).** `yolov8n-seg.onnx`
+  (ultralytics 8.4.213, opset 12, static 640) converted to NGGL (158 float
+  tensors, 13,793,302 bytes) and loaded by the unreleased sibling loader
+  (`neuriplo` `feature/ggml-yolo-family` @ `9ee2bde` plus the unreleased
+  `2026-11-14-ggml-yoloseg` work). The backend returns `[1,116,8400]` and
+  `[1,32,160,160]`; raw parity vs ORT 1.32.0 on gray/zeros/gradient is
+  max-abs-diff 7.6e-04/1.5e-03/7.9e-04 for detections and 1.6e-03/1.1e-03/
+  1.7e-03 for prototypes. App run @ 0.4/0.5/0.5: dog 0.87, bicycle 0.80,
+  car 0.45, masks rendered and inspected. No CI build job; the sibling
+  loader is not a release pin.
 - **KServe PASS** (`real-onnx` runtime, HTTP, model `seg` v1): exit 0, `neuriplo_http_infer_requests_success_total{model="seg",version="1"} 1`, failure 0; render `data/output/processed_yoloseg_kserve-ort.png` (>10 KB).
 - `ecseg`: preset + emulation green; no live numbers recorded (unlike `ecdet`).
 
@@ -343,6 +411,18 @@ certify the app's released dependency pins.
   [validation](../specs/2026-11-04-tensorflow-classification-regate/validation.md).
   `tensorflow-classifier` CPU preset `tensorflow_classifier` exists (see E18);
   `vit-classifier` still has no preset; no live GPU/TPU evidence is claimed.
+- **GGML PASS (2026-11-14, local, CPU, 206 ms).** `resnet50-v1-12.onnx`
+  (ONNX Model Zoo, 299 float initializers) converted to NGGL and loaded by
+  the unreleased sibling loader (`neuriplo` `feature/ggml-yolo-family` @
+  `9ee2bde`); run through `--type=torchvisionclassifier` on `data/dog.jpg`
+  with `--input_sizes=1,3,224,224`. Top-5 `249 0.793273`, `248 0.11378`,
+  `250 0.036304`, `537 0.024229`, `261 0.011177` — an exact match to ORT
+  1.32.0 (Python reference; the pinned app ORT is 1.19.2) on the same
+  preprocessed input. Render inspected
+  (`data/output/processed_torchvisionclassifier_local.png`). The artifact is
+  the ONNX Model Zoo ResNet-50 v1 file the GGML loader consumes; the Torch
+  PASS above uses torchvision IMAGENET1K_V2 weights. No CI build job; the
+  sibling loader is not a release pin.
 
 ### <a id="ev-video"></a>E7 — Video classification (`videomae`), optical flow (`raft`)
 
@@ -424,16 +504,8 @@ additionally gated as alias.
 - **LLaMA PASS** (CPU, 64 s): `gemma-4-E2B-it-Q4_K_M.gguf` + `mmproj-F16.gguf`
   (HF `unsloth/gemma-4-E2B-it-GGUF`), preset prompt — accurate description.
   Only LLaMA applies (GGUF + mmproj). No CI build job.
-- **GGML is an independent backend, not the LLaMA column.** `neuriplo`
-  ships `docker/Dockerfile.ggml` (builder: `-DDEFAULT_BACKEND=GGML` +
-  engine tests, `docker/run_ggml_tests.sh`). Slurm-orchestrated builder
-  coverage dispatched 2026-11-02 (job 29, zenbook worker,
-  `neuriplo@develop` clone): builder image present
-  (`neuriplo:ggml-2026-11-02-ggml-coverage`, 995 MB) but no test log.
-  Re-gated 2026-11-03 (job 30, zenbook, `neuriplo@develop` `06b6903`):
-  `BUILD_OK` + builder-image `ctest` **77/77 pass** (`CTEST_EXIT 0`).
-  Builder + engine-test leg green; no app-surface gate claimed (GGML has
-  no matrix column).
+- **GGML detail: [E19](#ev-ggml).** GGML is an independent backend, not the
+  LLaMA column.
 
 ### <a id="ev-splatting"></a>E12 — Gaussian splatting (`lgm`/`grm`)
 
@@ -862,6 +934,75 @@ cell. The packet spec is
   command, exit status, output path, and top-5 classes/scores; the numeric
   comparison additionally needs a populated `baselines/cpu_top5.json`.
 
+### <a id="ev-ggml"></a>E19 — GGML coverage status
+
+GGML is an independent backend, not the LLaMA column. `neuriplo` ships
+`docker/Dockerfile.ggml` (builder: `-DDEFAULT_BACKEND=GGML` + engine
+tests, `docker/run_ggml_tests.sh`).
+
+- **Upstream builder leg (Slurm job 29, 2026-11-02, zenbook worker,**
+  **`neuriplo@develop` clone):** builder image present
+  (`neuriplo:ggml-2026-11-02-ggml-coverage`, 995 MB) but no test log.
+- **Upstream builder + engine-test leg (Slurm job 30, 2026-11-03,**
+  **zenbook, `neuriplo@develop` `06b6903`):** `BUILD_OK` + builder-image
+  `ctest` **77/77 pass** (`CTEST_EXIT 0`), zero skips. Builder + engine-test
+  leg green; this gates the upstream implementation only, not any
+  app-surface task cell.
+- **App-surface gate (2026-11-14, local CPU): PASS for three representatives.**
+  The app was configured with `cmake -S . -B build-ggml
+  -DDEFAULT_BACKEND=GGML -DCMAKE_BUILD_TYPE=Release`
+  (`GGML_DIR=/home/oli/dependencies/ggml`,
+  `neuriplo_SOURCE_DIR=/home/oli/repos/neuriplo`) and built with
+  `cmake --build build-ggml`. The linked `libneuriplo.so` came from the
+  unreleased sibling branch `feature/ggml-yolo-family` @ `9ee2bde` plus the
+  unreleased `2026-11-14-ggml-yoloseg` work, not the pinned
+  `neuriplo v0.11.3`; no CI job or release pin is claimed. The
+  `-DENABLE_APP_TESTS=ON` GGML build also compiles and passes the full app
+  suite (197/197). The repeatable gate is
+  `python3 scripts/ggml_app_gate.py`; it records the exact commands, exit
+  codes, hashes, timings, `run_report.json`, and renders in `evidence.json`.
+  - **Classification:** `resnet50-v1-12.onnx` → NGGL (299 tensors,
+    102,532,870 bytes) → `--type=torchvisionclassifier
+    --weights=resnet50.nggl --source=data/dog.jpg
+    --input_sizes=1,3,224,224`: 206 ms, top-5 `249 0.793273`,
+    `248 0.11378`, `250 0.036304`, `537 0.024229`, `261 0.011177`,
+    exact vs ORT 1.32.0 (Python reference). Render:
+    `data/output/processed_torchvisionclassifier_local.png`. Full command
+    and evidence: E6 and the spec packet's `validation.md`.
+  - **YOLOv8n detection:** `yolov8n.onnx` (ultralytics 8.4.213, opset 12,
+    static 640) → NGGL (132 tensors, 12,782,274 bytes) →
+    `--type=yolov8 --weights=yolov8n.nggl --source=data/dog.jpg
+    --input_sizes=1,3,640,640 --labels=labels/coco.names
+    --min_confidence=0.4 --nms_threshold=0.5`: 495 ms, bicycle 0.89,
+    dog 0.93, car 0.61. Render:
+    `data/output/processed_yolov8_local.png`. Full command and evidence:
+    E2 and the spec packet's `validation.md`.
+  - **YOLOv8n-seg:** `yolov8n-seg.onnx` (ultralytics 8.4.213, opset 12,
+    static 640) → NGGL (158 tensors, 13,793,302 bytes) →
+    `--type=yoloseg --weights=yolov8n-seg.nggl --source=data/dog.jpg
+    --input_sizes=1,3,640,640 --labels=labels/coco.names
+    --min_confidence=0.4 --nms_threshold=0.5 --mask_threshold=0.5`:
+    ~0.7 s (657–730 ms across runs), dog 0.87, bicycle 0.80, car 0.45,
+    masks rendered. Backend raw
+    parity (sibling `GGMLInferTest`) is max-abs-diff 7.6e-04/1.5e-03/7.9e-04
+    for `[1,116,8400]` and 1.6e-03/1.1e-03/1.7e-03 for `[1,32,160,160]` on
+    gray/zeros/gradient, all ≤1e-2. Render:
+    `data/output/processed_yoloseg_local.png`. Full command and evidence:
+    E5, `scripts/ggml_app_gate.py`, and the spec packet's `validation.md`.
+- **Historical brev attempt (2026-11-13): BLOCKED at SSH transport.** Instance
+  `ggml-matrix-coverage` (`cpu-e2.4vcpu-16gb`, nebius, 4 vCPU / 16 GB /
+  x86_64) reached HEALTHY/READY, but every `brev exec` timed out at SSH, so
+  no remote command executed. Teardown was verified (`brev ls` → no
+  instances). This attempt is retained as the reason the rerun happened
+  locally, not as a PASS.
+- **Matrix verdict:** classification, `yolov8`, and `yoloseg` are the only
+  GGML cells promoted to PASS. `yolo26` is blocked at the converter because
+  its `model.23` head uses attention ops the GGML YOLOv8 path does not
+  implement (E1). The transformer representatives remain `U`: `rtdetr` is
+  blocked before load on multi-input/INT64 plus a generic graph importer
+  (E3), and the op-level attention helpers alone are not a model gate. Every
+  other row stays `U` until sibling graph work lands.
+
 ## Environments
 
 How each column was built and tested. App gates are CPU except TRT;
@@ -882,6 +1023,7 @@ are not released dependency pins.
 | LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK |
 | ExecT | v1.2.0 optimized SDK (E15) | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; compiled transport is not live transport validation |
 | MGX | Recorded upstream environment: 2.12.0.60401-83, ROCm 6.4.1, MI300X `gfx942` (E16) | upstream `MIGRAPHX`; app build unvalidated | backend contracts 6/6: 3 CPU + 3 GPU, zero skips | Synthetic typed fixtures only; no app or learned-model gate |
+| GGML | Local CPU (AMD Ryzen 7 5700U); unreleased sibling `neuriplo` `feature/ggml-yolo-family` @ `9ee2bde` + unreleased `2026-11-14-ggml-yoloseg`/`2026-11-14-ggml-attention-ops`; `GGML_DIR=/home/oli/dependencies/ggml` (E19) | `-DDEFAULT_BACKEND=GGML` app build; no CI job | app 197/197 in the GGML test build; classification + `yolov8` + `yoloseg` runs (E6/E2/E5); upstream `ctest` 77/77 in the builder image; backend `GGMLInferTest` 21 tests (20 pass, 1 intentional skip), including 7/7 `GGMLOpsParity` | ResNet-50 top-5 exact vs ORT; YOLOv8n detection/segmentation match ORT within 1e-2; transformer/RT-DETR remains blocked on the graph importer; other GGML task cells remain `U` |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
 
@@ -920,6 +1062,18 @@ are not released dependency pins.
    backend and run ONNX task representatives on a supported AMD/ROCm worker.
    Record expected outputs and inspected renders before promoting the
    UNTESTED cells; the upstream synthetic suite in E16 is already covered.
+7. **GGML app gate.** Classification, `yolov8`, and `yoloseg` now pass
+   locally (E6/E2/E5/E19) against the unreleased sibling loader. `yolo26` is
+   BLOCKED at the converter (E1): its `model.23` head needs attention ops,
+   so that row stays `U` until the sibling converter/graph work lands.
+   `rtdetr` is BLOCKED before load (E3) on multi-input/INT64 and a generic
+   graph importer; the op-level attention helpers in
+   `neuriplo/specs/2026-11-14-ggml-attention-ops` are the foundation, not a
+   model gate. The other transformer representatives need the same importer
+   work. Re-gate here after that lands. A remote isolated rerun is still
+   open — the 2026-11-13 brev attempt was blocked at SSH transport; retry
+   from a network that reaches the instance, or via a cloud-init startup
+   script that needs no inbound SSH.
 
 ## Integration-test evidence
 
