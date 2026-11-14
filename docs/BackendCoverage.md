@@ -101,13 +101,13 @@ Cells may carry a numbered note, e.g. **P(2)**; see [Notes](#notes).
 ### Notes
 
 1. **Different representative.** Note 1 marks a different member of the row's
-   family: RT-DETRv4-s for `rtdetr`, YOLO11m-seg for `yoloseg`, and ResNet-50
-   for `torchvisionclassifier`. The ResNet-50 artifact has an untrained
-   replacement head: its gate proves numerical equivalence, not ImageNet class
-   correctness. RF-DETR, EdgeCrafter and YOLO26 results retain the
-   artifact-specific task and numerical deviations documented upstream; the
-   seg-nano counterfactual is not a deployable substitute. No result is
-   inferred for `rtdetrul`.
+   family used by the NERT gate: RT-DETRv4-s for `rtdetr`, YOLO11m-seg for
+   `yoloseg`, and ResNet-50 for `torchvisionclassifier`. The ResNet-50
+   artifact has an untrained replacement head: its gate proves numerical
+   equivalence, not ImageNet class correctness. RF-DETR, EdgeCrafter and
+   YOLO26 results retain the artifact-specific task and numerical deviations
+   documented upstream; the seg-nano counterfactual is not a deployable
+   substitute. No result is inferred for `rtdetrul`.
 2. **Local fixes, not released pins.** OpenCV 5 named/typed graph inputs,
    RT-DETRv4's prepared vector-MatMul export, and ExecuTorch v1.2.0 rebuilt
    with optimized registrations. Identical-input ORT parity and renders are
@@ -132,10 +132,6 @@ Cells may carry a numbered note, e.g. **P(2)**; see [Notes](#notes).
    topology; the Torch PASS (note 1) uses a torchvision resave with an
    untrained replacement head. Same task family and ResNet-50 architecture,
    different weight files; neither result is inferred for the other artifact.
-7. **GGML segmentation artifact.** The GGML `yoloseg` PASS uses
-   `yolov8n-seg` (the same artifact as the DNN/ORT/TRT PASSes in E5), not
-   the YOLO11m-seg member named in note 1. Both are `yoloseg` task-family
-   representatives; neither result is inferred for the other artifact.
 
 ### Local inference backends
 
@@ -191,7 +187,7 @@ not as a PASS.
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | U | N/A | U | [E14](#ev-ov-slurm) |
 | Object detection (`ecdet`, `edgecrafter_det`) | U | U | P(5) | U | N/A | P(5) | [E4](#ev-ecdet) |
 | Object detection (`rfdetr`, `rfdetr-medium`) | U | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | U | P(7) | U | U | N/A | P | [E5](#ev-seg) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | U | P | U | U | N/A | P | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | U | N/A | U | [E5](#ev-seg) |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | P(6) | U | U | N/A | U | [E6](#ev-classification) |
