@@ -40,6 +40,10 @@ elseif(DEFAULT_BACKEND STREQUAL "EXECUTORCH")
     # ExecuTorch static libs are linked PRIVATE into libneuriplo.so by neuriplo's cmake,
     # so no additional link steps are needed here beyond the include path.
     target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriplo_SOURCE_DIR}/backends/executorch/src)
+elseif(DEFAULT_BACKEND STREQUAL "GGML")
+    # libneuriplo.so already carries the ggml linkage (same rationale as the
+    # EXECUTORCH branch above); only the factory header include path is needed.
+    target_include_directories(${NEURIPLO_INFER_EXECUTABLE} PRIVATE ${neuriplo_SOURCE_DIR}/backends/ggml/src)
 endif()
 
 # Note: Actual inference backend libraries (libonnxruntime.so, libnvinfer.so, etc.)
