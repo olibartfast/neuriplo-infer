@@ -6,7 +6,7 @@ claiming more than its evidence. Style follows the NERT
 
 **Last updated: 2026-11-14.** Baseline evidence uses neuriplo-infer
 0.11.6, neuriplo 0.11.3 and neuriplo-tasks 0.8.5. Newer local corrections
-are scoped in their evidence sections; unreleased backend fixes are marked with numbered notes. The
+are scoped in their evidence sections; unreleased backend fixes are marked in those sections. The
 [gated table](#gate-table) summarizes coverage by task and backend. Recorded
 results are listed under [Evidence](#evidence); build versions and test totals
 are under [Environments](#environments). Matrix coverage is always reported
@@ -96,42 +96,10 @@ NERT is the first-party Neuriplo Engine Runtime. Representative presets
 appear in parentheses.
 
 Table key: **P** = PASS · **U** = UNTESTED · **B** = BUILDS · **DR** = DRY-RUN.
-Cells may carry a numbered note, e.g. **P(2)**; see [Notes](#notes).
-
-### Notes
-
-1. **Different representative.** Note 1 marks a different member of the row's
-   family used by the NERT gate: RT-DETRv4-s for `rtdetr`, YOLO11m-seg for
-   `yoloseg`, and ResNet-50 for `torchvisionclassifier`. The ResNet-50
-   artifact has an untrained replacement head: its gate proves numerical
-   equivalence, not ImageNet class correctness. RF-DETR, EdgeCrafter and
-   YOLO26 results retain the artifact-specific task and numerical deviations
-   documented upstream; the seg-nano counterfactual is not a deployable
-   substitute. No result is inferred for `rtdetrul`.
-2. **Local fixes, not released pins.** OpenCV 5 named/typed graph inputs,
-   RT-DETRv4's prepared vector-MatMul export, and ExecuTorch v1.2.0 rebuilt
-   with optimized registrations. Identical-input ORT parity and renders are
-   validated locally. Repaired parallel Slurm reruns are pending worker
-   availability; these are not Slurm PASS claims. See [E15](#ev-blocked-slurm).
-3. **Retained OpenVINO campaign image.** These cells use the retained 0.11.6
-   campaign executable in a derived validation image on P-LNX-EDGE-CPU. They
-   do not certify the current source pins or the original image packaging; see
-   [E14](#ev-ov-slurm).
-4. **Keypoint matching source scope.** Application LightGlue integration,
-   neuriplo-tasks `f867d5a`, and neuriplo `07ebeae`. These cells certify the tested source builds; the current
-   release pins do not include all these changes. FP16 results are not
-   numerically identical to ORT. See [E17](#ev-keypoint-matching).
-5. **EdgeCrafter reconverted artifact and local XNNPACK fix.** LiteRT and
-   KServe HTTP PASS require the reconverted artifact and the unreleased
-   neuriplo XNNPACK subgraph-reshaping fix
-   [`9bde6c0`](https://github.com/olibartfast/neuriplo/commit/9bde6c0fd07ab88b70e1076f5fc667c20be41d7d).
-   The app's released dependency pin does not contain that fix. See
-   [E4](#ev-ecdet).
-6. **GGML classification weights.** The GGML PASS uses ONNX Model Zoo
-   `resnet50-v1-12` (pretrained head) because the GGML loader consumes that
-   topology; the Torch PASS (note 1) uses a torchvision resave with an
-   untrained replacement head. Same task family and ResNet-50 architecture,
-   different weight files; neither result is inferred for the other artifact.
+Some cells use a different member of the row family than the preset
+(RT-DETRv4-s for `rtdetr`, YOLO11m-seg for `yoloseg`, ResNet-50 for
+`torchvisionclassifier`), or include local unreleased fixes; each task
+evidence section records the artifact and scope.
 
 ### Local inference backends
 
@@ -139,23 +107,23 @@ Cells may carry a numbered note, e.g. **P(2)**; see [Notes](#notes).
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | P | P | P | P | P | P | B | [E1](#ev-yolo26) |
 | Object detection (`yolov8`, `yolov8_executorch`) | P | P | DR | B | B | B | P | [E2](#ev-yolov8) |
-| Object detection (`rtdetr`, `rtdetrv4`) | P(1) | P(2) | DR | DR | P | B | B | [E3](#ev-rtdetr) |
+| Object detection (`rtdetr`, `rtdetrv4`) | P | P | DR | DR | P | B | B | [E3](#ev-rtdetr) |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | P | U | U | P | U | [E14](#ev-ov-slurm) |
 | Object detection (`ecdet`, `edgecrafter_det`) | P | U | P | P | B | B | B | [E4](#ev-ecdet) |
 | Object detection (`rfdetr`, `rfdetr-medium`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
-| Instance segmentation (`yoloseg`, `yoloseg`) | P(1) | P | P | P | B | B | B | [E5](#ev-seg) |
+| Instance segmentation (`yoloseg`, `yoloseg`) | P | P | P | P | B | B | B | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | P | U | DR | B | B | B | B | [E5](#ev-seg) |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | P(1) | U | DR | B | P | B | P | [E6](#ev-classification) |
-| Video classification (`videomae`, `videomae`) | P | U | DR | B | B | RUNTIME-PASS(3) | B | [E7](#ev-video) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | P | U | DR | B | P | B | P | [E6](#ev-classification) |
+| Video classification (`videomae`, `videomae`) | P | U | DR | B | B | RUNTIME-PASS | B | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | P | U | DR | B | B | B | B | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | P | P | DR | B | B | B | B | [E8](#ev-pose) |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P | P | P | P | P | B | [E13](#ev-rfdetr) |
 | Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | P | P | P | B | B | P | B | [E9](#ev-depth) |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | P | P(2) | P | B | B | P(3) | B | [E10](#ev-owlv2) |
+| Open-vocabulary detection (`owlv2`, `owlv2`) | P | P | P | B | B | P | B | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A | [E11](#ev-gemma4) |
 | Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U | [E12](#ev-splatting) |
-| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | P(4) | P(4) | U | U | U | [E17](#ev-keypoint-matching) |
+| Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | P | P | U | U | U | [E17](#ev-keypoint-matching) |
 
 ### Additional runtimes and remote execution
 
@@ -184,16 +152,16 @@ sibling-checkout runs, not isolated remote-release gates.
 | Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | P | N/A | U | [E2](#ev-yolov8) |
 | Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | U | N/A | U | [E3](#ev-rtdetr) |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | U | N/A | U | [E14](#ev-ov-slurm) |
-| Object detection (`ecdet`, `edgecrafter_det`) | U | U | P(5) | U | N/A | P(5) | [E4](#ev-ecdet) |
-| Object detection (`rfdetr`, `rfdetr-medium`) | U | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Object detection (`ecdet`, `edgecrafter_det`) | U | U | P | U | N/A | P | [E4](#ev-ecdet) |
+| Object detection (`rfdetr`, `rfdetr-medium`) | U | U | P | P | N/A | P | [E13](#ev-rfdetr) |
 | Instance segmentation (`yoloseg`, `yoloseg`) | U | P | U | U | N/A | P | [E5](#ev-seg) |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | U | N/A | U | [E5](#ev-seg) |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | P(6) | U | U | N/A | U | [E6](#ev-classification) |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | U | P | P | N/A | P | [E13](#ev-rfdetr) |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | P | U | U | N/A | U | [E6](#ev-classification) |
 | Video classification (`videomae`, `videomae`) | U | U | U | U | N/A | U | [E7](#ev-video) |
 | Optical flow (`raft`, `raft`) | U | U | U | U | N/A | U | [E7](#ev-video) |
 | Pose estimation (`vitpose`, `vitpose`) | U | U | P | U | N/A | P | [E8](#ev-pose) |
-| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | U | P | P(2) | N/A | P | [E13](#ev-rfdetr) |
+| Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | U | P | P | N/A | P | [E13](#ev-rfdetr) |
 | Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | U | U | P | U | N/A | P | [E9](#ev-depth) |
 | Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | U | U | N/A | P | [E10](#ev-owlv2) |
 | Image understanding (`gemma4`, `gemma4`) | N/A | U | N/A | N/A | P | U | [E11](#ev-gemma4) |
@@ -243,8 +211,8 @@ stack and is recorded in the external cell-matrix report (REPORT.md +
 checkouts (neuriplo-infer `develop` c7dd16b + neuriplo-tasks `develop`
 ea05454, which carries the RF-DETR synthetic-name mapping fix) and are
 labeled as such. Seg-LiteRT uses tasks `v0.8.5` tag content. Later unreleased
-corrections have explicit numbered-note scope (notes 2 and 5) and do not
-certify the app's released dependency pins.
+corrections are scoped in their evidence sections and do not certify the
+app's released dependency pins.
 
 ### <a id="ev-yolo26"></a>E1 — Object detection (`yolo26`)
 
@@ -319,7 +287,7 @@ certify the app's released dependency pins.
   loaded on the 0.11.5 stack and rendered dog, bicycle and car correctly on
   `data/dog.jpg` at 0.25/0.45. The file records its input datatypes; the
   typed input metadata is required. `rtdetrv4` on Torch is still unrun.
-- **DNN PASS(2) (2026-11-04, local OpenCV 5).** The adapter binds the
+- **DNN PASS (2026-11-04, local OpenCV 5).** The adapter binds the
   real FP32 image and INT64 size inputs by name and preserves integer labels.
   RT-DETR agrees with ORT (labels exact, max score error 1.84e-6, boxes
   within 0.004 pixels). RT-DETRv4 additionally requires the prepared
@@ -423,7 +391,7 @@ certify the app's released dependency pins.
 
 - Preset + emulation green (ORT DRY-RUN). `vivit` / `timesformer` aliases
   ride the same task path; no separate preset.
-- **OVINO RUNTIME-PASS(3) (2026-11-04, Slurm job 35).** `videomae`, `vivit`
+- **OVINO RUNTIME-PASS (2026-11-04, Slurm job 35).** `videomae`, `vivit`
   and `timesformer` completed on real moving clips with 16 / 32 / 8 frames:
   one sample each, positive inference timing (9091 / 24992 / 9736 ms).
   The build has `NEURIPLO_INFER_WITH_VIDEOWRITER=OFF`; removing the optional
@@ -477,12 +445,12 @@ additionally gated as alias.
 
 ### <a id="ev-owlv2"></a>E10 — Open-vocabulary detection (`owlv2`)
 
-- **OVINO PASS(3) (2026-11-04, Slurm job 34).** Prompts
+- **OVINO PASS (2026-11-04, Slurm job 34).** Prompts
   `a dog;a bicycle;a car`, confidence 0.25: `owlv2` rendered bicycle 0.34
   and dog 0.27; `owlvit` rendered bicycle 0.39. Both renders were inspected;
   inference stages were 30058 / 2788 ms. See [E14](#ev-ov-slurm) for the
   derived-image limitation. No other open-vocabulary model was rerun.
-- **DNN PASS(2) (2026-11-04, local OpenCV 5).** Native graph metadata
+- **DNN PASS (2026-11-04, local OpenCV 5).** Native graph metadata
   provides the FP32 image and INT64 token/attention-mask inputs. The original
   OWLv2 ONNX file passes ORT parity and renders bicycle 0.34 / dog 0.27.
   This does not re-gate GroundingDINO or apt OpenCV 4.6. See
@@ -591,7 +559,7 @@ additionally gated as alias.
   (576, `--input_sizes=1,3,576,576`, 6540 ms): skeleton, pose score
   **0.850784** — identical to every other backend (upstream notes keypoint
   is unsupported by `litert-torch`, so the `onnx2tf` file stands).
-- **ExecuTorch PASS(2) (2026-11-04, local rebuilt v1.2.0 SDK).** All
+- **ExecuTorch PASS (2026-11-04, local rebuilt v1.2.0 SDK).** All
   three original native XNNPACK PTE artifacts execute with the existing
   optimized CPU kernels registered. No runtime version or model weights
   changed. Nano detection, medium segmentation and keypoint raw tensors
@@ -655,7 +623,7 @@ source build. Packaging the missing runtime libraries remains open.
 
 ### <a id="ev-blocked-slurm"></a>E15 — Local backend status; Slurm rerun pending workers
 
-The five representative cells have local PASS routes (note 2), covering six
+The five representative cells have local PASS routes, covering six
 model/backend checks. The
 [evidence JSON](evidence/blocked-slurm-2026-11-04.json) records exact binaries,
 libraries, models, SDK source and identical-input numerical comparisons. The backend fix is
@@ -879,7 +847,7 @@ GPU or released-image result is implied.
 
 ### <a id="ev-keypoint-matching"></a>E17 — Keypoint matching application coverage
 
-**ORT CPU: PASS(4). TensorRT FP16: PASS(4).** Both backends execute the
+**ORT CPU: PASS. TensorRT FP16: PASS.** Both backends execute the
 `neuriplo-infer` CLI with task preprocessing, backend inference, task decoding,
 and app rendering of the two original images. The confidence filter is
 strictly **score > 0.2**.
@@ -898,8 +866,8 @@ strictly **score > 0.2**.
   launches the native ARM application over host SSH with the installed CUDA
   and TensorRT libraries. Engine build provenance: job 56, TensorRT 10.16.2,
   FP16, SHA256 `7dfc23f4dd0ead6aba7fd74473073efdeaf36efd174caf459c2480af06b78d41`.
-- **Note 4 — source scope:** application LightGlue integration, neuriplo-tasks `f867d5a`,
-  and neuriplo `07ebeae`.
+- **Source scope:** application LightGlue integration, neuriplo-tasks `f867d5a`,
+  and neuriplo `07ebeae` (the TRT patch rebased onto current history).
   These PASS cells certify the tested source builds; the current release
   pins do not include all these changes. FP16 results are not numerically
   identical to ORT.
@@ -1036,7 +1004,7 @@ are not released dependency pins.
    The DETR Torch run is a manual CLI invocation on `rtdetr.torchscript`, not
    a preset. Add repeatable preset gates using the typed TorchScript exports.
 3. **OPENCV_DNN scope (5.0.0).** Named typed input binding resolves
-   RT-DETR and OWLv2 locally (note 2); v4 needs its compatible export. GroundingDINO
+   RT-DETR and OWLv2 locally; v4 needs its compatible export. GroundingDINO
    has not been re-gated, and EdgeCrafter exact-GELU remains an importer-level
    open issue. Parallel repaired Slurm validation awaits worker availability.
    Still unprobed on 5.x: `ecseg`, torchvision ResNet, `vitpose`,
