@@ -19,15 +19,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install clang-format
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format-18
+        run: pip install clang-format==21.1.8
 
       - name: Check formatting
         run: |
           find app/src app/inc app/test -name '*.cpp' -o -name '*.hpp' | \
-            xargs clang-format-18 --dry-run --Werror
+            xargs clang-format --dry-run --Werror
 
   clang-tidy:
     name: Clang-Tidy
