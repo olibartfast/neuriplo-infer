@@ -91,7 +91,9 @@ Most app tests ran on CPU; TensorRT tests used a GPU. The recorded baseline
 uses neuriplo-infer 0.11.6, neuriplo 0.11.3, and neuriplo-tasks 0.8.5.
 The November 1–2 runs used neuriplo-infer 0.11.7-dev, neuriplo 0.11.3,
 and neuriplo-tasks 0.8.4. OpenCV DNN and ExecuTorch include November 4
-local builds with unreleased fixes. GGML also uses unreleased code.
+local builds with unreleased fixes. GGML also uses unreleased code. Its loader
+accepts `.gguf` weights only, written by the sibling `convert_onnx_to_gguf.py`;
+`scripts/ggml_app_gate.py` defaults to that converter.
 
 Test counts below are from those runs, not fresh results for the current branch.
 
@@ -106,13 +108,17 @@ Test counts below are from those runs, not fresh results for the current branch.
 | LiteRT | 2.19.0 | 192/192 | SDK's bundled gtest/gmock headers removed to avoid test crashes. EdgeCrafter requires an unreleased backend fix. |
 | ExecT | ExecuTorch 1.2.0, optimized SDK | App 191/191; backend 77/77 | XNNPACK enabled. KServe and gRPC compiled, but live transport was not tested in this build. |
 | MGX | MIGraphX 2.12.0.60401-83, ROCm 6.4.1, MI300X | Backend 6/6: 3 CPU + 3 GPU | Synthetic backend tests only; no app build or trained model tested. |
-| GGML | Local CPU, AMD Ryzen 7 5700U; unreleased neuriplo changes | App 197/197; upstream CTest 77/77; backend 20 passed, 1 intentional skip (including 7/7 operation comparisons) | ResNet-50 top-5 matches ORT exactly; YOLOv8n detection and segmentation match within 0.01. No CI build job. |
+| GGML | Local CPU, AMD Ryzen 7 5700U; unreleased neuriplo changes | App 197/197; backend 20 passed, 1 intentional skip (including 7/7 operation comparisons); upstream CTest 77/77 recorded before strict-GGUF loading | ResNet-50 top-5 matches ORT exactly; YOLOv8n detection and segmentation match within 0.01. The November 14 app runs used NGGL artifacts; the November 15 re-gate reran all three on `.gguf` with identical detections (V-16/V-17/V-18). The ONNX-frontend and graph-executor suites (29 + 7 tests) are no longer built, so 77/77 pre-dates their removal. No CI build job. |
 | LLaMA | llama.cpp b9085 | Unit tests unavailable | Unit-test executable fails to link because of missing ggml libraries. |
 | KServe | `neuriplo-kserve-runtime`, `real-onnx` / `grpc-onnx` | Manual HTTP tests passed | gRPC `ModelInfer` returns server error `13 INTERNAL`. |
 
 GGML results used neuriplo branch `feature/ggml-yolo-family` at `9ee2bde`
 plus the November 14 YOLO segmentation and attention-operation changes.
-These fixes are not included in the released dependency pins.
+These fixes are not included in the released dependency pins. The November 14
+app results used NGGL artifacts; the November 15 re-gate reran
+classification, `yolov8`, and `yoloseg` on `.gguf` (strict-GGUF-only loader)
+with identical detections — see `specs/2026-11-13-ggml-matrix-coverage`
+V-16/V-17/V-18.
 
 ## Known limitations
 
@@ -132,9 +138,10 @@ These fixes are not included in the released dependency pins.
   the original image and a fresh source build remain unverified.
 - **OpenCV DNN:** RT-DETRv4 needs a compatible export. EdgeCrafter's exact-GELU
   operation remains an import problem; GroundingDINO has not been retested.
-- **GGML:** YOLO26 conversion is blocked by attention operations in its head.
-  RT-DETR and other transformer models still need graph-import support,
-  including multiple inputs and INT64. Their table entries remain untested.
+- **GGML:** only `.gguf` weights load; the earlier NGGL artifacts and the
+  ONNX-subset frontend were removed. YOLO26's attention head and the transformer
+  models (multiple inputs, INT64) are not supported by the current loader, so
+  their table entries remain untested.
 - **KServe:** HTTP has passing results; gRPC is blocked by a server error.
   Classification, video, optical flow, and image-understanding serving still
   need testing. See [KServe compatibility](KserveCompatibility.md).
@@ -147,7 +154,7 @@ These fixes are not included in the released dependency pins.
 - Test EdgeCrafter segmentation and torchvision ResNet on OpenCV DNN 5.x.
 - Add a Gaussian-splatting example; no preset exists yet.
 - Build and test the app with MIGraphX on supported AMD/ROCm hardware.
-- Test more GGML models once the converter and graph importer support them.
+- Test more GGML models once the GGUF converter and loader support them.
 
 <a id="integration-test-evidence"></a>
 

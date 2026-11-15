@@ -2,6 +2,10 @@
 
 Derived from `requirements.md`. Numbered groups, dependency order, each ending in something observable. Pyramid execution: orchestrator (this session) → two worker subagents (brev live-attempt, docs column) → reviewer pass.
 
+**Historical plan.** Steps below say "→ NGGL" because that was the converter at
+plan time. The backend later became strict-GGUF-only (`.gguf` via
+`convert_onnx_to_gguf.py`); those steps are not current instructions.
+
 ## Group 1 — Foundation (brev + scaffolding)
 
 1. Create cheap brev CPU instance for the attempt:

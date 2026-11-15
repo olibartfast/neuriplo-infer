@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run one GGML app-surface gate and write a JSON evidence record.
 
-The script converts an ONNX artifact to the NGGL file the GGML loader reads,
+The script converts an ONNX artifact to the GGUF file the GGML loader reads,
 runs `neuriplo-infer` with the requested task type, and records the exact
 commands, exit codes, hashes, timings, app log, run report, and rendered
 images. It deliberately does not decide PASS/BLOCKED: numeric comparison and
@@ -19,7 +19,7 @@ section. Run it from the repository root, for example:
         --mask-threshold 0.5
 
 The default app is `build-ggml/app/neuriplo-infer`; the default converter is
-the sibling `neuriplo/scripts/convert_onnx_to_ggml.py` next to this repo.
+the sibling `neuriplo/scripts/convert_onnx_to_gguf.py` next to this repo.
 """
 
 from __future__ import annotations
@@ -67,24 +67,22 @@ def git_head(path: Path) -> str | None:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def build_converter_command(args: argparse.Namespace, nggl: Path) -> list[str]:
+def build_converter_command(args: argparse.Namespace, gguf: Path) -> list[str]:
     return [
         args.python,
         str(args.converter),
         "--input",
         str(args.onnx),
         "--output",
-        str(nggl),
-        "--input-shape",
-        input_shape_without_batch(args.input_sizes),
+        str(gguf),
     ]
 
 
-def build_app_command(args: argparse.Namespace, nggl: Path) -> list[str]:
+def build_app_command(args: argparse.Namespace, gguf: Path) -> list[str]:
     command = [
         str(args.app),
         f"--type={args.model_type}",
-        f"--weights={nggl}",
+        f"--weights={gguf}",
         f"--source={args.source}",
         f"--input_sizes={args.input_sizes}",
         "--no_display=true",
@@ -161,7 +159,7 @@ def run_gate(args: argparse.Namespace) -> int:
         return 2
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    nggl = args.output_dir / f"{args.onnx.stem}.nggl"
+    gguf = args.output_dir / f"{args.onnx.stem}.gguf"
     app_cwd = args.output_dir / "run"
     app_cwd.mkdir(parents=True, exist_ok=True)
 
@@ -175,7 +173,7 @@ def run_gate(args: argparse.Namespace) -> int:
             "bytes": args.onnx.stat().st_size,
             "sha256": sha256_file(args.onnx),
         },
-        "nggl": {"path": str(nggl)},
+        "gguf": {"path": str(gguf)},
         "app": {
             "path": str(args.app),
             "bytes": args.app.stat().st_size,
@@ -192,40 +190,40 @@ def run_gate(args: argparse.Namespace) -> int:
         "status": "failed",
     }
 
-    if args.skip_convert and nggl.is_file():
-        evidence["commands"]["convert"] = {"skipped": True, "output": str(nggl)}
+    if args.skip_convert and gguf.is_file():
+        evidence["commands"]["convert"] = {"skipped": True, "output": str(gguf)}
     else:
         convert = run_command(
-            build_converter_command(args, nggl),
+            build_converter_command(args, gguf),
             cwd=args.output_dir,
             log_path=args.output_dir / "convert.log",
             timeout=args.timeout,
         )
         evidence["commands"]["convert"] = convert
         if convert["exit_code"] != 0:
-            evidence["nggl"] = {"path": str(nggl), "present": nggl.is_file()}
+            evidence["gguf"] = {"path": str(gguf), "present": gguf.is_file()}
             _write_json(args.json_path, evidence)
             print(_summarize(evidence, args.json_path))
             return 1
 
-    if not nggl.is_file():
+    if not gguf.is_file():
         evidence["commands"]["convert"] = {
             "skipped": bool(args.skip_convert),
-            "output": str(nggl),
-            "error": "NGGL output does not exist",
+            "output": str(gguf),
+            "error": "GGUF output does not exist",
         }
         _write_json(args.json_path, evidence)
         print(_summarize(evidence, args.json_path))
         return 1
 
-    evidence["nggl"] = {
-        "path": str(nggl),
-        "bytes": nggl.stat().st_size,
-        "sha256": sha256_file(nggl),
+    evidence["gguf"] = {
+        "path": str(gguf),
+        "bytes": gguf.stat().st_size,
+        "sha256": sha256_file(gguf),
     }
 
     run = run_command(
-        build_app_command(args, nggl),
+        build_app_command(args, gguf),
         cwd=app_cwd,
         log_path=args.output_dir / "app.log",
         timeout=args.timeout,
@@ -279,8 +277,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=Path(__file__).resolve().parent.parent.parent
         / "neuriplo"
         / "scripts"
-        / "convert_onnx_to_ggml.py",
-        help="sibling GGML converter (default: ../neuriplo/scripts/convert_onnx_to_ggml.py)",
+        / "convert_onnx_to_gguf.py",
+        help="sibling GGML converter (default: ../neuriplo/scripts/convert_onnx_to_gguf.py)",
     )
     parser.add_argument(
         "--python",
