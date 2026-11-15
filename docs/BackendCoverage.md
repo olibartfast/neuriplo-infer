@@ -125,25 +125,6 @@ table and Open items record the artifact and scope.
 
 ### Additional runtimes and remote execution
 
-**MGX backend contract tests: PASS, 6/6** — three contract cases (typed int
-inputs, buffer boundaries, integer outputs), each run on CPU and MI300X GPU,
-zero skips. These are backend datatype/buffer tests, not task-model runs; they
-are recorded in the upstream contract suite. The per-task MGX cells below stay `U`:
-no task representative has a recorded app run.
-
-**GGML upstream builder + engine tests: 77/77 PASS, zero skips** — the
-upstream `docker/Dockerfile.ggml` builder image plus `docker/run_ggml_tests.sh`
-engine suite, Slurm-gated. Those are upstream build and
-engine tests. On 2026-11-14 the app surface was gated locally against the
-unreleased sibling loader (`neuriplo` `feature/ggml-yolo-family` @ `9ee2bde`
-plus the unreleased `2026-11-14-ggml-yoloseg` work): classification passes
-with a top-5 that matches ORT exactly, `yolov8` detection passes with
-bicycle 0.89 / dog 0.93 / car 0.61, and `yoloseg` passes with dog 0.87 /
-bicycle 0.80 / car 0.45 plus masks. The remaining GGML task cells stay
-`U` because the loader only implements ResNet-18/50 and the YOLOv8n
-detection/segmentation graphs. These are local
-sibling-checkout runs, not isolated remote-release gates.
-
 | Task (representative) | MGX | GGML | LiteRT | ExecT | LLaMA | KServe |
 | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | U | U | P | U | N/A | P |
