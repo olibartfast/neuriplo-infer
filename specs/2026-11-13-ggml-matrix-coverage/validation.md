@@ -158,14 +158,14 @@ sibling runs, not an isolated remote-fetch release gate.
       `neuriplo/specs/2026-11-14-ggml-attention-ops`,
       `2026-11-15-ggml-graph-executor` and `2026-11-15-ggml-onnx-frontend`
       add `GGMLOps` helpers, a multi-input graph executor and a static-shape
-      ONNX-subset frontend. Sibling `GGMLInferTest` is 38 tests
-      (37 pass, 1 skip), including 10/10 ONNX-frontend tests and 7/7
-      graph-executor tests; full ctest 77/77. No app gate: the available
-      `rtdetrv4.onnx` is opset 18, 1928 nodes, symbolic batch, 2 inputs
-      (FP32 image + INT64 sizes), 3 outputs. A fixed-batch probe now gets
-      past Conv/ConstantOfShape and stops at `Slice`; `ReduceMean`, `Pow`,
-      `Pad`, `TopK`, `GatherElements`, `GridSample`, `Resize` and dynamic
-      shapes still block RT-DETR. No GGML cell promoted.
+      ONNX-subset frontend. Sibling `GGMLInferTest` is 57 tests
+      (56 pass, 1 skip), including 29/29 ONNX-frontend tests and 7/7
+      graph-executor tests; full ctest 77/77. The fixed-batch `rtdetrv4`
+      graph now imports and matches ORT by label and box on all 300
+      detections (max box L1 2.7e-3, max score diff 2.2e-5); 10 positions
+      are near-tie swaps. No app gate yet and no GGML cell promoted; the
+      remaining RT-DETR work is app wiring, sorted TopK order, and dynamic
+      batch.
 
 Artifacts: `/tmp/opencode/ggml-matrix/{resnet50-v1-12.onnx,resnet50.nggl,
 yolov8n.onnx,yolov8n.ggml,yolov8n-seg.onnx,run_app_verbose.log,run_yolo.log}`;

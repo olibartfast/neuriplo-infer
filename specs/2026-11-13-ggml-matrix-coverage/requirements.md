@@ -110,9 +110,9 @@ foundation; per-model graph work continues there, gating happens here.
   foundation, a multi-input/INT64 graph executor, and a static-shape
   ONNX-subset frontend landed in `neuriplo` (`2026-11-14-ggml-attention-ops`,
   `2026-11-15-ggml-graph-executor`, `2026-11-15-ggml-onnx-frontend`).
-  No model gate yet: a fixed-batch `rtdetrv4` probe gets past Conv and stops
-  at `Slice`; `ReduceMean`/`Pow`/`Pad`/`TopK`/`GatherElements`/`GridSample`
-  and dynamic batch remain (V-15).
+  Fixed-input raw parity is green: 300/300 detections match ORT by label and
+  box (max box L1 2.7e-3, max score diff 2.2e-5). The app gate and sorted
+  TopK order remain; dynamic batch stays out of scope (V-15).
 
 ### Phase 2 out of scope
 
