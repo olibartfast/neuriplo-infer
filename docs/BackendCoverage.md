@@ -80,8 +80,7 @@ This matrix gates the app seam: routed, run, rendered, tested.
 ## Gate table
 
 The same tasks appear in both tables. Backends are split into groups to
-keep each table narrow. [Scope and caveats](#scope-and-caveats) explains the
-NERT gates and the marked cells.
+keep each table narrow.
 
 `DNN` = OPENCV_DNN · `ORT` = ONNX_RUNTIME · `TRT` = TENSORRT ·
 `TRC` = LIBTORCH · `OV` = OPENVINO · `TF` = LIBTENSORFLOW.
@@ -146,38 +145,6 @@ table and Open items record the artifact and scope.
 | Image understanding (`gemma4`, `gemma4`) | N/A | U | N/A | N/A | P | U |
 | Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | U | N/A | U |
 | Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | U | U | N/A | U |
-
-### Scope and caveats
-
-The MGX column tracks the app validation gap. Existing upstream CPU and
-AMD GPU contract tests are recorded in the upstream contract suite; they do not promote
-any task cell to PASS, RUNTIME-PASS or BUILDS. No app build or preset gate is
-recorded for this backend. Its ONNX-only input format cannot serve the GGUF
-`gemma4` representative, so that cell is N/A.
-
-The GGML column records three local app-surface PASSes — classification,
-`yolov8` detection, and `yoloseg` — plus the upstream builder and
-engine-test evidence. All runs used the unreleased sibling
-loader (`neuriplo` `feature/ggml-yolo-family` @ `9ee2bde` plus the unreleased
-`2026-11-14-ggml-yoloseg` work), because the pinned `neuriplo v0.11.3` predates it. No CI
-build job and no preset gate are claimed. The loader implements ResNet-18/50
-and the YOLOv8n detection/segmentation graphs only; every other GGML task cell
-stays `U` until sibling graph work lands. `gemma4` stays `U`: GGML serves no
-VLM, and the VLM evidence belongs to the `LLaMA` column.
-
-The `TRC` column covers TorchScript. AOTInductor is a second runtime inside
-the same LibTorch backend, selected when the model path ends in `.pt2`. It is
-not covered by these cells yet — except RF-DETR, whose TRC PASS rests on
-AOTInductor because TorchScript tracing is broken for that architecture; do
-not read any other TRC cell as AOTInductor evidence.
-
-**NERT scope:** `PASS` records the upstream full-model reference gate
-on CPU, CUDA and OpenCL from the
-[NERT coverage matrix](https://github.com/olibartfast/nert/blob/main/specs/2026-10-17-task-models/coverage.md)
-(2026-10-24). It does not assert an app CLI/render gate or validate the app's
-released dependency pins. Neuriplo exposes CPU and opt-in CUDA; OpenCL and HIP
-are engine capabilities without consumer selection. Full-catalog AMD/HIP
-validation remains incomplete.
 
 ## Environments
 
