@@ -49,7 +49,7 @@ class GgmlAppGateTest(unittest.TestCase):
             app = root / "app"
             converter = root / "convert.py"
             args = make_args(root, app, converter)
-            command = build_app_command(args, root / "model.nggl")
+            command = build_app_command(args, root / "model.gguf")
             self.assertIn("--type=yoloseg", command)
             self.assertIn("--input_sizes=1,3,640,640", command)
             self.assertIn("--min_confidence=0.4", command)
@@ -67,7 +67,7 @@ class GgmlAppGateTest(unittest.TestCase):
                 "import sys\n"
                 "from pathlib import Path\n"
                 "out = Path(sys.argv[sys.argv.index('--output') + 1])\n"
-                "out.write_bytes(b'NGGL')\n",
+                "out.write_bytes(b'GGUF')\n",
                 encoding="utf-8",
             )
             app = root / "app.sh"
@@ -86,7 +86,7 @@ class GgmlAppGateTest(unittest.TestCase):
             self.assertEqual(evidence["commands"]["run"]["exit_code"], 0)
             self.assertEqual(len(evidence["renders"]), 1)
             self.assertEqual(evidence["run_report"]["status"], "success")
-            self.assertEqual(evidence["nggl"]["bytes"], 4)
+            self.assertEqual(evidence["gguf"]["bytes"], 4)
 
     def test_app_failure_is_recorded(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -96,7 +96,7 @@ class GgmlAppGateTest(unittest.TestCase):
             converter = root / "convert.py"
             converter.write_text(
                 "import sys\nfrom pathlib import Path\n"
-                "Path(sys.argv[sys.argv.index('--output') + 1]).write_bytes(b'NGGL')\n",
+                "Path(sys.argv[sys.argv.index('--output') + 1]).write_bytes(b'GGUF')\n",
                 encoding="utf-8",
             )
             app = root / "app.sh"
@@ -129,14 +129,14 @@ class GgmlAppGateTest(unittest.TestCase):
             self.assertEqual(evidence["commands"]["convert"]["exit_code"], 3)
             self.assertNotIn("run", evidence["commands"])
 
-    def test_skip_convert_uses_existing_nggl(self):
+    def test_skip_convert_uses_existing_gguf(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "model.onnx").write_bytes(b"onnx")
             (root / "source.jpg").write_bytes(b"jpg")
             out = root / "out"
             out.mkdir()
-            (out / "model.nggl").write_bytes(b"NGGL")
+            (out / "model.gguf").write_bytes(b"GGUF")
             app = root / "app.sh"
             write_executable(
                 app,

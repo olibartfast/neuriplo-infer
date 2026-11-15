@@ -95,19 +95,25 @@ Run from `feature/ggml-matrix-coverage` with the unreleased sibling
 2026-11-13 brev attempt for the covered representatives; they are local
 sibling runs, not an isolated remote-fetch release gate.
 
+**NGGL-era status.** V-7, V-8, and V-14 below were recorded against NGGL
+artifacts, before the backend became strict-GGUF-only (`.gguf` via
+`convert_onnx_to_gguf.py`; the ONNX-subset frontend and graph executor were
+later removed). Their numbers describe that build. The GGUF re-gate
+(V-16/V-17/V-18 below) supersedes them on the current backend.
+
 - [x] V-6 build: `cmake --build build-ggml` (cache:
       `DEFAULT_BACKEND=GGML`, `GGML_DIR=/home/oli/dependencies/ggml`,
       `neuriplo_SOURCE_DIR=/home/oli/repos/neuriplo`) — app re-linked against
       the loader branch; `GGML model loaded: full ResNet50 ...` and
       `full YOLOv8n ... real weights` in the run logs.
-- [x] V-7 classification app gate: ONNX Model Zoo `resnet50-v1-12.onnx` →
+- [x] V-7 classification app gate (NGGL-era, pre-GGUF): ONNX Model Zoo `resnet50-v1-12.onnx` →
       NGGL 299 tensors / 102,532,870 bytes →
       `neuriplo-infer --type=torchvisionclassifier --weights=resnet50.nggl
       --source=data/dog.jpg --input_sizes=1,3,224,224` — exit 0, 206 ms,
       top-5 `249 0.793273`, `248 0.11378`, `250 0.036304`, `537 0.024229`,
       `261 0.011177`; ORT 1.32.0 on the same preprocessed input gives the
       same indices and probabilities. Render inspected.
-- [x] V-8 YOLOv8n detection app gate: ultralytics 8.4.213
+- [x] V-8 YOLOv8n detection app gate (NGGL-era, pre-GGUF): ultralytics 8.4.213
       `yolov8n.onnx` (opset 12, static 640) → NGGL 132 tensors / 12,782,274
       bytes → `neuriplo-infer --type=yolov8 --weights=yolov8n.nggl
       --source=data/dog.jpg --input_sizes=1,3,640,640
@@ -141,7 +147,7 @@ sibling runs, not an isolated remote-fetch release gate.
       `run_report.json`, renders) without deciding PASS/BLOCKED.
       `scripts/test_ggml_app_gate.py` covers command construction, success,
       and failure; the test is wired into `.github/workflows/ci.yml`.
-- [x] V-14 `yoloseg` app gate: `yolov8n-seg.onnx` (ultralytics 8.4.213,
+- [x] V-14 `yoloseg` app gate (NGGL-era, pre-GGUF): `yolov8n-seg.onnx` (ultralytics 8.4.213,
       opset 12, static 640) → NGGL 158 tensors / 13,793,302 bytes →
       `scripts/ggml_app_gate.py --model-type yoloseg ... --mask-threshold
       0.5` — exit 0, ~0.7 s (657–730 ms across runs), dog 0.87
@@ -165,13 +171,50 @@ sibling runs, not an isolated remote-fetch release gate.
       detections (max box L1 2.7e-3, max score diff 2.2e-5); 10 positions
       are near-tie swaps. No app gate yet and no GGML cell promoted; the
       remaining RT-DETR work is app wiring, sorted TopK order, and dynamic
-      batch.
+      batch. Historical: the ONNX-subset frontend and graph-executor suites
+      were later removed under strict-GGUF loading, so the 29/29 and 7/7
+      counts above describe that build, not the current backend.
 
-Artifacts: `/tmp/opencode/ggml-matrix/{resnet50-v1-12.onnx,resnet50.nggl,
+Artifacts (NGGL-era, pre-GGUF): `/tmp/opencode/ggml-matrix/{resnet50-v1-12.onnx,resnet50.nggl,
 yolov8n.onnx,yolov8n.ggml,yolov8n-seg.onnx,run_app_verbose.log,run_yolo.log}`;
 sibling backend artifact `/tmp/yolov8n-seg.ggml`; gate evidence under
 `/tmp/opencode/ggml-matrix/gate-{classification,yolov8,yoloseg}/evidence.json`;
-renders under the respective `run/data/output/` directories.
+renders under the respective `run/data/output/` directories. `.gguf`
+counterparts exist from sibling runs (`/tmp/{resnet18,resnet50,yolov8n,yolov8n-seg}.gguf`).
+
+## Phase 2b — GGUF re-gate (2026-11-15, strict-GGUF-only backend)
+
+Rerun from `feature/ggml-matrix-coverage` with sibling `neuriplo`
+`feature/ggml-yolo-family` (strict-GGUF-only loader: only `.gguf` loads;
+`.onnx`/`.ggml`/`.nggl` rejected) and `GGML_DIR=/home/oli/dependencies/ggml`
+(v1.0.0). App rebuilt (`cmake --build build-ggml`). Each gate converts
+ONNX→GGUF with `scripts/ggml_app_gate.py` (default
+`convert_onnx_to_gguf.py`), then runs `neuriplo-infer`. Evidence under
+`/tmp/opencode/ggml-matrix-gguf/gate-{classification,yolov8,yoloseg}/evidence.json`.
+
+- [x] V-16 classification GGUF re-gate: `resnet50-v1-12.onnx` → GGUF 299
+      tensors / 102,556,256 bytes → `--type=torchvisionclassifier
+      --weights=resnet50-v1-12.gguf --source=data/dog.jpg
+      --input_sizes=1,3,224,224` — convert exit 0 (583 ms), run exit 0
+      (773 ms; inference 177.6 ms, model_load 313.7 ms), render
+      `processed_torchvisionclassifier_local.png`, `run_report.json`
+      status success.
+- [x] V-17 YOLOv8n detection GGUF re-gate: `yolov8n.onnx` → GGUF 132
+      tensors / 12,791,904 bytes → `--type=yolov8 ... --labels=labels/coco.names
+      --min_confidence=0.4 --nms_threshold=0.5` — convert exit 0 (247 ms),
+      run exit 0 (644 ms; inference 383.7 ms), render inspected:
+      bicycle 0.89 / dog 0.93 / car 0.61, identical to the NGGL-era V-8
+      detections.
+- [x] V-18 YOLOv8n-seg GGUF re-gate: `yolov8n-seg.onnx` → GGUF 158
+      tensors / 13,804,864 bytes → `--type=yoloseg ... --mask-threshold 0.5`
+      — convert exit 0 (243 ms), run exit 0 (843 ms; inference 505.1 ms),
+      `GGML model loaded: full YOLOv8n-seg ... real weights`, render
+      inspected: dog 0.87 / bicycle 0.80 / car 0.45 plus masks, identical
+      to the NGGL-era V-14 detections.
+- [x] V-19 matrix/docs: GGML `torchvisionclassifier`, `yolov8`, `yoloseg`
+      cells stay `P` — now on GGUF evidence. Every other GGML cell stays `U`
+      (`yolo26` BLOCKED at the converter; transformer rows need sibling
+      loader work).
 
 ## Review (2026-11-14)
 
