@@ -154,18 +154,18 @@ sibling runs, not an isolated remote-fetch release gate.
       `neuriplo/specs/2026-11-14-ggml-yoloseg/validation.md`.
       App-gate evidence: `/tmp/opencode/ggml-matrix/gate-yoloseg/evidence.json`;
       render: `/tmp/opencode/ggml-matrix/gate-yoloseg/run/data/output/processed_yoloseg_local.png`.
-- [x] V-15 transformer/RT-DETR foundation: sibling packet
-      `neuriplo/specs/2026-11-14-ggml-attention-ops` adds `GGMLOps` helpers
-      and 7/7 op-level/tiny-block parity tests; sibling `GGMLInferTest` is
-      26 tests (25 pass, 1 skip), including 5/5 graph-executor tests, and full
-      ctest 77/77. No app gate: the
-      available `rtdetrv4.onnx` is opset 18, 1928 nodes, 2 inputs
-      (FP32 image + INT64 sizes), 3 outputs, with `GridSample`/`TopK`/
-      `GatherElements`/dynamic shapes. `GGMLInfer` is still a
-      single-FP32-input hand-written topology loader; the new multi-input
-      graph executor is the substrate, but the ONNX frontend and
-      `GridSample`/`TopK`/dynamic-shape ops still block RT-DETR. No GGML cell
-      promoted.
+- [x] V-15 transformer/RT-DETR foundation: sibling packets
+      `neuriplo/specs/2026-11-14-ggml-attention-ops`,
+      `2026-11-15-ggml-graph-executor` and `2026-11-15-ggml-onnx-frontend`
+      add `GGMLOps` helpers, a multi-input graph executor and a static-shape
+      ONNX-subset frontend. Sibling `GGMLInferTest` is 38 tests
+      (37 pass, 1 skip), including 10/10 ONNX-frontend tests and 7/7
+      graph-executor tests; full ctest 77/77. No app gate: the available
+      `rtdetrv4.onnx` is opset 18, 1928 nodes, symbolic batch, 2 inputs
+      (FP32 image + INT64 sizes), 3 outputs. A fixed-batch probe now gets
+      past Conv/ConstantOfShape and stops at `Slice`; `ReduceMean`, `Pow`,
+      `Pad`, `TopK`, `GatherElements`, `GridSample`, `Resize` and dynamic
+      shapes still block RT-DETR. No GGML cell promoted.
 
 Artifacts: `/tmp/opencode/ggml-matrix/{resnet50-v1-12.onnx,resnet50.nggl,
 yolov8n.onnx,yolov8n.ggml,yolov8n-seg.onnx,run_app_verbose.log,run_yolo.log}`;
