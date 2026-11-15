@@ -107,10 +107,10 @@ foundation; per-model graph work continues there, gating happens here.
   `2026-11-14-ggml-yoloseg` packet. `yolo26` is BLOCKED at the converter
   because its `model.23` head uses attention ops (E1/V-12).
 - [ ] Rank 3 — transformer representatives: op-level attention/executor
-  foundation landed in `neuriplo` (`2026-11-14-ggml-attention-ops`:
-  LayerNorm, GELU, MatMul/Linear, attention, Gather, TopK; 7/7 op tests).
-  No model gate yet: `rtdetr` is blocked before load on multi-input/INT64
-  plus a generic graph importer (E3/V-15).
+  foundation and a multi-input/INT64 graph executor landed in `neuriplo`
+  (`2026-11-14-ggml-attention-ops`, `2026-11-15-ggml-graph-executor`).
+  No model gate yet: `rtdetr` is blocked before load on the ONNX frontend
+  and `GridSample`/`TopK`/dynamic-shape ops (V-15).
 
 ### Phase 2 out of scope
 

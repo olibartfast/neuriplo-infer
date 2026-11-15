@@ -157,13 +157,15 @@ sibling runs, not an isolated remote-fetch release gate.
 - [x] V-15 transformer/RT-DETR foundation: sibling packet
       `neuriplo/specs/2026-11-14-ggml-attention-ops` adds `GGMLOps` helpers
       and 7/7 op-level/tiny-block parity tests; sibling `GGMLInferTest` is
-      21 tests (20 pass, 1 skip) and full ctest 77/77. No app gate: the
+      26 tests (25 pass, 1 skip), including 5/5 graph-executor tests, and full
+      ctest 77/77. No app gate: the
       available `rtdetrv4.onnx` is opset 18, 1928 nodes, 2 inputs
       (FP32 image + INT64 sizes), 3 outputs, with `GridSample`/`TopK`/
       `GatherElements`/dynamic shapes. `GGMLInfer` is still a
-      single-FP32-input hand-written topology loader, so RT-DETR is BLOCKED
-      before load (E3) until multi-input/INT64 and a generic graph importer
-      land. No GGML cell promoted.
+      single-FP32-input hand-written topology loader; the new multi-input
+      graph executor is the substrate, but the ONNX frontend and
+      `GridSample`/`TopK`/dynamic-shape ops still block RT-DETR. No GGML cell
+      promoted.
 
 Artifacts: `/tmp/opencode/ggml-matrix/{resnet50-v1-12.onnx,resnet50.nggl,
 yolov8n.onnx,yolov8n.ggml,yolov8n-seg.onnx,run_app_verbose.log,run_yolo.log}`;
