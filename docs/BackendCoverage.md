@@ -1,7 +1,7 @@
 # Backend coverage
 
 Tested model and backend combinations in `neuriplo-infer`.
-**Results last updated: 2026-11-14.** Some results use local, unreleased
+**Results last updated: 2026-11-15.** Some results use local, unreleased
 fixes; see [tested environments](#environments) and [known limitations](#known-limitations).
 
 Each binary uses the local backend selected at build time (`DEFAULT_BACKEND`).
@@ -108,13 +108,16 @@ Test counts below are from those runs, not fresh results for the current branch.
 | LiteRT | 2.19.0 | 192/192 | SDK's bundled gtest/gmock headers removed to avoid test crashes. EdgeCrafter requires an unreleased backend fix. |
 | ExecT | ExecuTorch 1.2.0, optimized SDK | App 191/191; backend 77/77 | XNNPACK enabled. KServe and gRPC compiled, but live transport was not tested in this build. |
 | MGX | MIGraphX 2.12.0.60401-83, ROCm 6.4.1, MI300X | Backend 6/6: 3 CPU + 3 GPU | Synthetic backend tests only; no app build or trained model tested. |
-| GGML | Local CPU, AMD Ryzen 7 5700U; unreleased neuriplo changes | App 197/197; backend 20 passed, 1 intentional skip (including 7/7 operation comparisons); upstream CTest 77/77 recorded before strict-GGUF loading | ResNet-50 top-5 matches ORT exactly; YOLOv8n detection and segmentation match within 0.01. The November 14 app runs used NGGL artifacts; the November 15 re-gate reran all three on `.gguf` with identical detections (V-16/V-17/V-18). The ONNX-frontend and graph-executor suites (29 + 7 tests) are no longer built, so 77/77 pre-dates their removal. No CI build job. |
+| GGML | Local CPU, AMD Ryzen 7 5700U; unreleased neuriplo changes | App 197/197; backend GGMLInferTest 24 passed / 5 skipped / 3 pre-existing failures (ParityVsYolo/YoloSeg/Ort50, reproduced on unmodified HEAD) and GGMLOpsParity 10/10 (including Gguf* parser/loader fixtures); the 77/77 upstream CTest predates strict-GGUF loading (ONNX-frontend and graph-executor suites removed) | ResNet-50 top-5 matches ORT exactly; YOLOv8n detection and segmentation match within 0.01. The November 14 app runs used NGGL artifacts; the November 15 re-gate reran all three on `.gguf` with identical detections (V-16/V-17/V-18). No CI build job. |
 | LLaMA | llama.cpp b9085 | Unit tests unavailable | Unit-test executable fails to link because of missing ggml libraries. |
 | KServe | `neuriplo-kserve-runtime`, `real-onnx` / `grpc-onnx` | Manual HTTP tests passed | gRPC `ModelInfer` returns server error `13 INTERNAL`. |
 
-GGML results used neuriplo branch `feature/ggml-yolo-family` at `9ee2bde`
-plus the November 14 YOLO segmentation and attention-operation changes.
-These fixes are not included in the released dependency pins. The November 14
+GGML results used unreleased neuriplo code: strict-GGUF-only loading is
+committed, and sibling branch `feature/ggml-rfdetr` at `0aee3ea` adds parser
+hardening, native TopK/GridSample/softmax-rows helpers, the converter RF-DETR
+head rule, and the RF-DETR backbone+projector loader slice (S-1
+intermediate, no new table cell). These fixes are not included in the
+released dependency pins. The November 14
 app results used NGGL artifacts; the November 15 re-gate reran
 classification, `yolov8`, and `yoloseg` on `.gguf` (strict-GGUF-only loader)
 with identical detections — see `specs/2026-11-13-ggml-matrix-coverage`
@@ -139,9 +142,11 @@ V-16/V-17/V-18.
 - **OpenCV DNN:** RT-DETRv4 needs a compatible export. EdgeCrafter's exact-GELU
   operation remains an import problem; GroundingDINO has not been retested.
 - **GGML:** only `.gguf` weights load; the earlier NGGL artifacts and the
-  ONNX-subset frontend were removed. YOLO26's attention head and the transformer
-  models (multiple inputs, INT64) are not supported by the current loader, so
-  their table entries remain untested.
+  ONNX-subset frontend were removed. YOLO26's attention head is still
+  unsupported at the converter, and transformer detection has no complete
+  loader graph yet (native GridSample, TopK with int64 indices, and
+  softmax-rows helpers plus an RF-DETR backbone intermediate are in
+  unreleased sibling code), so their table entries remain untested.
 - **KServe:** HTTP has passing results; gRPC is blocked by a server error.
   Classification, video, optical flow, and image-understanding serving still
   need testing. See [KServe compatibility](KserveCompatibility.md).
