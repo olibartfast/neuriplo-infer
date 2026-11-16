@@ -215,6 +215,87 @@ ONNX→GGUF with `scripts/ggml_app_gate.py` (default
       cells stay `P` — now on GGUF evidence. Every other GGML cell stays `U`
       (`yolo26` BLOCKED at the converter; transformer rows need sibling
       loader work).
+- [x] V-20 regression re-gate (2026-11-16): same three gates rerun against
+      the current stack (app `feature/ggml-matrix-coverage` @ `5905b8b`,
+      sibling `feature/ggml-rfdetr` @ `0aee3ea` plus uncommitted RF-DETR
+      backbone/encoder/decoder work) to prove the loader additions did not
+      regress the shipped paths. Byte-identical GGUFs to V-16/17/18
+      (converter unchanged for these models): all three `status=ok`,
+      exit 0, renders inspected — `yolov8` bicycle 0.89 / dog 0.93 /
+      car 0.61, `yoloseg` dog 0.87 / bicycle 0.80 / car 0.45 + masks,
+      identical to V-17/V-18. Evidence under
+      `/home/oli/opencode-gates/ggml-matrix-regate/gate-{classification,yolov8,yoloseg}/`
+      (`/tmp` quota exhausted, evidence moved to persistent disk).
+
+## Phase 2c — RF-DETR detection gate (2026-11-16, full loader graph)
+
+Run from `feature/ggml-matrix-coverage` with sibling `neuriplo`
+`feature/ggml-rfdetr` (full 3-layer deformable decoder + head in
+`GGMLInfer.cpp`; app-facing outputs lead with `dets`/`labels` so the
+stock `RfDetrPostprocessor` applies) and `GGML_DIR=/home/oli/dependencies/ggml`.
+App rebuilt (`cmake --build build-ggml`).
+
+- [x] V-21 RF-DETR app gate: `rfdetr.onnx` (op18 inventory, 114,871,649
+      bytes) → GGUF 352 tensors / 107,591,104 bytes →
+      `neuriplo-infer --type=rfdetr --weights=rfdetr.gguf
+      --source=data/dog.jpg --input_sizes=1,3,560,560
+      --labels=labels/coco.names --min_confidence=0.4 --nms-threshold 0.5`
+      — convert exit 0 (676 ms), run exit 0 (2285 ms; inference 1515.4 ms,
+      model_load 359.8 ms), `run_report.json` status success, render
+      `processed_rfdetr_local.png` inspected: bicycle 0.94 / horse 0.92 /
+      car 0.89 / motorbike 0.60. ORT reference on the identical
+      app preprocessing (resize 768x576→560x560, /255, ImageNet norm, NCHW)
+      gives bicycle 0.945 / horse 0.928 / car 0.884 / motorbike 0.610 —
+      identical detections (the "horse" label is the model's own prediction,
+      also in ORT; the `coco.names` index follows the task's -1 convention).
+      Evidence: `/tmp/opencode/ggml-matrix-gguf/gate-rfdetr/evidence.json`
+      + persistent copy under
+      `/home/oli/opencode-gates/ggml-matrix-regate/gate-rfdetr/`
+      (evidence.json, app.log, render, run_report.json).
+- [x] V-22 matrix/docs: GGML `rfdetr` detection cell `U` → `P`;
+      `docs/BackendCoverage.md` Environments/Known-limitations notes updated.
+      Every other GGML cell unchanged (`yolo26` BLOCKED at the converter;
+      transformer rows beyond RF-DETR and `rfdetrseg` need sibling work).
+
+## Phase 2d — RF-DETR-seg gate (2026-11-16, full loader graph)
+
+Run from `feature/ggml-matrix-coverage` with sibling `neuriplo`
+`feature/ggml-rfdetr` (seg dispatch on `segmentation_head.bias`, 432px
+geometry, 12-block backbone with global attention at 3/6/9, 200 queries,
+4-layer decoder, mask branch with native bilinear Resize + exact
+depthwise-conv3x3; app-facing outputs lead with `dets`/`masks`/`labels`
+so the stock `RfDetrSegmentationPostprocessor` applies) and
+`GGML_DIR=/home/oli/dependencies/ggml`. App rebuilt
+(`cmake --build build-ggml`).
+
+- [x] V-23 RF-DETR-seg app gate: `rfdetr_seg.onnx` (op18 inventory,
+      132,354,643 bytes) → GGUF 436 tensors / 123,514,688 bytes →
+      `neuriplo-infer --type=rfdetrseg --weights=rfdetr_seg.gguf
+      --source=data/dog.jpg --input_sizes=1,3,432,432
+      --labels=labels/coco.names --min_confidence=0.4 --nms-threshold 0.5
+      --mask-threshold 0.5`
+      — convert exit 0 (645 ms), run exit 0 (2926 ms; inference 1905.5 ms,
+      model_load 411.2 ms, postprocess 45.4 ms), `run_report.json`
+      status success, render `processed_rfdetrseg_local.png` inspected:
+      bicycle 0.94 / horse 0.82 / car 0.61 / motorbike 0.59, each with a
+      tight instance mask (dog, bike, car, mirror-bike all segmented).
+      ORT reference on the identical app preprocessing (letterbox
+      768x576→432x432, /255, ImageNet norm, NCHW) gives bicycle 0.938 /
+      car 0.880 / horse 0.826 / motorbike 0.320 — same instances (render
+      scores are post-NMS selections; raw top-1 slots agree GGML↔ORT to
+      0.936/0.938, 0.868/0.880, 0.819/0.826, 0.320/0.320). Raw parity on
+      the dog input with ORT's TopK order pinned: dets max `3.14e-02`,
+      labels top-1 198/200, masks max 2.68 / mean 0.04, and mask IoU
+      **1.0 on every kept instance** (bicycle, car, horse, motorbike,
+      bench, truck). Evidence:
+      `/tmp/opencode/ggml-matrix-gguf/gate-rfdetrseg/evidence.json` +
+      persistent copy under
+      `/home/oli/opencode-gates/ggml-matrix-regate/gate-rfdetrseg/`
+      (evidence.json, app.log, render, run_report.json).
+- [x] V-24 matrix/docs: GGML `rfdetrseg` cell `U` → `P`;
+      `docs/BackendCoverage.md` Environments/Known-limitations notes updated.
+      Every other GGML cell unchanged (`yolo26` BLOCKED at the converter;
+      pose and other transformer rows need sibling work).
 
 ## Review (2026-11-14)
 
