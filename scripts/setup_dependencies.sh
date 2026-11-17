@@ -495,10 +495,11 @@ setup_litert() {
 
 # Function to check system dependencies
 check_system_dependencies() {
+    local backend="${1:-nert}"
     print_status "Checking system dependencies..."
-    
+
     local missing_deps=()
-    
+
     # Check for required commands
     local required_commands=("cmake" "curl" "tar" "unzip")
     for cmd in "${required_commands[@]}"; do
@@ -506,12 +507,20 @@ check_system_dependencies() {
             missing_deps+=("$cmd")
         fi
     done
-    
+
     # Check for required packages (Linux)
     if [[ "$(detect_os)" == "linux" ]]; then
-        if ! dpkg -l | grep -q "libopencv-dev"; then
-            missing_deps+=("libopencv-dev")
-        fi
+        # OpenCV headers are a system dependency only of the OpenCV-backed
+        # setups. Every other backend configures, builds, and runs with no
+        # OpenCV present (the app links OpenCV solely through neuriplo's
+        # OPENCV_DNN backend).
+        case "$backend" in
+            opencv_dnn|opencv|all)
+                if ! dpkg -l | grep -q "libopencv-dev"; then
+                    missing_deps+=("libopencv-dev")
+                fi
+                ;;
+        esac
         if ! dpkg -l | grep -q "libgoogle-glog-dev"; then
             missing_deps+=("libgoogle-glog-dev")
         fi
@@ -604,7 +613,7 @@ main() {
     fi
     
     # Check system dependencies first
-    if ! check_system_dependencies; then
+    if ! check_system_dependencies "$backend"; then
         exit 1
     fi
     
