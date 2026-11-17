@@ -991,8 +991,13 @@ std::string taskTypeName(neuriplo_tasks::TaskType task_type) {
     return "ImageUnderstanding";
   case neuriplo_tasks::TaskType::KeypointMatching:
     return "KeypointMatching";
+// Version-adaptive like PredictionRecorder: re-add unconditionally after the
+// tasks pin carries Monocular3DDetection.
+#if __has_include(                                                             \
+    "neuriplo/tasks/monocular_3d_detection/monocular_3d_detection_types.hpp")
   case neuriplo_tasks::TaskType::Monocular3DDetection:
     return "Monocular3DDetection";
+#endif
 #ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
   case neuriplo_tasks::TaskType::GazeEstimation:
     return "GazeEstimation";

@@ -6,14 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
-
-- Route new neuriplo-tasks families in `getTaskTypeForModel`: FlexGlue to
-  keypoint matching, `pevideo`/`vjepa`/`videoprism` to video classification,
-  gaze aliases to gaze estimation, and `urbanomni`/`monocular3d`/`mono3d` to
-  monocular 3D detection. Record Monocular3DDetection results and render its
-  2D box with the detection policy.
-
 ### Changed
 
 - Remove the application's OpenCV dependency: the app configures, builds, and

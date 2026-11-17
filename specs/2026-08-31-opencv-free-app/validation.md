@@ -116,6 +116,11 @@ secondary to that one.
     all 8 Dockerfiles with no dedicated `OPENCV_DNN` image added (maintainer
     decision; OPENCV_DNN stays native CI/dev). Image builds, `dpkg -l`
     checks, and size deltas deferred to CI — no docker build run in-session.
+  - 2026-11-17: new-task wiring (flexglue/pevideo/vjepa/videoprism/gaze/
+    monocular3d routing, Monocular3D record/render, regenerated model-type
+    docs) split out of this branch: it needs post-v0.8.5 neuriplo-tasks APIs
+    absent from the pinned v0.8.5, so it moves to a follow-up branch after
+    the tasks release + pin bump. This branch stays on the v0.8.5 contract.
   - 2026-11-17: zero-frame clip probe skipped (`GTEST_SKIP`) — videocapture's
     FFmpeg reader aborts (swscale assert) while probing empty containers.
 - [ ] `CHANGELOG.md` describes the user-visible change — including the display

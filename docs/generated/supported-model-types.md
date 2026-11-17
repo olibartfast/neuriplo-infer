@@ -51,9 +51,6 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"videomae"` - VideoMAE
 - `"vivit"` - ViViT
 - `"timesformer"` - TimeSformer
-- `"pevideo"` - PE Video (any string starting with `pevideo`; classification needs a fixed-vocabulary export, see the export guide)
-- `"vjepa"` - V-JEPA 2 (any string starting with `vjepa`, e.g. `vjepa2-vitl-fpc16-256-ssv2`)
-- `"videoprism"` - VideoPrism (any string starting with `videoprism`)
 
 **Optical Flow:**
 - `"raft"` - RAFT optical flow
@@ -62,21 +59,16 @@ Any model type starting with `resnet` (e.g. `resnet50`) or containing `tensorflo
 - `"superglue"` - SuperGlue-style end-to-end matching pipelines (any string starting with `superglue`)
 - `"lightglue"` - LightGlue matching pipelines, including the LightGlue-ONNX exports (any string starting with `lightglue`)
 - `"matchanything"` - MatchAnything detector-free matchers (EfficientLoFTR / RoMa backbones; any string starting with `matchanything`)
-- `"flexglue"` - FlexGlue sparse matcher (descriptor + matcher; any string starting with `flexglue`)
 
 One image pair per call — `getRequiredFrames()` returns 2. Results are `KeypointMatching` entries containing source/target keypoints and matched index pairs.
 
 `"superglue"` covers end-to-end `SuperGlueForKeypointMatching` exports (transformers/Optimum, e.g. `magic-leap-community/superglue_outdoor`). Those take the pair as **one** rank-5 input `pixel_values [1, 2, 3, 480, 640]` — grayscale replicated across three channels in `[0, 1]` — so `preprocess()` returns **one** packed buffer, source image first, and every buffer maps 1:1 onto a model input. Keypoints come back normalized (`x / width`, `y / height`) and are rescaled to each original image; matches at or below `TaskConfig::confidence_threshold` (default 0.25) are dropped, as are masked-out padding keypoints. The export carries no SuperPoint detector score, so `Keypoint::confidence` is 0 — use `KeypointMatch::score` for match quality.
 
-`"lightglue"` covers end-to-end LightGlue pipelines (extractor and matcher in one graph, e.g. `thomasonzhou/superpoint-lightglue`). Their single input is the pair interleaved on the batch axis, `images [2, C, H, W]`, so `preprocess()` again returns one packed buffer, source first, with the channel count taken from the model input (1 for the SuperPoint pipeline, 3 for ALIKED/DISK variants). Keypoints come back as input-space pixels (int64) and are rescaled to each original image; `matches [M, 3]` rows are `[pair_index, source_index, target_index]`, and rows for other pairs plus scores at or below `TaskConfig::confidence_threshold` are dropped. The decoder needs the model input size (from `ModelInfo`) to rescale correctly.
-
-`"flexglue"` covers the FlexGlue sparse matcher (`flexglue_descriptor.onnx` + `flexglue_matcher.onnx`, v0.1 release). Unlike the end-to-end families this is two models: `preprocess()` returns **two** buffers (source first), one RGB `[0, 1]` descriptor input per image, and the matcher additionally needs externally detected keypoints (any detector, corner convention: top-left pixel center at 0.5, 0.5). Forward those keypoints as `[1, N, 2]` float tensors (source, target) alongside the matcher outputs `matches0 [1, N0]` (int64, index into kpts1 or -1) and `mscores0 [1, N0]`; keypoints already live in original-image pixels so nothing is rescaled, and matches at or below `TaskConfig::confidence_threshold` are dropped. Gating on `min_covisibility` happens inside the matcher graph. The export carries no detector score, so `Keypoint::confidence` is 0 — use `KeypointMatch::score` for match quality.
-
-**MatchAnything decoding is not implemented yet**: its postprocessor throws `std::logic_error` until its output layout has been verified against a real ONNX export. Matcher-only exports (keypoints and descriptors in — the original SuperGlue matcher) do not fit the image-in task contract and are not supported.
+**LightGlue and MatchAnything decoding is not implemented yet**: their postprocessors throw `std::logic_error` until each family's output layout has been verified against a real ONNX export. Matcher-only exports (keypoints and descriptors in — the original SuperGlue matcher) do not fit the image-in task contract and are not supported.
 
 For export and verification details, see [export/keypoint_matching/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/keypoint_matching/README.md).
 
-**Pose Estimation (2D Human Pose):**
+**Pose Estimation:**
 - `"yolov8pose"`, `"yolov8-pose"` - YOLOv8 pose (single-stage, returns bbox + keypoints)
 - `"yolo11pose"`, `"yolo11-pose"` - YOLO11 pose
 - `"yolo26pose"`, `"yolo26-pose"` - YOLO26 pose
@@ -88,24 +80,6 @@ For export and verification details, see [export/keypoint_matching/README.md](ht
 For EdgeCrafter pose-estimation export details, see [export/pose_estimation/edgecrafter/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/pose_estimation/edgecrafter/README.md).
 
 RF-DETR keypoint models output per-keypoint visibility and 2×2 pixel covariance (decoded from Cholesky L via the ONNX `log_l11`, `l21`, `log_l22` channels). Keypoints are filtered by an uncertainty-weighted score fusion that discounts high-covariance predictions.
-
-**Monocular 3D Detection:**
-- `"urbanomni"`, `"urbanomnidetect"` - UrbanOmniDetect v1 projected cuboids, YOLO-pose-style single tensor (any string starting with `urbanomni`)
-- `"urbanomnidetect2"` - UrbanOmniDetect-2, YOLO26 end-to-end rows (any string starting with `urbanomnidetect2`, or containing `v2`/`26` alongside `urbanomni`)
-- `"monocular3d"`, `"mono3d"` - generic aliases (`monocular3d` by prefix, `mono3d` exact)
-
-Input: RGB NCHW float `[B,3,H,W]` (640/1280/1920 to match the checkpoint) with YOLO letterboxing to `[0,1]`. Output is one `output0` tensor: v1 `[B, 4+nc+16, N]` channels-first (`cx, cy, w, h`, class scores, 8× corner `x, y` pairs in input pixels — no per-corner confidence) or kd=3 variants with `x, y, conf` triples, v1 rows `[B, N, 5+nc+8kd]` with objectness, or v2 `[B, N, 30]` end-to-end rows (`x1, y1, x2, y2, score, class_id`, corners). Boxes and corners are mapped back past letterbox padding to the original frame. Results are `Monocular3DDetection` entries with `bbox`, `class_id`, `class_confidence`, 8 `projected_corners` (0-3 ground, 4-7 roof, `i+4` above `i`, 0/3 front face), and `geometry_confidence` as the mean corner confidence (falls back to the detection score when the export carries none). Rows below `TaskConfig::confidence_threshold` (default 0.25) are dropped, then class-agnostic NMS runs.
-
-For export details, see [export/monocular_3d_detection/urbanomnidetect/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/monocular_3d_detection/urbanomnidetect/README.md).
-
-**Gaze Estimation:**
-- `"gaze"` - generic appearance-based gaze
-- `"ethxgaze"` - ETH-XGaze-style models (any string starting with `ethxgaze`)
-- `"gazetr"` - GazeTR-style models (any string starting with `gazetr`)
-
-Input: normalized face/eye crop RGB NCHW float `[B,3,224,224]` with ImageNet mean/std. Output tensor 0 is `[B,2]` pitch/yaw radians (`[pitch, yaw]`) or `[B,3]` xyz gaze vector; an optional second tensor carries confidence. Direction follows the ETH-XGaze / OpenGaze normalized camera: `direction=[-cos(pitch)sin(yaw), -sin(pitch), -cos(pitch)cos(yaw)]`, with `pitch=asin(-y)`, `yaw=atan2(-x,-z)`. Results are `GazeEstimation` entries with `pitch`, `yaw`, normalized `direction`, and `confidence`.
-
-For export details, see [export/gaze_estimation/eth_xgaze/README.md](https://github.com/olibartfast/neuriplo-tasks/blob/master/export/gaze_estimation/eth_xgaze/README.md).
 
 **Depth Estimation:**
 - `"depth_anything_v2"`, `"depth-anything-v2"` - Depth Anything V2

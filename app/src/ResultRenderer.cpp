@@ -60,16 +60,6 @@ void renderDetectionResults(const std::vector<neuriplo_tasks::Result> &results,
         drawLabelBand(image, detection.bbox.x, detection.bbox.y,
                       imageops::Color{255, 0, 0});
       });
-  // Monocular3D shares the 2D box contract; draw it with the same policy so
-  // a 3D-capable task never renders an empty overlay while cuboid projection
-  // rendering stays out of scope for the OpenCV-free migration.
-  forEachResultOfType<neuriplo_tasks::Monocular3DDetection>(
-      results, [&](const auto &detection) {
-        imageops::rectangle(image, detection.bbox, imageops::Color{255, 0, 0},
-                            3);
-        drawLabelBand(image, detection.bbox.x, detection.bbox.y,
-                      imageops::Color{255, 0, 0});
-      });
 }
 
 void renderOpenVocabDetectionResults(
@@ -314,11 +304,14 @@ void DefaultResultRenderer::render(
   case neuriplo_tasks::TaskType::ImageUnderstanding:
     renderImageUnderstandingResults(results, image);
     break;
+// Version-adaptive like PredictionRecorder: re-add unconditionally after the
+// tasks pin carries Monocular3DDetection.
+#if __has_include(                                                             \
+    "neuriplo/tasks/monocular_3d_detection/monocular_3d_detection_types.hpp")
   case neuriplo_tasks::TaskType::Monocular3DDetection:
-    // Box drawn via renderDetectionResults shared path; cuboid edges stay
-    // out of scope for this migration.
     renderDetectionResults(results, image, context.classes);
     break;
+#endif
 #ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
   case neuriplo_tasks::TaskType::GazeEstimation:
     throw std::runtime_error("Gaze estimation rendering is not implemented");
