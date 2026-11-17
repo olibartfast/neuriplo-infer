@@ -9,10 +9,6 @@
 #include <iostream>
 #include <iterator>
 #include <map>
-#include <opencv2/dnn.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
 #include <sstream>
 #include <type_traits> // for std::remove_pointer
 

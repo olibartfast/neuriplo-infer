@@ -2,7 +2,6 @@
 #include "VideoCaptureFactory.hpp"
 
 #include <gtest/gtest.h>
-#include <opencv2/imgproc.hpp>
 
 #include <cstdint>
 #include <cstring>
@@ -16,8 +15,10 @@
 #include "VideoWriterFactory.hpp"
 #endif
 
-using neuriplo_infer::toBgrMat;
+using neuriplo_infer::toBgrImage;
 using neuriplo_infer::toFrame;
+using neuriplo_tasks::vision::Image;
+using neuriplo_tasks::vision::PixelType;
 using videocapture::Frame;
 using videocapture::PixelFormat;
 
@@ -37,46 +38,57 @@ void fillPacked(Frame &frame, const std::vector<std::uint8_t> &pixel) {
   }
 }
 
-cv::Mat solidBgr(int width, int height, cv::Scalar color) {
-  return cv::Mat(height, width, CV_8UC3, color);
+Image solidImage(int width, int height, std::uint8_t b, std::uint8_t g,
+                 std::uint8_t r) {
+  Image image = Image::uninit(width, height, 3, PixelType::UInt8);
+  for (int y = 0; y < height; ++y) {
+    std::uint8_t *row = image.ptr<std::uint8_t>(y);
+    for (int x = 0; x < width; ++x) {
+      row[3 * x] = b;
+      row[3 * x + 1] = g;
+      row[3 * x + 2] = r;
+    }
+  }
+  return image;
 }
 
 } // namespace
 
-TEST(FrameConversionTest, EmptyFrameConvertsToEmptyMat) {
+TEST(FrameConversionTest, EmptyFrameConvertsToEmptyImage) {
   Frame frame;
-  EXPECT_TRUE(toBgrMat(frame).empty());
+  EXPECT_TRUE(toBgrImage(frame).empty());
 }
 
-TEST(FrameConversionTest, Bgr8AliasesFrameStorageWithoutCopying) {
+TEST(FrameConversionTest, Bgr8CopiesFrameStorage) {
   Frame frame(4, 3, PixelFormat::BGR8);
   fillPacked(frame, {10, 20, 30});
 
-  cv::Mat mat = toBgrMat(frame);
-  ASSERT_EQ(mat.type(), CV_8UC3);
-  EXPECT_EQ(mat.cols, 4);
-  EXPECT_EQ(mat.rows, 3);
-  // The whole point of the packed-BGR8 path: same bytes, not a copy of them.
-  EXPECT_EQ(mat.data, frame.data());
+  Image image = toBgrImage(frame);
+  ASSERT_EQ(image.width(), 4);
+  ASSERT_EQ(image.height(), 3);
+  ASSERT_EQ(image.channels(), 3);
+  // The Image backend always owns its pixels (no aliasing constructor).
+  EXPECT_NE(image.raw(), frame.data());
+  EXPECT_EQ(0, std::memcmp(image.raw(), frame.data(), 4 * 3 * 3));
 
-  // ...which is what makes the render overlay land in the frame's buffer.
-  mat.at<cv::Vec3b>(1, 2) = cv::Vec3b(7, 8, 9);
+  // Mutating the image must not alias the frame's buffer.
+  image.ptr<std::uint8_t>(1)[2 * 3] = 7;
+  image.ptr<std::uint8_t>(1)[2 * 3 + 1] = 8;
+  image.ptr<std::uint8_t>(1)[2 * 3 + 2] = 9;
   const std::uint8_t *pixel = frame.data() + frame.rowStride() + 2 * 3;
-  EXPECT_EQ(pixel[0], 7);
-  EXPECT_EQ(pixel[1], 8);
-  EXPECT_EQ(pixel[2], 9);
+  EXPECT_NE(pixel[0], 7);
+  EXPECT_EQ(pixel[0], static_cast<std::uint8_t>(10 + 2 + 2));
 }
 
 TEST(FrameConversionTest, Rgb8IsReorderedToBgr) {
   Frame frame(4, 3, PixelFormat::RGB8);
   fillPacked(frame, {10, 20, 30});
 
-  cv::Mat mat = toBgrMat(frame);
-  ASSERT_EQ(mat.type(), CV_8UC3);
-  EXPECT_NE(mat.data, frame.data()) << "a conversion must not alias the frame";
+  Image image = toBgrImage(frame);
+  ASSERT_EQ(image.channels(), 3);
 
   const std::uint8_t *src = frame.data() + frame.rowStride() + 2 * 3;
-  const cv::Vec3b converted = mat.at<cv::Vec3b>(1, 2);
+  const std::uint8_t *converted = image.ptr<std::uint8_t>(1) + 2 * 3;
   EXPECT_EQ(converted[0], src[2]);
   EXPECT_EQ(converted[1], src[1]);
   EXPECT_EQ(converted[2], src[0]);
@@ -86,138 +98,141 @@ TEST(FrameConversionTest, Gray8IsReplicatedAcrossBgrChannels) {
   Frame frame(4, 3, PixelFormat::Gray8);
   fillPacked(frame, {40});
 
-  cv::Mat mat = toBgrMat(frame);
-  ASSERT_EQ(mat.type(), CV_8UC3);
+  Image image = toBgrImage(frame);
   const std::uint8_t gray = *(frame.data() + frame.rowStride() + 2);
-  EXPECT_EQ(mat.at<cv::Vec3b>(1, 2), cv::Vec3b(gray, gray, gray));
+  const std::uint8_t *pixel = image.ptr<std::uint8_t>(1) + 2 * 3;
+  EXPECT_EQ(pixel[0], gray);
+  EXPECT_EQ(pixel[1], gray);
+  EXPECT_EQ(pixel[2], gray);
 }
 
 TEST(FrameConversionTest, AlphaFormatsDropAlphaAndKeepBgrOrder) {
   Frame rgba(4, 3, PixelFormat::RGBA8);
   fillPacked(rgba, {10, 20, 30, 255});
   const std::uint8_t *rgbaPixel = rgba.data() + rgba.rowStride() + 2 * 4;
-  const cv::Vec3b fromRgba = toBgrMat(rgba).at<cv::Vec3b>(1, 2);
-  EXPECT_EQ(fromRgba, cv::Vec3b(rgbaPixel[2], rgbaPixel[1], rgbaPixel[0]));
+  Image fromRgba = toBgrImage(rgba);
+  const std::uint8_t *convertedRgba = fromRgba.ptr<std::uint8_t>(1) + 2 * 3;
+  EXPECT_EQ(convertedRgba[0], rgbaPixel[2]);
+  EXPECT_EQ(convertedRgba[1], rgbaPixel[1]);
+  EXPECT_EQ(convertedRgba[2], rgbaPixel[0]);
 
   Frame bgra(4, 3, PixelFormat::BGRA8);
   fillPacked(bgra, {10, 20, 30, 255});
   const std::uint8_t *bgraPixel = bgra.data() + bgra.rowStride() + 2 * 4;
-  const cv::Vec3b fromBgra = toBgrMat(bgra).at<cv::Vec3b>(1, 2);
-  EXPECT_EQ(fromBgra, cv::Vec3b(bgraPixel[0], bgraPixel[1], bgraPixel[2]));
+  Image fromBgra = toBgrImage(bgra);
+  const std::uint8_t *convertedBgra = fromBgra.ptr<std::uint8_t>(1) + 2 * 3;
+  EXPECT_EQ(convertedBgra[0], bgraPixel[0]);
+  EXPECT_EQ(convertedBgra[1], bgraPixel[1]);
+  EXPECT_EQ(convertedBgra[2], bgraPixel[2]);
 }
 
-// The planar cases are the ones where a wrong plane layout would not fail --
-// it would quietly decode a picture with the color torn out of place -- so
-// they are checked against OpenCV's own I420 encoding of a known image.
-TEST(FrameConversionTest, Yuv420pDecodesToTheOriginalColor) {
-  const cv::Scalar color(32, 96, 200); // BGR
-  cv::Mat i420;
-  cv::cvtColor(solidBgr(8, 6, color), i420, cv::COLOR_BGR2YUV_I420);
-  ASSERT_TRUE(i420.isContinuous());
-
+// Neutral chroma (U=V=128) decodes to gray: B=G=R=(298*(Y-16))>>8.
+TEST(FrameConversionTest, Yuv420pNeutralChromaDecodesToGray) {
   Frame frame(8, 6, PixelFormat::YUV420P);
-  ASSERT_EQ(frame.storageSizeBytes(), i420.total());
-  std::memcpy(frame.data(), i420.data, i420.total());
+  // Luma ramp, chroma neutral.
+  for (int y = 0; y < 6; ++y) {
+    std::uint8_t *luma = frame.data(0) + y * frame.rowStride(0);
+    for (int x = 0; x < 8; ++x) {
+      luma[x] = static_cast<std::uint8_t>(16 + 10 * x + 5 * y);
+    }
+  }
+  std::memset(frame.data(1), 128, frame.sizeBytes(1));
+  std::memset(frame.data(2), 128, frame.sizeBytes(2));
 
-  cv::Mat bgr = toBgrMat(frame);
-  ASSERT_EQ(bgr.size(), cv::Size(8, 6));
-  const cv::Vec3b decoded = bgr.at<cv::Vec3b>(3, 4);
-  EXPECT_NEAR(decoded[0], color[0], 3);
-  EXPECT_NEAR(decoded[1], color[1], 3);
-  EXPECT_NEAR(decoded[2], color[2], 3);
+  Image bgr = toBgrImage(frame);
+  ASSERT_EQ(bgr.width(), 8);
+  ASSERT_EQ(bgr.height(), 6);
+  const int x = 4, y = 3;
+  const int expected = (298 * ((16 + 10 * x + 5 * y) - 16)) >> 8;
+  const std::uint8_t *pixel = bgr.ptr<std::uint8_t>(y) + x * 3;
+  EXPECT_NEAR(pixel[0], expected, 2);
+  EXPECT_NEAR(pixel[1], expected, 2);
+  EXPECT_NEAR(pixel[2], expected, 2);
 }
 
-TEST(FrameConversionTest, Nv12DecodesToTheOriginalColor) {
-  const cv::Scalar color(32, 96, 200); // BGR
-  cv::Mat i420;
-  cv::cvtColor(solidBgr(8, 6, color), i420, cv::COLOR_BGR2YUV_I420);
-
-  // NV12 is I420 with the two chroma planes interleaved.
+TEST(FrameConversionTest, Nv12NeutralChromaDecodesToGray) {
   Frame frame(8, 6, PixelFormat::NV12);
-  const std::size_t lumaBytes = 8 * 6;
-  const std::size_t chromaSamples = (8 / 2) * (6 / 2);
-  ASSERT_EQ(frame.storageSizeBytes(), lumaBytes + 2 * chromaSamples);
-  std::memcpy(frame.data(0), i420.data, lumaBytes);
-  const std::uint8_t *u = i420.data + lumaBytes;
-  const std::uint8_t *v = u + chromaSamples;
+  for (int y = 0; y < 6; ++y) {
+    std::uint8_t *luma = frame.data(0) + y * frame.rowStride(0);
+    for (int x = 0; x < 8; ++x) {
+      luma[x] = static_cast<std::uint8_t>(16 + 10 * x + 5 * y);
+    }
+  }
   std::uint8_t *chroma = frame.data(1);
-  for (std::size_t i = 0; i < chromaSamples; ++i) {
-    chroma[2 * i] = u[i];
-    chroma[2 * i + 1] = v[i];
+  for (std::size_t i = 0; i < frame.sizeBytes(1); i += 2) {
+    chroma[i] = 128;
+    chroma[i + 1] = 128;
   }
 
-  const cv::Vec3b decoded = toBgrMat(frame).at<cv::Vec3b>(3, 4);
-  EXPECT_NEAR(decoded[0], color[0], 3);
-  EXPECT_NEAR(decoded[1], color[1], 3);
-  EXPECT_NEAR(decoded[2], color[2], 3);
+  Image bgr = toBgrImage(frame);
+  const int x = 4, y = 3;
+  const int expected = (298 * ((16 + 10 * x + 5 * y) - 16)) >> 8;
+  const std::uint8_t *pixel = bgr.ptr<std::uint8_t>(y) + x * 3;
+  EXPECT_NEAR(pixel[0], expected, 2);
+  EXPECT_NEAR(pixel[1], expected, 2);
+  EXPECT_NEAR(pixel[2], expected, 2);
 }
 
 TEST(FrameConversionTest, OddSized420FrameIsRejectedRatherThanMisread) {
-  // Frame allows odd dimensions by rounding the chroma planes up, which breaks
-  // the single-buffer layout OpenCV's 4:2:0 decoders require. Refusing beats
-  // handing back a plausible-looking picture built from misaligned bytes.
+  // Frame allows odd dimensions by rounding the chroma planes up, which would
+  // leave a chroma row/column without a partner. Refusing beats handing back
+  // a plausible-looking picture built from misaligned bytes.
   Frame frame(7, 6, PixelFormat::NV12);
-  EXPECT_THROW(toBgrMat(frame), std::invalid_argument);
+  EXPECT_THROW(toBgrImage(frame), std::invalid_argument);
 }
 
-TEST(FrameConversionTest, ToFrameFromBgr8MatIsByteIdentical) {
+TEST(FrameConversionTest, ToFrameFromBgrImageIsByteIdentical) {
   // A deterministic per-pixel pattern so a stride, size, or channel mix-up
   // cannot pass unnoticed the way a solid color might.
-  cv::Mat mat(7, 8, CV_8UC3);
-  ASSERT_TRUE(mat.isContinuous());
-  for (int y = 0; y < mat.rows; ++y) {
-    for (int x = 0; x < mat.cols; ++x) {
-      mat.at<cv::Vec3b>(y, x) =
-          cv::Vec3b(static_cast<std::uint8_t>(17 + x + 2 * y),
-                    static_cast<std::uint8_t>(53 + x + 3 * y),
-                    static_cast<std::uint8_t>(91 + x + 5 * y));
+  Image image = Image::uninit(8, 7, 3, PixelType::UInt8);
+  for (int y = 0; y < 7; ++y) {
+    std::uint8_t *row = image.ptr<std::uint8_t>(y);
+    for (int x = 0; x < 8; ++x) {
+      row[x * 3] = static_cast<std::uint8_t>(17 + x + 2 * y);
+      row[x * 3 + 1] = static_cast<std::uint8_t>(53 + x + 3 * y);
+      row[x * 3 + 2] = static_cast<std::uint8_t>(91 + x + 5 * y);
     }
   }
 
-  const videocapture::Frame frame = toFrame(mat);
+  const videocapture::Frame frame = toFrame(image);
   ASSERT_FALSE(frame.empty());
   EXPECT_EQ(frame.width(), 8);
   EXPECT_EQ(frame.height(), 7);
   EXPECT_EQ(frame.format(), PixelFormat::BGR8);
   EXPECT_EQ(frame.rowStride(), static_cast<std::size_t>(8 * 3));
-  // Tight-packed storage holds exactly the Mat's bytes.
-  EXPECT_EQ(frame.rowStride() * frame.height(),
-            static_cast<std::size_t>(mat.total()) * mat.elemSize());
-  EXPECT_EQ(frame.storageSizeBytes(),
-            static_cast<std::size_t>(mat.total()) * mat.elemSize());
 
-  for (int y = 0; y < mat.rows; ++y) {
+  for (int y = 0; y < 7; ++y) {
     EXPECT_EQ(0, std::memcmp(frame.data() + y * frame.rowStride(),
-                             mat.data + y * mat.cols * 3,
-                             static_cast<std::size_t>(mat.cols) * 3))
-        << "row " << y << " differs from the source Mat";
+                             image.ptr<std::uint8_t>(y),
+                             static_cast<std::size_t>(8) * 3))
+        << "row " << y << " differs from the source image";
   }
 }
 
 TEST(FrameConversionTest, ToFrameRejectsNonPackedBgr8) {
-  cv::Mat gray(4, 3, CV_8UC1);
+  Image gray = Image::zeros(4, 3, 1, PixelType::UInt8);
   try {
     toFrame(gray);
-    FAIL() << "CV_8UC1 Mats must be rejected";
+    FAIL() << "single-channel images must be rejected";
   } catch (const std::invalid_argument &error) {
-    EXPECT_NE(std::strstr(error.what(), "bridged"), nullptr)
+    EXPECT_NE(std::strstr(error.what(), "toFrame"), nullptr)
         << "rejection should name the toFrame bridging context: "
         << error.what();
   }
 
-  cv::Mat floatBgr(4, 3, CV_32FC3);
+  Image floatBgr = Image::zeros(4, 3, 3, PixelType::Float32);
   try {
     toFrame(floatBgr);
-    FAIL() << "CV_32FC3 Mats must be rejected";
+    FAIL() << "Float32 images must be rejected";
   } catch (const std::invalid_argument &error) {
-    EXPECT_NE(std::strstr(error.what(), "bridged"), nullptr)
+    EXPECT_NE(std::strstr(error.what(), "toFrame"), nullptr)
         << "rejection should name the toFrame bridging context: "
         << error.what();
   }
 }
 
-TEST(FrameConversionTest, ToFrameFromEmptyMatGivesEmptyFrame) {
-  const videocapture::Frame frame = toFrame(cv::Mat{});
+TEST(FrameConversionTest, ToFrameFromEmptyImageGivesEmptyFrame) {
+  const videocapture::Frame frame = toFrame(Image{});
   EXPECT_TRUE(frame.empty());
   EXPECT_EQ(frame.storageSizeBytes(), 0u);
 }
@@ -245,10 +260,9 @@ TEST(FrameConversionTest, ToFrameRoundTripWritesAndReadsBackAVideo) {
     GTEST_SKIP() << "no usable video writer backend on this runner";
   }
   for (int i = 0; i < expectedFrames; ++i) {
-    cv::Mat mat(height, width, CV_8UC3);
-    // Deterministic per-frame pixels so a corruption is visible on re-read.
-    cv::randu(mat, cv::Scalar(i, i, i), cv::Scalar(i + 1, i + 1, i + 1));
-    EXPECT_TRUE(writer->writeFrame(neuriplo_infer::toFrame(mat)));
+    Image image =
+        solidImage(width, height, static_cast<std::uint8_t>(i), 90, 160);
+    EXPECT_TRUE(writer->writeFrame(neuriplo_infer::toFrame(image)));
   }
   // Checked, not discarded: since videocapture v0.6.0 release() reports
   // whether every accepted frame was encoded and the container finalized, and

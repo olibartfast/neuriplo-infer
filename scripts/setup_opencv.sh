@@ -37,5 +37,6 @@ cmake --build "$BUILD" -j"$JOBS"
 cmake --install "$BUILD"
 
 echo "OpenCV $VERSION installed to $INSTALL"
-echo "Point CMake at it: -DOpenCV_DIR=$INSTALL/lib/cmake/opencv5"
-echo "(picked automatically when the directory exists; explicit -DOpenCV_DIR wins)"
+echo "The OPENCV_DNN backend needs this SDK: pass"
+echo "  -DOpenCV_DIR=$INSTALL/lib/cmake/opencv5"
+echo "to the neuriplo-infer CMake configure step. It is not discovered automatically."

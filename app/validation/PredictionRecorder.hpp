@@ -205,6 +205,25 @@ public:
                     {"direction", r.direction},
                     {"confidence", r.confidence}};
 #endif
+// Monocular3D support is version-adaptive until the tasks pin carries it:
+// re-add unconditionally in the follow-up after the pin bump. The header is
+// absent from pinned tasks, so __has_include keeps this compiling there while
+// local sibling checkouts exercise the branch.
+#if __has_include(                                                             \
+    "neuriplo/tasks/monocular_3d_detection/monocular_3d_detection_types.hpp")
+          } else if constexpr (std::is_same_v<T, Monocular3DDetection>) {
+            json corners = json::array();
+            for (const auto &c : r.projected_corners) {
+              corners.push_back(
+                  {{"x", c.x}, {"y", c.y}, {"confidence", c.confidence}});
+            }
+            return {{"kind", "monocular_3d_detection"},
+                    {"class_id", r.class_id},
+                    {"score", r.class_confidence},
+                    {"bbox", box(r.bbox)},
+                    {"geometry_confidence", r.geometry_confidence},
+                    {"projected_corners", corners}};
+#endif
           } else {
             static_assert(std::is_same_v<T, ImageUnderstanding>);
             return {{"kind", "image_understanding"}, {"text", r.text}};

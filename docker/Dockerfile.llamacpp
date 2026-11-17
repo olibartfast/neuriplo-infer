@@ -25,13 +25,12 @@ RUN apt-get update && apt-get upgrade -y && \
         cmake=3.* \
         build-essential \
         pkg-config \
+        libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
         wget \
         git \
         libopenblas-dev \
         libgoogle-glog-dev \
         ninja-build \
-        libopencv-dev \
-        libopencv-contrib-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Stage 2: build and install llama.cpp ─────────────────────────────────────
