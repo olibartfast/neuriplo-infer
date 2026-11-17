@@ -38,8 +38,6 @@ RUN apt-get update && apt-get upgrade -y && \
         python3 \
         python3-pip \
         python3-venv \
-        libopencv-dev \
-        libopencv-contrib-dev \
         libgoogle-glog-dev \
         libgtest-dev \
         libcurl4-openssl-dev \

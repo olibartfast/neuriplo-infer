@@ -1,6 +1,7 @@
 #include "AppConfig.hpp"
 #include "ResultRenderer.hpp"
 #include "neuriplo/tasks/core/task_config.hpp"
+#include "neuriplo/tasks/core/vision/image.hpp"
 #include <gtest/gtest.h>
 
 // Verify that AppConfig threshold fields map correctly to
@@ -72,7 +73,9 @@ TEST(NeuriploInferTaskConfig, ExtraParamsRoundtrip) {
 }
 
 TEST(ClassificationRendering, KeepsAllRankedResultsVisible) {
-  cv::Mat image = cv::Mat::zeros(240, 320, CV_8UC3);
+  using neuriplo_tasks::vision::Image;
+  using neuriplo_tasks::vision::PixelType;
+  Image image = Image::zeros(320, 240, 3, PixelType::UInt8);
   std::vector<neuriplo_tasks::Result> results;
   const std::vector<std::string> classes{"malamute", "Eskimo dog",
                                          "Siberian husky", "Norwegian elkhound",
@@ -87,23 +90,39 @@ TEST(ClassificationRendering, KeepsAllRankedResultsVisible) {
   renderer.render(
       results, image,
       RenderContext{neuriplo_tasks::TaskType::Classification, classes, 0.25f});
-  cv::Mat gray;
-  cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+  auto rowHasInk = [&](int y) {
+    const std::uint8_t *row = image.ptr<std::uint8_t>(y);
+    for (int x = 0; x < image.width() * image.channels(); ++x) {
+      if (row[x] != 0) {
+        return true;
+      }
+    }
+    return false;
+  };
   int text_rows = 0;
   bool in_text = false;
-  for (int y = 0; y < gray.rows; ++y) {
-    const bool ink = cv::countNonZero(gray.row(y)) > 0;
+  for (int y = 0; y < image.height(); ++y) {
+    const bool ink = rowHasInk(y);
     if (ink && !in_text) {
       ++text_rows;
     }
     in_text = ink;
   }
   EXPECT_EQ(text_rows, 5);
-  EXPECT_EQ(cv::countNonZero(gray.col(gray.cols - 1)), 0);
+  // Bands occupy the left half; the rightmost column stays empty.
+  for (int y = 0; y < image.height(); ++y) {
+    const std::uint8_t *row = image.ptr<std::uint8_t>(y);
+    const int last = (image.width() - 1) * image.channels();
+    EXPECT_EQ(row[last], 0);
+    EXPECT_EQ(row[last + 1], 0);
+    EXPECT_EQ(row[last + 2], 0);
+  }
 }
 
 TEST(KeypointMatchingRendering, AppliesStrictThresholdAndTargetOffset) {
-  cv::Mat image = cv::Mat::zeros(40, 100, CV_8UC3);
+  using neuriplo_tasks::vision::Image;
+  using neuriplo_tasks::vision::PixelType;
+  Image image = Image::zeros(100, 40, 3, PixelType::UInt8);
   neuriplo_tasks::KeypointMatching pair;
   neuriplo_tasks::Keypoint a, b;
   a.x = 10;
@@ -117,10 +136,36 @@ TEST(KeypointMatchingRendering, AppliesStrictThresholdAndTargetOffset) {
   const std::vector<std::string> classes;
   const RenderContext context{neuriplo_tasks::TaskType::KeypointMatching,
                               classes, 0.2f, 50};
+  auto countNonZero = [&](const Image &img) {
+    std::size_t n = 0;
+    for (int y = 0; y < img.height(); ++y) {
+      const std::uint8_t *row = img.ptr<std::uint8_t>(y);
+      for (int x = 0; x < img.width() * img.channels(); ++x) {
+        if (row[x] != 0) {
+          ++n;
+        }
+      }
+    }
+    return n;
+  };
+  auto countInRect = [&](const Image &img, int rx, int ry, int rw, int rh) {
+    std::size_t n = 0;
+    for (int y = ry; y < ry + rh; ++y) {
+      const std::uint8_t *row = img.ptr<std::uint8_t>(y);
+      for (int x = rx; x < rx + rw; ++x) {
+        for (int c = 0; c < img.channels(); ++c) {
+          if (row[x * img.channels() + c] != 0) {
+            ++n;
+          }
+        }
+      }
+    }
+    return n;
+  };
   renderer.render({pair}, image, context);
-  EXPECT_EQ(cv::countNonZero(image.reshape(1)), 0);
+  EXPECT_EQ(countNonZero(image), 0u);
   pair.matches[0].score = 0.3f;
   renderer.render({pair}, image, context);
-  EXPECT_GT(cv::countNonZero(image(cv::Rect(67, 7, 7, 7)).reshape(1)), 0);
-  EXPECT_EQ(cv::countNonZero(image(cv::Rect(17, 20, 7, 7)).reshape(1)), 0);
+  EXPECT_GT(countInRect(image, 67, 7, 7, 7), 0u);
+  EXPECT_EQ(countInRect(image, 17, 20, 7, 7), 0u);
 }

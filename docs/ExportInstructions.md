@@ -37,13 +37,12 @@ Choose the export format for the backend you built; see the
 [backend format table](Deployment.md#backends) and
 [backend coverage](BackendCoverage.md) for tested combinations and limitations.
 
-- **OpenCV 5 format:** use ONNX. Darknet `.weights` / `.cfg` loading was removed;
-  convert existing Darknet models to ONNX first. See the
+- **OpenCV 5 format:** use ONNX. Convert Darknet models to ONNX first. See the
   [OpenCV migration guide](https://github.com/opencv/opencv/wiki/OpenCV-4-to-5-migration#darknet-and-caffe-parsers-removed).
 - **Input shapes:** the locally validated OpenCV 5 adapter reads named, typed
   graph inputs. Explicit input sizes are needed only for unresolved dynamic
   dimensions; fixed-shape ONNX export is not a blanket requirement.
-- **Release status:** these adapter changes are recorded as local fixes, outside
+- **Release status:** these adapter changes are outside
   the released dependency pins, in [backend coverage](BackendCoverage.md).
 - **Compatibility:** ONNX export alone does not guarantee that a backend supports
   the model's operators or inputs. Check the coverage for your model and build.

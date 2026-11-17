@@ -17,7 +17,6 @@ RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y \
     cmake=3.* \
     build-essential=12.* \
-    libopencv-dev \
     libgoogle-glog-dev \
     wget \
     git \

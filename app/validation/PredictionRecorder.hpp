@@ -205,9 +205,24 @@ public:
                     {"direction", r.direction},
                     {"confidence", r.confidence}};
 #endif
-          } else {
-            static_assert(std::is_same_v<T, ImageUnderstanding>);
+          } else if constexpr (std::is_same_v<T, Monocular3DDetection>) {
+            json corners = json::array();
+            for (const auto &c : r.projected_corners) {
+              corners.push_back(
+                  {{"x", c.x}, {"y", c.y}, {"confidence", c.confidence}});
+            }
+            return {{"kind", "monocular_3d_detection"},
+                    {"class_id", r.class_id},
+                    {"score", r.class_confidence},
+                    {"bbox", box(r.bbox)},
+                    {"geometry_confidence", r.geometry_confidence},
+                    {"projected_corners", corners}};
+          } else if constexpr (std::is_same_v<T, ImageUnderstanding>) {
             return {{"kind", "image_understanding"}, {"text", r.text}};
+          } else {
+            static_assert(!std::is_same_v<T, T>,
+                          "PredictionRecorder: unhandled Result type");
+            return {{"kind", "unknown"}};
           }
         },
         value);

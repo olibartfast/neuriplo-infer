@@ -17,13 +17,16 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
 
   if (startsWith(normalized, "lightglue") ||
       startsWith(normalized, "superglue") ||
-      startsWith(normalized, "matchanything")) {
+      startsWith(normalized, "matchanything") ||
+      startsWith(normalized, "flexglue")) {
     return neuriplo_tasks::TaskType::KeypointMatching;
   }
 
-  // Video classification models (temporal, multi-frame)
+  // Video classification models (temporal, multi-frame). Mirrors TaskFactory:
+  // exact videomae/vivit/timesformer plus pevideo/vjepa/videoprism by prefix.
   if (normalized == "timesformer" || normalized == "videomae" ||
-      normalized == "vivit") {
+      normalized == "vivit" || startsWith(normalized, "pevideo") ||
+      startsWith(normalized, "vjepa") || startsWith(normalized, "videoprism")) {
     return neuriplo_tasks::TaskType::VideoClassification;
   }
   // Single-frame classification models
@@ -68,6 +71,19 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
       normalized == "llama" || normalized == "llamacpp" ||
       normalized == "imageunderstanding") {
     return neuriplo_tasks::TaskType::ImageUnderstanding;
+  }
+  // Gaze estimation (TaskFactory order: after ImageUnderstanding). All routed
+  // families contain "gaze": exact "gaze", ethxgaze*/gazetr* prefixes, or any
+  // *gaze* substring.
+  if (normalized == "gaze" || startsWith(normalized, "ethxgaze") ||
+      startsWith(normalized, "gazetr") || contains(normalized, "gaze")) {
+    return neuriplo_tasks::TaskType::GazeEstimation;
+  }
+  // Monocular 3D detection (TaskFactory last). "urbanomni" covers
+  // "urbanomnidetect" by prefix; "monocular3d" by prefix, "mono3d" exact.
+  if (startsWith(normalized, "urbanomni") ||
+      startsWith(normalized, "monocular3d") || normalized == "mono3d") {
+    return neuriplo_tasks::TaskType::Monocular3DDetection;
   }
   return neuriplo_tasks::TaskType::Detection; // Default for YOLO, RTDETR, etc.
 }

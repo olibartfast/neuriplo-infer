@@ -30,8 +30,6 @@ RUN apt-get update && apt-get upgrade -y && \
         libopenblas-dev \
         libgoogle-glog-dev \
         ninja-build \
-        libopencv-dev \
-        libopencv-contrib-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Stage 2: build and install llama.cpp ─────────────────────────────────────

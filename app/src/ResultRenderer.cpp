@@ -52,8 +52,18 @@ std::string labelForClass(float class_id,
 
 void renderDetectionResults(const std::vector<neuriplo_tasks::Result> &results,
                             Image &image,
-                            const std::vector<std::string> &classes) {
+                            const std::vector<std::string> & /*classes*/) {
   forEachResultOfType<neuriplo_tasks::Detection>(
+      results, [&](const auto &detection) {
+        imageops::rectangle(image, detection.bbox, imageops::Color{255, 0, 0},
+                            3);
+        drawLabelBand(image, detection.bbox.x, detection.bbox.y,
+                      imageops::Color{255, 0, 0});
+      });
+  // Monocular3D shares the 2D box contract; draw it with the same policy so
+  // a 3D-capable task never renders an empty overlay while cuboid projection
+  // rendering stays out of scope for the OpenCV-free migration.
+  forEachResultOfType<neuriplo_tasks::Monocular3DDetection>(
       results, [&](const auto &detection) {
         imageops::rectangle(image, detection.bbox, imageops::Color{255, 0, 0},
                             3);
@@ -166,7 +176,7 @@ void overlaySegmentationPolygons(
 
 void renderInstanceSegmentationResults(
     const std::vector<neuriplo_tasks::Result> &results, Image &image,
-    const std::vector<std::string> &classes) {
+    const std::vector<std::string> & /*classes*/) {
   forEachResultOfType<neuriplo_tasks::InstanceSegmentation>(
       results, [&](const auto &segmentation) {
         imageops::rectangle(image, segmentation.bbox,
@@ -303,6 +313,11 @@ void DefaultResultRenderer::render(
     break;
   case neuriplo_tasks::TaskType::ImageUnderstanding:
     renderImageUnderstandingResults(results, image);
+    break;
+  case neuriplo_tasks::TaskType::Monocular3DDetection:
+    // Box drawn via renderDetectionResults shared path; cuboid edges stay
+    // out of scope for this migration.
+    renderDetectionResults(results, image, context.classes);
     break;
 #ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
   case neuriplo_tasks::TaskType::GazeEstimation:
