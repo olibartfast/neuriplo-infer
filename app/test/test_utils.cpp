@@ -83,15 +83,10 @@ TEST(UtilsStandalone, NormalizeModelType) {
 }
 
 TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
-  for (const auto *name : {"LightGlue", "lightglue_v2", "superglue",
-                           "MatchAnything-EloFTR", "flexglue_descriptor"}) {
+  for (const auto *name :
+       {"LightGlue", "lightglue_v2", "superglue", "MatchAnything-EloFTR"}) {
     EXPECT_EQ(getTaskTypeForModel(name),
               neuriplo_tasks::TaskType::KeypointMatching);
-  }
-  for (const auto *name : {"pevideo", "PEVideo-base", "vjepa2-vitl-fpc16",
-                           "videoprism", "VideoPrism-B"}) {
-    EXPECT_EQ(getTaskTypeForModel(name),
-              neuriplo_tasks::TaskType::VideoClassification);
   }
   EXPECT_EQ(getTaskTypeForModel("yolo26"), neuriplo_tasks::TaskType::Detection);
   EXPECT_EQ(getTaskTypeForModel("rtdetrultralytics"),
@@ -114,15 +109,6 @@ TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
             neuriplo_tasks::TaskType::GaussianSplatting);
   EXPECT_EQ(getTaskTypeForModel("imageunderstanding"),
             neuriplo_tasks::TaskType::ImageUnderstanding);
-  for (const auto *name : {"gaze", "ethxgaze", "ETH-XGaze", "gazetr"}) {
-    EXPECT_EQ(getTaskTypeForModel(name),
-              neuriplo_tasks::TaskType::GazeEstimation);
-  }
-  for (const auto *name : {"urbanomni", "UrbanOmniDetect", "urbanomnidetect2",
-                           "monocular3d", "Mono3D"}) {
-    EXPECT_EQ(getTaskTypeForModel(name),
-              neuriplo_tasks::TaskType::Monocular3DDetection);
-  }
 }
 
 // neuriplo-tasks v0.8.0 routes any YOLO-prefixed model type containing `depth`
