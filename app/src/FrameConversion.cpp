@@ -71,7 +71,8 @@ void writeYuvPixel(std::uint8_t *destination, int y, int u, int v) {
 // NV12 keeps U and V interleaved in one chroma plane, YUV420P in two. Both are
 // 4:2:0, so every 2x2 luma block shares one chroma pair, and odd dimensions
 // would leave a chroma row/column without a partner.
-void convertPlanar420(const Frame &frame, Image &destination, bool interleaved) {
+void convertPlanar420(const Frame &frame, Image &destination,
+                      bool interleaved) {
   const int width = frame.width();
   const int height = frame.height();
   if (width % 2 != 0 || height % 2 != 0) {
@@ -197,8 +198,7 @@ videocapture::Frame toFrame(const neuriplo_tasks::vision::Image &image) {
 
   videocapture::Frame frame(width, height, videocapture::PixelFormat::BGR8);
   for (int y = 0; y < height; ++y) {
-    std::memcpy(frame.data() +
-                    static_cast<std::size_t>(y) * frame.rowStride(),
+    std::memcpy(frame.data() + static_cast<std::size_t>(y) * frame.rowStride(),
                 image.ptr<std::uint8_t>(y), rowBytes);
   }
   return frame;

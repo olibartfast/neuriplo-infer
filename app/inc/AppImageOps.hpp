@@ -14,9 +14,9 @@ namespace neuriplo_infer::imageops {
 //
 // Colour values are BGR to match the rest of the app and cv::Scalar's order.
 struct Color {
-    std::uint8_t b{0};
-    std::uint8_t g{0};
-    std::uint8_t r{0};
+  std::uint8_t b{0};
+  std::uint8_t g{0};
+  std::uint8_t r{0};
 };
 
 enum class Interpolation { Nearest, Linear };
@@ -28,9 +28,9 @@ void swapRedBlue(neuriplo_tasks::vision::Image &image);
 // Resamples to width x height, preserving channel count and pixel type.
 // Bilinear samples use half-pixel centres and clamp at the border; nearest
 // takes the floor of the scaled coordinate.
-neuriplo_tasks::vision::Image resize(const neuriplo_tasks::vision::Image &source,
-                                     int width, int height,
-                                     Interpolation interpolation = Interpolation::Linear);
+neuriplo_tasks::vision::Image
+resize(const neuriplo_tasks::vision::Image &source, int width, int height,
+       Interpolation interpolation = Interpolation::Linear);
 
 // Min-max normalises every element into [low, high] and returns a Float32
 // image of the same geometry. A constant image maps entirely to `low`.
@@ -50,8 +50,9 @@ void strokeRectangle(neuriplo_tasks::vision::Image &image,
                      int thickness = 1);
 
 // Anti-aliasing is not reproduced: every primitive rasterises with hard edges.
-void line(neuriplo_tasks::vision::Image &image, neuriplo_tasks::vision::Point from,
-          neuriplo_tasks::vision::Point to, Color color, int thickness = 1);
+void line(neuriplo_tasks::vision::Image &image,
+          neuriplo_tasks::vision::Point from, neuriplo_tasks::vision::Point to,
+          Color color, int thickness = 1);
 
 void fillCircle(neuriplo_tasks::vision::Image &image,
                 neuriplo_tasks::vision::Point center, int radius, Color color);
@@ -59,9 +60,10 @@ void strokeCircle(neuriplo_tasks::vision::Image &image,
                   neuriplo_tasks::vision::Point center, int radius, Color color,
                   int thickness = 1);
 
-void polylines(neuriplo_tasks::vision::Image &image,
-               const std::vector<std::vector<neuriplo_tasks::vision::Point>> &contours,
-               bool closed, Color color, int thickness = 1);
+void polylines(
+    neuriplo_tasks::vision::Image &image,
+    const std::vector<std::vector<neuriplo_tasks::vision::Point>> &contours,
+    bool closed, Color color, int thickness = 1);
 
 // Alpha-blends a solid colour over the pixels where `mask` is non-zero:
 //   out = out * (1 - alpha) + color * alpha

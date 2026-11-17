@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     unzip \
-    libopencv-dev \
     libgoogle-glog-dev \
     git \
     wget \

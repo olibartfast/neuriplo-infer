@@ -207,9 +207,8 @@ bash docker_run_inference_e2e_example.sh --preset owlv2 --neuriplo-tasks-dir ../
 ```
 
 `--backend` overrides a preset's backend; `--skip-export`, `--skip-convert`, and
-`--skip-infer` rerun single steps. EdgeCrafter LiteRT support depends on the
-converted artifact and backend: the replacement `ecdet` artifact passes local
-and HTTP checks with an unreleased neuriplo XNNPACK patch, which is not included
+`--skip-infer` rerun single steps. EdgeCrafter LiteRT needs an unreleased
+neuriplo XNNPACK patch, which is not included
 in the app dependency pins. Use ONNX Runtime or TensorRT for the pinned build;
 see [the conversion validation](KserveCompatibility.md#known-bad-conversion-edgecrafter-ecdet-rtdetrdeformable--tflite).
 

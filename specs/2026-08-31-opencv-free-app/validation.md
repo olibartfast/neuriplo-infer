@@ -112,6 +112,12 @@ secondary to that one.
 - [ ] `specs/tech-stack.md` no longer claims OpenCV is a system dependency.
 - [ ] Deviations from this file are recorded here, honestly, with what was run
       instead.
+  - 2026-11-17 (`chore/remove-opencv-interop`): `libopencv-dev` removed from
+    all 8 Dockerfiles with no dedicated `OPENCV_DNN` image added (maintainer
+    decision; OPENCV_DNN stays native CI/dev). Image builds, `dpkg -l`
+    checks, and size deltas deferred to CI — no docker build run in-session.
+  - 2026-11-17: zero-frame clip probe skipped (`GTEST_SKIP`) — videocapture's
+    FFmpeg reader aborts (swscale assert) while probing empty containers.
 - [ ] `CHANGELOG.md` describes the user-visible change — including the display
       change, which is a CLI contract change.
 - [ ] Spec, code, changelog, and roadmap tell the same story in one branch.
