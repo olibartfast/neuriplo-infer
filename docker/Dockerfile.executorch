@@ -32,6 +32,7 @@ RUN apt-get update && apt-get upgrade -y && \
         cmake \
         build-essential \
         pkg-config \
+        libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
         wget \
         git \
         ninja-build \
