@@ -79,20 +79,7 @@ message(STATUS "Home path: ${HOME_PATH}")
 include(cmake/DependencyValidation.cmake)
 
 # Find system dependencies first (before fetching external dependencies)
-# Prefer the source-built OpenCV 5 in dependencies (non-apt, like the other
-# backend SDKs; see scripts/setup_opencv.sh). An explicit -DOpenCV_DIR wins;
-# otherwise apt OpenCV is used as before (CI images stay unchanged).
-if(NOT DEFINED OpenCV_DIR)
-  set(_OPENCV5_CONFIG "$ENV{HOME}/dependencies/opencv-5.0.0/install/lib/cmake/opencv5/OpenCVConfig.cmake")
-  if(EXISTS "${_OPENCV5_CONFIG}")
-    set(OpenCV_DIR "$ENV{HOME}/dependencies/opencv-5.0.0/install/lib/cmake/opencv5"
-        CACHE PATH "Path to OpenCV (source-built 5.x preferred)")
-    message(STATUS "Using source-built OpenCV 5 from dependencies")
-  endif()
-endif()
-find_package(OpenCV REQUIRED)
 find_package(glog REQUIRED)
-message(STATUS "OpenCV ${OpenCV_VERSION} found")
 message(STATUS "glog found")
 
 include(FetchContent)
@@ -161,7 +148,6 @@ endif()
 # Disable subproject tests and sample apps when fetched as dependencies.
 set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(NEURIPLO_TASKS_WITH_OPENCV ON CACHE BOOL "" FORCE)
 
 # Prefer a sibling checkout during local cross-repo development.
 set(_NEURIPLO_TASKS_SIBLING "")
@@ -220,6 +206,11 @@ else()
     # turned off, and the writer module stays built into a writer-less config.
     set(USE_VIDEOWRITER OFF CACHE BOOL "" FORCE)
 endif()
+
+# The app no longer links OpenCV itself, so video capture must come from a
+# dependency-free backend. Force the FFmpeg backend before videocapture is
+# configured; left to itself it would prefer OpenCV when it finds it.
+set(USE_FFMPEG ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(VideoCapture neuriplo-tasks nlohmann_json)
 
