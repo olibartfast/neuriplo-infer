@@ -3,8 +3,8 @@
 #include "AppConfig.hpp"
 #include "TaskRouting.hpp"
 #include "neuriplo/tasks/core/result_types.hpp"
+#include "neuriplo/tasks/core/vision/image.hpp"
 
-#include <opencv2/opencv.hpp>
 #include <string>
 #include <vector>
 
@@ -19,11 +19,13 @@ class ResultRenderer {
 public:
   virtual ~ResultRenderer() = default;
   virtual void render(const std::vector<neuriplo_tasks::Result> &results,
-                      cv::Mat &image, const RenderContext &context) = 0;
+                      neuriplo_tasks::vision::Image &image,
+                      const RenderContext &context) = 0;
 };
 
 class DefaultResultRenderer : public ResultRenderer {
 public:
   void render(const std::vector<neuriplo_tasks::Result> &results,
-              cv::Mat &image, const RenderContext &context) override;
+              neuriplo_tasks::vision::Image &image,
+              const RenderContext &context) override;
 };

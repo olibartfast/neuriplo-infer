@@ -15,6 +15,7 @@
 #include "TaskRouting.hpp"
 #include "neuriplo/tasks/core/model_info.hpp"
 #include "neuriplo/tasks/core/task_interface.hpp"
+#include "neuriplo/tasks/core/vision/image.hpp"
 
 #include <functional>
 #include <memory>
@@ -56,7 +57,7 @@ struct InferencePipeline {
 
   int getRequiredFrameCount() const;
   void renderResults(const std::vector<neuriplo_tasks::Result> &results,
-                     cv::Mat &image);
+                     neuriplo_tasks::vision::Image &image);
 };
 
 // Throws when encoded-image transport is requested for a task whose execution

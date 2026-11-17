@@ -75,8 +75,7 @@ void ArgParser::about(const std::string &message) { about_ = message; }
 
 bool ArgParser::has(const std::string &name) const {
   const auto alias = aliases_.find(name);
-  const std::string primary =
-      alias == aliases_.end() ? name : alias->second;
+  const std::string primary = alias == aliases_.end() ? name : alias->second;
   return provided_.count(primary) > 0;
 }
 
@@ -110,8 +109,7 @@ void ArgParser::printMessage() const {
 
 std::string ArgParser::rawValue(const std::string &name) const {
   const auto alias = aliases_.find(name);
-  const std::string primary =
-      alias == aliases_.end() ? name : alias->second;
+  const std::string primary = alias == aliases_.end() ? name : alias->second;
 
   const auto value = values_.find(primary);
   if (value != values_.end()) {
@@ -124,7 +122,7 @@ std::string ArgParser::rawValue(const std::string &name) const {
   return {};
 }
 
-bool ArgParser::markError(const std::string &message) {
+bool ArgParser::markError(const std::string &message) const {
   errors_.push_back(message);
   return false;
 }
