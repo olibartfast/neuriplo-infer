@@ -1,44 +1,119 @@
 #include "CLICommands.hpp"
 
+#include "AppImageOps.hpp"
 #include "FrameConversion.hpp"
 #include "VideoCaptureFactory.hpp"
+#include "neuriplo/tasks/core/vision/image.hpp"
+#include "neuriplo/tasks/core/vision/stb_io.hpp"
 #include "utils.hpp"
 #ifdef VIDEOCAPTURE_WITH_WRITER
 #include "OutputVideoSink.hpp"
 #endif
-#include "neuriplo/tasks/core/opencv_interop.hpp"
 #ifdef NEURIPLO_INFER_WITH_KSERVE
 #include "KserveEngine.hpp"
 #endif
+
+// JPEG encoder implementation lives in this translation unit; the header is
+// included without the implementation macro everywhere else.
+// STB_IMAGE_WRITE_STATIC keeps the symbols TU-local so they cannot clash with
+// the copy already compiled into neuriplo-tasks::vision-stb.
+#define STB_IMAGE_WRITE_STATIC
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb/stb_image_write.h"
 
 #include <algorithm>
 #include <cctype>
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <utility>
 
+namespace imageops = neuriplo_infer::imageops;
+using neuriplo_tasks::vision::Image;
+using neuriplo_tasks::vision::PixelType;
+using neuriplo_tasks::vision::Size;
+
 namespace {
 
-neuriplo_tasks::vision::Image toTaskImage(const cv::Mat &image) {
-  return neuriplo_tasks::vision::opencv::copyFromCvMat(image);
-}
-
-std::vector<neuriplo_tasks::vision::Image>
-toTaskImages(const std::vector<cv::Mat> &images) {
-  std::vector<neuriplo_tasks::vision::Image> converted;
-  converted.reserve(images.size());
-  for (const auto &image : images) {
-    converted.push_back(toTaskImage(image));
+// Loads a still image as packed BGR UInt8, the working format of the whole
+// app. stb decodes without applying EXIF orientation, unlike the old
+// cv::imread path: frames whose orientation lives in EXIF rather than pixels
+// now render unrotated, matching what the encoded-image server path always
+// saw.
+Image loadBgrImage(const std::string &path) {
+  Image rgb = neuriplo_tasks::vision::loadImage(path, 3);
+  if (rgb.empty() || rgb.channels() != 3 ||
+      rgb.pixelType() != PixelType::UInt8) {
+    throw std::runtime_error("Could not read the image source: " + path);
   }
-  return converted;
+  imageops::swapRedBlue(rgb);
+  return rgb;
 }
 
-neuriplo_tasks::vision::Size toTaskSize(const cv::Mat &image) {
-  return {image.cols, image.rows};
+// Writes a packed BGR UInt8 image; the file format follows the extension, as
+// before. Returns false instead of throwing so call sites keep their own
+// artifact-specific failure messages.
+bool trySaveBgrImage(const std::string &path, const Image &bgr) {
+  if (bgr.empty()) {
+    return false;
+  }
+  Image rgb = bgr;
+  imageops::swapRedBlue(rgb);
+  return neuriplo_tasks::vision::saveImage(path, rgb);
+}
+
+// JPEG-encodes a packed BGR frame for the encoded-image transport, replacing
+// cv::imencode(".jpg"). stb expects RGB, so the frame is swapped first.
+// Quality 95 matches the previous imencode default.
+void appendEncodedBytes(void *context, void *data, int size) {
+  auto *out = static_cast<std::vector<uint8_t> *>(context);
+  const auto *bytes = static_cast<const std::uint8_t *>(data);
+  out->insert(out->end(), bytes, bytes + size);
+}
+
+std::vector<uint8_t> encodeJpegBgr(const Image &bgr) {
+  if (bgr.empty() || bgr.channels() != 3 ||
+      bgr.pixelType() != PixelType::UInt8) {
+    throw std::runtime_error("Could not JPEG-encode a frame for the ensemble");
+  }
+  Image rgb = bgr;
+  imageops::swapRedBlue(rgb);
+  std::vector<uint8_t> out;
+  if (stbi_write_jpg_to_func(appendEncodedBytes, &out, rgb.cols(), rgb.rows(),
+                             3, rgb.raw(), 95) == 0) {
+    throw std::runtime_error("Could not JPEG-encode a frame for the ensemble");
+  }
+  if (out.empty()) {
+    throw std::runtime_error("Could not JPEG-encode a frame for the ensemble");
+  }
+  return out;
+}
+
+// Row-wise blit of a packed 3-channel image onto a larger canvas.
+void blitImage(const Image &src, Image &dst, int dx, int dy) {
+  const int w = std::min(src.cols(), dst.cols() - dx);
+  const int h = std::min(src.rows(), dst.rows() - dy);
+  if (w <= 0 || h <= 0) {
+    return;
+  }
+  const size_t row_bytes = static_cast<size_t>(w) * 3;
+  for (int y = 0; y < h; ++y) {
+    std::memcpy(dst.ptr<std::uint8_t>(dy + y) + static_cast<size_t>(dx) * 3,
+                src.ptr<std::uint8_t>(y), row_bytes);
+  }
+}
+
+// Warns once that the preview window is gone: display was an OpenCV
+// facility (imshow/waitKey, including q/Escape early exit) with no
+// OpenCV-free equivalent, so --no_display is now the only mode.
+void warnDisplayRemoved() {
+  LOG(WARNING) << "Preview display was removed with OpenCV; continuing "
+                  "headless (--no_display is now the only mode, and the "
+                  "q/Escape early exit no longer exists)";
 }
 
 // Marks the stage that untimed work belongs to, so a throw from it (an output
@@ -174,7 +249,7 @@ extractInputDims(const std::vector<int64_t> &shape) {
 // tensor, which is the whole point: a 640x640x3 FP32 tensor is ~4.9 MB, a JPEG
 // of the same frame is a few dozen KB.
 std::vector<neuriplo_tasks::Result>
-inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
+inferFrame(InferencePipeline &pipeline, const Image &frame,
            const std::vector<uint8_t> *encoded_source) {
   using neuriplo_infer::RunStage;
   using neuriplo_infer::StageTimer;
@@ -184,7 +259,7 @@ inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
     // contract types out of this file.
     const auto preprocessed = [&] {
       StageTimer timer(pipeline.report, RunStage::Preprocess);
-      return pipeline.task->preprocess({toTaskImage(frame)});
+      return pipeline.task->preprocess({frame});
     }();
     const auto inferred = [&] {
       StageTimer timer(pipeline.report, RunStage::Inference);
@@ -193,7 +268,8 @@ inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
     const auto &[outputs, shapes] = inferred;
     StageTimer timer(pipeline.report, RunStage::Postprocess);
     auto tensors = convertToTensors(outputs, shapes);
-    return pipeline.task->postprocess(toTaskSize(frame), tensors);
+    return pipeline.task->postprocess(Size{frame.cols(), frame.rows()},
+                                      tensors);
   }
 
 #ifdef NEURIPLO_INFER_WITH_KSERVE
@@ -202,8 +278,8 @@ inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
   std::vector<uint8_t> encoded;
   if (encoded_source != nullptr) {
     encoded = *encoded_source;
-  } else if (!cv::imencode(".jpg", frame, encoded)) {
-    throw std::runtime_error("Could not JPEG-encode a frame for the ensemble");
+  } else {
+    encoded = encodeJpegBgr(frame);
   }
 
   const std::vector<std::vector<uint8_t>> request = {std::move(encoded)};
@@ -216,7 +292,8 @@ inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
   StageTimer postprocess_timer(pipeline.report, RunStage::Postprocess);
   if (!pipeline.server_postprocess) {
     auto tensors = convertToTensors(outputs, shapes);
-    return pipeline.task->postprocess(toTaskSize(frame), tensors);
+    return pipeline.task->postprocess(Size{frame.cols(), frame.rows()},
+                                      tensors);
   }
 
   auto *kserve = dynamic_cast<KserveEngine *>(pipeline.engine.get());
@@ -228,8 +305,8 @@ inferFrame(InferencePipeline &pipeline, const cv::Mat &frame,
   // what it returned, so the flag is never silently ignored on this path.
   return neuriplo_infer::filterByConfidence(
       neuriplo_infer::decodeEnvelope(kserve->lastRawOutputs(),
-                                     pipeline.envelope_variant, frame.cols,
-                                     frame.rows),
+                                     pipeline.envelope_variant, frame.cols(),
+                                     frame.rows()),
       pipeline.config.confidenceThreshold);
 #else
   (void)encoded_source;
@@ -248,22 +325,14 @@ bool hasImageSources(const std::vector<std::string> &sources) {
 }
 
 void processImage(InferencePipeline &pipeline, const std::string &source) {
-  cv::Mat image;
+  Image image;
   {
     neuriplo_infer::StageTimer timer(pipeline.report,
                                      neuriplo_infer::RunStage::Source);
-    // Encoded-image mode sends the file's own bytes, which the server decodes
-    // without applying EXIF orientation. Reading it the same way keeps the
-    // drawn frame in the coordinate system the server's results are in.
-    image = cv::imread(source,
-                       pipeline.encoded_image
-                           ? cv::IMREAD_COLOR | cv::IMREAD_IGNORE_ORIENTATION
-                           : cv::IMREAD_COLOR);
-    // Reading nothing used to surface as a confusing failure further down the
-    // pipeline; saying so here also attributes it to the source stage.
-    if (image.empty()) {
-      throw std::runtime_error("Could not read the image source: " + source);
-    }
+    // In encoded-image mode the original file bytes go on the wire; reading
+    // the pixels here only produces the drawn frame, in the same orientation
+    // the server decodes to (stb applies no EXIF rotation).
+    image = loadBgrImage(source);
   }
   // In encoded-image mode the original file bytes go on the wire, so the source
   // is never decoded and re-encoded. Loaded before warmup so warmup and the
@@ -295,8 +364,8 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
 
   LOG(INFO) << "Model input shape: " << batch << "x" << channels << "x"
             << height << "x" << width;
-  LOG(INFO) << "Image dimensions: " << image.rows << "x" << image.cols << "x"
-            << image.channels();
+  LOG(INFO) << "Image dimensions: " << image.rows() << "x" << image.cols()
+            << "x" << image.channels();
 
   auto results = inferFrame(pipeline, image,
                             pipeline.encoded_image ? &source_bytes : nullptr);
@@ -315,9 +384,9 @@ void processImage(InferencePipeline &pipeline, const std::string &source) {
     std::filesystem::create_directories("data/output");
     const std::string processed_name = processedImageName(pipeline);
     std::string processed_path = "data/output/" + processed_name;
-    if (!cv::imwrite(processed_path, image)) {
+    if (!trySaveBgrImage(processed_path, image)) {
       const std::string fallback_path = "/tmp/neuriplo-infer-" + processed_name;
-      if (!cv::imwrite(fallback_path, image)) {
+      if (!trySaveBgrImage(fallback_path, image)) {
         // No artifact means no sample: failing here attributes the run to the
         // render stage instead of reporting success without an image.
         throw std::runtime_error("Failed to save output image to both " +
@@ -412,6 +481,10 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
     }
   }
 
+  if (!pipeline.config.no_display) {
+    warnDisplayRemoved();
+  }
+
   attributeTo(pipeline, neuriplo_infer::RunStage::Render);
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
@@ -437,16 +510,16 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
       break;
     }
 
-    // Bridged per read, not once outside the loop: the Mat aliases the
-    // frame's storage, which readFrame may reallocate.
-    cv::Mat image = neuriplo_infer::toBgrMat(frame);
+    // Bridged per read: toBgrImage copies, so the image stays valid no matter
+    // what readFrame reallocates next iteration.
+    Image image = neuriplo_infer::toBgrImage(frame);
 
 #ifdef VIDEOCAPTURE_WITH_WRITER
     // Configured once from the first frame: video sources have fixed dims.
     if (!pipeline.config.output_video.empty() && !output_sink) {
       attributeTo(pipeline, neuriplo_infer::RunStage::Render);
       output_sink = std::make_unique<neuriplo_infer::OutputVideoSink>(
-          pipeline.config.output_video, image.cols, image.rows);
+          pipeline.config.output_video, image.cols(), image.rows());
     }
 #endif
 
@@ -464,39 +537,22 @@ void processVideo(InferencePipeline &pipeline, const std::string &source) {
             .count();
     attributeTo(pipeline, neuriplo_infer::RunStage::Render);
     timings.add(frame_index, latency_us);
-    const double fps =
-        latency_us > 0 ? 1e6 / static_cast<double>(latency_us) : 0.0;
-    std::string fpsText = "FPS: " + std::to_string(fps);
 
     {
-      // Overlay, drawing, and display are the rendered output for a video, the
-      // way the written PNG is for a still image.
+      // Drawing the results is the rendered output for a video, the way the
+      // written PNG is for a still image. The FPS text overlay left with
+      // OpenCV: per-frame latency still lands in the timings CSV.
       neuriplo_infer::StageTimer render_timer(pipeline.report,
                                               neuriplo_infer::RunStage::Render);
-      cv::putText(image, fpsText, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX,
-                  1, cv::Scalar(0, 255, 0), 2);
       pipeline.renderResults(results, image);
 #ifdef VIDEOCAPTURE_WITH_WRITER
       if (output_sink) {
         output_sink->write(neuriplo_infer::toFrame(image), frame_index);
       }
 #endif
-      if (!pipeline.config.no_display) {
-        cv::imshow("opencv feed", image);
-      }
     }
 
     ++frame_index;
-
-    // Only a shown window can be asked to close. Without one there is no
-    // keypress to read, and cv::waitKey would spin the loop for nothing.
-    if (!pipeline.config.no_display) {
-      const int key = cv::waitKey(1);
-      if (key == 27 || key == 'q') {
-        LOG(INFO) << "Exit requested";
-        break;
-      }
-    }
   }
 
   attributeTo(pipeline, neuriplo_infer::RunStage::Render);
@@ -548,6 +604,10 @@ void processVideoClassification(InferencePipeline &pipeline,
   LOG(INFO) << "Video classification mode: accumulating " << requiredFrames
             << " frames";
 
+  if (!pipeline.config.no_display) {
+    warnDisplayRemoved();
+  }
+
   attributeTo(pipeline, neuriplo_infer::RunStage::Render);
   FrameTimingsCsv timings(pipeline.config.timings_csv);
 
@@ -556,7 +616,7 @@ void processVideoClassification(InferencePipeline &pipeline,
 #endif
 
   videocapture::Frame frame;
-  std::vector<cv::Mat> frameBuffer;
+  std::vector<Image> frameBuffer;
   frameBuffer.reserve(static_cast<size_t>(requiredFrames));
 
   // Counts frames read, so a row's index refers to the frame the window closed
@@ -576,21 +636,22 @@ void processVideoClassification(InferencePipeline &pipeline,
       read_to_end = true;
       break;
     }
-    // clone(): the window outlives the next read, and on the packed-BGR8
-    // path the bridged Mat is only a view onto storage that read reuses.
-    cv::Mat image = neuriplo_infer::toBgrMat(frame);
+    // The window outlives the next read, so each frame is copied: toBgrImage
+    // already owns its pixels, and clone() keeps the stored window
+    // independent of the loop image.
+    Image image = neuriplo_infer::toBgrImage(frame);
 #ifdef VIDEOCAPTURE_WITH_WRITER
     // Configured once from the first frame: video sources have fixed dims.
     if (!pipeline.config.output_video.empty() && !output_sink) {
       attributeTo(pipeline, neuriplo_infer::RunStage::Render);
       output_sink = std::make_unique<neuriplo_infer::OutputVideoSink>(
-          pipeline.config.output_video, image.cols, image.rows);
+          pipeline.config.output_video, image.cols(), image.rows());
     }
 #endif
     frameBuffer.push_back(image.clone());
     ++frame_index;
     // A frame read is part of the run whether or not a window has closed on
-    // it yet: counted here, once, a clip shorter than one window or one
+    // it yet: counted here, once, so a clip shorter than one window or one
     // stopped before its first window still reports its frames, and
     // overlapping windows never count a frame twice.
     if (pipeline.report != nullptr) {
@@ -603,8 +664,8 @@ void processVideoClassification(InferencePipeline &pipeline,
     // and a video shorter than one window still produces its file.
     if (output_sink && static_cast<int>(frameBuffer.size()) < requiredFrames) {
       // Timed as render work like every other written frame: on a clip shorter
-      // than one window every frame goes out through here, so leaving it
-      // untimed would keep the whole output cost out of the run report.
+      // than one window every frame goes out through here, so leaving the
+      // untimed cost would keep the whole output cost out of the run report.
       neuriplo_infer::StageTimer render_timer(pipeline.report,
                                               neuriplo_infer::RunStage::Render);
       output_sink->write(neuriplo_infer::toFrame(image), frame_index - 1);
@@ -616,7 +677,7 @@ void processVideoClassification(InferencePipeline &pipeline,
       const auto preprocessed = [&] {
         neuriplo_infer::StageTimer timer(pipeline.report,
                                          neuriplo_infer::RunStage::Preprocess);
-        return pipeline.task->preprocess(toTaskImages(frameBuffer));
+        return pipeline.task->preprocess(frameBuffer);
       }();
       const auto inferred = [&] {
         neuriplo_infer::StageTimer timer(pipeline.report,
@@ -629,7 +690,8 @@ void processVideoClassification(InferencePipeline &pipeline,
         neuriplo_infer::StageTimer timer(pipeline.report,
                                          neuriplo_infer::RunStage::Postprocess);
         auto tensors = convertToTensors(outputs, shapes);
-        return pipeline.task->postprocess(toTaskSize(image), tensors);
+        return pipeline.task->postprocess(Size{image.cols(), image.rows()},
+                                          tensors);
       }();
       auto end = std::chrono::steady_clock::now();
       const auto latency_us =
@@ -637,16 +699,11 @@ void processVideoClassification(InferencePipeline &pipeline,
               .count();
       attributeTo(pipeline, neuriplo_infer::RunStage::Render);
       timings.add(frame_index - 1, latency_us);
-      const double fps =
-          latency_us > 0 ? 1e6 / static_cast<double>(latency_us) : 0.0;
-      std::string fpsText = "FPS: " + std::to_string(fps);
 
       {
         neuriplo_infer::StageTimer render_timer(
             pipeline.report, neuriplo_infer::RunStage::Render);
-        cv::Mat displayFrame = frameBuffer.back().clone();
-        cv::putText(displayFrame, fpsText, cv::Point(10, 30),
-                    cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
+        Image displayFrame = frameBuffer.back().clone();
 
         pipeline.renderResults(results, displayFrame);
 #ifdef VIDEOCAPTURE_WITH_WRITER
@@ -657,20 +714,9 @@ void processVideoClassification(InferencePipeline &pipeline,
                              frame_index - 1);
         }
 #endif
-        if (!pipeline.config.no_display) {
-          cv::imshow("opencv feed", displayFrame);
-        }
       }
 
       frameBuffer.erase(frameBuffer.begin());
-    }
-
-    if (!pipeline.config.no_display) {
-      const int key = cv::waitKey(1);
-      if (key == 27 || key == 'q') {
-        LOG(INFO) << "Exit requested";
-        break;
-      }
     }
   }
 
@@ -713,19 +759,16 @@ void processKeypointMatching(InferencePipeline &pipeline) {
     throw std::invalid_argument("Keypoint matching currently requires local "
                                 "preprocessing without warmup or benchmark");
   }
-  std::vector<cv::Mat> images;
+  std::vector<Image> images;
   {
     StageTimer timer(pipeline.report, RunStage::Source);
     for (const auto &source : pipeline.config.sources) {
-      auto image = cv::imread(source, cv::IMREAD_COLOR);
-      if (image.empty())
-        throw std::runtime_error("Could not read the image source: " + source);
-      images.push_back(std::move(image));
+      images.push_back(loadBgrImage(source));
     }
   }
   const auto inputs = [&] {
     StageTimer timer(pipeline.report, RunStage::Preprocess);
-    return pipeline.task->preprocess(toTaskImages(images));
+    return pipeline.task->preprocess(images);
   }();
   const auto inferred = [&] {
     StageTimer timer(pipeline.report, RunStage::Inference);
@@ -734,21 +777,20 @@ void processKeypointMatching(InferencePipeline &pipeline) {
   const auto results = [&] {
     StageTimer timer(pipeline.report, RunStage::Postprocess);
     return pipeline.task->postprocess(
-        toTaskSize(images[0]),
+        Size{images[0].cols(), images[0].rows()},
         convertToTensors(std::get<0>(inferred), std::get<1>(inferred)));
   }();
   {
     StageTimer timer(pipeline.report, RunStage::Render);
-    cv::Mat canvas(std::max(images[0].rows, images[1].rows),
-                   images[0].cols + images[1].cols, CV_8UC3,
-                   cv::Scalar::all(0));
-    images[0].copyTo(canvas(cv::Rect(0, 0, images[0].cols, images[0].rows)));
-    images[1].copyTo(
-        canvas(cv::Rect(images[0].cols, 0, images[1].cols, images[1].rows)));
+    Image canvas(images[0].cols() + images[1].cols(),
+                 std::max(images[0].rows(), images[1].rows()), 3,
+                 PixelType::UInt8);
+    blitImage(images[0], canvas, 0, 0);
+    blitImage(images[1], canvas, images[0].cols(), 0);
     pipeline.renderer->render(results, canvas,
                               {pipeline.task_type, pipeline.classes,
                                pipeline.config.confidenceThreshold,
-                               images[0].cols});
+                               images[0].cols()});
     for (const auto &result : results) {
       const auto &pair = std::get<neuriplo_tasks::KeypointMatching>(result);
       const auto count = std::count_if(
@@ -761,7 +803,7 @@ void processKeypointMatching(InferencePipeline &pipeline) {
     }
     std::filesystem::create_directories("data/output");
     const auto path = "data/output/" + processedImageName(pipeline);
-    if (!cv::imwrite(path, canvas))
+    if (!trySaveBgrImage(path, canvas))
       throw std::runtime_error("Failed to save keypoint matching image: " +
                                path);
     LOG(INFO) << "Saved processed image to: " << path;
@@ -776,20 +818,12 @@ void processOpticalFlow(InferencePipeline &pipeline) {
   for (size_t i = 0; i < pipeline.config.sources.size() - 1; i++) {
     std::vector<std::string> flowInputs = {pipeline.config.sources[i],
                                            pipeline.config.sources[i + 1]};
-    std::vector<cv::Mat> images;
+    std::vector<Image> images;
     {
       neuriplo_infer::StageTimer timer(pipeline.report,
                                        neuriplo_infer::RunStage::Source);
       for (const auto &name : flowInputs) {
-        cv::Mat img = cv::imread(name);
-        if (img.empty()) {
-          // A source the run was asked for and could not read is a failed run,
-          // not a quiet skip: continuing here returned success with no samples
-          // and no artifact, which is indistinguishable from having nothing to
-          // do. Throwing inside the source scope attributes it to `source`.
-          throw std::runtime_error("Could not open or read the image: " + name);
-        }
-        images.push_back(img);
+        images.push_back(loadBgrImage(name));
       }
     }
 
@@ -800,7 +834,7 @@ void processOpticalFlow(InferencePipeline &pipeline) {
     const auto preprocessed = [&] {
       neuriplo_infer::StageTimer timer(pipeline.report,
                                        neuriplo_infer::RunStage::Preprocess);
-      return pipeline.task->preprocess(toTaskImages(images));
+      return pipeline.task->preprocess(images);
     }();
     const auto inferred = [&] {
       neuriplo_infer::StageTimer timer(pipeline.report,
@@ -813,7 +847,8 @@ void processOpticalFlow(InferencePipeline &pipeline) {
       neuriplo_infer::StageTimer timer(pipeline.report,
                                        neuriplo_infer::RunStage::Postprocess);
       auto tensors = convertToTensors(infer_results, infer_shapes);
-      return pipeline.task->postprocess(toTaskSize(images[0]), tensors);
+      return pipeline.task->postprocess(
+          Size{images[0].cols(), images[0].rows()}, tensors);
     }();
 
     auto end = std::chrono::steady_clock::now();
@@ -826,12 +861,11 @@ void processOpticalFlow(InferencePipeline &pipeline) {
     {
       neuriplo_infer::StageTimer render_timer(pipeline.report,
                                               neuriplo_infer::RunStage::Render);
-      cv::Mat &image = images[0];
       for (const auto &prediction : predictions) {
         if (std::holds_alternative<neuriplo_tasks::OpticalFlow>(prediction)) {
           neuriplo_tasks::OpticalFlow flow =
               std::get<neuriplo_tasks::OpticalFlow>(prediction);
-          neuriplo_tasks::toCvMat(flow.flow).copyTo(image);
+          images[0] = neuriplo_tasks::toImage(flow.flow);
         }
       }
 
@@ -846,7 +880,7 @@ void processOpticalFlow(InferencePipeline &pipeline) {
           outputDir /
           ("processed_frame_optical_flow_" + std::to_string(i) + ".jpg");
       LOG(INFO) << "Saving frame to: " << processedFrameFilename.string();
-      if (!cv::imwrite(processedFrameFilename.string(), image)) {
+      if (!trySaveBgrImage(processedFrameFilename.string(), images[0])) {
         throw std::runtime_error("Failed to save the optical flow image to " +
                                  processedFrameFilename.string());
       }
@@ -866,24 +900,16 @@ void processImageUnderstanding(InferencePipeline &pipeline) {
           : "(default)";
   LOG(INFO) << "Running image understanding with prompt: " << prompt_log;
 
-  std::vector<cv::Mat> images;
+  std::vector<Image> images;
   {
     neuriplo_infer::StageTimer timer(pipeline.report,
                                      neuriplo_infer::RunStage::Source);
     if (!pipeline.config.sources.empty() &&
         !pipeline.config.sources[0].empty()) {
-      cv::Mat img = cv::imread(pipeline.config.sources[0]);
-      if (img.empty()) {
-        // A source the run was given and could not read is a failure, as for
-        // every other task: answering the prompt text-only reported success
-        // for an image the model never saw.
-        throw std::runtime_error("Could not read the image source: " +
-                                 pipeline.config.sources[0]);
-      }
+      images.push_back(loadBgrImage(pipeline.config.sources[0]));
       {
         LOG(INFO) << "Source image: " << pipeline.config.sources[0] << " ("
-                  << img.cols << "x" << img.rows << ")";
-        images.push_back(std::move(img));
+                  << images.back().cols() << "x" << images.back().rows() << ")";
       }
     }
   }
@@ -893,7 +919,7 @@ void processImageUnderstanding(InferencePipeline &pipeline) {
   const auto preprocessed = [&] {
     neuriplo_infer::StageTimer timer(pipeline.report,
                                      neuriplo_infer::RunStage::Preprocess);
-    return pipeline.task->preprocess(toTaskImages(images));
+    return pipeline.task->preprocess(images);
   }();
 
   auto start = std::chrono::steady_clock::now();
@@ -920,7 +946,7 @@ void processImageUnderstanding(InferencePipeline &pipeline) {
   {
     neuriplo_infer::StageTimer render_timer(pipeline.report,
                                             neuriplo_infer::RunStage::Render);
-    cv::Mat dummy;
+    Image dummy;
     pipeline.renderResults(results, dummy);
   }
 
@@ -953,6 +979,8 @@ std::string taskTypeName(neuriplo_tasks::TaskType task_type) {
     return "ImageUnderstanding";
   case neuriplo_tasks::TaskType::KeypointMatching:
     return "KeypointMatching";
+  case neuriplo_tasks::TaskType::Monocular3DDetection:
+    return "Monocular3DDetection";
 #ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
   case neuriplo_tasks::TaskType::GazeEstimation:
     return "GazeEstimation";
@@ -977,10 +1005,10 @@ void printLayerList(const char *label, const std::vector<LayerInfo> &layers) {
 
 } // namespace
 
-WarmupCommand::WarmupCommand(cv::Mat image)
+WarmupCommand::WarmupCommand(Image image)
     : WarmupCommand(std::move(image), {}) {}
 
-WarmupCommand::WarmupCommand(cv::Mat image, std::vector<uint8_t> encoded_source)
+WarmupCommand::WarmupCommand(Image image, std::vector<uint8_t> encoded_source)
     : image_(std::move(image)), encoded_source_(std::move(encoded_source)) {}
 
 int WarmupCommand::execute(InferencePipeline &pipeline) {
@@ -999,17 +1027,16 @@ int WarmupCommand::execute(InferencePipeline &pipeline) {
   return 0;
 }
 
-BenchmarkCommand::BenchmarkCommand(cv::Mat image)
+BenchmarkCommand::BenchmarkCommand(Image image)
     : BenchmarkCommand(std::move(image), {}) {}
 
-BenchmarkCommand::BenchmarkCommand(cv::Mat image,
+BenchmarkCommand::BenchmarkCommand(Image image,
                                    std::vector<uint8_t> encoded_source)
     : image_(std::move(image)), encoded_source_(std::move(encoded_source)) {}
 
 int BenchmarkCommand::execute(InferencePipeline &pipeline) {
   // Same reason as warmup: the benchmark measures the engine, and its own
   // numbers go to the log rather than into the run's stage totals.
-  neuriplo_infer::TimingSuspension untimed(pipeline.report);
   double total_time = 0.0;
   for (int i = 0; i < pipeline.config.benchmark_iterations; ++i) {
     auto start = std::chrono::steady_clock::now();
@@ -1065,9 +1092,9 @@ int RunInferenceCommand::execute(InferencePipeline &pipeline) {
 
   if (pipeline.task_type == neuriplo_tasks::TaskType::VideoClassification) {
     processVideoClassification(pipeline, pipeline.config.sources[0]);
-  } else {
-    processVideo(pipeline, pipeline.config.sources[0]);
+    return 0;
   }
+  processVideo(pipeline, pipeline.config.sources[0]);
   return 0;
 }
 

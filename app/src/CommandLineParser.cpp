@@ -1,4 +1,5 @@
 #include "CommandLineParser.hpp"
+#include "ArgParser.hpp"
 #include "TaskRouting.hpp"
 #include "utils.hpp"
 #include <algorithm>
@@ -30,7 +31,7 @@ const std::string CommandLineParser::params =
     "torchvisionclassifier, tensorflowclassifier, vitclassifier, timesformer | "
     "Instance Segmentation: yoloseg | Optical Flow: raft | Pose Estimation: "
     "vitpose }"
-    // Empty defaults, not <none>: cv::CommandLineParser records reading an
+    // Empty defaults, not <none>: ArgParser records reading an
     // absent <none> key as an error, and every value is now checked after it
     // is read. These three are optional here; validateArguments enforces when
     // --source and --weights are required.
@@ -104,7 +105,7 @@ std::string lowered(const std::string &value) {
 // Each one exists because the combination it rejects cannot work: the encoded
 // image carries no tensor shape, the server decides batching, and GPU
 // postprocessing only exists on the ensemble path.
-void validateEnsembleArguments(const cv::CommandLineParser &parser) {
+void validateEnsembleArguments(const neuriplo_infer::ArgParser &parser) {
   const std::string inputMode = lowered(parser.get<std::string>("input_mode"));
   if (inputMode != "preprocessed" && inputMode != "encoded-image") {
     LOG(ERROR)
@@ -169,7 +170,7 @@ std::map<std::string, std::string> knownOptionKeys(const std::string &spec) {
   return keys;
 }
 
-// Primary names of the options given on the command line. cv::CommandLineParser
+// Primary names of the options given on the command line. ArgParser
 // ignores keys it does not know, so a misspelled flag (--output-video,
 // --timing_csv) used to exit 0 without the artifact it asked for; an unknown
 // key now ends the run.
@@ -221,7 +222,7 @@ bool samePath(const std::string &lhs, const std::string &rhs) {
 
 // Flags that only some run modes honor are refused in the others, so a run
 // never succeeds without the artifact or behavior it was asked for.
-void validateRunModes(const cv::CommandLineParser &parser,
+void validateRunModes(const neuriplo_infer::ArgParser &parser,
                       const std::set<std::string> &provided) {
   const std::string type = normalizeModelType(parser.get<std::string>("type"));
   const bool is_text_task = type == "gemma4" || type == "gemma" ||
@@ -318,7 +319,7 @@ void validateRunModes(const cv::CommandLineParser &parser,
 } // namespace
 
 AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
-  cv::CommandLineParser parser(argc, argv, params);
+  neuriplo_infer::ArgParser parser(argc, argv, params);
   parser.about("Detect objects from video or image input source");
   const std::set<std::string> provided =
       providedOptionKeys(argc, argv, knownOptionKeys(params));
@@ -469,7 +470,7 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
     config.kserve_model_name = config.detectorType;
   }
 
-  // cv::CommandLineParser records a malformed value (--batch=abc,
+  // ArgParser records a malformed value (--batch=abc,
   // --min_confidence=high) only when that value is read, and substitutes 0 or
   // false. The check that turns it into an error therefore runs after every
   // read, not before them.
@@ -481,11 +482,13 @@ AppConfig CommandLineParser::parseCommandLineArguments(int argc, char *argv[]) {
   return config;
 }
 
-void CommandLineParser::printHelpMessage(const cv::CommandLineParser &parser) {
+void CommandLineParser::printHelpMessage(
+    const neuriplo_infer::ArgParser &parser) {
   parser.printMessage();
 }
 
-void CommandLineParser::validateArguments(const cv::CommandLineParser &parser) {
+void CommandLineParser::validateArguments(
+    const neuriplo_infer::ArgParser &parser) {
   if (!parser.check()) {
     parser.printErrors();
     std::exit(1);
