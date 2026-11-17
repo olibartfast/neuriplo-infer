@@ -21,7 +21,7 @@ USER root
 # Install common dependencies
 RUN apt-get update \
     && apt-get -y install --no-install-recommends \
-    build-essential cppcheck valgrind clang lldb llvm gdb wget \
+    build-essential cppcheck valgrind clang lldb llvm gdb pkg-config libavformat-dev libavcodec-dev libavutil-dev libswscale-dev wget \
     ca-certificates \
     cmake \
     g++ \

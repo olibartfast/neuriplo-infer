@@ -25,6 +25,7 @@ RUN apt-get update && apt-get upgrade -y && \
         cmake=3.* \
         build-essential \
         pkg-config \
+        libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
         wget \
         git \
         libopenblas-dev \
