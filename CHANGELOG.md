@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Remove the application's OpenCV dependency: the app configures, builds, and
+  runs with no OpenCV present (verified via `ldd` and test builds without
+  OpenCV headers). OpenCV remains only inside neuriplo's `OPENCV_DNN` backend.
+  Test-only video fixtures now use the videocapture writer behind
+  `NEURIPLO_INFER_WITH_VIDEOWRITER`; the zero-frame clip probe is skipped
+  until the reader handles empty containers without aborting.
+- Drop `libopencv-dev` (and `libopencv-contrib-dev` where present) from all
+  eight Docker images; per maintainer decision no dedicated `OPENCV_DNN` image
+  is added and OPENCV_DNN stays a native CI/dev build. The FFmpeg capture
+  backend is now the one that gets configured, so the images carry
+  `pkg-config` plus the FFmpeg dev packages instead. Image size deltas are
+  left to CI.
+
 ## [0.12.0] - 2026-11-13
 
 ### Added

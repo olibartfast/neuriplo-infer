@@ -44,7 +44,7 @@ public:
   // writeFrame false is a failed run, not a skippable frame.
   //
   // This hands the frame to the encoder rather than encoding it: what the
-  // frame loop pays is the cv::Mat -> Frame copy plus the hand-off, and the
+  // frame loop pays is the image-to-frame copy plus the hand-off, and the
   // wait when the encoder falls behind. Frames keep submission order and are
   // never dropped. Both the hand-off and any backpressure wait land in the
   // render stage, after the inference span, so per-inference latency is

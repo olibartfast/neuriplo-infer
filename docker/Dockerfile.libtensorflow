@@ -21,7 +21,8 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     unzip \
-    libopencv-dev \
+    pkg-config \
+    libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
     libgoogle-glog-dev \
     git \
     wget \

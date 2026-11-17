@@ -46,7 +46,7 @@ No cluster configuration is changed.
 exit status and duration. Artifact hashing happens on the worker before
 execution; a missing artifact fails the case before inference. Preserve `scontrol show job` output while completed
 jobs remain in the controller's cache. Use `sacct` when accounting is enabled;
-accounting is optional and was disabled in the 2026-11-04 cluster.
+accounting is optional.
 
 Exit zero is recorded as **RUNTIME_PASS**, not a numerical accuracy claim.
 Compare tensors or inspect task results against the same-model reference before

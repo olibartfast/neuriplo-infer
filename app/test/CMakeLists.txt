@@ -50,7 +50,6 @@ enable_target_sanitizers(${PROJECT_NAME_TEST})
 
 target_include_directories(${PROJECT_NAME_TEST}
     PRIVATE ${CMAKE_SOURCE_DIR}/common
-    ${OpenCV_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/app/inc
     ${CMAKE_SOURCE_DIR}/app/src
     ${neuriplo-tasks_SOURCE_DIR}/include

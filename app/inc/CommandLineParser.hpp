@@ -1,5 +1,6 @@
 #pragma once
 #include "AppConfig.hpp"
+#include "ArgParser.hpp"
 
 class CommandLineParser {
 public:
@@ -7,6 +8,6 @@ public:
 
 private:
   static const std::string params;
-  static void printHelpMessage(const cv::CommandLineParser &parser);
-  static void validateArguments(const cv::CommandLineParser &parser);
+  static void printHelpMessage(const neuriplo_infer::ArgParser &parser);
+  static void validateArguments(const neuriplo_infer::ArgParser &parser);
 };

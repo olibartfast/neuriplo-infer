@@ -53,9 +53,10 @@ private:
 class ObservedRenderer final : public DefaultResultRenderer {
 public:
   explicit ObservedRenderer(Recorder &recorder) : recorder_(recorder) {}
-  void render(const std::vector<Result> &results, cv::Mat &image,
+  void render(const std::vector<Result> &results,
+              neuriplo_tasks::vision::Image &image,
               const RenderContext &context) override {
-    recorder_.predictions(Size(image.cols, image.rows), results);
+    recorder_.predictions(Size(image.cols(), image.rows()), results);
     DefaultResultRenderer::render(results, image, context);
   }
 

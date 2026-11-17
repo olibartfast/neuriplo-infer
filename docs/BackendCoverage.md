@@ -116,8 +116,7 @@ Cells may carry a numbered note, e.g. **P(2)**; see [Notes](#notes).
    do not certify the current source pins or the original image packaging; see
    [E14](#ev-ov-slurm).
 4. **Keypoint matching source scope.** Application LightGlue integration,
-   neuriplo-tasks `f867d5a`, and neuriplo `07ebeae` (the TRT patch rebased onto
-   current history). These cells certify the tested source builds; the current
+   neuriplo-tasks `f867d5a`, and neuriplo `07ebeae`. These cells certify the tested source builds; the current
    release pins do not include all these changes. FP16 results are not
    numerically identical to ORT. See [E17](#ev-keypoint-matching).
 5. **EdgeCrafter reconverted artifact and local XNNPACK fix.** LiteRT and
@@ -833,7 +832,7 @@ strictly **score > 0.2**.
   and TensorRT libraries. Engine build provenance: job 56, TensorRT 10.16.2,
   FP16, SHA256 `7dfc23f4dd0ead6aba7fd74473073efdeaf36efd174caf459c2480af06b78d41`.
 - **Note 4 — source scope:** application LightGlue integration, neuriplo-tasks `f867d5a`,
-  and neuriplo `07ebeae` (the TRT patch rebased onto current history).
+  and neuriplo `07ebeae`.
   These PASS cells certify the tested source builds; the current release
   pins do not include all these changes. FP16 results are not numerically
   identical to ORT.
@@ -875,13 +874,13 @@ are not released dependency pins.
 | Backend | Version / artifact | Build flags | Tests | Notes |
 |---|---|---|---|---|
 | DNN | OpenCV 5.0.0 source-built (`~/dependencies/opencv-5.0.0`, `scripts/setup_opencv.sh`) | `OPENCV_DNN` | app 191/191; backend 80/80 (E15) | Named/typed graph inputs; explicit sizes only for unresolved dynamic dimensions; apt 4.6 legacy compatibility is separate |
-| ORT | 1.19.2 CPU (local SDK; pin 1.28.0 unfetchable upstream — `setup_dependencies.sh` handles the renamed `gpu_cuda<major>` archives) | `ONNX_RUNTIME` | 179/179 | Full inference runs, renders inspected |
-| TRT | 11.2.1.2 (NGC `tensorrt:26.08` base, `docker/Dockerfile.tensorrt`) | `TENSORRT` | image green in CI 2026-11-02 | Trio live-gated 2026-11-01 (det 109 ms, seg 380 ms + masks, keypoint 292 ms, pose 0.850754) — see E13. 11.2 `trtexec` dropped the `--fp16` shorthand; engines rebuilt from the same `.onnx` |
-| Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | TorchScript cells, except E13 where RF-DETR rests on AOTInductor (`.pt2`) because TorchScript tracing is broken for that arch. KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). Since neuriplo 0.11.3, TorchScript archives must carry input-datatype metadata; legacy files are rejected |
+| ORT | 1.19.2 CPU | `ONNX_RUNTIME` | 179/179 | Full inference runs, renders inspected |
+| TRT | 11.2.1.2 (NGC `tensorrt:26.08` base, `docker/Dockerfile.tensorrt`) | `TENSORRT` | image green in CI 2026-11-02 | Trio live-gated 2026-11-01 (det 109 ms, seg 380 ms + masks, keypoint 292 ms, pose 0.850754) — see E13. Engines rebuilt from the same `.onnx` |
+| Torch | libtorch 2.14 CPU | `LIBTORCH`, `NEURIPLO_INFER_ENABLE_KSERVE=OFF` | 134/134 | TorchScript cells, except E13 where RF-DETR rests on AOTInductor (`.pt2`) because TorchScript tracing is broken for that arch. KServe client unlinked (its gRPC protobuf clashes with libtorch's bundled protobuf); first `cmake` seeds the CUDA cache, a second run is needed (nvcc 12.0 vs driver-reported 13.4). TorchScript archives must carry input-datatype metadata; legacy files are rejected |
 | OVINO | 2026.3.0 (pinned; `docker/Dockerfile.openvino`) | `OPENVINO`, tests OFF | — (not covered) | Trio live-gated 2026-11-01 (det 784 ms, seg 1184 ms + masks, keypoint 1566 ms, pose 0.850784) — see E13. Native `runUnitTests` link vs `openvino::runtime` fails; CI builds tests OFF too |
-| TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories since 2026-10-23 (was file-only); see E6 |
-| LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK (they shadowed system gtest and crashed every death test) |
-| ExecT | v1.2.0 optimized SDK `/tmp/blocked-et-sdk` (E15) | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; compiled transport is not live transport validation |
+| TF | 2.19 (`LIBTENSORFLOW`; 2.21 C++ runtime unloadable — protobuf ABI, see E2) | `LIBTENSORFLOW` | 179/179 | `--weights` accepts directories; see E6 |
+| LiteRT | `~/dependencies/litert` (LiteRT 2.19.0 pinned) | `LITERT` | 192/192 | Vendored gtest/gmock headers pruned from the SDK |
+| ExecT | v1.2.0 optimized SDK (E15) | `EXECUTORCH`; E15 KServe=ON, gRPC=ON | app 191/191; backend 77/77 | XNNPACK + combined optimized registration; compiled transport is not live transport validation |
 | MGX | Recorded upstream environment: 2.12.0.60401-83, ROCm 6.4.1, MI300X `gfx942` (E16) | upstream `MIGRAPHX`; app build unvalidated | backend contracts 6/6: 3 CPU + 3 GPU, zero skips | Synthetic typed fixtures only; no app or learned-model gate |
 | LLaMA | llama.cpp b9085 | `LLAMACPP`, tests OFF | — (not covered) | Native `runUnitTests` link misses ggml transitive libs (same class as the OVINO gap) |
 | KServe | `neuriplo-kserve-runtime` `real-onnx` / `grpc-onnx` | client in default build | suites run manually | HTTP green incl. per-task gates; gRPC `ModelInfer` 13 INTERNAL server-side (see E1) |
