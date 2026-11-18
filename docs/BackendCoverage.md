@@ -67,11 +67,13 @@ contain model types and example presets.
 | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | U | U | P | U | N/A | P |
 | Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | P | N/A | U |
+| Object detection (`yolo11`, `yolo11`) | U | P | U | U | N/A | U |
 | Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | U | N/A | U |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | U | N/A | U |
 | Object detection (`ecdet`, `edgecrafter_det`) | U | U | P | U | N/A | P |
 | Object detection (`rfdetr`, `rfdetr-medium`) | U | P | P | P | N/A | P |
 | Instance segmentation (`yoloseg`, `yoloseg`) | U | P | U | U | N/A | P |
+| Instance segmentation (`yolo11seg`, `yolo11seg`) | U | P | U | U | N/A | U |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | U | N/A | U |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | P | P | P | N/A | P |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | P | U | U | N/A | U |
@@ -147,7 +149,10 @@ V-16/V-17/V-18.
   operation remains an import problem; GroundingDINO has not been retested.
 - **GGML:** only `.gguf` weights load; the earlier NGGL artifacts and the
   ONNX-subset frontend were removed. YOLO26's attention head is still
-  unsupported at the converter. RF-DETR detection now has a complete loader
+  unsupported at the converter. YOLO11 det/seg are gated on `.gguf` (V-26/V-27:
+  `model.23` DFL path + `/model.10` C2PSA subgraph from sibling PR #79); the
+  loader log still names the seg path "YOLOv8n-seg" (sibling cosmetic
+  follow-up, correct graph executes). RF-DETR detection now has a complete loader
   graph (backbone + projector + neck + 3-layer deformable decoder + head,
   native GridSample/TopK/softmax-rows/sine-embed helpers) with an app gate
   on `.gguf` (V-21); `rfdetrseg` is now also gated (V-23) and its cell is
@@ -166,6 +171,10 @@ V-16/V-17/V-18.
 - Add a Gaussian-splatting example; no preset exists yet.
 - Build and test the app with MIGraphX on supported AMD/ROCm hardware.
 - Test more GGML models once the GGUF converter and loader support them.
+  YOLO11 det/seg are gated (V-26/V-27); `yolo11pose` and `yolov10n` stay
+  converter-BLOCKED (no sibling loader path yet — pose needs a new graph
+  packet, v10 a layout probe), as does YOLO26's attention head. Pose and
+  other transformer rows still need sibling work.
 
 <a id="integration-test-evidence"></a>
 

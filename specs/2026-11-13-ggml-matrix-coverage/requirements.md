@@ -114,6 +114,30 @@ foundation; per-model graph work continues there, gating happens here.
   box (max box L1 2.7e-3, max score diff 2.2e-5). The app gate and sorted
   TopK order remain; dynamic batch stays out of scope (V-15).
 
+### Phase 2 follow-up R-9 — yolo11/yolov10 GGML gates (appended 2026-11-17)
+
+- [x] Rank 4a — YOLOv11 `yolo11n` det + seg (V-26/V-27, 2026-11-19;
+      sibling PR #79 mapped the `model.23` DFL path and `/model.10` C2PSA
+      for det/seg only).
+- [ ] Rank 4b — YOLOv11 pose (`yolo11pose`) + `yolov10n`: still
+  Converter-BLOCKED today (V-25 follow-up): no sibling loader path —
+  pose needs a new sibling graph packet, v10 a layout probe.
+  Converter-BLOCKED today (V-25): both layouts carry the DFL conv weight at
+  `model.23.dfl.conv.weight` (converter hard-requires `model.22`) plus one
+  `/model.10` attention subgraph (C2PSA in yolo11, PSA in yolov10n).
+- Trigger: sibling `neuriplo` maps the `model.23` DFL path and the single
+  `/model.10` attention subgraph (converter accepts, GGUF loads). No
+  `neuriplo-tasks` contract change is involved.
+- Then, per model: convert → GGML app gate on `data/dog.jpg` @ 0.4/0.5 →
+  ORT parity on identical preprocessing → render inspected → record
+  (validation V-entry + `Remaining coverage`), promote the GGML cell.
+  Acceptance per model: converter exit 0, `.gguf` loads, run exit 0 with
+  positive sample count, detections agree with the ORT reference,
+  render inspected and stored.
+- New gate-table rows (`yolo11`, `yolov10`) are added if and only if a
+  cell gets promoted or a terminal BLOCKED needs a home; until then the
+  V-25 record stands and the families stay unrepresented.
+
 ### Phase 2 out of scope
 
 - GGML VLM (`gemma4`); GPU execution; new CLI flags/presets/schema unless a
