@@ -296,6 +296,76 @@ so the stock `RfDetrSegmentationPostprocessor` applies) and
       `docs/BackendCoverage.md` Environments/Known-limitations notes updated.
       Every other GGML cell unchanged (`yolo26` BLOCKED at the converter;
       pose and other transformer rows need sibling work).
+- [ ] V-25 next YOLO layouts probed (2026-11-17, local sibling `develop`
+      8596a2e): `yolo11n.pt` exported (ultralytics 8.3.237, opset 12,
+      static 640 → `yolo11n.onnx` 10,741,277 bytes, sha256
+      `32920b66…5e1d`) and cache `yolov10n.onnx` (sha256
+      `d9a367e9…f6981a), `yolo11n_seg.onnx`, `yolo11n_pose.onnx` all
+      rejected by
+      `neuriplo/scripts/convert_onnx_to_gguf.py` (`0aee3ea`) with exit 1:
+      `YOLO file missing fixed DFL conv weight
+      'model.22.dfl.conv.weight'`. All files carry the weight at
+      `model.23.dfl.conv.weight` plus one attention subgraph
+      (`/model.10/m/m.0/attn` C2PSA in the yolo11 family, `/model.10` PSA in
+      yolov10n) the strict-GGUF converter does not map. Backbone/neck
+      indices also differ from the hardcoded v8 path (v11:
+      11/13/16/17/19/20 + head 23 vs v8: 12/15/16/18/19/21 + head 22),
+      so this is a new sibling graph path, not a rename. BLOCKED at the
+      sibling converter/graph builder, owner `neuriplo` — same class as
+      the `yolo26` V-12 BLOCKED, actionable handoff: accept the
+      `model.23` DFL path and map the single `/model.10` attention
+      subgraph. No gate-table rows added and no cells changed until the
+      sibling maps these layouts; `yolo11`/`yolov10` stay unrepresented.
+- [x] V-25 follow-up (2026-11-19): sibling PR #79 merged to `develop`
+      (`5b1ba85`) — `model.23` DFL path and single `/model.10` C2PSA
+      subgraph mapped for **det/seg only**. `yolo11pose` and `yolov10n`
+      have no sibling loader path (22 `pose` hits in `GGMLInfer.cpp` are
+      all transpose/compose words; no `v10` handling) and stay
+      converter-BLOCKED — pose needs a new sibling graph packet, v10 a
+      layout probe. R-9 therefore gates det+seg now (V-26/V-27); the
+      `yolov10` family stays unrepresented.
+- [x] V-26 YOLO11n detection GGUF gate: `/tmp/yolo11/yolo11n.onnx`
+      (10,741,277 bytes, sha256 `32920b66…` — same artifact as the V-25
+      probe) → GGUF 180 tensors / 10,655,744 bytes →
+      `--type=yolov8 ... --labels=labels/coco.names --min_confidence=0.4
+      --nms-threshold=0.5` — convert exit 0, run exit 0 (474 ms;
+      inference 335.5 ms), `GGML model loaded: full YOLO11`,
+      `run_report.json` status success, 1 sample, render inspected:
+      bicycle 0.93 / dog 0.93 / car 0.45. ORT reference (same
+      letterbox-640 preprocessing, conf 0.4 / NMS 0.5): bicycle 0.94 /
+      dog 0.93 / car 0.52 (+truck 0.49, same region) — same instances;
+      boxes agree within ~1 px; the car-proposal score gap is the known
+      NMS-selection fallout of the box-decode accumulation signature
+      (sibling `ParityVsYolo11` green with max_cell_agree=1).
+      Evidence under
+      `/home/oli/opencode-gates/ggml-matrix-regate/gate-yolo11/`
+      (evidence.json, app.log, render, run_report.json, gguf).
+      Built from `feature/ggml-matrix-coverage` with sibling worktree
+      `/home/oli/neuriplo-yolo11` (`6128849`, post-merge) via
+      `FETCHCONTENT_SOURCE_DIR_NEURIPLO`; tasks pinned at a `v0.8.5`
+      worktree (live checkout has moved past it and no longer provides
+      `neuriplo-tasks::vision-opencv`).
+- [x] V-27 YOLO11n-seg GGUF gate: `yolo11n-seg.onnx` (op-inventory cache,
+      11,764,411 bytes, `model.23` DFL + `model.23.proto/cv4` layout) →
+      GGUF 205 tensors / 11,668,576 bytes → `--type=yoloseg ...
+      --mask-threshold 0.5` — convert exit 0, run exit 0,
+      `run_report.json` status success, 1 sample, render inspected:
+      bicycle 0.88 / dog 0.85 / car 0.59, each with a tight instance
+      mask. ORT reference (116-ch + proto decode, same preprocessing):
+      bicycle 0.89 / dog 0.85 / car 0.70, masks firing in-box
+      (0.44/0.69/0.61) — same instances, boxes within ~1 px; car score
+      gap is the same NMS-selection fallout (sibling
+      `ParityVsYolo11Seg` green, proto max-cell ≤ 0.017). GGUF carries
+      `model.10.m.0.attn.qkv.conv.weight`, so the YOLO11 graph executes
+      (note: the loader log still prints "YOLOv8n-seg" — sibling
+      cosmetic follow-up, correct graph verified by tensor names and
+      output shapes). Evidence under
+      `/home/oli/opencode-gates/ggml-matrix-regate/gate-yolo11seg/`.
+- [x] V-28 matrix/docs: GGML `yolo11` det and `yolo11seg` cells `U` → `P`
+      (new gate-table rows); `docs/BackendCoverage.md` Environments/
+      Known-limitations/Remaining-coverage notes updated. Every other
+      GGML cell unchanged (`yolo26` BLOCKED at the converter;
+      `yolo11pose`/`yolov10n` BLOCKED for lack of a sibling loader path).
 
 ## Review (2026-11-14)
 
