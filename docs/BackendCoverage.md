@@ -28,7 +28,7 @@ of the example preset shown.
 ## Coverage by task
 
 The tables show the same tasks across two groups of backends. Parentheses
-contain model types and example presets.
+contain the model type and, when different, the example preset.
 
 - **NERT**: Neuriplo Engine Runtime.
 - **DNN**: OpenCV DNN; **ORT**: ONNX Runtime; **TRT**: TensorRT.
@@ -47,17 +47,17 @@ contain model types and example presets.
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | P | U | U | P | U |
 | Object detection (`ecdet`, `edgecrafter_det`) | P | U | P | P | B | B | B |
 | Object detection (`rfdetr`, `rfdetr-medium`) | P | P | P | P | P | P | B |
-| Instance segmentation (`yoloseg`, `yoloseg`) | P | P | P | P | B | B | B |
+| Instance segmentation (`yoloseg`) | P | P | P | P | B | B | B |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | P | U | DR | B | B | B | B |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | P | P | P | P | P | P | B |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | P | U | DR | B | P | B | P |
-| Video classification (`videomae`, `videomae`) | P | U | DR | B | B | RUNTIME-PASS | B |
-| Optical flow (`raft`, `raft`) | P | U | DR | B | B | B | B |
-| Pose estimation (`vitpose`, `vitpose`) | P | P | DR | B | B | B | B |
+| Video classification (`videomae`) | P | U | DR | B | B | RUNTIME-PASS | B |
+| Optical flow (`raft`) | P | U | DR | B | B | B | B |
+| Pose estimation (`vitpose`) | P | P | DR | B | B | B | B |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P | P | P | P | P | B |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | P | P | P | B | B | P | B |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | P | P | P | B | B | P | B |
-| Image understanding (`gemma4`, `gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
+| Depth estimation (`depth_anything_v2`) | P | P | P | B | B | P | B |
+| Open-vocabulary detection (`owlv2`) | P | P | P | B | B | P | B |
+| Image understanding (`gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
 | Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U |
 | Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | P | P | U | U | U |
 
@@ -67,24 +67,24 @@ contain model types and example presets.
 | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | U | U | P | U | N/A | P |
 | Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | P | N/A | U |
-| Object detection (`yolo11`, `yolo11`) | U | P | U | U | N/A | U |
+| Object detection (`yolo11`) | U | P | U | U | N/A | U |
 | Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | U | N/A | U |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | U | N/A | U |
 | Object detection (`ecdet`, `edgecrafter_det`) | U | U | P | U | N/A | P |
 | Object detection (`rfdetr`, `rfdetr-medium`) | U | P | P | P | N/A | P |
-| Instance segmentation (`yoloseg`, `yoloseg`) | U | P | U | U | N/A | P |
-| Instance segmentation (`yolo11seg`, `yolo11seg`) | U | P | U | U | N/A | U |
+| Instance segmentation (`yoloseg`) | U | P | U | U | N/A | P |
+| Instance segmentation (`yolo11seg`) | U | P | U | U | N/A | U |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | U | N/A | U |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | P | P | P | N/A | P |
 | Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | P | U | U | N/A | U |
-| Video classification (`videomae`, `videomae`) | U | U | U | U | N/A | U |
-| Optical flow (`raft`, `raft`) | U | U | U | U | N/A | U |
-| Pose estimation (`vitpose`, `vitpose`) | U | U | P | U | N/A | P |
-| Pose estimation (`yolo11pose`, `yolo11pose`) | U | P | U | U | N/A | U |
+| Video classification (`videomae`) | U | U | U | U | N/A | U |
+| Optical flow (`raft`) | U | U | U | U | N/A | U |
+| Pose estimation (`vitpose`) | U | U | P | U | N/A | P |
+| Pose estimation (`yolo11pose`) | U | P | U | U | N/A | U |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | U | P | P | N/A | P |
-| Depth estimation (`depth_anything_v2`, `depth_anything_v2`) | U | U | P | U | N/A | P |
-| Open-vocabulary detection (`owlv2`, `owlv2`) | U | U | U | U | N/A | P |
-| Image understanding (`gemma4`, `gemma4`) | N/A | U | N/A | N/A | P | U |
+| Depth estimation (`depth_anything_v2`) | U | U | P | U | N/A | P |
+| Open-vocabulary detection (`owlv2`) | U | U | U | U | N/A | P |
+| Image understanding (`gemma4`) | N/A | U | N/A | N/A | P | U |
 | Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | U | N/A | U |
 | Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | U | U | N/A | U |
 
@@ -111,7 +111,7 @@ Test counts below are from those runs, not fresh results for the current branch.
 | LiteRT | 2.19.0 | 192/192 | SDK's bundled gtest/gmock headers removed to avoid test crashes. EdgeCrafter requires an unreleased backend fix. |
 | ExecT | ExecuTorch 1.2.0, optimized SDK | App 191/191; backend 77/77 | XNNPACK enabled. KServe and gRPC compiled, but live transport was not tested in this build. |
 | MGX | MIGraphX 2.12.0.60401-83, ROCm 6.4.1, MI300X | Backend 6/6: 3 CPU + 3 GPU | Synthetic backend tests only; no app build or trained model tested. |
-| GGML | Local CPU, AMD Ryzen 7 5700U; unreleased neuriplo changes | App 197/197; backend GGMLInferTest 35 passed / 8 skipped / 0 failed (Yolo/Ort50 parity SKIPs without their `/tmp` artifacts) and GGMLOpsParity 13/13 (including GridSample, tie-aware SoftmaxRows, sine-embed, TopK tie-break, bilinear Resize, exact depthwise-conv3x3, Gguf* parser/loader fixtures); the 77/77 upstream CTest predates strict-GGUF loading (ONNX-frontend and graph-executor suites removed) | ResNet-50 top-5 matches ORT exactly; YOLOv8n detection and segmentation match within 0.01. The November 14 app runs used NGGL artifacts; the November 15 re-gate reran all three on `.gguf` with identical detections (V-16/V-17/V-18). RF-DETR detection gated 2026-11-16 on `.gguf` with detections identical to ORT (V-21: bicycle 0.94 / horse 0.92 / car 0.89 / motorbike 0.60). RF-DETR-seg gated 2026-11-16 on `.gguf` with ORT-identical instances and mask IoU 1.0 on every kept detection (V-23: bicycle 0.94 / horse 0.82 / car 0.61 / motorbike 0.59 + masks). No CI build job. |
+| GGML | Local CPU, AMD Ryzen 7 5700U; unreleased neuriplo changes | App 197/197; backend GGMLInferTest 35 passed / 8 skipped / 0 failed (Yolo/Ort50 parity SKIPs without their `/tmp` artifacts) and GGMLOpsParity 13/13 (including GridSample, tie-aware SoftmaxRows, sine-embed, TopK tie-break, bilinear Resize, exact depthwise-conv3x3, Gguf* parser/loader fixtures); the 77/77 upstream CTest predates strict-GGUF loading (ONNX-frontend and graph-executor suites removed) | ResNet-50 top-5 matches ORT exactly; YOLOv8n detection and segmentation match within 0.01 on `.gguf` with identical detections (V-16/V-17/V-18). RF-DETR detection gated 2026-11-16 on `.gguf` with detections identical to ORT (V-21: bicycle 0.94 / horse 0.92 / car 0.89 / motorbike 0.60). RF-DETR-seg gated 2026-11-16 on `.gguf` with ORT-identical instances and mask IoU 1.0 on every kept detection (V-23: bicycle 0.94 / horse 0.82 / car 0.61 / motorbike 0.59 + masks). No CI build job. |
 | LLaMA | llama.cpp b9085 | Unit tests unavailable | Unit-test executable fails to link because of missing ggml libraries. |
 | KServe | `neuriplo-kserve-runtime`, `real-onnx` / `grpc-onnx` | Manual HTTP tests passed | gRPC `ModelInfer` returns server error `13 INTERNAL`. |
 
@@ -124,10 +124,9 @@ loader (S-1 through S-3 plus the V-21 app gate; the `rfdetr` cell is
 promoted), and the complete RF-DETR-seg loader (S-4: 12-block backbone,
 4-layer decoder, mask/proto branch plus the V-23 app gate; the `rfdetrseg`
 cell is promoted). These fixes are not included
-in the released dependency pins. The November 14
-app results used NGGL artifacts; the November 15 re-gate reran
-classification, `yolov8`, and `yoloseg` on `.gguf` (strict-GGUF-only loader)
-with identical detections — see `specs/2026-11-13-ggml-matrix-coverage`
+in the released dependency pins. Classification, `yolov8`, and `yoloseg`
+are gated on `.gguf` (strict-GGUF-only loader) with identical detections —
+see `specs/2026-11-13-ggml-matrix-coverage`
 V-16/V-17/V-18.
 
 ## Known limitations
@@ -148,8 +147,7 @@ V-16/V-17/V-18.
   the original image and a fresh source build remain unverified.
 - **OpenCV DNN:** RT-DETRv4 needs a compatible export. EdgeCrafter's exact-GELU
   operation remains an import problem; GroundingDINO has not been retested.
-- **GGML:** only `.gguf` weights load; the earlier NGGL artifacts and the
-  ONNX-subset frontend were removed. YOLO26's attention head is still
+- **GGML:** only `.gguf` weights load; the ONNX-subset frontend was removed. YOLO26's attention head is still
   unsupported at the converter. YOLO11 det/seg/pose are gated on `.gguf`
   (V-26/V-27/V-29: `model.23` DFL path + `/model.10` C2PSA subgraph from
   sibling PR #79, pose kpt head from sibling `feature/ggml-pose-v10`); RF-DETR detection now has a complete loader
