@@ -366,6 +366,45 @@ so the stock `RfDetrSegmentationPostprocessor` applies) and
       Known-limitations/Remaining-coverage notes updated. Every other
       GGML cell unchanged (`yolo26` BLOCKED at the converter;
       `yolo11pose`/`yolov10n` BLOCKED for lack of a sibling loader path).
+- [x] V-29 YOLO11-pose sibling loader + parity (2026-11-19, sibling branch
+      `feature/ggml-pose-v10` from `develop` 5b1ba85): pose layout probed —
+      same det backbone (`model.23` DFL + `/model.10` C2PSA) with a 51ch
+      cv4 kpt head (3 scales, no proto) and `[1,56,8400]` output
+      (box 4 + cls 1 + 17x3 kpts); box constants 13/14/16, kpt decode
+      (raw*2 + anchor) * stride with anchor/stride Constant_23/24.
+      Converter needed no change (generic initializers + DFL check already
+      accept `model.23`). Loader additions: `is_yolo11_pose_` dispatch
+      (cv4 without proto + 51ch guard), `[1,56,8400]` shapes, 64-wide
+      1-class cls branch, kpt decode + interleave to x0,y0,c0...,
+      `yconst` accepts `{2,8400}`, seg completeness check relaxed to
+      proto-without-cv4, log labels (`YOLO11n-pose`, plus `YOLO11n-seg`
+      mislabel fixed). New `ParityVsYolo11Pose` gate (max_cell_agree=1,
+      box/kpt 10.0, cls 1e-2): gray box 1.88/kpt 1.50, zeros 2.10/1.87,
+      gradient 0.71/0.50, all agree=1. Debugging note: an early reshape
+      `[8400,1,51,1]`→`[3,17,8400]` silently transposed (column-major
+      reshape cannot move the anchor axis first); fixed with a strided
+      `[8400,17,3]` view + explicit per-keypoint interleave. Full GGML
+      suite: 25 passed, 0 failed (det/seg/v8 parity unchanged).
+- [x] V-30 YOLO11n-pose GGUF gate: `yolo11n-pose.onnx` (op-inventory cache,
+      11,764,411 bytes) → GGUF 199 tensors / 11,760,224 bytes →
+      `--type=yolo11pose --source=data/bus.jpg ... --min_confidence=0.4
+      --nms-threshold 0.5` — convert exit 0, run exit 0, `GGML model
+      loaded: full YOLO11n-pose`, `run_report.json` status success,
+      render inspected: 3 persons with correct 17-kpt skeletons on
+      bodies. ORT reference (same letterbox-640 preprocessing, conf 0.4
+      / NMS 0.5): same 3 persons (0.90/0.88/0.88, 9–16/17 visible kpts),
+      nose/ankle coords consistent with the render. (`data/dog.jpg`
+      correctly yields 0 persons — no person in frame; evidence kept as
+      the negative control.) Evidence under
+      `/home/oli/opencode-gates/ggml-matrix-regate/gate-yolo11pose/`
+      (evidence.json, app.log, render, run_report.json, gguf). Built
+      from `feature/ggml-matrix-coverage` against sibling
+      `feature/ggml-pose-v10` worktree via `FETCHCONTENT_SOURCE_DIR_NEURIPLO`
+      (tasks pinned at a `v0.8.5` worktree as in V-26).
+- [x] V-31 matrix/docs: GGML `yolo11pose` cell `U` → `P` (new gate-table
+      row); `docs/BackendCoverage.md` Known-limitations/Remaining-coverage
+      notes updated. `yolov10n` stays BLOCKED (in-graph TopK decode needs
+      mapping — separate packet); `yolo26` unchanged.
 
 ## Review (2026-11-14)
 
