@@ -119,9 +119,14 @@ foundation; per-model graph work continues there, gating happens here.
 - [x] Rank 4a — YOLOv11 `yolo11n` det + seg (V-26/V-27, 2026-11-19;
       sibling PR #79 mapped the `model.23` DFL path and `/model.10` C2PSA
       for det/seg only).
-- [ ] Rank 4b — YOLOv11 pose (`yolo11pose`) + `yolov10n`: still
-  Converter-BLOCKED today (V-25 follow-up): no sibling loader path —
-  pose needs a new sibling graph packet, v10 a layout probe.
+- [x] Rank 4b-i — YOLOv11 pose (`yolo11pose`, V-29/V-30/V-31, 2026-11-19;
+      sibling `feature/ggml-pose-v10` maps the 51ch cv4 kpt head; no
+      converter change needed).
+- [ ] Rank 4b-ii — `yolov10n`: still converter-BLOCKED. Layout probed
+      (2026-11-19): same `model.23` DFL + single-block PSA attention
+      (`model.10.attn`, no `m.0`), `[1,300,6]` output with in-graph
+      TopK/index-select decode (no NMS op). Needs a sibling loader
+      packet mapping the PSA block + TopK tail.
   Converter-BLOCKED today (V-25): both layouts carry the DFL conv weight at
   `model.23.dfl.conv.weight` (converter hard-requires `model.22`) plus one
   `/model.10` attention subgraph (C2PSA in yolo11, PSA in yolov10n).
