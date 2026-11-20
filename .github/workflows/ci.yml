@@ -212,9 +212,40 @@ jobs:
       if: ${{ matrix.variant == 'build-onnxruntime' }}
     - name: Download ONNX Runtime
       run: |
-        wget -q https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz
-        tar -xzf onnxruntime-linux-x64-${ORT_VERSION}.tgz -C ~
-        rm onnxruntime-linux-x64-${ORT_VERSION}.tgz
+        set -e
+        dest="$HOME/onnxruntime-linux-x64-${ORT_VERSION}"
+        tmp="$(mktemp -d)"
+        trap 'rm -rf "$tmp"' EXIT
+        if wget -q "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz" -O "$tmp/ort.tgz"; then
+          tar -xzf "$tmp/ort.tgz" -C "$tmp"
+          rm -rf "$dest"
+          mv "$tmp/onnxruntime-linux-x64-${ORT_VERSION}" "$dest"
+        else
+          # The upstream GitHub repo is currently private, so release assets
+          # 404. Fall back to the official Microsoft NuGet CPU package of the
+          # exact pinned version and map it onto the release-tgz layout
+          # (include/, lib/, .so.1 SONAME chain, VERSION_NUMBER) that
+          # neuriplo's DependencyValidation expects.
+          echo "GitHub release unavailable; falling back to NuGet microsoft.ml.onnxruntime ${ORT_VERSION}..."
+          wget -q "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/${ORT_VERSION}/microsoft.ml.onnxruntime.${ORT_VERSION}.nupkg" -O "$tmp/ort.nupkg"
+          mkdir -p "$tmp/ort-nuget"
+          if command -v unzip >/dev/null 2>&1; then
+            unzip -q "$tmp/ort.nupkg" -d "$tmp/ort-nuget"
+          else
+            python3 -c "import zipfile; zipfile.ZipFile('$tmp/ort.nupkg').extractall('$tmp/ort-nuget')"
+          fi
+          inc_dir="$(find "$tmp/ort-nuget" -type f -name onnxruntime_cxx_api.h | head -n 1 | xargs dirname)"
+          lib_dir="$(find "$tmp/ort-nuget" -type f -path "*linux-x64*" -name "libonnxruntime.so*" | head -n 1 | xargs dirname)"
+          test -n "$inc_dir" && test -n "$lib_dir"
+          rm -rf "$dest"
+          mkdir -p "$dest/include" "$dest/lib"
+          cp -r "$inc_dir/." "$dest/include/"
+          cp "$lib_dir/"* "$dest/lib/"
+          if [ -f "$dest/lib/libonnxruntime.so" ] && [ ! -e "$dest/lib/libonnxruntime.so.1" ]; then
+            ln -s libonnxruntime.so "$dest/lib/libonnxruntime.so.1"
+          fi
+          echo "${ORT_VERSION}" > "$dest/VERSION_NUMBER"
+        fi
       if: ${{ matrix.variant == 'build-onnxruntime' && (steps.build_onnxruntime_cache_ort.outputs.cache-hit != 'true') }}
     - name: Set up ccache
       uses: hendrikmuhs/ccache-action@v1
