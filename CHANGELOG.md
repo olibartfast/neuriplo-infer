@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Add a `GGML` column to the backend coverage matrix (`docs/BackendCoverage.md`,
+  evidence section E19). The upstream builder and 77/77 engine tests are
+  green, and local `-DDEFAULT_BACKEND=GGML` app runs now pass classification
+  (ResNet-50, exact ORT top-5), YOLOv8n detection (bicycle 0.89, dog 0.93,
+  car 0.61), and YOLOv8n-seg (dog 0.87, bicycle 0.80, car 0.45 plus masks)
+  against the unreleased sibling loader. Remaining GGML task cells stay
+  UNTESTED, with `yolo26` documented as BLOCKED at the sibling converter; no
+  CI job or released pin is claimed.
+- Add `scripts/ggml_app_gate.py` for repeatable GGML app-surface gates: it
+  converts the artifact, runs `neuriplo-infer`, and records commands, hashes,
+  timings, the app log, the run report, and rendered images as JSON evidence.
+  `scripts/test_ggml_app_gate.py` covers the helper in CI.
+- Record the GGML transformer/RT-DETR blocker: reusable attention/executor
+  op helpers landed in `neuriplo` with op-level parity, but no transformer
+  app gate is claimed until multi-input/INT64 and a generic graph importer
+  land. `rtdetr` stays UNTESTED with the blocker cited in E3.
+
 ### Changed
 
 - Remove the application's OpenCV dependency: the app configures, builds, and
