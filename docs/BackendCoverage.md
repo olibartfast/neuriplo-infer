@@ -1,7 +1,7 @@
 # Backend coverage
 
 Tested model and backend combinations in `neuriplo-infer`.
-**Results last updated: 2026-11-15.** Some results use local, unreleased
+**Results last updated: 2026-11-25.** Some results use local, unreleased
 fixes; see [tested environments](#environments) and [known limitations](#known-limitations).
 
 Each binary uses the local backend selected at build time (`DEFAULT_BACKEND`).
@@ -43,7 +43,7 @@ contain the model type and, when different, the example preset.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | P | P | P | P | P | P | B |
 | Object detection (`yolov8`, `yolov8_executorch`) | P | P | DR | B | B | B | P |
-| Object detection (`rtdetr`, `rtdetrv4`) | P | P | DR | DR | P | B | B |
+| Object detection (`rtdetr`, `rtdetrv4`) | P | P | DR | DR | P | P | B |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | P | U | U | P | U |
 | Object detection (`ecdet`, `edgecrafter_det`) | P | U | P | P | B | B | B |
 | Object detection (`rfdetr`, `rfdetr-medium`) | P | P | P | P | P | P | B |
@@ -106,7 +106,7 @@ Test counts below are from those runs, not fresh results for the current branch.
 | ORT | 1.19.2 CPU | 179/179 | Used a local SDK because the pinned 1.28.0 download was unavailable. Rendered outputs checked. |
 | TRT | 11.2.1.2, NGC `tensorrt:26.08` | CI image build passed; detection, segmentation, and keypoint runs passed | Engines rebuilt from ONNX; `trtexec` 11.2 no longer accepts `--fp16`. |
 | TRC | LibTorch 2.14 CPU | 134/134 | RF-DETR uses AOTInductor (`.pt2`); other results use TorchScript. KServe disabled because of a protobuf conflict. |
-| OV | OpenVINO 2026.3.0 | Live inference passed; unit tests unavailable | Unit-test executable fails to link; CI also builds with tests disabled. |
+| OV | OpenVINO 2026.3.0 | Live inference passed; unit tests unavailable | Unit-test executable fails to link; CI also builds with tests disabled. `rtdetr` gated 2026-11-25 on the x86_64 OpenVINO worker (exit 0, render-checked dog/bicycle/car) — see `docs/evidence/ov-rtdetr-2026-11-25.json`. |
 | TF | TensorFlow 2.19 | 179/179 | The 2.21 C++ runtime failed to load because of a protobuf ABI conflict. |
 | LiteRT | 2.19.0 | 192/192 | SDK's bundled gtest/gmock headers removed to avoid test crashes. EdgeCrafter requires an unreleased backend fix. |
 | ExecT | ExecuTorch 1.2.0, optimized SDK | App 191/191; backend 77/77 | XNNPACK enabled. KServe and gRPC compiled, but live transport was not tested in this build. |
@@ -164,6 +164,9 @@ V-16/V-17/V-18.
 
 - Run the combinations marked **DR**, including RT-DETRv4 on TensorRT and
   RAFT, ViTPose, and VideoMAE on ONNX Runtime.
+- ARM64 TensorRT gates need prebuilt `.engine` plans: the TRT backend
+  deserializes the weights path and does not build from ONNX in-process
+  (yolov8n/rtdetr `.onnx` fail with a serialization magic-tag error).
 - Add repeatable Torch and OpenVINO examples for the manual `--backend` runs.
 - Test EdgeCrafter segmentation and torchvision ResNet on OpenCV DNN 5.x.
 - Add a Gaussian-splatting example; no preset exists yet.
