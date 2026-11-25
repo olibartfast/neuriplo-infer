@@ -30,6 +30,12 @@ type" below):
    a new task **category** (not just a new model type within an existing category)
    is added in neuriplo-tasks, update the parenthesized task list under
    `## Key Features`. This is step 4 in the full documentation checklist below.
+4. **Task × backend coverage is tracked, not assumed.** When adding or
+   changing tasks, model types, export presets, or backend integrations,
+   follow `.agents/skills/backend-coverage/SKILL.md` to verify evidence
+   levels and sync `docs/BackendCoverage.md`. A `P` covers the tested model
+   + environment only — never promote a cell on code inspection or
+   compilation alone.
 
 ## Repository workflow (GitFlow — mandatory)
 
