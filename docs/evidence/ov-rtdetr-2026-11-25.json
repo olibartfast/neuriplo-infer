@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-25",
+  "scope": "OpenVINO rtdetr app gate on the x86_64 worker (Intel CPU); promotes the OV rtdetr cell from B to P.",
+  "node": {
+    "role": "x86_64 OpenVINO worker",
+    "os": "Ubuntu 26.04",
+    "cpu": "Intel x86_64, 4 cores"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "187f9d5",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=OPENVINO -DOpenVINO_DIR=$HOME/dependencies/openvino_2026.3.0/runtime/cmake -DNEURIPLO_INFER_ENABLE_GRPC=OFF",
+    "grpc_off_reason": "system gRPC dev package is broken (missing grpc_cpp_plugin); OV gates need local backends + HTTP KServe only",
+    "binary_sha256": "22ec078a512eb9f8e35a2f21daef25edfa9fa89218c11ddf811b3f0aa1999623",
+    "openvino": "2026.3.0"
+  },
+  "gate": {
+    "type": "rtdetr",
+    "model": "~/slurm-blocked-20261104/dnn/models/rtdetr.onnx",
+    "model_sha256": "c114037232a26c67f1986505213358ef7bf3628b22714107bd333679b4495547",
+    "source": "~/repos/neuriplo-infer/data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "labels": "~/slurm-blocked-20261104/dnn/labels/coco.names",
+    "labels_sha256": "b53100d68b84776c58ced22e1c4ac344edb97e56bafffe07a2de3e69385e4240",
+    "flags": "--use-gpu=false --no_display=true --warmup=false --min_confidence=0.4",
+    "exit": 0,
+    "inference_ms": 311,
+    "stages_ms": {
+      "model_load": 1305.551474,
+      "preprocess": 31.568255,
+      "inference": 277.801488,
+      "postprocess": 0.012386,
+      "render": 118.041678
+    },
+    "render": "~/repos/neuriplo-infer/data/output/processed_rtdetr_local.png",
+    "render_sha256": "28b46ad30a7e33c96976da256dc87f3d4ca561d210fb42b439d8e612cf000711",
+    "checked": "render inspected: dog, bicycle, car boxes correct on dog.jpg"
+  }
+}
