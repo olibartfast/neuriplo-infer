@@ -41,6 +41,18 @@ and kills the whole command process group on timeout. This limit includes mapped
 model files and shared libraries; increase it explicitly for larger models.
 No cluster configuration is changed.
 
+Worker notes (partition `cpu`):
+
+- ARM64 worker (JetPack R39, TRT 10.16.2): `slurmd` runs inside a
+  `slurm-worker` Docker container, not on the host. No host `slurmd`, no
+  passwordless sudo on the node. If the container is (re)started while the
+  controller still marks the node DOWN, an admin must resume it
+  (`scontrol update NodeName=<worker> State=RESUME`); re-registration alone
+  does not lift DOWN.
+- x86_64 OpenVINO worker (Ubuntu 26.04): native `slurmd` via systemd.
+  OpenVINO SDKs live under `~/dependencies` (the 2026.3.0 SDK matches the
+  pinned OV version).
+
 `submitted.json` records every accepted submission. Each job retains
 `runtime.log` and `result.json` with artifact SHA-256 hashes, node, UTC timestamps,
 exit status and duration. Artifact hashing happens on the worker before
