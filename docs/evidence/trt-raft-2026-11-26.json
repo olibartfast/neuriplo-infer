@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT RAFT-large app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Optical flow (raft)` from B to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "torchvision raft_large DEFAULT weights via neuriplo-tasks TritonRAFTWrapper (input1/input2 in, flow_prediction out, opset 16). Two deviations from sibling script, both forced by toolchain: (1) dynamo=False — torch 2.15 defaults torch.onnx.export to the dynamo exporter whose decomposition pass fails on RAFT corr_block; (2) static 1x3x520x960 export — dynamic-axes ONNX fails TRT 10.16 engine build ('Could not find any implementation for node ForeignNode[...Cast/Reshape...]'). See /tmp/raft_export_legacy.py logic.",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=raft_large_static.onnx --saveEngine=raft_large.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "raft",
+    "model": "/home/oli/trt-models/extra/raft_large.engine",
+    "model_onnx_sha256": "f2f32717cabb15805728e87f34aded32ebd261753443d3cb8352107c1d97dd85",
+    "model_engine_sha256": "8499fcf5363bbcb84473372625df791f66289ec576227cf4c12e723e659d42f7",
+    "source": "data/frame_001.png,data/frame_002.png",
+    "source_sha256": "dc68ab6c0849abddf124b9d6fa412e7ffa1314396538159ee265365ac6e63ab7 / 8234a02701255556d1608d767ed8929b534097285f52a5d2c5f5ec5eb7b8d01d",
+    "flags": "--input_sizes=3,520,960;3,520,960 --use-gpu=true --no_display=true",
+    "exit": 0,
+    "inference_ms": 418,
+    "stages_ms": {
+      "model_load": 415.793336,
+      "preprocess": 48.492423,
+      "inference": 418.283032,
+      "postprocess": 110.70711,
+      "render": 24.811081
+    },
+    "render": "data/output/processed_frame_optical_flow_0.jpg",
+    "render_sha256": "770642a47a0d0002ec9ade38ad5fb7984862e5d74ec3e7b184a52c6fe3b4423e",
+    "checked": "render inspected: coherent Middlebury-color flow on the frame pair — moving figure (magenta) and ball (green) distinct from background wash; static-shape engine matches the app's 520x960 input sizes"
+  }
+}

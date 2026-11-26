@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT rtdetr-l (Ultralytics RT-DETR) app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Object detection (rtdetrul, Ultralytics RT-DETR)` from U to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "ultralytics pip package: yolo export model=rtdetr-l.pt format=onnx (weights auto-downloaded by ultralytics); per neuriplo-tasks export/detection/ObjectDetection.md RT-DETR (Ultralytics)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=rtdetr-l.onnx --saveEngine=rtdetr-l.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "rtdetrul",
+    "model": "/home/oli/trt-models/extra/rtdetr-l.engine",
+    "model_onnx_sha256": "53bc467c8f34fbcbfcf44ad8fe98fd324d3c23a465ce94732a05e85a590119c3",
+    "model_engine_sha256": "af9189902c65a7e185c14571f79d6248a2f2f795c3b859075111bd073ffdb815",
+    "source": "data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "labels": "/home/oli/trt-models/coco.names",
+    "labels_sha256": "b53100d68b84776c58ced22e1c4ac344edb97e56bafffe07a2de3e69385e4240",
+    "flags": "--input_sizes=3,640,640;2 --use-gpu=true --no_display=true --min_confidence=0.4",
+    "exit": 0,
+    "inference_ms": 93,
+    "stages_ms": {
+      "model_load": 304.250899,
+      "preprocess": 21.666758,
+      "inference": 92.881941,
+      "postprocess": 0.010913,
+      "render": 132.590496
+    },
+    "render": "data/output/processed_rtdetrul_local.png",
+    "render_sha256": "a232b57e41de11a3efa6c2b4593a1ef9267d1a496e2dc2337505923a09543240",
+    "checked": "render inspected: dog, bicycle, car boxes correct on dog.jpg"
+  }
+}

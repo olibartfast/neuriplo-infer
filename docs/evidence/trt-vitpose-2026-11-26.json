@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT ViTPose-base app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Pose estimation (vitpose)` from B to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "neuriplo-tasks@v0.8.5 export/pose_estimation/vitpose/export_vitpose_to_onnx.py --output vitpose.onnx (default usyd-community/vitpose-base-simple from HuggingFace, 86M params; weights in vitpose.onnx.data)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=vitpose.onnx --saveEngine=vitpose.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "vitpose",
+    "model": "/home/oli/trt-models/extra/vitpose.engine",
+    "model_onnx_sha256": "0e25798b9326e8a97915337f0bc38361f3769ca50eb3ea7adf83ee3fa40a8c8b",
+    "model_engine_sha256": "532db952d6a1d3dc163a0c123196c72e6e049f5c34fa62fba539de6089553db5",
+    "source": "data/person.jpg",
+    "source_sha256": "cdcbab947e46110fc2b77784ac54ddbbab2640f1e44cb5e91fc8984a9793a7d1",
+    "flags": "--use-gpu=true --no_display=true",
+    "exit": 0,
+    "inference_ms": 54,
+    "stages_ms": {
+      "model_load": 401.734784,
+      "preprocess": 3.378232,
+      "inference": 53.685827,
+      "postprocess": 0.183656,
+      "render": 76.979222
+    },
+    "render": "data/output/processed_vitpose_local.png",
+    "render_sha256": "5cf34dd112da18a1afb0d311dbd60a5a5d99ba0ce299f71197d2f0a00d67e454",
+    "checked": "render inspected: 17-keypoint skeleton overlays the person in person.jpg (head, shoulders, elbows, hips, knees, ankles in anatomically correct positions)"
+  }
+}

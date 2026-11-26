@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT OWLv2 (google/owlv2-base-patch16-ensemble) app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Open-vocabulary detection (owlv2)` from B to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "neuriplo-tasks@v0.8.5 export/open_vocab_detection/owlv2/export_owlv2_to_onnx.py --model google/owlv2-base-patch16-ensemble --image-height 960 --image-width 960 --max-queries 16 --sequence-length 16 --test (ONNX self-check passed: logits (1,3600,16))",
+    "tokenizer": "CLIP vocab.json/merges.txt from openai/clip-vit-base-patch32 on HuggingFace",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=owlv2.onnx --saveEngine=owlv2.engine --memPoolSize=workspace:4096"
+  },
+  "gate": {
+    "type": "owlv2",
+    "model": "/home/oli/trt-models/extra/owlv2.engine",
+    "model_onnx_sha256": "6725ccef84e1c9eb9b849b04387028b1d62708325ae700852efaf4744d280244",
+    "model_engine_sha256": "df560d1a8494b51b701e1c26593a304fc710a91f95d1b3a206a4182936b447cd",
+    "tokenizer_vocab_sha256": "5047b556ce86ccaf6aa22b3ffccfc52d391ea4accdab9c2f2407da5b742d4363",
+    "tokenizer_merges_sha256": "f526393189112391ce6f9795d4695f704121ce452c3aad1f5335cc41337eba85",
+    "source": "data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "flags": "--text_prompts=cat;dog;bus --min_confidence=0.2 --use-gpu=true --no_display=true",
+    "exit": 0,
+    "inference_ms": 845,
+    "stages_ms": {
+      "model_load": 1070.79857,
+      "preprocess": 43.689945,
+      "inference": 844.78816,
+      "postprocess": 2.477081,
+      "render": 171.563985
+    },
+    "render": "data/output/processed_owlv2_local.png",
+    "render_sha256": "4ae41781d39654be3e89f983ce53bf9841556b4eaae0c546edba25f616d263f2",
+    "checked": "render inspected: the dog prompt fires on the dog (orange open-vocab box on dog.jpg); no spurious boxes on bicycle/car at min_confidence 0.2"
+  }
+}

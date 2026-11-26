@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT VideoMAE-base app run on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Video classification (videomae)` from B to RUNTIME-PASS (NOT P: the app exposes no predicted action label or render for video classification, so correctness is unchecked).",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "neuriplo-tasks@v0.8.5 export/video_classification/videomae/export_videomae_to_onnx.py --output videomae.onnx (default MCG-NJU/videomae-base-finetuned-kinetics from HuggingFace)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=videomae.onnx --saveEngine=videomae.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "videomae",
+    "model": "/home/oli/trt-models/extra/videomae.engine",
+    "source": "/tmp/synth_motion.mp4 (locally synthesized 48-frame 224x224 zoom-pan of data/dog.jpg via ffmpeg; NOT committed, no ground-truth action)",
+    "flags": "--use-gpu=true --no_display=true",
+    "exit": 0,
+    "frames": 46,
+    "stages_ms": {
+      "model_load": 389.266925,
+      "preprocess": 2041.80171,
+      "inference": 4668.770149,
+      "postprocess": 0.677917,
+      "render": 2.508352
+    },
+    "checked": "run_report.json status success with per-stage timings; 46 frames consumed in 16-frame windows. No predicted action label is logged and no render artifact is written by the video-classification path, so output correctness is UNCHECKED — RUNTIME-PASS only. Reaching P needs a real action clip plus a label/render check."
+  }
+}
