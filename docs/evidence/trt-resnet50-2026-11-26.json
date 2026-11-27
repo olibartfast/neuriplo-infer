@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT resnet50 (torchvision-classifier) app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Classification (torchvisionclassifier, torchvision_classifier)` from B to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "neuriplo-tasks@v0.8.5 export/classification/torchvision/export_torchvision_classifier.py --library torchvision --model resnet50 --export_format onnx (torch 2.15.0 / torchvision 0.29.2 / onnx 1.23.2, weights fetched by torchvision DEFAULT)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=resnet50.onnx --saveEngine=resnet50.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "torchvisionclassifier",
+    "model": "/home/oli/trt-models/extra/resnet50.engine",
+    "model_onnx_sha256": "c04e2a06c2a613e2e00b7a60172aa76e5769ede850b0ca38b45481ca9fb4aaf3",
+    "model_engine_sha256": "cb672d33488b4ee9d6cf6d26c75921bb05a63d4b84d5c54194bcee2ae1558a57",
+    "source": "data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "labels": "labels/imagenet_labels.txt (pytorch/hub imagenet_classes.txt, 1000 lines)",
+    "labels_sha256": "1f386e0d1cb6e28b9c2dac651c3dea6801e98ad1b41a14ce6bb1a093d72069f5",
+    "flags": "--use-gpu=true --no_display=true",
+    "exit": 0,
+    "inference_ms": 15,
+    "stages_ms": {
+      "model_load": 183.462422,
+      "preprocess": 4.248856,
+      "inference": 14.776815,
+      "postprocess": 0.043458,
+      "render": 107.130353
+    },
+    "render": "data/output/processed_torchvisionclassifier_local.png",
+    "render_sha256": "4bac9396a9c87c6aa82d8d5552deffad1d6c6c0ab32ed303da5fc3b5dff9ceac",
+    "checked": "app returned 5 ranked Classification results (5 label bands rendered; this OpenCV-free build draws bands without text by design, see renderRankedLabels). Semantic validity cross-checked in venv: torchvision resnet50 DEFAULT weights on data/dog.jpg give top-1 malamute 0.29, then bicycle-built-for-two, mountain bike, Eskimo dog, Tibetan mastiff."
+  }
+}

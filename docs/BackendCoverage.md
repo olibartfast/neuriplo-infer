@@ -1,7 +1,7 @@
 # Backend coverage
 
 Tested model and backend combinations in `neuriplo-infer`.
-**Results last updated: 2026-11-25.** Some results use local, unreleased
+**Results last updated: 2026-11-26.** Some results use local, unreleased
 fixes; see [tested environments](#environments) and [known limitations](#known-limitations).
 
 Each binary uses the local backend selected at build time (`DEFAULT_BACKEND`).
@@ -42,21 +42,21 @@ contain the model type and, when different, the example preset.
 | Task (representative) | NERT | DNN | ORT | TRT | TRC | OV | TF |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | P | P | P | P | P | P | B |
-| Object detection (`yolov8`, `yolov8_executorch`) | P | P | DR | B | B | B | P |
-| Object detection (`rtdetr`, `rtdetrv4`) | P | P | DR | DR | P | P | B |
-| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | P | U | U | P | U |
+| Object detection (`yolov8`, `yolov8_executorch`) | P | P | DR | P | B | B | P |
+| Object detection (`rtdetr`, `rtdetrv4`) | P | P | DR | P | P | P | B |
+| Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | P | P | U | P | U |
 | Object detection (`ecdet`, `edgecrafter_det`) | P | U | P | P | B | B | B |
 | Object detection (`rfdetr`, `rfdetr-medium`) | P | P | P | P | P | P | B |
 | Instance segmentation (`yoloseg`) | P | P | P | P | B | B | B |
-| Instance segmentation (`ecseg`, `edgecrafter_seg`) | P | U | DR | B | B | B | B |
+| Instance segmentation (`ecseg`, `edgecrafter_seg`) | P | U | DR | P | B | B | B |
 | Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | P | P | P | P | P | P | B |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | P | U | DR | B | P | B | P |
-| Video classification (`videomae`) | P | U | DR | B | B | RUNTIME-PASS | B |
-| Optical flow (`raft`) | P | U | DR | B | B | B | B |
-| Pose estimation (`vitpose`) | P | P | DR | B | B | B | B |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | P | U | DR | P | P | B | P |
+| Video classification (`videomae`) | P | U | DR | RUNTIME-PASS | B | RUNTIME-PASS | B |
+| Optical flow (`raft`) | P | U | DR | P | B | B | B |
+| Pose estimation (`vitpose`) | P | P | DR | P | B | B | B |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P | P | P | P | P | B |
-| Depth estimation (`depth_anything_v2`) | P | P | P | B | B | P | B |
-| Open-vocabulary detection (`owlv2`) | P | P | P | B | B | P | B |
+| Depth estimation (`depth_anything_v2`) | P | P | P | P | B | P | B |
+| Open-vocabulary detection (`owlv2`) | P | P | P | P | B | P | B |
 | Image understanding (`gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
 | Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U |
 | Keypoint matching (`SuperPoint + LightGlue`, no app preset) | U | U | P | P | U | U | U |
@@ -104,7 +104,7 @@ Test counts below are from those runs, not fresh results for the current branch.
 | --- | --- | --- | --- |
 | DNN | OpenCV 5.0.0, built from source | App 191/191; backend 80/80 | Coverage is for 5.x. Distribution-provided 4.6 cannot load the current test models. |
 | ORT | 1.19.2 CPU | 179/179 | Used a local SDK because the pinned 1.28.0 download was unavailable. Rendered outputs checked. |
-| TRT | 11.2.1.2, NGC `tensorrt:26.08` | CI image build passed; detection, segmentation, and keypoint runs passed | Engines rebuilt from ONNX; `trtexec` 11.2 no longer accepts `--fp16`. |
+| TRT | 11.2.1.2, NGC `tensorrt:26.08` | CI image build passed; detection, segmentation, and keypoint runs passed | Engines rebuilt from ONNX; `trtexec` 11.2 no longer accepts `--fp16`. Jetson Orin ARM64 (Ubuntu 24.04, TRT 10.16.2, JetPack R39) gated 2026-11-26: `rtdetrv4`, `rtdetr`, `rtdetr-l`, `yolov8n`, `resnet50`, `depth_anything_v2`, `owlv2`, `vitpose`, `raft_large` (static 1x3x520x960 export; dynamic-axes ONNX fails TRT 10.16 tactic selection), and `videomae-base` (RUNTIME-PASS: 46 synthetic frames, valid report, no label/render to check), and `ecseg_s` (native EdgeCrafter export; exact-GELU converts fine on TRT) engines built with local `trtexec` 10.16.2 — detection runs render-checked dog/bicycle/car, classifier cross-checked top-1 malamute on dog.jpg — see `docs/evidence/trt-rtdetrv4-2026-11-26.json`, `trt-rtdetr-2026-11-26.json`, `trt-yolov8-2026-11-26.json`, `trt-resnet50-2026-11-26.json`, `trt-rtdetrul-2026-11-26.json`, `trt-depth-2026-11-26.json`, `trt-owlv2-2026-11-26.json`, `trt-vitpose-2026-11-26.json`, `trt-raft-2026-11-26.json`, `trt-videomae-2026-11-26.json`, `trt-ecseg-2026-11-26.json`. |
 | TRC | LibTorch 2.14 CPU | 134/134 | RF-DETR uses AOTInductor (`.pt2`); other results use TorchScript. KServe disabled because of a protobuf conflict. |
 | OV | OpenVINO 2026.3.0 | Live inference passed; unit tests unavailable | Unit-test executable fails to link; CI also builds with tests disabled. `rtdetr` gated 2026-11-25 on the x86_64 OpenVINO worker (exit 0, render-checked dog/bicycle/car) — see `docs/evidence/ov-rtdetr-2026-11-25.json`. |
 | TF | TensorFlow 2.19 | 179/179 | The 2.21 C++ runtime failed to load because of a protobuf ABI conflict. |
@@ -162,11 +162,10 @@ V-16/V-17/V-18.
 
 ## Remaining coverage
 
-- Run the combinations marked **DR**, including RT-DETRv4 on TensorRT and
-  RAFT, ViTPose, and VideoMAE on ONNX Runtime.
+- Run the combinations marked **DR**, including RAFT, ViTPose, and VideoMAE on ONNX Runtime. RT-DETRv4 on TensorRT is now gated on Jetson Orin ARM64 (TRT 10.16.2); the x86_64 NGC path remains dry-run only.
 - ARM64 TensorRT gates need prebuilt `.engine` plans: the TRT backend
   deserializes the weights path and does not build from ONNX in-process
-  (yolov8n/rtdetr `.onnx` fail with a serialization magic-tag error).
+  (yolov8n/rtdetr `.onnx` fail with a serialization magic-tag error). `rtdetrv4`, `rtdetr`, `rtdetr-l`, `yolov8n`, `resnet50`, `depth_anything_v2`, `owlv2`, `vitpose`, and `raft_large`, and `ecseg_s` are now gated on Jetson Orin (TRT 10.16.2); all local-table TRT cells with available exports are now covered — remaining: x86_64 NGC TRT 11.2 live runs.
 - Add repeatable Torch and OpenVINO examples for the manual `--backend` runs.
 - Test EdgeCrafter segmentation and torchvision ResNet on OpenCV DNN 5.x.
 - Add a Gaussian-splatting example; no preset exists yet.

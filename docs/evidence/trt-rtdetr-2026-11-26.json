@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT rtdetr (v1/v2 family ONNX) app gate on Jetson Orin ARM64 (TRT 10.16.2); reinforces the P promotion of `Object detection (rtdetr, rtdetrv4)`. The ONNX is byte-identical to the model used in the OV rtdetr gate (2026-11-25). P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=rtdetr.onnx --saveEngine=rtdetr.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "rtdetr",
+    "model": "/home/oli/trt-models/rtdetr.engine",
+    "model_onnx_sha256": "c114037232a26c67f1986505213358ef7bf3628b22714107bd333679b4495547",
+    "model_engine_sha256": "118f9cd93980425f61d8411764fc55a19d51b99214a926f27f29b33b06a1247a",
+    "source": "data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "labels": "/home/oli/trt-models/coco.names",
+    "labels_sha256": "b53100d68b84776c58ced22e1c4ac344edb97e56bafffe07a2de3e69385e4240",
+    "flags": "--input_sizes=3,640,640;2 --use-gpu=true --no_display=true --min_confidence=0.4",
+    "exit": 0,
+    "inference_ms": 37,
+    "stages_ms": {
+      "model_load": 224.424957,
+      "preprocess": 21.95051,
+      "inference": 37.108554,
+      "postprocess": 0.01184,
+      "render": 129.618827
+    },
+    "render": "data/output/processed_rtdetr_local.png",
+    "render_sha256": "28b46ad30a7e33c96976da256dc87f3d4ca561d210fb42b439d8e612cf000711",
+    "checked": "render inspected: dog, bicycle, car boxes correct on dog.jpg"
+  }
+}
