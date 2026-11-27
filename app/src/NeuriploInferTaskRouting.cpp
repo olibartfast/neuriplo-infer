@@ -59,8 +59,7 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
   // DepthAnything3 rule: contains "depthanything3" or starts with "da3").
   if ((startsWith(normalized, "yolo") && contains(normalized, "depth")) ||
       contains(normalized, "depthanythingv2") ||
-      contains(normalized, "depthanything3") ||
-      startsWith(normalized, "da3")) {
+      contains(normalized, "depthanything3") || startsWith(normalized, "da3")) {
     return neuriplo_tasks::TaskType::DepthEstimation;
   }
   if (normalized == "lgm" || normalized == "grm" ||

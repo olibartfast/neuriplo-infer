@@ -83,14 +83,13 @@ TEST(UtilsStandalone, NormalizeModelType) {
 }
 
 TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
-  for (const auto *name :
-       {"LightGlue", "lightglue_v2", "superglue", "MatchAnything-EloFTR",
-        "flexglue"}) {
+  for (const auto *name : {"LightGlue", "lightglue_v2", "superglue",
+                           "MatchAnything-EloFTR", "flexglue"}) {
     EXPECT_EQ(getTaskTypeForModel(name),
               neuriplo_tasks::TaskType::KeypointMatching);
   }
-  for (const auto *name : {"videomae", "pevideo", "v-jepa", "vjepa2-vit-l",
-                            "videoprism"}) {
+  for (const auto *name :
+       {"videomae", "pevideo", "v-jepa", "vjepa2-vit-l", "videoprism"}) {
     EXPECT_EQ(getTaskTypeForModel(name),
               neuriplo_tasks::TaskType::VideoClassification);
   }
