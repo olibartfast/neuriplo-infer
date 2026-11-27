@@ -81,16 +81,13 @@ packet's own deviation rule this paragraph is the record.
 
 - [x] Default build configures and builds against the SHA from a fresh dir
       (done 2026-11-27, exit 0; glog caveat recorded above).
-- [ ] Test build and full suite pass against the SHA — build done;
-      `ctest` (191 tests, `--timeout 300`, one death test excluded):
-      **166 pass, 22 fail — ALL failures are `EXPECT_EXIT` fork-based
-      death tests** (`ParseCommandLineArguments.*Exits/Rejected`,
-      `RunReportFile.ArmAndDisarmAcrossThreads...`) hanging in this
-      environment (gtest itself warns: fork in threaded context; one hung
-      7 h before the timeout run). Nothing in the failures touches routing,
-      rendering, or any file this packet changed, and branch CI runs the
-      identical code green. Verdict: environment-specific death-test hangs,
-      not code failures. Re-run cleanly in CI or a TTY environment to close.
+- [x] Test build and full suite pass against the SHA — 2026-11-27:
+      **191/191 pass, 0 fail** (1 skip: `capabilities_schema_contract`,
+      validator not installed — expected skip, exit 77). Path there:
+      full `ctest` first hung 7+ h on fork-based death tests in this
+      threaded binary; fixed by defaulting `death_test_style` to
+      `threadsafe` in `app/test/test_main.cpp` (strictly more robust;
+      flag/env still override). Total suite time now 12 s.
 - [x] Generated docs check run against the develop checkout — diff recorded
       as the Group 2 finding (deliberately not applied: pins unchanged).
 - [x] `pre-commit` (clang-format, cppcheck) clean — branch CI Lint & Build
