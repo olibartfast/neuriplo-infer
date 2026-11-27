@@ -17,13 +17,17 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
 
   if (startsWith(normalized, "lightglue") ||
       startsWith(normalized, "superglue") ||
-      startsWith(normalized, "matchanything")) {
+      startsWith(normalized, "matchanything") ||
+      startsWith(normalized, "flexglue")) {
     return neuriplo_tasks::TaskType::KeypointMatching;
   }
 
-  // Video classification models (temporal, multi-frame)
+  // Video classification models (temporal, multi-frame). Develop adds
+  // pevideo/vjepa/videoprism prefix families (neuriplo-tasks@fd94cab
+  // VideoClassification rule); the windowed app path is family-generic.
   if (normalized == "timesformer" || normalized == "videomae" ||
-      normalized == "vivit") {
+      normalized == "vivit" || startsWith(normalized, "pevideo") ||
+      startsWith(normalized, "vjepa") || startsWith(normalized, "videoprism")) {
     return neuriplo_tasks::TaskType::VideoClassification;
   }
   // Single-frame classification models
@@ -51,8 +55,12 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
   // Mirrors TaskFactory's two depth rules exactly; a broader match routed
   // other "*depth*" names to a task TaskFactory would not build for them.
   // Runs after the seg/pose branches so their precedence is unchanged.
+  // Develop adds Depth Anything 3 relative-depth models (neuriplo-tasks@fd94cab
+  // DepthAnything3 rule: contains "depthanything3" or starts with "da3").
   if ((startsWith(normalized, "yolo") && contains(normalized, "depth")) ||
-      contains(normalized, "depthanythingv2")) {
+      contains(normalized, "depthanythingv2") ||
+      contains(normalized, "depthanything3") ||
+      startsWith(normalized, "da3")) {
     return neuriplo_tasks::TaskType::DepthEstimation;
   }
   if (normalized == "lgm" || normalized == "grm" ||

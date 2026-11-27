@@ -84,9 +84,15 @@ TEST(UtilsStandalone, NormalizeModelType) {
 
 TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
   for (const auto *name :
-       {"LightGlue", "lightglue_v2", "superglue", "MatchAnything-EloFTR"}) {
+       {"LightGlue", "lightglue_v2", "superglue", "MatchAnything-EloFTR",
+        "flexglue"}) {
     EXPECT_EQ(getTaskTypeForModel(name),
               neuriplo_tasks::TaskType::KeypointMatching);
+  }
+  for (const auto *name : {"videomae", "pevideo", "v-jepa", "vjepa2-vit-l",
+                            "videoprism"}) {
+    EXPECT_EQ(getTaskTypeForModel(name),
+              neuriplo_tasks::TaskType::VideoClassification);
   }
   EXPECT_EQ(getTaskTypeForModel("yolo26"), neuriplo_tasks::TaskType::Detection);
   EXPECT_EQ(getTaskTypeForModel("rtdetrultralytics"),
@@ -100,6 +106,10 @@ TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
   EXPECT_EQ(getTaskTypeForModel("my_tensorflow_model"),
             neuriplo_tasks::TaskType::Classification);
   EXPECT_EQ(getTaskTypeForModel("depth_anything_v2"),
+            neuriplo_tasks::TaskType::DepthEstimation);
+  EXPECT_EQ(getTaskTypeForModel("depth_anything_3"),
+            neuriplo_tasks::TaskType::DepthEstimation);
+  EXPECT_EQ(getTaskTypeForModel("da3-small"),
             neuriplo_tasks::TaskType::DepthEstimation);
   EXPECT_EQ(getTaskTypeForModel("groundingdino"),
             neuriplo_tasks::TaskType::OpenVocabDetection);
