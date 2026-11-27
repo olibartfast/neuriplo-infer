@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT EdgeCrafter-seg-s app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Instance segmentation (ecseg, edgecrafter_seg)` from B to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "EdgeCrafter repo (Intellindust-AI-Lab, depth-1 clone) ecdetseg/tools/deployment/export_onnx.py -c configs/ecseg/ecseg_s.yml -r ecseg_s.pth --check --simplify; checkpoint ecseg_s.pth from capsule2077/edgecrafter releases; venv torch 2.15 + unpinned modern deps (sibling pins ml_dtypes==0.2.0/numpy==2.0.1, which do not build on py3.12)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=ecseg_s.onnx --saveEngine=ecseg_s.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "ecseg",
+    "model": "/home/oli/trt-models/extra/ecseg_s.engine",
+    "model_onnx_sha256": "cd8b5fd2697011385e9de9feba1c0724c005265650e1d4c85e905d795d9416db",
+    "model_engine_sha256": "e42751f70e5d643549cd44e33ff563aa9f46d8c15824e6912e1f4abf68369d9d",
+    "checkpoint_sha256": "b83b07d71b942c6255aaad1cf1f92eee075c5a548624d27464c987cd618d5a93",
+    "source": "data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "labels": "/home/oli/trt-models/coco.names",
+    "labels_sha256": "b53100d68b84776c58ced22e1c4ac344edb97e56bafffe07a2de3e69385e4240",
+    "flags": "--input_sizes=3,640,640;2 --min_confidence=0.5 --mask_threshold=0.5 --use-gpu=true --no_display=true",
+    "exit": 0,
+    "inference_ms": 193,
+    "stages_ms": {
+      "model_load": 326.022351,
+      "preprocess": 22.029563,
+      "inference": 192.623071,
+      "postprocess": 38.456612,
+      "render": 131.997756
+    },
+    "render": "data/output/processed_ecseg_local.png",
+    "render_sha256": "76f372073199a70e325524fd848333d90c18eee39ccc5b5af4c7f1a32e947437",
+    "checked": "render inspected: dog and car instance masks follow object contours precisely with correct boxes on dog.jpg. Native EdgeCrafter ONNX (exact-GELU) converts and runs on TRT 10.16 — the GELU import problem is DNN-backend-specific."
+  }
+}

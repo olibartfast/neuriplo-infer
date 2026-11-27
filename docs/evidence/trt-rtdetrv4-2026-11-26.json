@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT rtdetrv4 app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Object detection (rtdetr, rtdetrv4)` from DR to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=rtdetrv4.onnx --saveEngine=rtdetrv4.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "rtdetr",
+    "model": "/home/oli/trt-models/rtdetrv4.engine",
+    "model_onnx_sha256": "6b26f17e3de3cea3d5acb9b1eab6a4a40cfe03c8be1986215bba299220160590",
+    "model_engine_sha256": "83bd85894015df6c6587603099bccd660ef5d080e8d281418becda004e3fc8b2",
+    "source": "data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "labels": "/home/oli/trt-models/coco.names",
+    "labels_sha256": "b53100d68b84776c58ced22e1c4ac344edb97e56bafffe07a2de3e69385e4240",
+    "flags": "--input_sizes=3,640,640;2 --use-gpu=true --no_display=true --min_confidence=0.4",
+    "exit": 0,
+    "inference_ms": 97,
+    "stages_ms": {
+      "model_load": 311.49527,
+      "preprocess": 23.44413,
+      "inference": 97.454154,
+      "postprocess": 0.043841,
+      "render": 129.024781
+    },
+    "render": "data/output/processed_rtdetr_local.png",
+    "render_sha256": "5847d3b4e2974ed244e342ec703dd4caf8b9208e930181cf4a10344a96ba5967",
+    "checked": "render inspected: dog, bicycle, car boxes correct on dog.jpg (same acceptance bar as OV gate 2026-11-25)"
+  }
+}

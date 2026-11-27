@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT yolov8n app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Object detection (yolov8, yolov8_executorch)` from B to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=yolov8n.onnx --saveEngine=yolov8n.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "yolov8",
+    "model": "/home/oli/trt-models/yolov8n.engine",
+    "model_onnx_sha256": "3854719b6c4dd786e0906f09c44a3b51245570694a2ab36d7cb7e518f5e5820a",
+    "model_engine_sha256": "303c48b02c4479ad9e85d98fea3b596ac134ab78cf07fabfad9b77bab22c5c90",
+    "source": "data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "labels": "/home/oli/trt-models/coco.names",
+    "labels_sha256": "b53100d68b84776c58ced22e1c4ac344edb97e56bafffe07a2de3e69385e4240",
+    "flags": "--use-gpu=true --no_display=true --min_confidence=0.4",
+    "exit": 0,
+    "inference_ms": 39,
+    "stages_ms": {
+      "model_load": 150.14029,
+      "preprocess": 19.42914,
+      "inference": 39.390651,
+      "postprocess": 4.814763,
+      "render": 126.550362
+    },
+    "render": "data/output/processed_yolov8_local.png",
+    "render_sha256": "2d0b48ecc1fa4349c6ca8c6a93c0ce39c70eca4bc1b9e13e64d12809c49ab77f",
+    "checked": "render inspected: dog, bicycle, car boxes correct on dog.jpg"
+  }
+}
