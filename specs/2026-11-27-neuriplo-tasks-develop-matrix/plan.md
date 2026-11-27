@@ -62,5 +62,7 @@ no code or pin change.
    (requirements.md Open Questions).
 
 > No branch commits for config/build scratch dirs, weights, engines, or
-> tensors — evidence notes and verdicts only. Keep the branch to spec files
-> until validation is complete.
+> tensors — evidence notes and verdicts only. Deviation 2026-11-27
+> (maintainer direction: fix, don't file): routing shims, contract tests,
+> and the pre-push AGENTS.md rule also landed on this branch; see
+> validation.md deviations.

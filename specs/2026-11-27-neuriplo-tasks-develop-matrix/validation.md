@@ -22,7 +22,13 @@ packet branch; app-flow support for flexglue/gaze/3D still open).
   pre-existing environment condition (fixed with the local `glog_DIR` hint),
   not a producer finding.
 - Full default build (`build-tasks-develop`, `-j4`) exits 0 against the SHA.
-  Test suite not yet run (Group 3).
+- Consumer suite (`build-test-tasks-develop`, 191 tests): full `ctest`
+  hung 7+ h on death test
+  `RunReportFile.AnArmedExitHookWritesAConfigurationReport` (fork+threads
+  warning, unrelated to this packet's changes — nothing here touches
+  RunReport) and was killed. Re-running with that test excluded and
+  `--timeout 300`; verdict pending. Single-test repro still open.
+- Branch CI (push `b950f3e`): C++ Lint & Build SUCCESS, CI SUCCESS.
 
 ## Group 2 — findings (2026-11-27)
 
@@ -40,17 +46,21 @@ file restored afterwards — diff observed only):
 
 Routing parity (`getTaskTypeForModel` vs develop `TaskFactory`):
 
-| Family (develop) | Our routing | Verdict |
+| Family (develop) | Our routing (packet branch) | Verdict |
 |---|---|---|
-| VideoClassification `pevideo`/`vjepa`/`videoprism` | falls to Detection default | MISMATCH — gate halted, upstream report needed |
-| KeypointMatching `flexglue` | falls to Detection default | MISMATCH — gate halted |
-| `depth_anything_3` / `da3*` | falls to Detection default | MISMATCH — gate halted |
-| GazeEstimation (`gaze`, `ethxgaze`, `gazetr`) | no such TaskType in app | MISMATCH (structural: new task unsupported) |
-| Monocular3DDetection (`urbanomni*`, `monocular3d`, `mono3d`) | no such TaskType in app | MISMATCH (structural) |
-| All pinned-v0.8.5 families | unchanged rules | MATCH (spot-checked: lightglue/superglue/matchanything, timesformer/videomae/vivit, raft, vitpose, depth_anything_v2, owlv2 family, rtdetr/ecdet/rfdetr/yolo detection) |
+| VideoClassification `pevideo`/`vjepa`/`videoprism` | prefix rules added (commit `28e8122`) | MATCH — unit-tested (`TaskRouting` cases added) |
+| KeypointMatching `flexglue` | prefix rule added | ROUTING MATCH — live gate still blocked: app pair-flow has no two-model/external-keypoint support |
+| `depth_anything_3` / `da3*` | `depthanything3`/prefix-`da3` rules added | MATCH — unit-tested |
+| GazeEstimation (`gaze`, `ethxgaze`, `gazetr`) | no such TaskType in app | MISMATCH (structural: new task unsupported) — no fix attempted |
+| Monocular3DDetection (`urbanomni*`, `monocular3d`, `mono3d`) | no such TaskType in app | MISMATCH (structural) — no fix attempted |
+| All pinned-v0.8.5 families | unchanged rules | MATCH (routing + capabilities contract tests green on develop build) |
 
-Per plan Group 2: gates for the five mismatched families stay halted until
-triaged upstream; matched families may proceed to Groups 3–4.
+Strategy change 2026-11-27 (maintainer direction: fix, don't file): the
+three string-rule mismatches were fixed downstream instead of reported
+upstream; `upstream-issue-drafts.md` stays UNFILED as a record of what was
+decided against. The two structural mismatches stay open by design — no
+sibling defect, just new surface with no downstream support yet. Per the
+packet's own deviation rule this paragraph is the record.
 
 ## Group 4 — live-gate notes (2026-11-27, develop binary `build-tasks-develop`)
 
@@ -69,51 +79,64 @@ triaged upstream; matched families may proceed to Groups 3–4.
 
 ## Automated
 
-- [ ] Default build configures and builds against the SHA from a fresh dir:
-      `cmake -S . -B build-tasks-develop -DNEURIPLO_TASKS_VERSION=<sha> -DCMAKE_BUILD_TYPE=Release && cmake --build build-tasks-develop`
-- [ ] Test build and full suite pass against the SHA:
-      `cmake -S . -B build-test-tasks-develop -DENABLE_APP_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DNEURIPLO_TASKS_VERSION=<sha> && cmake --build build-test-tasks-develop && ctest --test-dir build-test-tasks-develop --output-on-failure`
-- [ ] Generated docs check passes against the develop checkout:
-      `python3 scripts/sync_supported_model_types.py --neuriplo-tasks-readme <develop-checkout>/README.md --check` — or the diff is recorded below as finding.
-- [ ] `pre-commit run --all-files` (clang-format, cppcheck) is clean — expected
-      trivially true (no code changes); run once to confirm the branch is
-      spec-files only.
-- [ ] `--capabilities` output at the SHA is byte-identical to the pinned run
-      (or the diff is recorded as a finding).
-- [ ] Build variants still configure against the SHA — list the ones that
-      apply (KServe-only, local-only, `-DNEURIPLO_INFER_ENABLE_GRPC=OFF`,
-      `-DWERROR=ON`).
+- [x] Default build configures and builds against the SHA from a fresh dir
+      (done 2026-11-27, exit 0; glog caveat recorded above).
+- [ ] Test build and full suite pass against the SHA — build done;
+      `ctest` (191 tests, `--timeout 300`, one death test excluded):
+      **166 pass, 22 fail — ALL failures are `EXPECT_EXIT` fork-based
+      death tests** (`ParseCommandLineArguments.*Exits/Rejected`,
+      `RunReportFile.ArmAndDisarmAcrossThreads...`) hanging in this
+      environment (gtest itself warns: fork in threaded context; one hung
+      7 h before the timeout run). Nothing in the failures touches routing,
+      rendering, or any file this packet changed, and branch CI runs the
+      identical code green. Verdict: environment-specific death-test hangs,
+      not code failures. Re-run cleanly in CI or a TTY environment to close.
+- [x] Generated docs check run against the develop checkout — diff recorded
+      as the Group 2 finding (deliberately not applied: pins unchanged).
+- [x] `pre-commit` (clang-format, cppcheck) clean — branch CI Lint & Build
+      SUCCESS on push `b950f3e` (after fixing my own format violations).
+- [ ] `--capabilities` output at the SHA byte-identical to the pinned run —
+      develop binary runs (`capabilities OK`) but no byte-diff performed yet.
+- [ ] Build variants still configure against the SHA — not attempted yet.
 
 ## Manual
 
-- [ ] Routing-parity table complete: every `--type` checked against the
-      SHA's `TaskFactory`; mismatches have upstream issue links.
+- [x] Routing-parity table complete: every `--type` checked against the
+      SHA's `TaskFactory`; table above is current as of 2026-11-27
+      (three fixed+unit-tested, two structural open).
 - [ ] Live gates graded per `backend-coverage` bars (P / RUNTIME-PASS / DR)
-      for all cells with local hardware; each P-equivalent has
-      `run_report.json` + checked render recorded here (paths, SHAs).
+      for all cells with local hardware — only NERT/resnet50 done; TRT
+      re-gates need a TensorRT-default build at the SHA.
 - [ ] Hardware-absent cells have DR verdicts or explicit untestable reasons
       (which hardware, what would unblock).
 - [ ] Slurm cells submitted via `scripts/slurm_backend_matrix.py` with
       `submitted.json` / `result.json` retained; outcomes recorded here.
-- [ ] Every failure has a `neuriplo-tasks` issue link; zero untracked
-      failures remain.
-- [ ] No `versions.env` change, no `docs/BackendCoverage.md` promotion, no
-      app-code change on this branch — verify with
-      `git status --short` (spec files only) before review.
+- [x] Failure routing decided AND RECORDED (deviation from template):
+      maintainer directed fix-locally on 2026-11-27, so zero issues filed
+      and zero untracked failures remain only in the sense that the three
+      fixable mismatches are fixed on this branch; structural items have no
+      upstream ticket by explicit decision, not by oversight.
+- [x] Deviations from the template recorded HERE (not deferred):
+      (a) app-code changed on this branch (routing fix + contract tests +
+      AGENTS.md pre-push rule) — template said spec-files only;
+      (b) no upstream issues filed — template assumed upstream-first, and the
+      `upstream-issue-drafts.md` file stands as the unfiled record;
+      (c) `pre-commit` "trivially true" assumption was wrong once code
+      landed — fixed and CI-verified instead.
 
 ## Definition of Done
 
 - [ ] Every requirement is evidenced or explicitly deferred in
-      `requirements.md`.
-- [ ] Nothing in *Out of Scope* was done anyway (pin untouched, scoreboard
-      untouched).
-- [ ] Deviations from this file are recorded here, honestly, with what was
-      run instead (including a producer-`develop` move mid-packet and any
-      re-runs it forced).
-- [ ] Pin-bump recommendation recorded: ready (with SHA) or blocked-by (with
-      issue links). The recommendation is not the bump.
+      `requirements.md` — partial: Group 3-4 evidence still open (suite
+      verdict, TRT re-gates, Slurm, variants, capabilities diff).
+- [x] Out-of-scope respected: pin untouched, scoreboard untouched
+      (`git status` shows branch files only).
+- [x] Deviations recorded above, honestly (strategy change, app-code on
+      branch, unfiled drafts, pre-commit assumption).
+- [ ] Pin-bump recommendation recorded: blocked until Groups 3–4 close.
 - [ ] `../roadmap.md` disposition decided: recurring phase or one-off (per
       requirements.md Open Questions), updated or explicitly declined with
       reason.
 - [ ] Spec files tell the same story in one branch; evidence notes are
-      SHA-pinned and reproducible.
+      SHA-pinned and reproducible — true as of this edit; re-verify after
+      the exclusion suite lands.
