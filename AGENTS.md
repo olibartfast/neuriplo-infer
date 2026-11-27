@@ -85,8 +85,9 @@ Never commit feature work directly to `develop` or `master`, and never force-pus
 
 1. Confirm the branch matches the change type and the target follows the rules above.
 2. Run owning-repo validation before committing.
-3. Only commit or push when the user explicitly asks.
-4. Include the agent/model co-author trailer described below.
+3. Verify before every push: clang-format check on all touched files, build of affected targets, and the relevant tests green. Never push with known-red checks.
+4. Only commit or push when the user explicitly asks.
+5. Include the agent/model co-author trailer described below.
 
 ### Cleanup after integration
 
