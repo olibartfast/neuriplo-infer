@@ -35,21 +35,6 @@ void forEachResultOfType(const std::vector<neuriplo_tasks::Result> &results,
   }
 }
 
-std::string labelForClass(float class_id,
-                          const std::vector<std::string> &classes) {
-  const int class_index = static_cast<int>(class_id);
-  const std::string fallback = std::to_string(class_index);
-  if (class_id < 0.0F) {
-    return fallback;
-  }
-
-  const auto index = static_cast<size_t>(class_index);
-  if (index < classes.size()) {
-    return classes[index];
-  }
-  return fallback;
-}
-
 void renderDetectionResults(const std::vector<neuriplo_tasks::Result> &results,
                             Image &image,
                             const std::vector<std::string> & /*classes*/) {
@@ -108,11 +93,18 @@ void renderClassificationResults(
 }
 
 void renderVideoClassificationResults(
-    const std::vector<neuriplo_tasks::Result> &results, Image &image) {
+    const std::vector<neuriplo_tasks::Result> &results, Image &image,
+    const std::vector<std::string> &classes) {
   std::vector<std::string> labels;
   forEachResultOfType<neuriplo_tasks::VideoClassification>(
       results, [&](const auto &classification) {
-        labels.push_back(classification.action_label + " (" +
+        // neuriplo-tasks does not set action_label; resolve from the labels
+        // file the same way still-image classification does.
+        const std::string name =
+            classification.action_label.empty()
+                ? labelForClass(classification.class_id, classes)
+                : classification.action_label;
+        labels.push_back(name + " (" +
                          std::to_string(classification.class_confidence) + ")");
       });
   renderRankedLabels(labels, image);
@@ -273,6 +265,21 @@ void renderImageUnderstandingResults(
 
 } // namespace
 
+std::string labelForClass(float class_id,
+                          const std::vector<std::string> &classes) {
+  const int class_index = static_cast<int>(class_id);
+  const std::string fallback = std::to_string(class_index);
+  if (class_id < 0.0F) {
+    return fallback;
+  }
+
+  const auto index = static_cast<size_t>(class_index);
+  if (index < classes.size()) {
+    return classes[index];
+  }
+  return fallback;
+}
+
 void DefaultResultRenderer::render(
     const std::vector<neuriplo_tasks::Result> &results, Image &image,
     const RenderContext &context) {
@@ -284,7 +291,7 @@ void DefaultResultRenderer::render(
     renderClassificationResults(results, image, context.classes);
     break;
   case neuriplo_tasks::TaskType::VideoClassification:
-    renderVideoClassificationResults(results, image);
+    renderVideoClassificationResults(results, image, context.classes);
     break;
   case neuriplo_tasks::TaskType::InstanceSegmentation:
     renderInstanceSegmentationResults(results, image, context.classes);

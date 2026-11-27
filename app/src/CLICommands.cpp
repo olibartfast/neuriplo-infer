@@ -2,6 +2,7 @@
 
 #include "AppImageOps.hpp"
 #include "FrameConversion.hpp"
+#include "ResultRenderer.hpp"
 #include "VideoCaptureFactory.hpp"
 #include "neuriplo/tasks/core/vision/image.hpp"
 #include "neuriplo/tasks/core/vision/stb_io.hpp"
@@ -630,6 +631,11 @@ void processVideoClassification(InferencePipeline &pipeline,
   videocapture::Frame frame;
   std::vector<Image> frameBuffer;
   frameBuffer.reserve(static_cast<size_t>(requiredFrames));
+  // The rendered frame of the most recent closed window. A video-classification
+  // run otherwise leaves no checkable artifact: the per-window render is
+  // discarded unless --output_video is set, and no label is logged.
+  Image lastRenderedFrame;
+  bool hasRenderedFrame = false;
 
   // Counts frames read, so a row's index refers to the frame the window closed
   // on. One inference here consumes a whole window, so rows are sparser than in
@@ -718,6 +724,23 @@ void processVideoClassification(InferencePipeline &pipeline,
         Image displayFrame = frameBuffer.back().clone();
 
         pipeline.renderResults(results, displayFrame);
+        for (const auto &result : results) {
+          const auto *videoResult =
+              std::get_if<neuriplo_tasks::VideoClassification>(&result);
+          if (videoResult != nullptr) {
+            // Sibling task code leaves action_label empty; resolve from the
+            // labels file the same way the renderer does.
+            const std::string name =
+                videoResult->action_label.empty()
+                    ? labelForClass(videoResult->class_id, pipeline.classes)
+                    : videoResult->action_label;
+            LOG(INFO) << "Video classification (frames ending at "
+                      << (frame_index - 1) << "): " << name << " ("
+                      << videoResult->class_confidence << ")";
+          }
+        }
+        lastRenderedFrame = displayFrame.clone();
+        hasRenderedFrame = true;
 #ifdef VIDEOCAPTURE_WITH_WRITER
         if (output_sink) {
           // The accumulator's rendered window is the last read frame, so the
@@ -729,6 +752,27 @@ void processVideoClassification(InferencePipeline &pipeline,
       }
 
       frameBuffer.erase(frameBuffer.begin());
+    }
+  }
+
+  // The still-image commands always leave data/output/processed_* behind; a
+  // video-classification run closed at least one window, so its last rendered
+  // frame is saved the same way. Without this there is no image artifact to
+  // check the prediction against.
+  if (read_to_end && hasRenderedFrame) {
+    std::filesystem::create_directories("data/output");
+    const std::string processed_name = processedImageName(pipeline);
+    std::string processed_path = "data/output/" + processed_name;
+    if (!trySaveBgrImage(processed_path, lastRenderedFrame)) {
+      const std::string fallback_path = "/tmp/neuriplo-infer-" + processed_name;
+      if (!trySaveBgrImage(fallback_path, lastRenderedFrame)) {
+        throw std::runtime_error("Failed to save output image to both " +
+                                 processed_path + " and " + fallback_path);
+      }
+      LOG(WARNING) << "Could not write " << processed_path
+                   << ", saved output to " << fallback_path;
+    } else {
+      LOG(INFO) << "Saved processed image to: " << processed_path;
     }
   }
 
