@@ -69,21 +69,22 @@ void renderOpenVocabDetectionResults(
       });
 }
 
-// One filled band per ranked label with the label string drawn on it in
-// the built-in 5x7 bitmap font (black on yellow). Band count and order show
-// how many results ranked and in which order.
+// One tight band per ranked label: each background is sized to its own
+// text (via textSize) plus padding, black on yellow. Bands pack from the
+// top-left margin with a small gap; overlong labels clip at the image edge.
 void renderRankedLabels(const std::vector<std::string> &labels, Image &image) {
   if (labels.empty() || image.empty()) {
     return;
   }
   const int margin = std::min(10, std::min(image.cols(), image.rows()) / 10);
-  const size_t count = labels.size();
-  const int band_h =
-      std::max(12, (image.rows() - 2 * margin) / (2 * static_cast<int>(count)));
-  const int band_w = std::max(1, (image.cols() - 2 * margin) / 2);
-  for (size_t i = 0; i < count; ++i) {
-    const int top = margin + static_cast<int>(i) * 2 * band_h;
-    imageops::fillRectangle(image, Rect(margin, top, band_w, band_h),
+  const int max_w = std::max(1, image.cols() - 2 * margin);
+  constexpr int kBandH = 12;
+  constexpr int kGap = 4;
+  for (size_t i = 0; i < labels.size(); ++i) {
+    const Point text_extent = imageops::textSize(labels[i], 1);
+    const int band_w = std::min(max_w, text_extent.x + 6);
+    const int top = margin + static_cast<int>(i) * (kBandH + kGap);
+    imageops::fillRectangle(image, Rect(margin, top, band_w, kBandH),
                             imageops::Color{0, 255, 255});
     imageops::drawText(image, labels[i], margin + 3, top + 2,
                        imageops::Color{0, 0, 0});
