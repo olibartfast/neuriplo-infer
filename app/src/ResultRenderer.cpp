@@ -288,14 +288,17 @@ void renderImageUnderstandingResults(
 // no face box. Length is a quarter of the smaller frame side.
 void renderGazeEstimationResults(
     const std::vector<neuriplo_tasks::Result> &results, Image &image) {
-  const int length = std::min(image.cols(), image.rows()) / 4;
+  const float length =
+      static_cast<float>(std::min(image.cols(), image.rows())) / 4.0F;
   const Point origin{image.cols() / 2, image.rows() / 2};
   forEachResultOfType<neuriplo_tasks::GazeEstimation>(
       results, [&](const auto &gaze) {
-        const Point tip{static_cast<int>(
-                            std::lround(origin.x + length * gaze.direction[0])),
-                        static_cast<int>(std::lround(
-                            origin.y + length * gaze.direction[1]))};
+        const auto project = [&](int origin_component, float component) {
+          return static_cast<int>(std::lround(
+              static_cast<float>(origin_component) + length * component));
+        };
+        const Point tip{project(origin.x, gaze.direction[0]),
+                        project(origin.y, gaze.direction[1])};
         imageops::fillCircle(image, origin, 4, imageops::Color{0, 255, 255});
         imageops::line(image, origin, tip, imageops::Color{0, 255, 255}, 3);
         std::ostringstream readout;
@@ -325,25 +328,25 @@ void renderMonocular3DResults(
       results, [&](const auto &detection) {
         imageops::rectangle(image, detection.bbox, imageops::Color{255, 0, 0},
                             3);
-        drawLabelBand(image, detection.bbox.x, detection.bbox.y,
-                      labelForClass(detection.class_id, classes) + " " +
-                          formatScore(detection.class_confidence),
-                      imageops::Color{255, 0, 0});
+        drawLabelBand(
+            image, detection.bbox.x, detection.bbox.y,
+            labelForClass(static_cast<float>(detection.class_id), classes) +
+                " " + formatScore(detection.class_confidence),
+            imageops::Color{255, 0, 0});
         const auto &corners = detection.projected_corners;
         auto point = [](const neuriplo_tasks::CuboidKeypoint &corner) {
           return Point{static_cast<int>(std::lround(corner.x)),
                        static_cast<int>(std::lround(corner.y))};
         };
-        constexpr int kGround[4] = {0, 1, 2, 3};
-        for (int i = 0; i < 4; ++i) {
-          imageops::line(image, point(corners[kGround[i]]),
-                         point(corners[kGround[(i + 1) % 4]]),
+        // Canonical ground-first layout: ground quad 0-3, roof quad 4-7,
+        // verticals i-(i+4).
+        for (std::size_t i = 0; i < 4; ++i) {
+          const std::size_t next = (i + 1) % 4;
+          imageops::line(image, point(corners[i]), point(corners[next]),
                          imageops::Color{0, 255, 255}, 2);
-          imageops::line(image, point(corners[kGround[i] + 4]),
-                         point(corners[kGround[(i + 1) % 4] + 4]),
+          imageops::line(image, point(corners[i + 4]), point(corners[next + 4]),
                          imageops::Color{0, 255, 255}, 2);
-          imageops::line(image, point(corners[kGround[i]]),
-                         point(corners[kGround[i] + 4]),
+          imageops::line(image, point(corners[i]), point(corners[i + 4]),
                          imageops::Color{0, 255, 255}, 2);
         }
       });

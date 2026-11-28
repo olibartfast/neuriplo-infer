@@ -388,10 +388,11 @@ neuriplo_tasks::vision::Point textSize(const std::string &text, int scale) {
     return neuriplo_tasks::vision::Point{0, 0};
   }
   const int glyph_scale = std::max(1, scale);
-  return neuriplo_tasks::vision::Point{
-      static_cast<int>(bitmap_font::kAdvance * glyph_scale * text.size()) -
-          glyph_scale,
-      bitmap_font::kHeight * glyph_scale};
+  const auto advance = static_cast<std::size_t>(bitmap_font::kAdvance) *
+                       static_cast<std::size_t>(glyph_scale);
+  const int width = static_cast<int>(advance * text.size()) - glyph_scale;
+  return neuriplo_tasks::vision::Point{width,
+                                       bitmap_font::kHeight * glyph_scale};
 }
 
 void drawText(Image &image, const std::string &text, int x, int y, Color color,
