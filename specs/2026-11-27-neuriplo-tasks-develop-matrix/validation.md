@@ -63,10 +63,10 @@ Routing parity (`getTaskTypeForModel` vs develop `TaskFactory`):
 
 Strategy change 2026-11-27 (maintainer direction: fix, don't file): the
 three string-rule mismatches were fixed downstream instead of reported
-upstream; `upstream-issue-drafts.md` stays UNFILED as a record of what was
-decided against. Gaze and monocular 3D were later implemented downstream (slice 2);
-remaining unblocked work is FlexGlue's two-model app flow. Per the
-packet's own deviation rule this paragraph is the record.
+upstream, and no issues were filed. Gaze and monocular 3D were implemented
+downstream (slice 2); the remaining unblocked work is FlexGlue's two-model
+app flow. The earlier issue drafts were deleted because they described
+work this repo completed, which made the packet self-contradictory.
 
 ## Group 4 — live gates (2026-11-28, develop TRT binary
 `build-tasks-develop-trt`, Jetson Orin TRT 10.16.2)
@@ -154,8 +154,8 @@ develop. The consumer suite was later re-run on the true-develop build
 - [x] Deviations from the template recorded HERE (not deferred):
       (a) app-code changed on this branch (routing fix + contract tests +
       AGENTS.md pre-push rule) — template said spec-files only;
-      (b) no upstream issues filed — template assumed upstream-first, and the
-      `upstream-issue-drafts.md` file stands as the unfiled record;
+      (b) no upstream issues filed — template assumed upstream-first; the
+      decision was fix-locally, and the drafts were deleted once done;
       (c) `pre-commit` "trivially true" assumption was wrong once code
       landed — fixed and CI-verified instead.
 
