@@ -1,6 +1,9 @@
 #include "TaskRouting.hpp"
 #include "utils.hpp"
 
+#include <stdexcept>
+#include <string>
+
 namespace {
 bool startsWith(const std::string &value, const std::string &prefix) {
   return value.size() >= prefix.size() &&
@@ -17,13 +20,17 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
 
   if (startsWith(normalized, "lightglue") ||
       startsWith(normalized, "superglue") ||
-      startsWith(normalized, "matchanything")) {
+      startsWith(normalized, "matchanything") ||
+      startsWith(normalized, "flexglue")) {
     return neuriplo_tasks::TaskType::KeypointMatching;
   }
 
-  // Video classification models (temporal, multi-frame)
+  // Video classification models (temporal, multi-frame). Develop adds
+  // pevideo/vjepa/videoprism prefix families (neuriplo-tasks@fd94cab
+  // VideoClassification rule); the windowed app path is family-generic.
   if (normalized == "timesformer" || normalized == "videomae" ||
-      normalized == "vivit") {
+      normalized == "vivit" || startsWith(normalized, "pevideo") ||
+      startsWith(normalized, "vjepa") || startsWith(normalized, "videoprism")) {
     return neuriplo_tasks::TaskType::VideoClassification;
   }
   // Single-frame classification models
@@ -51,8 +58,11 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
   // Mirrors TaskFactory's two depth rules exactly; a broader match routed
   // other "*depth*" names to a task TaskFactory would not build for them.
   // Runs after the seg/pose branches so their precedence is unchanged.
+  // Develop adds Depth Anything 3 relative-depth models (neuriplo-tasks@fd94cab
+  // DepthAnything3 rule: contains "depthanything3" or starts with "da3").
   if ((startsWith(normalized, "yolo") && contains(normalized, "depth")) ||
-      contains(normalized, "depthanythingv2")) {
+      contains(normalized, "depthanythingv2") ||
+      contains(normalized, "depthanything3") || startsWith(normalized, "da3")) {
     return neuriplo_tasks::TaskType::DepthEstimation;
   }
   if (normalized == "lgm" || normalized == "grm" ||
@@ -69,5 +79,39 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
       normalized == "imageunderstanding") {
     return neuriplo_tasks::TaskType::ImageUnderstanding;
   }
+  // Gaze estimation and monocular 3D detection exist in neuriplo-tasks
+  // develop (neuriplo-tasks@fd94cab TaskFactory); app support is gated on
+  // NEURIPLO_TASKS_HAS_GAZE_MONO3D so pins whose headers lack the TaskType
+  // enumerators keep building. Without the macro these fail fast naming the
+  // family instead of silently misrouting to Detection. Throws
+  // std::invalid_argument, which every getTaskTypeForModel caller converts
+  // to exit 1 + failure report.
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+  if (normalized == "gaze" || startsWith(normalized, "ethxgaze") ||
+      startsWith(normalized, "gazetr") || contains(normalized, "gaze")) {
+    return neuriplo_tasks::TaskType::GazeEstimation;
+  }
+  if (startsWith(normalized, "urbanomni") ||
+      startsWith(normalized, "monocular3d") || normalized == "mono3d") {
+    return neuriplo_tasks::TaskType::Monocular3DDetection;
+  }
+#else
+  if (normalized == "gaze" || startsWith(normalized, "ethxgaze") ||
+      startsWith(normalized, "gazetr") || contains(normalized, "gaze")) {
+    throw std::invalid_argument(
+        "gaze estimation (--type='" + model_type +
+        "') is not supported by this build: the task exists in "
+        "neuriplo-tasks develop but app pipeline and rendering support is "
+        "not implemented yet");
+  }
+  if (startsWith(normalized, "urbanomni") ||
+      startsWith(normalized, "monocular3d") || normalized == "mono3d") {
+    throw std::invalid_argument(
+        "monocular 3D detection (--type='" + model_type +
+        "') is not supported by this build: the task exists in "
+        "neuriplo-tasks develop but app pipeline and rendering support is "
+        "not implemented yet");
+  }
+#endif
   return neuriplo_tasks::TaskType::Detection; // Default for YOLO, RTDETR, etc.
 }

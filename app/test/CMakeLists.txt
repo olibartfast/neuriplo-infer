@@ -50,7 +50,6 @@ enable_target_sanitizers(${PROJECT_NAME_TEST})
 
 target_include_directories(${PROJECT_NAME_TEST}
     PRIVATE ${CMAKE_SOURCE_DIR}/common
-    ${OpenCV_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/app/inc
     ${CMAKE_SOURCE_DIR}/app/src
     ${neuriplo-tasks_SOURCE_DIR}/include
@@ -107,6 +106,10 @@ elseif(DEFAULT_BACKEND STREQUAL "LITERT")
         target_include_directories(${PROJECT_NAME_TEST} PRIVATE ${LITERT_DIR}/include ${neuriplo_SOURCE_DIR}/backends/litert/src)
         target_link_directories(${PROJECT_NAME_TEST} PRIVATE ${LITERT_DIR}/lib)
     endif()
+elseif(DEFAULT_BACKEND STREQUAL "GGML")
+    # Same rationale as the EXECUTORCH app branch: libneuriplo.so carries the
+    # ggml linkage; only the factory header include path is needed.
+    target_include_directories(${PROJECT_NAME_TEST} PRIVATE ${neuriplo_SOURCE_DIR}/backends/ggml/src)
 endif()
 
 target_link_libraries(${PROJECT_NAME_TEST} PUBLIC

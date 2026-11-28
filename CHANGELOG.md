@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-28
+
+### Added
+
+- Gaze estimation through the app: `--type=gaze` (also `ethxgaze*`,
+  `gazetr*`) routes to the task, renders a direction arrow with a
+  yaw/pitch readout, and is advertised in `--capabilities`.
+- Monocular 3D detection through the app: `--type=urbanomni` (also
+  `monocular3d*`, `mono3d`) draws the 2D box, the eight projected cuboid
+  corners, and the class label, and is advertised in `--capabilities`.
+- Built-in 5x7 bitmap font (`app/inc/BitmapFont.hpp`) with
+  `imageops::drawText`, so every renderer writes real text: class labels
+  with scores on detection, segmentation, and mono-3D boxes, ranked
+  strings on classification and video classification, and the gaze
+  readout. Glyphs cover ASCII 32-126; lowercase folds to uppercase.
+- Route the `neuriplo-tasks` v0.9.0 families: video classification
+  `pevideo*`, `vjepa*`, `videoprism*`; keypoint matching `flexglue*`;
+  relative depth `depthanything3` and `da3*`.
+- Backend coverage records that GGML is **not** part of this release: the
+  passing GGML gates need unreleased `neuriplo` fixes, so every GGML cell
+  stays untested at the pinned neuriplo v0.11.3.
+
+### Changed
+
+- Label overlays scale with the frame (from the shorter side) and draw
+  white text on the coloured band, so labels stay legible from 720p to
+  4K without dominating the frame.
+- Unsupported task families now fail fast with an error naming the task
+  instead of silently routing to object detection.
+- Bump the `neuriplo-tasks` pin to v0.9.0 and regenerate
+  `docs/generated/supported-model-types.md`.
+- Backend coverage records the gaze and monocular 3D TensorRT gates and
+  adds both task rows to the matrices.
+- Drop the stale ONNX-subset frontend wording from the GGML limitation.
+- Drop `libopencv-dev` (and `libopencv-contrib-dev` where present) from
+  all eight Docker images; OPENCV_DNN stays a native CI/dev build and the
+  FFmpeg capture backend is configured in the images, which now carry
+  `pkg-config` plus the FFmpeg dev packages.
+
+### Removed
+
+- The application no longer links OpenCV: it configures, builds, and runs
+  with no OpenCV present (`ldd` and OpenCV-free test builds verify this).
+  OpenCV remains inside neuriplo's `OPENCV_DNN` backend only.
+
+### Fixed
+
+- Ranked-label bands size to their own text instead of a fixed half-image
+  width, keeping classifier and video-classification renders legible.
+- Default death tests to the threadsafe style in the unit-test runner,
+  removing the fork-in-threaded-process hang in the full suite.
+- Video classification runs log the top result per window and save the
+  last rendered window, so a run leaves a checkable artifact.
+
 ## [0.12.0] - 2026-11-13
 
 ### Added

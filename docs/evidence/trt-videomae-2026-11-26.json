@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-27",
+  "scope": "TensorRT VideoMAE-base app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Video classification (videomae)` from RUNTIME-PASS to P. Requires the neuriplo-infer video-classification output fix (same branch): per-window top-1 logging, last-window render save, labels-file name resolution. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "a246fb80330bed70d0bc3c8fcc8e77774d717938 + uncommitted video-classification output fix (app/src/CLICommands.cpp, app/src/ResultRenderer.cpp, app/inc/ResultRenderer.hpp)",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "9b4485a13b170670167defe44e008fe494e9ca494ac8247055f7e8aab661971b",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "neuriplo-tasks@v0.8.5 export/video_classification/videomae/export_videomae_to_onnx.py --output videomae.onnx (default MCG-NJU/videomae-base-finetuned-kinetics from HuggingFace)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=videomae.onnx --saveEngine=videomae.engine --memPoolSize=workspace:2048",
+    "code_fix": "processVideoClassification previously logged no prediction and saved no artifact (render discarded unless --output_video). Fix: LOG top VideoClassification result per closed window (frames ending at N), save last rendered window to data/output/processed_videomae_local.png, resolve names from labels file via labelForClass (sibling task leaves action_label empty; filed as neuriplo-tasks-side gap, worked around app-side like still-image classification)."
+  },
+  "gate": {
+    "type": "videomae",
+    "model": "/home/oli/trt-models/extra/videomae.engine",
+    "source": "/tmp/synth_motion.mp4 (locally synthesized 48-frame 224x224 zoom-pan of data/dog.jpg via ffmpeg; NOT committed; dog subject gives dog-action ground-truth expectation)",
+    "labels": "labels/kinetics400_labels.txt (400 Kinetics-400 names from the HF model config id2label)",
+    "labels_sha256": "e9f2806fe9109b851a80a74841244f6f8c9d10917fa0229cd82bab67f2f8e28f",
+    "flags": "--labels=labels/kinetics400_labels.txt --use-gpu=true --no_display=true",
+    "exit": 0,
+    "frames": 46,
+    "stages_ms": {
+      "model_load": 442.074309,
+      "preprocess": 2069.844963,
+      "inference": 4637.115075999999,
+      "postprocess": 8.049752999999999,
+      "render": 8.735831000000001
+    },
+    "render": "data/output/processed_videomae_local.png",
+    "render_sha256": "679aa57d5f8bafe19a152198ebbece19c3e3c378b88da48ea58735e5a5d28cbe",
+    "checked": "log inspected: window ending frame 15 gives grooming dog (0.151), training dog (0.134), walking the dog (0.083) — dog-related top-3 on a dog-subject clip, semantically valid; stable across windows (frame 16 repeats the same top-2). Render shows 5 ranked bands (this OpenCV-free build draws bands without text by design). Valid run_report.json with per-stage timings."
+  }
+}

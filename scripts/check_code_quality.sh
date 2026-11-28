@@ -10,16 +10,21 @@ mapfile -t CPP_FILES < <(
     \( -name '*.cpp' -o -name '*.hpp' \) | sort
 )
 
-CLANG_FORMAT_BIN="${CLANG_FORMAT_BIN:-clang-format-18}"
+CLANG_FORMAT_BIN="${CLANG_FORMAT_BIN:-clang-format-21}"
 if ! command -v "${CLANG_FORMAT_BIN}" >/dev/null 2>&1; then
   CLANG_FORMAT_BIN="clang-format"
 fi
 
-if command -v "${CLANG_FORMAT_BIN}" >/dev/null 2>&1; then
-  "${CLANG_FORMAT_BIN}" --dry-run --Werror "${CPP_FILES[@]}"
-else
-  echo "clang-format not found; skipping format check" >&2
+if ! command -v "${CLANG_FORMAT_BIN}" >/dev/null 2>&1; then
+  echo "clang-format 21 not found; install clang-format==21.1.8" >&2
+  exit 1
 fi
+FORMAT_VERSION="$("${CLANG_FORMAT_BIN}" --version | grep -oE '[0-9]+(\.[0-9]+)+' | head -n1)"
+if [[ "${FORMAT_VERSION%%.*}" != "21" ]]; then
+  echo "clang-format 21 is required; found ${FORMAT_VERSION}" >&2
+  exit 1
+fi
+"${CLANG_FORMAT_BIN}" --dry-run --Werror "${CPP_FILES[@]}"
 
 if command -v cppcheck >/dev/null 2>&1; then
   cppcheck --enable=warning,performance,portability \

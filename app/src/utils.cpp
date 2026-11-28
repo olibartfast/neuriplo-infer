@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "AppImageOps.hpp"
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -16,8 +17,6 @@
 #include <cpuid.h>
 #endif
 
-#include <opencv2/core/cuda.hpp>
-
 namespace fs = std::filesystem;
 
 bool isDirectory(const std::string &path) {
@@ -29,39 +28,30 @@ bool isFile(const std::string &path) {
   return std::filesystem::is_regular_file(path);
 }
 
-void draw_label(cv::Mat &input_image, const std::string &label,
-                float confidence, int left, int top) {
-  const float FONT_SCALE = 0.7F;
-  const int FONT_FACE = cv::FONT_HERSHEY_DUPLEX; // Change font type to what you
-                                                 // think is better for you
-  const int THICKNESS = 2;
-  cv::Scalar YELLOW = cv::Scalar(0, 255, 255);
+int labelTextScale(const neuriplo_tasks::vision::Image &image) {
+  // Text must stay legible at 720p and not swallow a 4K frame: scale with
+  // the frame's shorter side, floored at 1 for small images.
+  const int short_side = std::min(image.width(), image.height());
+  return std::max(1, short_side / 360);
+}
 
-  // Display the label and confidence at the top of the bounding box.
-  std::ostringstream out;
-  out << std::fixed << std::setprecision(2)
-      << static_cast<int>(confidence * 100.0F) / 100.0F;
-  std::string scoreText = out.str();
-
-  int baseLine;
-  std::string display_text = label + ": " + scoreText;
-  cv::Size label_size = cv::getTextSize(display_text, FONT_FACE, FONT_SCALE,
-                                        THICKNESS, &baseLine);
-  top = cv::max(top, label_size.height);
-
-  // Top left corner.
-  cv::Point tlc = cv::Point(left, top);
-  // Bottom right corner.
-  cv::Point brc =
-      cv::Point(left + label_size.width, top + label_size.height + baseLine);
-
-  // Draw black rectangle.
-  cv::rectangle(input_image, tlc, brc, cv::Scalar(255, 0, 255), cv::FILLED);
-
-  // Put the label and confidence on the black rectangle.
-  cv::putText(input_image, display_text,
-              cv::Point(left, top + label_size.height), FONT_FACE, FONT_SCALE,
-              YELLOW, THICKNESS);
+void drawLabelBand(neuriplo_tasks::vision::Image &image, int left, int top,
+                   const std::string &text,
+                   neuriplo_infer::imageops::Color color) {
+  // Band sized to the label at the frame-proportional scale; white text on
+  // the coloured band reads against every scene. fillRectangle clips a band
+  // that would run past the image edge, and drawText clips the glyphs.
+  const int scale = labelTextScale(image);
+  const auto extent = neuriplo_infer::imageops::textSize(text, scale);
+  const int pad = 2 * scale;
+  const int band_width = extent.x + 2 * pad;
+  const int band_height = extent.y + 2 * pad;
+  neuriplo_infer::imageops::fillRectangle(
+      image, neuriplo_tasks::vision::Rect(left, top, band_width, band_height),
+      color);
+  neuriplo_infer::imageops::drawText(
+      image, text, left + pad, top + pad,
+      neuriplo_infer::imageops::Color{255, 255, 255}, scale);
 }
 
 std::vector<std::string> readLabelNames(const std::string &fileName) {
@@ -101,26 +91,6 @@ bool isStillImageSource(const std::string &path) {
 
 std::vector<std::string> getGPUModels() {
   std::vector<std::string> gpuModels;
-
-  try {
-    const int deviceCount = cv::cuda::getCudaEnabledDeviceCount();
-    if (deviceCount > 0) {
-      gpuModels.reserve(static_cast<size_t>(deviceCount));
-      for (int i = 0; i < deviceCount; ++i) {
-        const cv::cuda::DeviceInfo deviceInfo(i);
-        const std::string modelName = deviceInfo.name();
-        if (!modelName.empty()) {
-          gpuModels.push_back(modelName);
-        }
-      }
-    }
-  } catch (const cv::Exception &) {
-    // Fall back to platform-specific probes below.
-  }
-
-  if (!gpuModels.empty()) {
-    return gpuModels;
-  }
 
 #if defined(__linux__)
   constexpr auto GPU_DIRECTORY = "/proc/driver/nvidia/gpus";
@@ -217,14 +187,6 @@ std::string getCPUInfo() {
 }
 
 bool hasNvidiaGPU() {
-  try {
-    if (cv::cuda::getCudaEnabledDeviceCount() > 0) {
-      return true;
-    }
-  } catch (const cv::Exception &) {
-    // Fall back to filesystem probes below.
-  }
-
 #if defined(__linux__)
   const std::vector<std::string> nvidiaIndicators = {
       "/proc/driver/nvidia", "/dev/nvidia0", "/sys/class/nvidia-gpu"};

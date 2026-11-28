@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-26",
+  "scope": "TensorRT Depth-Anything-V2-Small app gate on Jetson Orin ARM64 (TRT 10.16.2); promotes the TRT cell of `Depth estimation (depth_anything_v2)` from B to P. P covers this model + environment only.",
+  "node": {
+    "role": "Jetson Orin ARM64 worker",
+    "os": "Ubuntu 24.04.4 LTS (aarch64)",
+    "gpu": "Orin (nvgpu), driver 595.78",
+    "tensorrt_runtime": "10.16.2 (libnvinfer.so.10, JetPack R39 stack)"
+  },
+  "build": {
+    "repo": "neuriplo-infer",
+    "commit": "097282d12f5acebb70bf93b0126a3a79b581c28c",
+    "flags": "-DCMAKE_BUILD_TYPE=Release -DDEFAULT_BACKEND=TENSORRT (existing build-nano-trt dir; not a fresh configure)",
+    "binary": "build-nano-trt/app/neuriplo-infer",
+    "binary_sha256": "19613229440dca9948503d06b7e6748ff597ebd178af18a00163abb776bbf84c",
+    "pins": "neuriplo v0.11.3, neuriplo-tasks v0.8.5",
+    "tensorrt_dir_cache": "/home/oli/dependencies/TensorRT-11.2.1.2 (cache path; runtime links system TRT 10.16.2)",
+    "export": "neuriplo-tasks@v0.8.5 export/depth_estimation/depth_anything_v2/export_depth_anything_v2_to_onnx.py --output depth_anything_v2.onnx (default Depth-Anything-V2-Small-hf from HuggingFace)",
+    "engine_built_with": "local trtexec 10.16.2: trtexec --onnx=depth_anything_v2.onnx --saveEngine=depth_anything_v2.engine --memPoolSize=workspace:2048"
+  },
+  "gate": {
+    "type": "depth_anything_v2",
+    "model": "/home/oli/trt-models/extra/depth_anything_v2.engine",
+    "model_onnx_sha256": "27b35106a8d386fd549acb79d010a8339397cbb3ac305cffc3a0a85e0b09c9e2",
+    "model_engine_sha256": "b02b114dfd8c7684b84add8b4748ba77afb93e0063e4c4d38528c19769814d84",
+    "source": "data/dog.jpg",
+    "source_sha256": "5a9522051c3cec2bbd2f6323fccba32e8fbf3ddcc2b3e2fd46b04c720bc6f866",
+    "flags": "--use-gpu=true --no_display=true",
+    "exit": 0,
+    "inference_ms": 141,
+    "stages_ms": {
+      "model_load": 274.486348,
+      "preprocess": 15.039001,
+      "inference": 140.946571,
+      "postprocess": 47.622693,
+      "render": 51.894653
+    },
+    "render": "data/output/processed_depth-anything-v2_local.png",
+    "render_sha256": "1a868c14363918b4784d676b64e26a989be9dd5f5ceef547b6cabefb9b199ccd",
+    "checked": "render inspected: valid relative-depth colormap on dog.jpg — near subjects (dog, bicycle) warm/yellow, background and sky cool/blue, smooth gradients, structure follows the scene"
+  }
+}

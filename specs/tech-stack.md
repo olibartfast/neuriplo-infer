@@ -22,8 +22,14 @@ Never copy a version number out of them into prose:
 
 - C++20, CMake ≥ 3.24, single application target plus a test target.
 - Fresh builds default to CPU NERT through neuriplo; explicit backend overrides
-  remain supported. OpenCV 4.6 is the app minimum; source-built 5.x is preferred.
-- OpenCV ≥ 4.6 and glog are system dependencies.
+  remain supported. OpenCV 4.6 remains the minimum for the `OPENCV_DNN` backend
+  (source-built 5.x preferred); other backends build and run without OpenCV.
+- glog is a system dependency. OpenCV is not: the app builds, links, and runs
+  with no OpenCV present (verified: `grep -rn "cv::" app/src app/inc` empty
+  outside comments, `ldd` lists no `libopencv_*`, tests build without OpenCV
+  headers). OpenCV survives only inside neuriplo's `OPENCV_DNN` backend
+  (`PRIVATE`), and the live preview is an opt-in SDL2 presenter behind
+  `NEURIPLO_INFER_WITH_DISPLAY` (default OFF).
 - Siblings (`neuriplo-tasks`, `neuriplo`, `videocapture`, `neuriplo-kserve-client`)
   arrive through `FetchContent`, pinned to concrete `vX.Y.Z` tags in `versions.env`.
   A branch pin (`master`, `develop`) is a release-blocking error —
@@ -77,7 +83,9 @@ These prevent a feature from expanding the architecture because a familiar
 dependency would make one task convenient:
 
 - **No new third-party runtime dependency without maintainer approval.** The
-  dependency surface is the siblings, OpenCV, glog, and the backend SDKs.
+  dependency surface is the siblings, glog, and the backend SDKs — plus the
+  approved SDL2 exception for the opt-in live preview (`NEURIPLO_INFER_WITH_DISPLAY`,
+  default OFF), recorded in `specs/2026-08-31-opencv-free-app/requirements.md`.
 - **No tensor-shape, dtype, or result-schema semantics in this repo.** Those are
   `neuriplo-tasks` contracts; wiring them through is allowed, redefining them is not.
 - **No backend package versions here.** ONNX Runtime, TensorRT, LibTorch,

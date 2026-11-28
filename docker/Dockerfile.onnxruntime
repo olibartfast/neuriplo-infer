@@ -12,7 +12,8 @@ ARG NEURIPLO_VERSIONS_URL=https://raw.githubusercontent.com/olibartfast/neuriplo
 RUN apt-get update && apt-get install -y \
     cmake \
     build-essential \
-    libopencv-dev \
+    pkg-config \
+    libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
     libgoogle-glog-dev\
     git \
     wget \

@@ -18,16 +18,7 @@ endfunction()
 # Named validate_project_system_dependencies to avoid collision with neuriplo's
 # validate_system_dependencies which gets loaded via FetchContent
 function(validate_project_system_dependencies)
-    # OpenCV and glog should already be found before this function is called
-    # Just validate versions if they're already found
-    if(NOT OpenCV_FOUND)
-        find_package(OpenCV REQUIRED)
-    endif()
-    if(OpenCV_VERSION VERSION_LESS OPENCV_MIN_VERSION)
-        message(FATAL_ERROR "OpenCV version ${OpenCV_VERSION} is too old. Minimum required: ${OPENCV_MIN_VERSION}")
-    endif()
-    message(STATUS "✓ OpenCV ${OpenCV_VERSION} validated")
-    
+    # glog should already be found before this function is called.
     if(NOT glog_FOUND)
         find_package(glog REQUIRED)
     endif()
@@ -91,7 +82,7 @@ function(print_setup_instructions)
     message(STATUS "For inference backend setup, please refer to the neuriplo library documentation.")
     message(STATUS "")
     message(STATUS "System dependencies can be installed with:")
-    message(STATUS "  sudo apt update && sudo apt install -y libopencv-dev libgoogle-glog-dev")
+    message(STATUS "  sudo apt update && sudo apt install -y libgoogle-glog-dev")
     message(STATUS "")
 endfunction()
 

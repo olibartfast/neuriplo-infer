@@ -126,7 +126,7 @@ YOLO ("You Only Look Once") represents fast, single-stage detectors that perform
 
 * NMS adds latency and can affect recall.
 * Crowded/small-object scenes remain challenging.
-* Requires careful threshold tuning (pre-v10).
+* Requires careful threshold tuning.
 
 ---
 

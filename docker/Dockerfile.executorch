@@ -32,14 +32,13 @@ RUN apt-get update && apt-get upgrade -y && \
         cmake \
         build-essential \
         pkg-config \
+        libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
         wget \
         git \
         ninja-build \
         python3 \
         python3-pip \
         python3-venv \
-        libopencv-dev \
-        libopencv-contrib-dev \
         libgoogle-glog-dev \
         libgtest-dev \
         libcurl4-openssl-dev \

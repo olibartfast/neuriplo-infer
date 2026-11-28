@@ -197,13 +197,29 @@ public:
                     {"source_keypoints", source},
                     {"target_keypoints", target},
                     {"matches", pairs}};
-#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
           } else if constexpr (std::is_same_v<T, GazeEstimation>) {
             return {{"kind", "gaze_estimation"},
                     {"pitch", r.pitch},
                     {"yaw", r.yaw},
                     {"direction", r.direction},
                     {"confidence", r.confidence}};
+#endif
+// Monocular3D support is version-adaptive until the tasks pin carries it:
+// re-add unconditionally in the follow-up after the pin bump.
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+          } else if constexpr (std::is_same_v<T, Monocular3DDetection>) {
+            json corners = json::array();
+            for (const auto &c : r.projected_corners) {
+              corners.push_back(
+                  {{"x", c.x}, {"y", c.y}, {"confidence", c.confidence}});
+            }
+            return {{"kind", "monocular_3d_detection"},
+                    {"class_id", r.class_id},
+                    {"score", r.class_confidence},
+                    {"bbox", box(r.bbox)},
+                    {"geometry_confidence", r.geometry_confidence},
+                    {"projected_corners", corners}};
 #endif
           } else {
             static_assert(std::is_same_v<T, ImageUnderstanding>);

@@ -1,16 +1,26 @@
 #include "ResultRenderer.hpp"
 
-#include "neuriplo/tasks/core/opencv_interop.hpp"
+#include "AppImageOps.hpp"
+#include "neuriplo/tasks/core/vision/image.hpp"
 #include "utils.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
 
 namespace {
+
+namespace imageops = neuriplo_infer::imageops;
+using neuriplo_tasks::vision::Image;
+using neuriplo_tasks::vision::Point;
+using neuriplo_tasks::vision::Rect;
 
 template <typename ResultT, typename Func>
 void forEachResultOfType(const std::vector<neuriplo_tasks::Result> &results,
@@ -27,6 +37,324 @@ void forEachResultOfType(const std::vector<neuriplo_tasks::Result> &results,
   }
 }
 
+std::string formatScore(float value) {
+  std::ostringstream out;
+  out << std::fixed << std::setprecision(2) << value;
+  return out.str();
+}
+
+void renderDetectionResults(const std::vector<neuriplo_tasks::Result> &results,
+                            Image &image,
+                            const std::vector<std::string> &classes) {
+  forEachResultOfType<neuriplo_tasks::Detection>(
+      results, [&](const auto &detection) {
+        imageops::rectangle(image, detection.bbox, imageops::Color{255, 0, 0},
+                            3);
+        drawLabelBand(image, detection.bbox.x, detection.bbox.y,
+                      labelForClass(detection.class_id, classes) + " " +
+                          formatScore(detection.class_confidence),
+                      imageops::Color{255, 0, 0});
+      });
+}
+
+void renderOpenVocabDetectionResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image) {
+  forEachResultOfType<neuriplo_tasks::OpenVocabDetection>(
+      results, [&](const auto &detection) {
+        imageops::rectangle(image, detection.bbox, imageops::Color{0, 165, 255},
+                            3);
+        drawLabelBand(image, detection.bbox.x, detection.bbox.y,
+                      detection.label + " " + formatScore(detection.score),
+                      imageops::Color{0, 165, 255});
+      });
+}
+
+// One tight band per ranked label: each background is sized to its own
+// text (via textSize) plus padding, black on yellow. Bands pack from the
+// top-left margin with a small gap; overlong labels clip at the image edge.
+void renderRankedLabels(const std::vector<std::string> &labels, Image &image) {
+  if (labels.empty() || image.empty()) {
+    return;
+  }
+  const int scale = labelTextScale(image);
+  const int margin =
+      std::min(10 * scale, std::min(image.cols(), image.rows()) / 10);
+  const int max_w = std::max(1, image.cols() - 2 * margin);
+  const int pad = 2 * scale;
+  int top = margin;
+  for (const auto &label : labels) {
+    const Point text_extent = imageops::textSize(label, scale);
+    const int band_w = std::min(max_w, text_extent.x + 2 * pad);
+    const int band_h = text_extent.y + 2 * pad;
+    imageops::fillRectangle(image, Rect(margin, top, band_w, band_h),
+                            imageops::Color{0, 255, 255});
+    imageops::drawText(image, label, margin + pad, top + pad,
+                       imageops::Color{255, 255, 255}, scale);
+    top += band_h + pad * 2;
+  }
+}
+
+void renderClassificationResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image,
+    const std::vector<std::string> &classes) {
+  std::vector<std::string> labels;
+  forEachResultOfType<neuriplo_tasks::Classification>(
+      results, [&](const auto &classification) {
+        labels.push_back(labelForClass(classification.class_id, classes) +
+                         " (" + formatScore(classification.class_confidence) +
+                         ")");
+      });
+  renderRankedLabels(labels, image);
+}
+
+void renderVideoClassificationResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image,
+    const std::vector<std::string> &classes) {
+  std::vector<std::string> labels;
+  forEachResultOfType<neuriplo_tasks::VideoClassification>(
+      results, [&](const auto &classification) {
+        // neuriplo-tasks does not set action_label; resolve from the labels
+        // file the same way still-image classification does.
+        const std::string name =
+            classification.action_label.empty()
+                ? labelForClass(classification.class_id, classes)
+                : classification.action_label;
+        labels.push_back(name + " (" +
+                         formatScore(classification.class_confidence) + ")");
+      });
+  renderRankedLabels(labels, image);
+}
+
+std::vector<Point>
+toRenderContour(const std::vector<neuriplo_tasks::vision::Point2f> &ring) {
+  std::vector<Point> contour;
+  contour.reserve(ring.size());
+  for (const auto &point : ring) {
+    contour.emplace_back(static_cast<int>(std::lround(point.x)),
+                         static_cast<int>(std::lround(point.y)));
+  }
+  return contour;
+}
+
+// Draws the polygon representation produced when
+// TaskConfig::segmentation_output is Polygon (neuriplo-tasks v0.7.0): the
+// exterior ring and any hole rings are stroked as closed outlines. Nothing is
+// filled -- a filled polygon is visually indistinguishable from the mask
+// overlay, which defeats the point of asking for the vector representation.
+void overlaySegmentationPolygons(
+    const std::vector<neuriplo_tasks::SegmentationPolygon> &polygons,
+    Image &image) {
+  const imageops::Color color{static_cast<std::uint8_t>(std::rand() & 255),
+                              static_cast<std::uint8_t>(std::rand() & 255),
+                              static_cast<std::uint8_t>(std::rand() & 255)};
+
+  for (const auto &polygon : polygons) {
+    if (polygon.exterior.size() < 3) {
+      continue;
+    }
+    const std::vector<std::vector<Point>> exterior{
+        toRenderContour(polygon.exterior)};
+    imageops::polylines(image, exterior, /*closed=*/true, color, 2);
+
+    // Holes get the same colour but a thinner stroke, so interior boundaries
+    // stay distinguishable from the outer perimeter.
+    std::vector<std::vector<Point>> holes;
+    holes.reserve(polygon.holes.size());
+    for (const auto &hole : polygon.holes) {
+      if (hole.size() >= 3) {
+        holes.push_back(toRenderContour(hole));
+      }
+    }
+    if (!holes.empty()) {
+      imageops::polylines(image, holes, /*closed=*/true, color, 1);
+    }
+  }
+}
+
+void renderInstanceSegmentationResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image,
+    const std::vector<std::string> &classes) {
+  forEachResultOfType<neuriplo_tasks::InstanceSegmentation>(
+      results, [&](const auto &segmentation) {
+        imageops::rectangle(image, segmentation.bbox,
+                            imageops::Color{255, 0, 0}, 3);
+        drawLabelBand(image, segmentation.bbox.x, segmentation.bbox.y,
+                      labelForClass(segmentation.class_id, classes) + " " +
+                          formatScore(segmentation.class_confidence),
+                      imageops::Color{255, 0, 0});
+
+        if (!segmentation.polygons.empty()) {
+          overlaySegmentationPolygons(segmentation.polygons, image);
+        } else if (!segmentation.mask.empty()) {
+          Image mask = neuriplo_tasks::toImage(segmentation.mask);
+          if (mask.cols() != image.cols() || mask.rows() != image.rows()) {
+            mask = imageops::resize(mask, image.cols(), image.rows(),
+                                    imageops::Interpolation::Nearest);
+          }
+          const imageops::Color color{
+              static_cast<std::uint8_t>(std::rand() & 255),
+              static_cast<std::uint8_t>(std::rand() & 255),
+              static_cast<std::uint8_t>(std::rand() & 255)};
+          imageops::maskedAlphaBlend(image, color, mask, 0.7);
+        }
+      });
+}
+
+void renderOpticalFlowResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image) {
+  forEachResultOfType<neuriplo_tasks::OpticalFlow>(
+      results, [&](const auto &flow) {
+        if (!flow.flow.empty()) {
+          image = neuriplo_tasks::toImage(flow.flow);
+        }
+      });
+}
+
+void renderPoseEstimationResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image,
+    float confidence_threshold) {
+  const std::vector<std::pair<size_t, size_t>> skeleton = {
+      {0, 1},   {0, 2},   {1, 3},   {2, 4},  {5, 6},  {5, 7},
+      {7, 9},   {6, 8},   {8, 10},  {5, 11}, {6, 12}, {11, 12},
+      {11, 13}, {13, 15}, {12, 14}, {14, 16}};
+
+  forEachResultOfType<neuriplo_tasks::PoseEstimation>(
+      results, [&](const auto &pose) {
+        for (const auto &[i, j] : skeleton) {
+          if (i < pose.keypoints.size() && j < pose.keypoints.size()) {
+            const auto &kp1 = pose.keypoints[i];
+            const auto &kp2 = pose.keypoints[j];
+            if (kp1.confidence > confidence_threshold &&
+                kp2.confidence > confidence_threshold) {
+              imageops::line(
+                  image,
+                  Point(static_cast<int>(kp1.x), static_cast<int>(kp1.y)),
+                  Point(static_cast<int>(kp2.x), static_cast<int>(kp2.y)),
+                  imageops::Color{0, 255, 255}, 2);
+            }
+          }
+        }
+
+        for (const auto &kp : pose.keypoints) {
+          if (kp.confidence > confidence_threshold) {
+            imageops::fillCircle(
+                image, Point(static_cast<int>(kp.x), static_cast<int>(kp.y)), 5,
+                imageops::Color{0, 255, 0});
+          }
+        }
+      });
+}
+
+void renderDepthEstimationResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image) {
+  forEachResultOfType<neuriplo_tasks::DepthEstimation>(
+      results, [&](const auto &depth_result) {
+        Image depth_for_vis;
+        if (!depth_result.normalized_depth.empty()) {
+          depth_for_vis =
+              neuriplo_tasks::toImage(depth_result.normalized_depth);
+        } else if (!depth_result.depth.empty()) {
+          depth_for_vis = imageops::normalizeMinMax(
+              neuriplo_tasks::toImage(depth_result.depth), 0.0, 1.0);
+        } else {
+          return;
+        }
+
+        if (depth_for_vis.cols() != image.cols() ||
+            depth_for_vis.rows() != image.rows()) {
+          depth_for_vis =
+              imageops::resize(depth_for_vis, image.cols(), image.rows(),
+                               imageops::Interpolation::Linear);
+        }
+        depth_for_vis.convertTo(neuriplo_tasks::vision::PixelType::UInt8,
+                                255.0);
+        imageops::applyTurboColormap(depth_for_vis, image);
+      });
+}
+
+void renderImageUnderstandingResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image) {
+  forEachResultOfType<neuriplo_tasks::ImageUnderstanding>(
+      results, [&](const auto &understanding) {
+        std::cout << understanding.text << '\n';
+        renderRankedLabels({understanding.text}, image);
+      });
+}
+
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+// Single gaze arrow per result, drawn from the frame center along the
+// projected direction (dx = direction[0], dy = direction[1]). The input is a
+// normalized face crop, so the center is the only stable anchor: the app has
+// no face box. Length is a quarter of the smaller frame side.
+void renderGazeEstimationResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image) {
+  const float length =
+      static_cast<float>(std::min(image.cols(), image.rows())) / 4.0F;
+  const Point origin{image.cols() / 2, image.rows() / 2};
+  forEachResultOfType<neuriplo_tasks::GazeEstimation>(
+      results, [&](const auto &gaze) {
+        const auto project = [&](int origin_component, float component) {
+          return static_cast<int>(std::lround(
+              static_cast<float>(origin_component) + length * component));
+        };
+        const Point tip{project(origin.x, gaze.direction[0]),
+                        project(origin.y, gaze.direction[1])};
+        imageops::fillCircle(image, origin, 4, imageops::Color{0, 255, 255});
+        imageops::line(image, origin, tip, imageops::Color{0, 255, 255}, 3);
+        std::ostringstream readout;
+        readout << "yaw " << std::fixed << std::setprecision(2) << gaze.yaw
+                << " pitch " << gaze.pitch;
+        const std::string text = readout.str();
+        const int scale = labelTextScale(image);
+        const int pad = 2 * scale;
+        const Point size = imageops::textSize(text, scale);
+        const int plate_x = origin.x - size.x / 2;
+        const int plate_y = origin.y + 10 * scale;
+        imageops::fillRectangle(
+            image, Rect(plate_x, plate_y, size.x + 2 * pad, size.y + 2 * pad),
+            imageops::Color{0, 0, 0});
+        imageops::drawText(image, text, plate_x + pad, plate_y + pad,
+                           imageops::Color{255, 255, 255}, scale);
+      });
+}
+
+// Box plus cuboid wireframe: ground quad 0-1-2-3, roof quad 4-5-6-7, four
+// verticals i-(i+4), following the canonical ground-first corner layout the
+// sibling postprocessor guarantees.
+void renderMonocular3DResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image,
+    const std::vector<std::string> &classes) {
+  forEachResultOfType<neuriplo_tasks::Monocular3DDetection>(
+      results, [&](const auto &detection) {
+        imageops::rectangle(image, detection.bbox, imageops::Color{255, 0, 0},
+                            3);
+        drawLabelBand(
+            image, detection.bbox.x, detection.bbox.y,
+            labelForClass(static_cast<float>(detection.class_id), classes) +
+                " " + formatScore(detection.class_confidence),
+            imageops::Color{255, 0, 0});
+        const auto &corners = detection.projected_corners;
+        auto point = [](const neuriplo_tasks::CuboidKeypoint &corner) {
+          return Point{static_cast<int>(std::lround(corner.x)),
+                       static_cast<int>(std::lround(corner.y))};
+        };
+        // Canonical ground-first layout: ground quad 0-3, roof quad 4-7,
+        // verticals i-(i+4).
+        for (std::size_t i = 0; i < 4; ++i) {
+          const std::size_t next = (i + 1) % 4;
+          imageops::line(image, point(corners[i]), point(corners[next]),
+                         imageops::Color{0, 255, 255}, 2);
+          imageops::line(image, point(corners[i + 4]), point(corners[next + 4]),
+                         imageops::Color{0, 255, 255}, 2);
+          imageops::line(image, point(corners[i]), point(corners[i + 4]),
+                         imageops::Color{0, 255, 255}, 2);
+        }
+      });
+}
+#endif
+
+} // namespace
+
 std::string labelForClass(float class_id,
                           const std::vector<std::string> &classes) {
   const int class_index = static_cast<int>(class_id);
@@ -42,270 +370,8 @@ std::string labelForClass(float class_id,
   return fallback;
 }
 
-void renderDetectionResults(const std::vector<neuriplo_tasks::Result> &results,
-                            cv::Mat &image,
-                            const std::vector<std::string> &classes) {
-  forEachResultOfType<neuriplo_tasks::Detection>(
-      results, [&](const auto &detection) {
-        cv::rectangle(image, neuriplo_tasks::toCvRect(detection.bbox),
-                      cv::Scalar(255, 0, 0), 3);
-        std::string label = labelForClass(detection.class_id, classes);
-        draw_label(image, label, detection.class_confidence, detection.bbox.x,
-                   detection.bbox.y);
-      });
-}
-
-void renderOpenVocabDetectionResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
-  forEachResultOfType<neuriplo_tasks::OpenVocabDetection>(
-      results, [&](const auto &detection) {
-        cv::rectangle(image, neuriplo_tasks::toCvRect(detection.bbox),
-                      cv::Scalar(0, 165, 255), 3);
-        const std::string label = detection.label.empty()
-                                      ? std::to_string(detection.prompt_index)
-                                      : detection.label;
-        draw_label(image, label, detection.score, detection.bbox.x,
-                   detection.bbox.y);
-      });
-}
-
-void renderRankedLabels(const std::vector<std::string> &labels,
-                        cv::Mat &image) {
-  if (labels.empty() || image.empty()) {
-    return;
-  }
-  const int margin = std::min(10, std::min(image.cols, image.rows) / 10);
-  int max_width = 1;
-  for (const auto &label : labels) {
-    max_width =
-        std::max(max_width, cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX,
-                                            1.0, 1, nullptr)
-                                .width);
-  }
-  const double scale = std::min(
-      {0.7, static_cast<double>(image.cols - 2 * margin - 2) / max_width,
-       static_cast<double>(image.rows - 2 * margin) /
-           (40.0 * static_cast<double>(labels.size()))});
-  if (scale <= 0.0) {
-    return;
-  }
-  int baseline = 0;
-  const auto size =
-      cv::getTextSize("Ag", cv::FONT_HERSHEY_SIMPLEX, scale, 1, &baseline);
-  int y = margin + size.height;
-  for (const auto &label : labels) {
-    cv::putText(image, label, cv::Point(margin, y), cv::FONT_HERSHEY_SIMPLEX,
-                scale, cv::Scalar(0, 255, 255), 1);
-    y += size.height + baseline + 4;
-  }
-}
-
-void renderClassificationResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
-    const std::vector<std::string> &classes) {
-  std::vector<std::string> labels;
-  forEachResultOfType<neuriplo_tasks::Classification>(
-      results, [&](const auto &classification) {
-        labels.push_back(labelForClass(classification.class_id, classes) +
-                         " (" +
-                         std::to_string(classification.class_confidence) + ")");
-      });
-  renderRankedLabels(labels, image);
-}
-
-void renderVideoClassificationResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
-  std::vector<std::string> labels;
-  forEachResultOfType<neuriplo_tasks::VideoClassification>(
-      results, [&](const auto &classification) {
-        labels.push_back(classification.action_label + " (" +
-                         std::to_string(classification.class_confidence) + ")");
-      });
-  renderRankedLabels(labels, image);
-}
-
-std::vector<cv::Point>
-toCvContour(const std::vector<neuriplo_tasks::vision::Point2f> &ring) {
-  std::vector<cv::Point> contour;
-  contour.reserve(ring.size());
-  for (const auto &point : ring) {
-    contour.emplace_back(cvRound(point.x), cvRound(point.y));
-  }
-  return contour;
-}
-
-// Draws the polygon representation produced when
-// TaskConfig::segmentation_output is Polygon (neuriplo-tasks v0.7.0): the
-// exterior ring and any hole rings are stroked as closed outlines. Nothing is
-// filled -- a filled polygon is visually indistinguishable from the mask
-// overlay, which defeats the point of asking for the vector representation.
-void overlaySegmentationPolygons(
-    const std::vector<neuriplo_tasks::SegmentationPolygon> &polygons,
-    cv::Mat &image) {
-  const cv::Scalar color =
-      cv::Scalar(std::rand() & 255, std::rand() & 255, std::rand() & 255);
-
-  for (const auto &polygon : polygons) {
-    if (polygon.exterior.size() < 3) {
-      continue;
-    }
-    const std::vector<std::vector<cv::Point>> exterior{
-        toCvContour(polygon.exterior)};
-    cv::polylines(image, exterior, /*isClosed=*/true, color, 2, cv::LINE_AA);
-
-    // Holes get the same colour but a thinner stroke, so interior boundaries
-    // stay distinguishable from the outer perimeter.
-    std::vector<std::vector<cv::Point>> holes;
-    holes.reserve(polygon.holes.size());
-    for (const auto &hole : polygon.holes) {
-      if (hole.size() >= 3) {
-        holes.push_back(toCvContour(hole));
-      }
-    }
-    if (!holes.empty()) {
-      cv::polylines(image, holes, /*isClosed=*/true, color, 1, cv::LINE_AA);
-    }
-  }
-}
-
-void renderInstanceSegmentationResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
-    const std::vector<std::string> &classes) {
-  forEachResultOfType<neuriplo_tasks::InstanceSegmentation>(
-      results, [&](const auto &segmentation) {
-        cv::rectangle(image, neuriplo_tasks::toCvRect(segmentation.bbox),
-                      cv::Scalar(255, 0, 0), 3);
-        std::string label = labelForClass(segmentation.class_id, classes);
-        draw_label(image, label, segmentation.class_confidence,
-                   segmentation.bbox.x, segmentation.bbox.y);
-
-        if (!segmentation.polygons.empty()) {
-          overlaySegmentationPolygons(segmentation.polygons, image);
-        } else if (!segmentation.mask.empty()) {
-          cv::Mat mask = neuriplo_tasks::toCvMat(segmentation.mask);
-          cv::Mat maskForRender;
-          if (mask.size() != image.size()) {
-            cv::resize(mask, maskForRender, image.size(), 0, 0,
-                       cv::INTER_NEAREST);
-          } else {
-            maskForRender = mask;
-          }
-          if (maskForRender.type() != CV_8UC1) {
-            maskForRender.convertTo(maskForRender, CV_8UC1);
-          }
-
-          cv::Mat colorMask = cv::Mat::zeros(image.size(), CV_8UC3);
-          cv::Scalar color = cv::Scalar(std::rand() & 255, std::rand() & 255,
-                                        std::rand() & 255);
-          colorMask.setTo(color, maskForRender);
-
-          cv::addWeighted(image, 1, colorMask, 0.7, 0, image);
-        }
-      });
-}
-
-void renderOpticalFlowResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
-  forEachResultOfType<neuriplo_tasks::OpticalFlow>(
-      results, [&](const auto &flow) {
-        if (!flow.flow.empty()) {
-          image = neuriplo_tasks::toCvMat(flow.flow).clone();
-        }
-        std::string flow_text =
-            "Max displacement: " + std::to_string(flow.max_displacement);
-        cv::putText(image, flow_text, cv::Point(10, 60),
-                    cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
-      });
-}
-
-void renderPoseEstimationResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
-    float confidence_threshold) {
-  const std::vector<std::pair<size_t, size_t>> skeleton = {
-      {0, 1},   {0, 2},   {1, 3},   {2, 4},  {5, 6},  {5, 7},
-      {7, 9},   {6, 8},   {8, 10},  {5, 11}, {6, 12}, {11, 12},
-      {11, 13}, {13, 15}, {12, 14}, {14, 16}};
-
-  forEachResultOfType<neuriplo_tasks::PoseEstimation>(
-      results, [&](const auto &pose) {
-        for (const auto &[i, j] : skeleton) {
-          if (i < pose.keypoints.size() && j < pose.keypoints.size()) {
-            const auto &kp1 = pose.keypoints[i];
-            const auto &kp2 = pose.keypoints[j];
-            if (kp1.confidence > confidence_threshold &&
-                kp2.confidence > confidence_threshold) {
-              cv::line(
-                  image,
-                  cv::Point(static_cast<int>(kp1.x), static_cast<int>(kp1.y)),
-                  cv::Point(static_cast<int>(kp2.x), static_cast<int>(kp2.y)),
-                  cv::Scalar(0, 255, 255), 2);
-            }
-          }
-        }
-
-        for (const auto &kp : pose.keypoints) {
-          if (kp.confidence > confidence_threshold) {
-            cv::circle(
-                image,
-                cv::Point(static_cast<int>(kp.x), static_cast<int>(kp.y)), 5,
-                cv::Scalar(0, 255, 0), -1);
-          }
-        }
-
-        std::string score_text = "Pose score: " + std::to_string(pose.score);
-        cv::putText(image, score_text, cv::Point(10, 30),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 255, 255), 2);
-      });
-}
-
-void renderDepthEstimationResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
-  forEachResultOfType<neuriplo_tasks::DepthEstimation>(
-      results, [&](const auto &depth_result) {
-        cv::Mat depth_for_vis;
-        if (!depth_result.normalized_depth.empty()) {
-          depth_for_vis =
-              neuriplo_tasks::toCvMat(depth_result.normalized_depth);
-        } else if (!depth_result.depth.empty()) {
-          cv::normalize(neuriplo_tasks::toCvMat(depth_result.depth),
-                        depth_for_vis, 0.0f, 1.0f, cv::NORM_MINMAX, CV_32FC1);
-        } else {
-          return;
-        }
-
-        cv::Mat depth_resized;
-        if (depth_for_vis.size() != image.size()) {
-          cv::resize(depth_for_vis, depth_resized, image.size(), 0.0, 0.0,
-                     cv::INTER_LINEAR);
-        } else {
-          depth_resized = depth_for_vis;
-        }
-
-        cv::Mat depth_u8;
-        depth_resized.convertTo(depth_u8, CV_8UC1, 255.0);
-        cv::applyColorMap(depth_u8, image, cv::COLORMAP_TURBO);
-
-        std::string depth_text =
-            "Depth min/max: " + std::to_string(depth_result.min_depth) + " / " +
-            std::to_string(depth_result.max_depth);
-        cv::putText(image, depth_text, cv::Point(10, 30),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255),
-                    2);
-      });
-}
-
-void renderImageUnderstandingResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat & /*image*/) {
-  forEachResultOfType<neuriplo_tasks::ImageUnderstanding>(
-      results, [](const auto &understanding) {
-        std::cout << understanding.text << '\n';
-      });
-}
-
-} // namespace
-
 void DefaultResultRenderer::render(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image,
+    const std::vector<neuriplo_tasks::Result> &results, Image &image,
     const RenderContext &context) {
   switch (context.task_type) {
   case neuriplo_tasks::TaskType::Detection:
@@ -315,7 +381,7 @@ void DefaultResultRenderer::render(
     renderClassificationResults(results, image, context.classes);
     break;
   case neuriplo_tasks::TaskType::VideoClassification:
-    renderVideoClassificationResults(results, image);
+    renderVideoClassificationResults(results, image, context.classes);
     break;
   case neuriplo_tasks::TaskType::InstanceSegmentation:
     renderInstanceSegmentationResults(results, image, context.classes);
@@ -335,9 +401,13 @@ void DefaultResultRenderer::render(
   case neuriplo_tasks::TaskType::ImageUnderstanding:
     renderImageUnderstandingResults(results, image);
     break;
-#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+  case neuriplo_tasks::TaskType::Monocular3DDetection:
+    renderMonocular3DResults(results, image, context.classes);
+    break;
   case neuriplo_tasks::TaskType::GazeEstimation:
-    throw std::runtime_error("Gaze estimation rendering is not implemented");
+    renderGazeEstimationResults(results, image);
+    break;
 #endif
   case neuriplo_tasks::TaskType::GaussianSplatting:
     break;
@@ -364,15 +434,18 @@ void DefaultResultRenderer::render(
                 pair.source_keypoints[static_cast<size_t>(match.source_index)];
             const auto &b =
                 pair.target_keypoints[static_cast<size_t>(match.target_index)];
-            const cv::Point source(cvRound(a.x), cvRound(a.y));
-            const cv::Point target(context.pair_source_width + cvRound(b.x),
-                                   cvRound(b.y));
-            const cv::Scalar color(64 + count * 71 % 192,
-                                   64 + count * 131 % 192,
-                                   64 + count * 43 % 192);
-            cv::line(image, source, target, color, 1, cv::LINE_AA);
-            cv::circle(image, source, 3, color, cv::FILLED, cv::LINE_AA);
-            cv::circle(image, target, 3, color, cv::FILLED, cv::LINE_AA);
+            const Point source(static_cast<int>(std::lround(a.x)),
+                               static_cast<int>(std::lround(a.y)));
+            const Point target(context.pair_source_width +
+                                   static_cast<int>(std::lround(b.x)),
+                               static_cast<int>(std::lround(b.y)));
+            const imageops::Color color{
+                static_cast<std::uint8_t>(64 + count * 71 % 192),
+                static_cast<std::uint8_t>(64 + count * 131 % 192),
+                static_cast<std::uint8_t>(64 + count * 43 % 192)};
+            imageops::line(image, source, target, color, 1);
+            imageops::fillCircle(image, source, 3, color);
+            imageops::fillCircle(image, target, 3, color);
             ++count;
           }
         });

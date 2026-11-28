@@ -235,7 +235,8 @@ int InferencePipeline::getRequiredFrameCount() const {
 }
 
 void InferencePipeline::renderResults(
-    const std::vector<neuriplo_tasks::Result> &results, cv::Mat &image) {
+    const std::vector<neuriplo_tasks::Result> &results,
+    neuriplo_tasks::vision::Image &image) {
   RenderContext context{task_type, classes, config.confidenceThreshold};
   renderer->render(results, image, context);
 }

@@ -2,6 +2,8 @@
 
 #include "InferencePipeline.hpp"
 
+#include "neuriplo/tasks/core/vision/image.hpp"
+
 #include <cstdint>
 #include <vector>
 
@@ -18,23 +20,25 @@ public:
 // existing constructor symbols stay available.
 class WarmupCommand : public CLICommand {
 public:
-  explicit WarmupCommand(cv::Mat image);
-  WarmupCommand(cv::Mat image, std::vector<uint8_t> encoded_source);
+  explicit WarmupCommand(neuriplo_tasks::vision::Image image);
+  WarmupCommand(neuriplo_tasks::vision::Image image,
+                std::vector<uint8_t> encoded_source);
   int execute(InferencePipeline &pipeline) override;
 
 private:
-  cv::Mat image_;
+  neuriplo_tasks::vision::Image image_;
   std::vector<uint8_t> encoded_source_;
 };
 
 class BenchmarkCommand : public CLICommand {
 public:
-  explicit BenchmarkCommand(cv::Mat image);
-  BenchmarkCommand(cv::Mat image, std::vector<uint8_t> encoded_source);
+  explicit BenchmarkCommand(neuriplo_tasks::vision::Image image);
+  BenchmarkCommand(neuriplo_tasks::vision::Image image,
+                   std::vector<uint8_t> encoded_source);
   int execute(InferencePipeline &pipeline) override;
 
 private:
-  cv::Mat image_;
+  neuriplo_tasks::vision::Image image_;
   std::vector<uint8_t> encoded_source_;
 };
 

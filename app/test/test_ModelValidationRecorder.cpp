@@ -83,7 +83,7 @@ TEST_F(ModelValidationRecorder, HandlesEveryResultVariant) {
   }
 }
 
-#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
 TEST_F(ModelValidationRecorder, PreservesTheAppendedGazeContract) {
   PredictionRecorder recorder(path_);
   GazeEstimation gaze;

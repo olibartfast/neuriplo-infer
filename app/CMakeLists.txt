@@ -4,6 +4,8 @@ set(APP_LIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/NeuriploInfer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InferencePipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CLICommands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AppImageOps.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ArgParser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/FrameConversion.cpp
     # Compiles to nothing unless videocapture exports VIDEOCAPTURE_WITH_WRITER,
     # i.e. unless NEURIPLO_INFER_WITH_VIDEOWRITER turned the writer on.
@@ -35,9 +37,9 @@ target_compile_definitions(${NEURIPLO_INFER_LIBRARY} PUBLIC
 target_include_directories(${NEURIPLO_INFER_LIBRARY} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty
     ${VideoCapture_SOURCE_DIR}/include
     ${VideoCapture_SOURCE_DIR}/src
-    ${OpenCV_INCLUDE_DIRS}
     ${GLOG_INCLUDE_DIRS}
 )
 
@@ -56,10 +58,9 @@ endif()
 
 target_link_libraries(${NEURIPLO_INFER_LIBRARY} PUBLIC
     glog::glog
-    ${OpenCV_LIBS}
     VideoCapture
     neuriplo-tasks
-    neuriplo-tasks::vision-opencv
+    neuriplo-tasks::vision-stb
     nlohmann_json::nlohmann_json
 )
 

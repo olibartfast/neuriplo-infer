@@ -60,7 +60,7 @@ include(cmake/versions.cmake)
 
 # Set DEFAULT_BACKEND as a CACHE variable with its type and a help string.
 if(NOT DEFINED DEFAULT_BACKEND)
-   set(DEFAULT_BACKEND "NERT" CACHE STRING "Default inference backend: NERT, OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW")
+   set(DEFAULT_BACKEND "NERT" CACHE STRING "Default inference backend: NERT, OPENCV_DNN, ONNX_RUNTIME, LIBTORCH, TENSORRT, OPENVINO, LIBTENSORFLOW, GGML")
 endif()
 
 # Video backend options (managed by VideoCapture library)
@@ -79,20 +79,7 @@ message(STATUS "Home path: ${HOME_PATH}")
 include(cmake/DependencyValidation.cmake)
 
 # Find system dependencies first (before fetching external dependencies)
-# Prefer the source-built OpenCV 5 in dependencies (non-apt, like the other
-# backend SDKs; see scripts/setup_opencv.sh). An explicit -DOpenCV_DIR wins;
-# otherwise apt OpenCV is used as before (CI images stay unchanged).
-if(NOT DEFINED OpenCV_DIR)
-  set(_OPENCV5_CONFIG "$ENV{HOME}/dependencies/opencv-5.0.0/install/lib/cmake/opencv5/OpenCVConfig.cmake")
-  if(EXISTS "${_OPENCV5_CONFIG}")
-    set(OpenCV_DIR "$ENV{HOME}/dependencies/opencv-5.0.0/install/lib/cmake/opencv5"
-        CACHE PATH "Path to OpenCV (source-built 5.x preferred)")
-    message(STATUS "Using source-built OpenCV 5 from dependencies")
-  endif()
-endif()
-find_package(OpenCV REQUIRED)
 find_package(glog REQUIRED)
-message(STATUS "OpenCV ${OpenCV_VERSION} found")
 message(STATUS "glog found")
 
 include(FetchContent)
@@ -161,7 +148,6 @@ endif()
 # Disable subproject tests and sample apps when fetched as dependencies.
 set(BUILD_INFERENCE_ENGINE_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(NEURIPLO_TASKS_WITH_OPENCV ON CACHE BOOL "" FORCE)
 
 # Prefer a sibling checkout during local cross-repo development.
 set(_NEURIPLO_TASKS_SIBLING "")
@@ -221,6 +207,11 @@ else()
     set(USE_VIDEOWRITER OFF CACHE BOOL "" FORCE)
 endif()
 
+# The app no longer links OpenCV itself, so video capture must come from a
+# dependency-free backend. Force the FFmpeg backend before videocapture is
+# configured; left to itself it would prefer OpenCV when it finds it.
+set(USE_FFMPEG ON CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(VideoCapture neuriplo-tasks nlohmann_json)
 
 # KServe transport knobs. The actual gRPC/Protobuf and OpenSSL detection now
@@ -246,6 +237,27 @@ endif()
 message(STATUS "neuriplo-tasks_SOURCE_DIR: ${neuriplo-tasks_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
+
+# Feature-detect sibling task types added after v0.8.5 (GazeEstimation,
+# Monocular3DDetection in neuriplo_tasks::TaskType). App code that names those
+# enumerators must gate on NEURIPLO_TASKS_HAS_GAZE_MONO3D: older sibling
+# headers do not declare them, and versions.env pins a release tag, never a
+# branch, so the check keys on header content rather than on a version number.
+# Revisit at each pin bump: when the pinned release carries the types, the
+# macro follows automatically; once every supported pin has them, delete the
+# macro and the fallback paths it guards. Until then the fallback is an
+# explicit unsupported-task error, never a silent misroute.
+file(READ "${neuriplo-tasks_SOURCE_DIR}/include/neuriplo/tasks/core/result_types.hpp"
+     _NEURIPLO_TASKS_RESULT_TYPES)
+if(_NEURIPLO_TASKS_RESULT_TYPES MATCHES "    GazeEstimation," AND
+   _NEURIPLO_TASKS_RESULT_TYPES MATCHES "    Monocular3DDetection")
+    set(NEURIPLO_TASKS_HAS_GAZE_MONO3D TRUE)
+endif()
+message(STATUS "neuriplo-tasks gaze/mono3d task types: ${NEURIPLO_TASKS_HAS_GAZE_MONO3D}")
+if(NEURIPLO_TASKS_HAS_GAZE_MONO3D)
+    add_compile_definitions(NEURIPLO_TASKS_HAS_GAZE_MONO3D=1)
+endif()
+unset(_NEURIPLO_TASKS_RESULT_TYPES)
 
 # VideoCapture is deliberately not given OpenCV here. Up to v0.3.0 it expected
 # its consumer to supply OpenCV, because cv::Mat was in its public frame API.
