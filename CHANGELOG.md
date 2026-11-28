@@ -24,9 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Route the `neuriplo-tasks` v0.9.0 families: video classification
   `pevideo*`, `vjepa*`, `videoprism*`; keypoint matching `flexglue*`;
   relative depth `depthanything3` and `da3*`.
-- Backend coverage records that GGML is **not** part of this release: the
-  passing GGML gates need unreleased `neuriplo` fixes, so every GGML cell
-  stays untested at the pinned neuriplo v0.11.3.
+- Backend coverage claims GGML again: `neuriplo` v0.11.4 ships the strict-GGUF
+  loader with ResNet18, YOLOv8n det/seg, YOLO11 pose, and the RF-DETR and
+  RF-DETR-seg loaders. YOLO26 and YOLO10 stay converter-blocked.
 
 ### Changed
 
@@ -35,7 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   4K without dominating the frame.
 - Unsupported task families now fail fast with an error naming the task
   instead of silently routing to object detection.
-- Bump the `neuriplo-tasks` pin to v0.9.0 and regenerate
+- Bump the `neuriplo` pin to v0.11.4 (the GGML release) and the
+  `neuriplo-tasks` pin to v0.9.0, then regenerate
   `docs/generated/supported-model-types.md`.
 - Backend coverage records the gaze and monocular 3D TensorRT gates and
   adds both task rows to the matrices.
