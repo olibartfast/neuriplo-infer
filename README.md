@@ -10,9 +10,10 @@ an image or video, and get annotated results — on the backend of your choice.
 
 ## Key Features
 
-- **Multiple Computer Vision Tasks**: Supported via [neuriplo-tasks library](https://github.com/olibartfast/neuriplo-tasks/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaussian Splatting, Image Understanding / VLM, Keypoint Matching)
+- **Multiple Computer Vision Tasks**: Supported via the [neuriplo-tasks library](https://github.com/olibartfast/neuriplo-tasks/) (Object Detection, Open-Vocabulary Detection, Classification, Instance Segmentation, Video Classification, Optical Flow, Pose Estimation, Depth Estimation, Gaze Estimation, Monocular 3D Detection, Gaussian Splatting, Image Understanding / VLM, Keypoint Matching)
 - **Switchable Inference Backends**: NERT (default), OpenCV DNN, ONNX Runtime, TensorRT, LibTorch, OpenVINO, TensorFlow, LiteRT, ExecuTorch, llama.cpp (via [neuriplo library](https://github.com/olibartfast/neuriplo/))
-- **Images, Video Files, and Streams**: via [VideoCapture library](https://github.com/olibartfast/videocapture/) (OpenCV, GStreamer, FFmpeg)
+- **Images, Video Files, and Streams**: via the [VideoCapture library](https://github.com/olibartfast/videocapture/) (FFmpeg, GStreamer, OpenCV), with `--output_video` writing a fully annotated video
+- **Readable Overlays**: every task renders labelled results in a built-in bitmap font, with text scaled to the frame size
 - **A Docker Image for Most Backends**: no local SDK installs needed (NERT and OpenCV DNN are built from source)
 - **Remote KServe Mode**: keep pre/postprocessing here and send tensors to Triton, OpenVINO Model Server, KServe, or `neuriplo-kserve-runtime`
 
@@ -53,7 +54,7 @@ presets are in [docs/Deployment.md](docs/Deployment.md).
 Ubuntu 24.04, default NERT backend, with the ONNX model from step 1 of the quickstart:
 
 ```bash
-sudo apt install -y cmake build-essential git wget curl unzip libopencv-dev libgoogle-glog-dev
+sudo apt install -y cmake build-essential git wget curl unzip libgoogle-glog-dev
 
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j"$(nproc)"
@@ -64,9 +65,11 @@ cmake --build build -j"$(nproc)"
 
 The default backend is `NERT`, fetched and built through the pinned neuriplo
 library. Select another backend explicitly with `-DDEFAULT_BACKEND=<BACKEND>`.
-OpenCV remains required for capture and rendering: 4.6 is the minimum, and a
-source-built 5.x installation is preferred when available.
-Other backends, CMake options, and video backends: [docs/Deployment.md](docs/Deployment.md).
+The application itself does not link OpenCV; only the `OPENCV_DNN` backend does,
+and the default FFmpeg capture backend needs no OpenCV at all. Video output uses
+`--output_video` and requires `-DNEURIPLO_INFER_WITH_VIDEOWRITER=ON` at configure
+time. Other backends, CMake options, and video backends:
+[docs/Deployment.md](docs/Deployment.md).
 
 ## Platform Support
 
@@ -83,7 +86,8 @@ Toolkit. Details per backend: [docs/Deployment.md § Platform support](docs/Depl
 ## Supported Models
 
 Pass the model family with `--type` — for example `yolo`, `rtdetr`, `yoloseg`,
-`owlv2`, `raft`, `vitpose`, `depth_anything_v2`, or `gemma4`. The complete list,
+`owlv2`, `raft`, `vitpose`, `depth_anything_v2`, `gaze`, `urbanomni`, or
+`gemma4`. The complete list,
 with aliases and input contracts, is in
 [docs/generated/supported-model-types.md](docs/generated/supported-model-types.md).
 To produce model files, see [docs/ExportInstructions.md](docs/ExportInstructions.md)
@@ -102,6 +106,10 @@ and the [neuriplo-tasks export tools](https://github.com/olibartfast/neuriplo-ta
 | [Supported model types](docs/generated/supported-model-types.md) | Every `--type` string and its task |
 | [Export instructions](docs/ExportInstructions.md) | Producing model files for each backend |
 | [VLM image understanding](docs/VLMImageUnderstanding.md) | Vision-language models via llama.cpp |
+| [Keypoint matching](docs/KeypointMatching.md) | SuperPoint + LightGlue pair inference |
+| [Model pyramid](docs/ModelPyramid.md) | Running several models in one pipeline |
+| [MCP adapter](docs/McpAdapter.md) | Stdio MCP tooling for agent hosts |
+| [Slurm backend coverage](docs/SlurmBackendCoverage.md) | Cluster-based backend validation |
 | [Detector architectures](docs/DetectorArchitectures.md) | Object-detection model families |
 | [Dependency management](docs/DependencyManagement.md), [Versioning](docs/Versioning.md) | Dependency ownership, releases |
 

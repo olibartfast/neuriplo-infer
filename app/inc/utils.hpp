@@ -13,6 +13,10 @@ bool isFile(const std::string &path);
 void drawLabelBand(neuriplo_tasks::vision::Image &image, int left, int top,
                    const std::string &text,
                    neuriplo_infer::imageops::Color color);
+
+// Integer glyph scale for overlays, proportional to the frame's shorter
+// side (1 at <=360 px, 3 at 1080p, capped by legibility rather than size).
+int labelTextScale(const neuriplo_tasks::vision::Image &image);
 std::vector<std::string> readLabelNames(const std::string &fileName);
 std::string getFileExtension(const std::string &filename);
 // A source argument naming a still image, judged by its extension

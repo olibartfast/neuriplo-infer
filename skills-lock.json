@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "good-readme": {
+      "source": "adewale/good-readme",
+      "commit": "17c42e29537ab9316339b73d57cbc74316cf01bd",
+      "sourceType": "github",
+      "skillPath": "skills/good-readme/SKILL.md",
+      "computedHash": "4b8c563ab6e4757769e05cfaea0ca1ca3964f0928dff1012480fe13b1bb5e7fe"
+    }
+  }
+}

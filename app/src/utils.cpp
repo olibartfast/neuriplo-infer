@@ -28,20 +28,30 @@ bool isFile(const std::string &path) {
   return std::filesystem::is_regular_file(path);
 }
 
+int labelTextScale(const neuriplo_tasks::vision::Image &image) {
+  // Text must stay legible at 720p and not swallow a 4K frame: scale with
+  // the frame's shorter side, floored at 1 for small images.
+  const int short_side = std::min(image.width(), image.height());
+  return std::max(1, short_side / 360);
+}
+
 void drawLabelBand(neuriplo_tasks::vision::Image &image, int left, int top,
                    const std::string &text,
                    neuriplo_infer::imageops::Color color) {
-  // Band sized to the label: 6 px per glyph plus padding, 12 px tall for the
-  // 7 px font. Black bitmap text on the coloured band; fillRectangle clips
-  // a band that would run past the image edge, and drawText clips the
-  // glyphs themselves.
-  const int band_width = static_cast<int>(text.size()) * 6 + 6;
-  constexpr int kBandHeight = 12;
+  // Band sized to the label at the frame-proportional scale; white text on
+  // the coloured band reads against every scene. fillRectangle clips a band
+  // that would run past the image edge, and drawText clips the glyphs.
+  const int scale = labelTextScale(image);
+  const auto extent = neuriplo_infer::imageops::textSize(text, scale);
+  const int pad = 2 * scale;
+  const int band_width = extent.x + 2 * pad;
+  const int band_height = extent.y + 2 * pad;
   neuriplo_infer::imageops::fillRectangle(
-      image, neuriplo_tasks::vision::Rect(left, top, band_width, kBandHeight),
+      image, neuriplo_tasks::vision::Rect(left, top, band_width, band_height),
       color);
-  neuriplo_infer::imageops::drawText(image, text, left + 3, top + 2,
-                                     neuriplo_infer::imageops::Color{0, 0, 0});
+  neuriplo_infer::imageops::drawText(
+      image, text, left + pad, top + pad,
+      neuriplo_infer::imageops::Color{255, 255, 255}, scale);
 }
 
 std::vector<std::string> readLabelNames(const std::string &fileName) {

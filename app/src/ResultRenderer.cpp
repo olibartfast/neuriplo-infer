@@ -76,18 +76,21 @@ void renderRankedLabels(const std::vector<std::string> &labels, Image &image) {
   if (labels.empty() || image.empty()) {
     return;
   }
-  const int margin = std::min(10, std::min(image.cols(), image.rows()) / 10);
+  const int scale = labelTextScale(image);
+  const int margin =
+      std::min(10 * scale, std::min(image.cols(), image.rows()) / 10);
   const int max_w = std::max(1, image.cols() - 2 * margin);
-  constexpr int kBandH = 12;
-  constexpr int kGap = 4;
-  for (size_t i = 0; i < labels.size(); ++i) {
-    const Point text_extent = imageops::textSize(labels[i], 1);
-    const int band_w = std::min(max_w, text_extent.x + 6);
-    const int top = margin + static_cast<int>(i) * (kBandH + kGap);
-    imageops::fillRectangle(image, Rect(margin, top, band_w, kBandH),
+  const int pad = 2 * scale;
+  int top = margin;
+  for (const auto &label : labels) {
+    const Point text_extent = imageops::textSize(label, scale);
+    const int band_w = std::min(max_w, text_extent.x + 2 * pad);
+    const int band_h = text_extent.y + 2 * pad;
+    imageops::fillRectangle(image, Rect(margin, top, band_w, band_h),
                             imageops::Color{0, 255, 255});
-    imageops::drawText(image, labels[i], margin + 3, top + 2,
-                       imageops::Color{0, 0, 0});
+    imageops::drawText(image, label, margin + pad, top + pad,
+                       imageops::Color{255, 255, 255}, scale);
+    top += band_h + pad * 2;
   }
 }
 
@@ -299,13 +302,16 @@ void renderGazeEstimationResults(
         readout << "yaw " << std::fixed << std::setprecision(2) << gaze.yaw
                 << " pitch " << gaze.pitch;
         const std::string text = readout.str();
-        const Point size = imageops::textSize(text, 1);
+        const int scale = labelTextScale(image);
+        const int pad = 2 * scale;
+        const Point size = imageops::textSize(text, scale);
         const int plate_x = origin.x - size.x / 2;
-        const int plate_y = origin.y + 10;
-        imageops::fillRectangle(image, Rect(plate_x, plate_y, size.x + 6, 12),
-                                imageops::Color{0, 0, 0});
-        imageops::drawText(image, text, plate_x + 3, plate_y + 2,
-                           imageops::Color{0, 255, 255});
+        const int plate_y = origin.y + 10 * scale;
+        imageops::fillRectangle(
+            image, Rect(plate_x, plate_y, size.x + 2 * pad, size.y + 2 * pad),
+            imageops::Color{0, 0, 0});
+        imageops::drawText(image, text, plate_x + pad, plate_y + pad,
+                           imageops::Color{255, 255, 255}, scale);
       });
 }
 
