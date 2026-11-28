@@ -97,8 +97,11 @@ jobs:
       uses: actions/cache@v4
       with:
         path: build
+        # Exact-hit only: the key already hashes the sibling pins, and a
+        # prefix restore would bring back _deps fetched at an older pin,
+        # which then fails the model-type sync check and silently builds
+        # against the previous sibling release.
         key: ${{ runner.os }}-${{ matrix.variant }}-${{ hashFiles('CMakeLists.txt', 'app/CMakeLists.txt', 'versions.env') }}
-        restore-keys: ${{ runner.os }}-${{ matrix.variant }}-
       if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Configure
       run: |
@@ -120,8 +123,14 @@ jobs:
       if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Check model-type docs are in sync
       run: |
+        # Fetch the README at the pinned tag instead of reading build/_deps:
+        # a restored build cache can hold sources from an older pin, and the
+        # gate must compare against what versions.env actually requests.
+        pin="$(sed -n 's/^NEURIPLO_TASKS_VERSION=//p' versions.env)"
+        git clone --quiet --depth 1 --branch "${pin}" \
+          https://github.com/olibartfast/neuriplo-tasks.git /tmp/neuriplo-tasks-pin
         python3 scripts/sync_supported_model_types.py \
-          --neuriplo-tasks-readme build/_deps/neuriplo-tasks-src/README.md \
+          --neuriplo-tasks-readme /tmp/neuriplo-tasks-pin/README.md \
           --check
       if: ${{ matrix.variant == 'build-opencv-dnn' || matrix.variant == 'build-nert' }}
     - name: Build
