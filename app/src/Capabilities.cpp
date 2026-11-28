@@ -237,7 +237,7 @@ json executionWorkflows() {
 json taskCapabilities() {
   const std::vector<std::string> image_or_video{"image", "video"};
 
-  return json::array(
+  json capabilities = json::array(
       {taskCapability(
            "object_detection",
            {{"yolo",
@@ -345,6 +345,23 @@ json taskCapabilities() {
                        {"grm", {}, {}, {}, {}},
                        {"gaussiansplatting", {}, {"*splat*"}, {}, {}}},
                       {"image"}, 1, 1, {"input_sizes"})});
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+  capabilities.push_back(taskCapability(
+      "gaze_estimation",
+      {{{"gaze", {"ethxgaze", "gazetr"}, {"*gaze*"}, {}, {}}}}, {"image"}, 1, 1,
+      withVideoRunParameters({"min_confidence", "batch", "input_sizes"})));
+  capabilities.push_back(taskCapability(
+      "monocular_3d_detection",
+      {{{"urbanomni",
+         {"urbanomnidetect", "urbanomnidetect2", "monocular3d", "mono3d"},
+         {"urbanomni*", "monocular3d*", "mono3d"},
+         {},
+         {}}}},
+      {"image"}, 1, 1,
+      withVideoRunParameters({"labels", "min_confidence", "nms_threshold",
+                              "batch", "input_sizes"})));
+#endif
+  return capabilities;
 }
 } // namespace
 

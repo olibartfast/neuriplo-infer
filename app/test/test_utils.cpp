@@ -1,6 +1,8 @@
+#include "AppImageOps.hpp"
 #include "TaskRouting.hpp"
 #include "utils.hpp"
 #include "gtest/gtest.h"
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 
@@ -110,6 +112,21 @@ TEST(TaskRouting, MirrorsNeuriploTasksContractAliases) {
             neuriplo_tasks::TaskType::DepthEstimation);
   EXPECT_EQ(getTaskTypeForModel("da3-small"),
             neuriplo_tasks::TaskType::DepthEstimation);
+  // Gaze estimation and monocular 3D detection: without sibling support
+  // they fail fast naming the family; with it they route to the new tasks.
+  // std::invalid_argument surfaces as exit 1 + failure report at every
+  // getTaskTypeForModel call site.
+  for (const auto *name : {"gaze", "ethxgaze", "gazetr", "urbanomni",
+                           "urbanomnidetect2", "monocular3d", "mono3d"}) {
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+    const auto expected = (std::string(name).find("gaze") != std::string::npos)
+                              ? neuriplo_tasks::TaskType::GazeEstimation
+                              : neuriplo_tasks::TaskType::Monocular3DDetection;
+    EXPECT_EQ(getTaskTypeForModel(name), expected) << name;
+#else
+    EXPECT_THROW(getTaskTypeForModel(name), std::invalid_argument) << name;
+#endif
+  }
   EXPECT_EQ(getTaskTypeForModel("groundingdino"),
             neuriplo_tasks::TaskType::OpenVocabDetection);
   EXPECT_EQ(getTaskTypeForModel("lgm-mini"),
@@ -142,4 +159,73 @@ TEST(TaskRouting, RoutesYoloDepthFamilyToDepthEstimation) {
   // any other name containing "depth" is a detector there, and must be here.
   EXPECT_EQ(getTaskTypeForModel("mydepthnet"),
             neuriplo_tasks::TaskType::Detection);
+}
+
+namespace {
+int countNonBlack(const neuriplo_tasks::vision::Image &image) {
+  int count = 0;
+  for (int y = 0; y < image.height(); ++y) {
+    const unsigned char *row = image.ptr<unsigned char>(y);
+    for (int x = 0; x < image.width(); ++x) {
+      if (row[static_cast<size_t>(x) * 3] != 0 ||
+          row[static_cast<size_t>(x) * 3 + 1] != 0 ||
+          row[static_cast<size_t>(x) * 3 + 2] != 0) {
+        ++count;
+      }
+    }
+  }
+  return count;
+}
+} // namespace
+
+TEST(AppImageOpsText, SizeMatchesLayout) {
+  using neuriplo_infer::imageops::textSize;
+  const auto one = textSize("A", 1);
+  EXPECT_EQ(one.x, 5);
+  EXPECT_EQ(one.y, 7);
+  const auto two = textSize("AB", 1);
+  EXPECT_EQ(two.x, 11);
+  EXPECT_EQ(two.y, 7);
+  const auto scaled = textSize("AB", 2);
+  EXPECT_EQ(scaled.x, 22);
+  EXPECT_EQ(scaled.y, 14);
+  const auto empty = textSize("", 1);
+  EXPECT_EQ(empty.x, 0);
+  EXPECT_EQ(empty.y, 0);
+}
+
+TEST(AppImageOpsText, DrawsPixelsAndClips) {
+  using neuriplo_infer::imageops::Color;
+  using neuriplo_infer::imageops::drawText;
+  using neuriplo_tasks::vision::Image;
+  using neuriplo_tasks::vision::PixelType;
+  Image image(40, 12, 3, PixelType::UInt8);
+  EXPECT_EQ(countNonBlack(image), 0);
+  drawText(image, "A", 0, 0, Color{255, 255, 255});
+  const int inked = countNonBlack(image);
+  EXPECT_GT(inked, 0);
+  EXPECT_LT(inked, 40 * 12);
+  // Fully off-canvas text is a no-op, not a crash.
+  drawText(image, "A", -100, -100, Color{255, 255, 255});
+  EXPECT_EQ(countNonBlack(image), inked);
+  // Unknown bytes draw nothing.
+  Image blank(40, 12, 3, PixelType::UInt8);
+  std::string unknown;
+  unknown.push_back(static_cast<char>(1));
+  unknown.push_back(static_cast<char>(2));
+  drawText(blank, unknown, 0, 0, Color{255, 255, 255});
+  EXPECT_EQ(countNonBlack(blank), 0);
+}
+
+TEST(AppImageOpsText, LowercaseFoldsToUppercase) {
+  using neuriplo_infer::imageops::Color;
+  using neuriplo_infer::imageops::drawText;
+  using neuriplo_tasks::vision::Image;
+  using neuriplo_tasks::vision::PixelType;
+  Image lower(40, 12, 3, PixelType::UInt8);
+  Image upper(40, 12, 3, PixelType::UInt8);
+  drawText(lower, "gaze 01", 0, 0, Color{255, 255, 255});
+  drawText(upper, "GAZE 01", 0, 0, Color{255, 255, 255});
+  EXPECT_GT(countNonBlack(lower), 0);
+  EXPECT_EQ(std::memcmp(lower.raw(), upper.raw(), 40 * 12 * 3), 0);
 }

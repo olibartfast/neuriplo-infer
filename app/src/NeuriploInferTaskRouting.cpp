@@ -1,6 +1,9 @@
 #include "TaskRouting.hpp"
 #include "utils.hpp"
 
+#include <stdexcept>
+#include <string>
+
 namespace {
 bool startsWith(const std::string &value, const std::string &prefix) {
   return value.size() >= prefix.size() &&
@@ -76,5 +79,39 @@ neuriplo_tasks::TaskType getTaskTypeForModel(const std::string &model_type) {
       normalized == "imageunderstanding") {
     return neuriplo_tasks::TaskType::ImageUnderstanding;
   }
+  // Gaze estimation and monocular 3D detection exist in neuriplo-tasks
+  // develop (neuriplo-tasks@fd94cab TaskFactory); app support is gated on
+  // NEURIPLO_TASKS_HAS_GAZE_MONO3D so pins whose headers lack the TaskType
+  // enumerators keep building. Without the macro these fail fast naming the
+  // family instead of silently misrouting to Detection. Throws
+  // std::invalid_argument, which every getTaskTypeForModel caller converts
+  // to exit 1 + failure report.
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+  if (normalized == "gaze" || startsWith(normalized, "ethxgaze") ||
+      startsWith(normalized, "gazetr") || contains(normalized, "gaze")) {
+    return neuriplo_tasks::TaskType::GazeEstimation;
+  }
+  if (startsWith(normalized, "urbanomni") ||
+      startsWith(normalized, "monocular3d") || normalized == "mono3d") {
+    return neuriplo_tasks::TaskType::Monocular3DDetection;
+  }
+#else
+  if (normalized == "gaze" || startsWith(normalized, "ethxgaze") ||
+      startsWith(normalized, "gazetr") || contains(normalized, "gaze")) {
+    throw std::invalid_argument(
+        "gaze estimation (--type='" + model_type +
+        "') is not supported by this build: the task exists in "
+        "neuriplo-tasks develop but app pipeline and rendering support is "
+        "not implemented yet");
+  }
+  if (startsWith(normalized, "urbanomni") ||
+      startsWith(normalized, "monocular3d") || normalized == "mono3d") {
+    throw std::invalid_argument(
+        "monocular 3D detection (--type='" + model_type +
+        "') is not supported by this build: the task exists in "
+        "neuriplo-tasks develop but app pipeline and rendering support is "
+        "not implemented yet");
+  }
+#endif
   return neuriplo_tasks::TaskType::Detection; // Default for YOLO, RTDETR, etc.
 }

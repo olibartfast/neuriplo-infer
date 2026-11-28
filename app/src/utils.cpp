@@ -29,14 +29,19 @@ bool isFile(const std::string &path) {
 }
 
 void drawLabelBand(neuriplo_tasks::vision::Image &image, int left, int top,
+                   const std::string &text,
                    neuriplo_infer::imageops::Color color) {
-  // Fixed-size marker band: with no font available the label text cannot be
-  // drawn, so a clipped filled band at the box origin marks the detection.
-  constexpr int kBandWidth = 120;
-  constexpr int kBandHeight = 14;
+  // Band sized to the label: 6 px per glyph plus padding, 12 px tall for the
+  // 7 px font. Black bitmap text on the coloured band; fillRectangle clips
+  // a band that would run past the image edge, and drawText clips the
+  // glyphs themselves.
+  const int band_width = static_cast<int>(text.size()) * 6 + 6;
+  constexpr int kBandHeight = 12;
   neuriplo_infer::imageops::fillRectangle(
-      image, neuriplo_tasks::vision::Rect(left, top, kBandWidth, kBandHeight),
+      image, neuriplo_tasks::vision::Rect(left, top, band_width, kBandHeight),
       color);
+  neuriplo_infer::imageops::drawText(image, text, left + 3, top + 2,
+                                     neuriplo_infer::imageops::Color{0, 0, 0});
 }
 
 std::vector<std::string> readLabelNames(const std::string &fileName) {

@@ -12,7 +12,8 @@ suite passes fully: **34/34 ctest, 0 failures** (includes
 `test_factory_aliases`, `test_gaze_estimation`,
 `test_monocular_3d_detection`). No producer-side test failure to fix —
 remaining work is downstream adaptation only (routing shims done on the
-packet branch; app-flow support for flexglue/gaze/3D still open).
+packet branch; gaze and 3D support landed later in slice 2; FlexGlue
+app-flow support remains open).
 
 - Resolved SHA `fd94cabca822201341f6bd3d710ac265eb55957c`
   (`Align direct YOLO API with README and rename factory tests`).
@@ -21,13 +22,18 @@ packet branch; app-flow support for flexglue/gaze/3D still open).
   `find_package(glog)`, but the pinned configure fails identically — a
   pre-existing environment condition (fixed with the local `glog_DIR` hint),
   not a producer finding.
-- Full default build (`build-tasks-develop`, `-j4`) exits 0 against the SHA.
-- Consumer suite (`build-test-tasks-develop`, 191 tests): full `ctest`
-  hung 7+ h on death test
-  `RunReportFile.AnArmedExitHookWritesAConfigurationReport` (fork+threads
-  warning, unrelated to this packet's changes — nothing here touches
-  RunReport) and was killed. Re-running with that test excluded and
-  `--timeout 300`; verdict pending. Single-test repro still open.
+- Full default build (`build-tasks-develop`, `-j4`) exits 0 — BUT the
+  binary linked **pinned v0.8.5 headers, not develop**: a v0.8.5 sibling
+  checkout at `../neuriplo-tasks` (kept for export tooling) shadows any
+  `-DNEURIPLO_TASKS_VERSION` via `FETCHCONTENT_SOURCE_DIR_NEURIPLO-TASKS`
+  (see CMakeLists "Prefer a sibling checkout"). The NERT/resnet50 e2e run
+  below therefore proves the pinned path only. A version override needs
+  `-DFETCHCONTENT_SOURCE_DIR_NEURIPLO-TASKS=<develop-checkout>` alongside
+  it — packet Group 1 method corrected accordingly; build redone with both
+  flags as `build-tasks-develop2`.
+- Consumer suite history: first full run hung on a fork-based death test in
+  this threaded binary; the threadsafe death-test default fixed it, and the
+  final true-develop run completed 195/195.
 - Branch CI (push `b950f3e`): C++ Lint & Build SUCCESS, CI SUCCESS.
 
 ## Group 2 — findings (2026-11-27)
@@ -51,47 +57,78 @@ Routing parity (`getTaskTypeForModel` vs develop `TaskFactory`):
 | VideoClassification `pevideo`/`vjepa`/`videoprism` | prefix rules added (commit `28e8122`) | MATCH — unit-tested (`TaskRouting` cases added) |
 | KeypointMatching `flexglue` | prefix rule added | ROUTING MATCH — live gate still blocked: app pair-flow has no two-model/external-keypoint support |
 | `depth_anything_3` / `da3*` | `depthanything3`/prefix-`da3` rules added | MATCH — unit-tested |
-| GazeEstimation (`gaze`, `ethxgaze`, `gazetr`) | no such TaskType in app | MISMATCH (structural: new task unsupported) — no fix attempted |
-| Monocular3DDetection (`urbanomni*`, `monocular3d`, `mono3d`) | no such TaskType in app | MISMATCH (structural) — no fix attempted |
+| GazeEstimation (`gaze`, `ethxgaze`, `gazetr`) | real routing + renderer + capabilities under `NEURIPLO_TASKS_HAS_GAZE_MONO3D` (slice 2, 2026-11-28) | SUPPORTED — live-gated below on ex-novo media |
+| Monocular3DDetection (`urbanomni*`, `monocular3d`, `mono3d`) | real routing + cuboid renderer + capabilities under macro (slice 2, 2026-11-28) | SUPPORTED — live-gated below on ex-novo media |
 | All pinned-v0.8.5 families | unchanged rules | MATCH (routing + capabilities contract tests green on develop build) |
 
 Strategy change 2026-11-27 (maintainer direction: fix, don't file): the
 three string-rule mismatches were fixed downstream instead of reported
 upstream; `upstream-issue-drafts.md` stays UNFILED as a record of what was
-decided against. The two structural mismatches stay open by design — no
-sibling defect, just new surface with no downstream support yet. Per the
+decided against. Gaze and monocular 3D were later implemented downstream (slice 2);
+remaining unblocked work is FlexGlue's two-model app flow. Per the
 packet's own deviation rule this paragraph is the record.
 
-## Group 4 — live-gate notes (2026-11-27, develop binary `build-tasks-develop`)
+## Group 4 — live gates (2026-11-28, develop TRT binary
+`build-tasks-develop-trt`, Jetson Orin TRT 10.16.2)
 
-- NERT (default backend) + develop tasks, resnet50 ONNX on CPU: exit 0,
-  `run_report.json` success, render saved (22 s inference — CPU reference
-  box, not a perf claim). Consumer e2e path works against the SHA.
-- NERT + `rtdetrv4.onnx`: rejected at load — shape inference on the stem
-  Conv node (`Conv input and weight must share rank 3, 4, or 5`). NOT ruled
-  a develop regression: NERT is CPU-only/experimental in this phase and this
-  export was produced for the TRT path. Needs a pinned-NERT baseline run to
-  triage; recorded as open, non-blocking for the routing verdict.
-- TRT live re-gates of matched families still queued (need a
-  `-DDEFAULT_BACKEND=TENSORRT` build dir at the SHA).
-- Full `ctest` suite (`build-test-tasks-develop`, includes the new
-  routing cases) running; verdict pending.
+Slice-2 app support (routing + renderers + capabilities, all macro-gated)
+is implemented on this branch and verified below with fresh ex-novo media
+(`data/showcase/`, no usual detector images):
+
+- Gaze (`ethxgaze`, ptgaze resnet18 ONNX via sibling export, engine built
+  with local trtexec): exit 0, 13 ms inference, success report. Render
+  checked: yellow arrow from face center points image-right, matching the
+  subject's visible rightward gaze on the 224x224 face crop.
+  Render SHA `e2a5d61…`; engine SHA `2d6cdb1…`.
+- Monocular 3D (`urbanomni`, `urbanomnidetect_yolo11n-p2_640` ONNX via
+  sibling Ultralytics export, engine built with local trtexec): exit 0,
+  80 ms inference, success report. Render checked: two instances on
+  Times Square taxis, blue 2D boxes + yellow cuboid wireframes (ground
+  quad, roof quad, verticals) tracking the cars.
+  Render SHA `b82685c…`; engine SHA `3adbdb2…`.
+- Both gates meet the backend-coverage P bar (ran + output checked) but
+  are recorded HERE, not in `docs/BackendCoverage.md`: the scoreboard
+  tracks released pins, and the pin here is develop (`fd94cab`).
+  Promotion awaits the sibling release + pin bump.
+- Embedded 5x7 bitmap font (`app/inc/BitmapFont.hpp`) + `imageops::drawText`
+  (2026-11-28): all renders now carry text — detection/seg/mono3D label bands
+  show `LABEL 0.94`, ranked bands show the label strings, gaze shows a
+  yaw/pitch readout. 3 new `AppImageOpsText` unit tests green. Full gates
+  re-run on the develop TRT build; renders verified legible (dog: CAR,
+  BICYCLE, DOG; gaze: YAW 0.60 PITCH -0.23; mono3D: CAR 0.76/0.71 with the
+  `urbanomni_labels.txt` car/person/bike vocabulary).
+- Showcase (2026-11-28): `data/showcase/showcase_reel.mp4` (47 s, 720p)
+  assembles title card, 10 Ken Burns stills (text renders verified legible),
+  an 8 s mono-3D video segment (62 Bangkok frames, cuboids + CAR labels),
+  and a gaze close-up. Staged at `/tmp/showcase-bundle/` with all 12
+  renders, 11 evidence JSONs, inputs, and labels.
+
+Open items at release time: TRT re-gates of matched families still queued
+as a matrix sweep; NERT `rtdetrv4.onnx` shape-inference rejection still
+needs a pinned-NERT baseline to triage; Slurm cells, capabilities byte-diff,
+and build variants remain unattempted. The earlier NERT/resnet50 e2e run
+was from the shadowed build (pinned headers) and is not claimed for
+develop. The consumer suite was later re-run on the true-develop build
+(see Automated).
 
 ## Automated
 
-- [x] Default build configures and builds against the SHA from a fresh dir
-      (done 2026-11-27, exit 0; glog caveat recorded above).
-- [x] Test build and full suite pass against the SHA — 2026-11-27:
-      **191/191 pass, 0 fail** (1 skip: `capabilities_schema_contract`,
-      validator not installed — expected skip, exit 77). Path there:
-      full `ctest` first hung 7+ h on fork-based death tests in this
-      threaded binary; fixed by defaulting `death_test_style` to
-      `threadsafe` in `app/test/test_main.cpp` (strictly more robust;
-      flag/env still override). Total suite time now 12 s.
+- [x] Default build configures and builds from a fresh dir (done
+      2026-11-27, exit 0; glog caveat recorded above) — the initial
+      build linked pinned headers (sibling shadowing); the corrected
+      true-develop build is `build-tasks-develop2` with both override flags.
+- [x] Test build and full suite pass on the true-develop build
+      (`build-test-tasks-develop2`, macro ON): **195/195, 0 fail**
+      (1 expected skip), 12 s. Covers new `AppImageOpsText` (3),
+      macro-gated routing/capabilities cases, and the death-test fix.
+      (The earlier 191/191 ran against pinned headers — superseded.)
+      History: full `ctest` first hung 7+ h on fork-based death tests;
+      fixed by defaulting `death_test_style` to `threadsafe`.
 - [x] Generated docs check run against the develop checkout — diff recorded
       as the Group 2 finding (deliberately not applied: pins unchanged).
-- [x] `pre-commit` (clang-format, cppcheck) clean — branch CI Lint & Build
-      SUCCESS on push `b950f3e` (after fixing my own format violations).
+- [x] Format and targeted lint clean locally; branch CI Lint & Build
+      SUCCESS on push `b950f3e` for the original work, and the current
+      changes need fresh CI validation after integration.
 - [ ] `--capabilities` output at the SHA byte-identical to the pinned run —
       develop binary runs (`capabilities OK`) but no byte-diff performed yet.
 - [ ] Build variants still configure against the SHA — not attempted yet.
@@ -99,11 +136,12 @@ packet's own deviation rule this paragraph is the record.
 ## Manual
 
 - [x] Routing-parity table complete: every `--type` checked against the
-      SHA's `TaskFactory`; table above is current as of 2026-11-27
-      (three fixed+unit-tested, two structural open).
+      SHA's `TaskFactory`; updated 2026-11-28 (three fixed+unit-tested,
+      gaze/3D supported, FlexGlue routing-only).
 - [ ] Live gates graded per `backend-coverage` bars (P / RUNTIME-PASS / DR)
-      for all cells with local hardware — only NERT/resnet50 done; TRT
-      re-gates need a TensorRT-default build at the SHA.
+      for all cells with local hardware — gaze and mono-3D are P-evidenced
+      on the develop TRT build; the remaining matched families and
+      hardware-absent cells still need their sweep.
 - [ ] Hardware-absent cells have DR verdicts or explicit untestable reasons
       (which hardware, what would unblock).
 - [ ] Slurm cells submitted via `scripts/slurm_backend_matrix.py` with
@@ -134,6 +172,5 @@ packet's own deviation rule this paragraph is the record.
 - [ ] `../roadmap.md` disposition decided: recurring phase or one-off (per
       requirements.md Open Questions), updated or explicitly declined with
       reason.
-- [ ] Spec files tell the same story in one branch; evidence notes are
-      SHA-pinned and reproducible — true as of this edit; re-verify after
-      the exclusion suite lands.
+- [ ] Spec files tell the same story in one branch after the latest
+      true-develop suite run; evidence notes are SHA-pinned.

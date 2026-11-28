@@ -63,6 +63,14 @@ neuriplo_tasks::TaskType taskTypeForId(const std::string &id) {
   if (id == "gaussian_splatting") {
     return TaskType::GaussianSplatting;
   }
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+  if (id == "gaze_estimation") {
+    return TaskType::GazeEstimation;
+  }
+  if (id == "monocular_3d_detection") {
+    return TaskType::Monocular3DDetection;
+  }
+#endif
   throw std::runtime_error("Unexpected task capability: " + id);
 }
 } // namespace

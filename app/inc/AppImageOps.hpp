@@ -78,4 +78,16 @@ void maskedAlphaBlend(neuriplo_tasks::vision::Image &image, Color color,
 void applyTurboColormap(const neuriplo_tasks::vision::Image &gray,
                         neuriplo_tasks::vision::Image &destination);
 
+// Dependency-free 5x7 bitmap text for overlays. Glyphs cover ASCII 32..126
+// (lowercase folds to uppercase); unknown bytes render blank. Coordinates
+// are the top-left of the first glyph; output is clipped to the image.
+// Scale is an integer pixel-doubling factor. Only UInt8 images are drawn to;
+// anything else is left untouched.
+void drawText(neuriplo_tasks::vision::Image &image, const std::string &text,
+              int x, int y, Color color, int scale = 1);
+
+// Pixel footprint of drawText for the same arguments: width is 0 for empty
+// text, otherwise (6 * scale * length - scale) x (7 * scale).
+neuriplo_tasks::vision::Point textSize(const std::string &text, int scale = 1);
+
 } // namespace neuriplo_infer::imageops

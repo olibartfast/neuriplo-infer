@@ -238,6 +238,27 @@ message(STATUS "neuriplo-tasks_SOURCE_DIR: ${neuriplo-tasks_SOURCE_DIR}")
 message(STATUS "neuriplo_SOURCE_DIR: ${neuriplo_SOURCE_DIR}")
 message(STATUS "VideoCapture_SOURCE_DIR: ${VideoCapture_SOURCE_DIR}")
 
+# Feature-detect sibling task types added after v0.8.5 (GazeEstimation,
+# Monocular3DDetection in neuriplo_tasks::TaskType). App code that names those
+# enumerators must gate on NEURIPLO_TASKS_HAS_GAZE_MONO3D: older sibling
+# headers do not declare them, and versions.env pins a release tag, never a
+# branch, so the check keys on header content rather than on a version number.
+# Revisit at each pin bump: when the pinned release carries the types, the
+# macro follows automatically; once every supported pin has them, delete the
+# macro and the fallback paths it guards. Until then the fallback is an
+# explicit unsupported-task error, never a silent misroute.
+file(READ "${neuriplo-tasks_SOURCE_DIR}/include/neuriplo/tasks/core/result_types.hpp"
+     _NEURIPLO_TASKS_RESULT_TYPES)
+if(_NEURIPLO_TASKS_RESULT_TYPES MATCHES "    GazeEstimation," AND
+   _NEURIPLO_TASKS_RESULT_TYPES MATCHES "    Monocular3DDetection")
+    set(NEURIPLO_TASKS_HAS_GAZE_MONO3D TRUE)
+endif()
+message(STATUS "neuriplo-tasks gaze/mono3d task types: ${NEURIPLO_TASKS_HAS_GAZE_MONO3D}")
+if(NEURIPLO_TASKS_HAS_GAZE_MONO3D)
+    add_compile_definitions(NEURIPLO_TASKS_HAS_GAZE_MONO3D=1)
+endif()
+unset(_NEURIPLO_TASKS_RESULT_TYPES)
+
 # VideoCapture is deliberately not given OpenCV here. Up to v0.3.0 it expected
 # its consumer to supply OpenCV, because cv::Mat was in its public frame API.
 # Since v0.4.0 the frame API is videocapture::Frame and OpenCV is an internal
