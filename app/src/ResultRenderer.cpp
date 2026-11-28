@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -35,14 +37,22 @@ void forEachResultOfType(const std::vector<neuriplo_tasks::Result> &results,
   }
 }
 
+std::string formatScore(float value) {
+  std::ostringstream out;
+  out << std::fixed << std::setprecision(2) << value;
+  return out.str();
+}
+
 void renderDetectionResults(const std::vector<neuriplo_tasks::Result> &results,
                             Image &image,
-                            const std::vector<std::string> & /*classes*/) {
+                            const std::vector<std::string> &classes) {
   forEachResultOfType<neuriplo_tasks::Detection>(
       results, [&](const auto &detection) {
         imageops::rectangle(image, detection.bbox, imageops::Color{255, 0, 0},
                             3);
         drawLabelBand(image, detection.bbox.x, detection.bbox.y,
+                      labelForClass(detection.class_id, classes) + " " +
+                          formatScore(detection.class_confidence),
                       imageops::Color{255, 0, 0});
       });
 }
@@ -54,28 +64,33 @@ void renderOpenVocabDetectionResults(
         imageops::rectangle(image, detection.bbox, imageops::Color{0, 165, 255},
                             3);
         drawLabelBand(image, detection.bbox.x, detection.bbox.y,
+                      detection.label + " " + formatScore(detection.score),
                       imageops::Color{0, 165, 255});
       });
 }
 
-// Text has no OpenCV-free equivalent, so ranked results are drawn as one
-// filled band per label. Band count and order still show how many results
-// ranked and in which order; the strings themselves are logged by the caller
-// paths that need them.
+// One tight band per ranked label: each background is sized to its own
+// text (via textSize) plus padding, black on yellow. Bands pack from the
+// top-left margin with a small gap; overlong labels clip at the image edge.
 void renderRankedLabels(const std::vector<std::string> &labels, Image &image) {
   if (labels.empty() || image.empty()) {
     return;
   }
-  const int margin = std::min(10, std::min(image.cols(), image.rows()) / 10);
-  const size_t count = labels.size();
-  const int band_h =
-      std::max(2, (image.rows() - 2 * margin) / (2 * static_cast<int>(count)));
-  const int band_w = std::max(1, (image.cols() - 2 * margin) / 2);
-  for (size_t i = 0; i < count; ++i) {
-    imageops::fillRectangle(
-        image,
-        Rect(margin, margin + static_cast<int>(i) * 2 * band_h, band_w, band_h),
-        imageops::Color{0, 255, 255});
+  const int scale = labelTextScale(image);
+  const int margin =
+      std::min(10 * scale, std::min(image.cols(), image.rows()) / 10);
+  const int max_w = std::max(1, image.cols() - 2 * margin);
+  const int pad = 2 * scale;
+  int top = margin;
+  for (const auto &label : labels) {
+    const Point text_extent = imageops::textSize(label, scale);
+    const int band_w = std::min(max_w, text_extent.x + 2 * pad);
+    const int band_h = text_extent.y + 2 * pad;
+    imageops::fillRectangle(image, Rect(margin, top, band_w, band_h),
+                            imageops::Color{0, 255, 255});
+    imageops::drawText(image, label, margin + pad, top + pad,
+                       imageops::Color{255, 255, 255}, scale);
+    top += band_h + pad * 2;
   }
 }
 
@@ -86,8 +101,8 @@ void renderClassificationResults(
   forEachResultOfType<neuriplo_tasks::Classification>(
       results, [&](const auto &classification) {
         labels.push_back(labelForClass(classification.class_id, classes) +
-                         " (" +
-                         std::to_string(classification.class_confidence) + ")");
+                         " (" + formatScore(classification.class_confidence) +
+                         ")");
       });
   renderRankedLabels(labels, image);
 }
@@ -105,7 +120,7 @@ void renderVideoClassificationResults(
                 ? labelForClass(classification.class_id, classes)
                 : classification.action_label;
         labels.push_back(name + " (" +
-                         std::to_string(classification.class_confidence) + ")");
+                         formatScore(classification.class_confidence) + ")");
       });
   renderRankedLabels(labels, image);
 }
@@ -158,12 +173,14 @@ void overlaySegmentationPolygons(
 
 void renderInstanceSegmentationResults(
     const std::vector<neuriplo_tasks::Result> &results, Image &image,
-    const std::vector<std::string> & /*classes*/) {
+    const std::vector<std::string> &classes) {
   forEachResultOfType<neuriplo_tasks::InstanceSegmentation>(
       results, [&](const auto &segmentation) {
         imageops::rectangle(image, segmentation.bbox,
                             imageops::Color{255, 0, 0}, 3);
         drawLabelBand(image, segmentation.bbox.x, segmentation.bbox.y,
+                      labelForClass(segmentation.class_id, classes) + " " +
+                          formatScore(segmentation.class_confidence),
                       imageops::Color{255, 0, 0});
 
         if (!segmentation.polygons.empty()) {
@@ -256,12 +273,82 @@ void renderDepthEstimationResults(
 }
 
 void renderImageUnderstandingResults(
-    const std::vector<neuriplo_tasks::Result> &results, Image & /*image*/) {
+    const std::vector<neuriplo_tasks::Result> &results, Image &image) {
   forEachResultOfType<neuriplo_tasks::ImageUnderstanding>(
-      results, [](const auto &understanding) {
+      results, [&](const auto &understanding) {
         std::cout << understanding.text << '\n';
+        renderRankedLabels({understanding.text}, image);
       });
 }
+
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
+// Single gaze arrow per result, drawn from the frame center along the
+// projected direction (dx = direction[0], dy = direction[1]). The input is a
+// normalized face crop, so the center is the only stable anchor: the app has
+// no face box. Length is a quarter of the smaller frame side.
+void renderGazeEstimationResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image) {
+  const int length = std::min(image.cols(), image.rows()) / 4;
+  const Point origin{image.cols() / 2, image.rows() / 2};
+  forEachResultOfType<neuriplo_tasks::GazeEstimation>(
+      results, [&](const auto &gaze) {
+        const Point tip{static_cast<int>(
+                            std::lround(origin.x + length * gaze.direction[0])),
+                        static_cast<int>(std::lround(
+                            origin.y + length * gaze.direction[1]))};
+        imageops::fillCircle(image, origin, 4, imageops::Color{0, 255, 255});
+        imageops::line(image, origin, tip, imageops::Color{0, 255, 255}, 3);
+        std::ostringstream readout;
+        readout << "yaw " << std::fixed << std::setprecision(2) << gaze.yaw
+                << " pitch " << gaze.pitch;
+        const std::string text = readout.str();
+        const int scale = labelTextScale(image);
+        const int pad = 2 * scale;
+        const Point size = imageops::textSize(text, scale);
+        const int plate_x = origin.x - size.x / 2;
+        const int plate_y = origin.y + 10 * scale;
+        imageops::fillRectangle(
+            image, Rect(plate_x, plate_y, size.x + 2 * pad, size.y + 2 * pad),
+            imageops::Color{0, 0, 0});
+        imageops::drawText(image, text, plate_x + pad, plate_y + pad,
+                           imageops::Color{255, 255, 255}, scale);
+      });
+}
+
+// Box plus cuboid wireframe: ground quad 0-1-2-3, roof quad 4-5-6-7, four
+// verticals i-(i+4), following the canonical ground-first corner layout the
+// sibling postprocessor guarantees.
+void renderMonocular3DResults(
+    const std::vector<neuriplo_tasks::Result> &results, Image &image,
+    const std::vector<std::string> &classes) {
+  forEachResultOfType<neuriplo_tasks::Monocular3DDetection>(
+      results, [&](const auto &detection) {
+        imageops::rectangle(image, detection.bbox, imageops::Color{255, 0, 0},
+                            3);
+        drawLabelBand(image, detection.bbox.x, detection.bbox.y,
+                      labelForClass(detection.class_id, classes) + " " +
+                          formatScore(detection.class_confidence),
+                      imageops::Color{255, 0, 0});
+        const auto &corners = detection.projected_corners;
+        auto point = [](const neuriplo_tasks::CuboidKeypoint &corner) {
+          return Point{static_cast<int>(std::lround(corner.x)),
+                       static_cast<int>(std::lround(corner.y))};
+        };
+        constexpr int kGround[4] = {0, 1, 2, 3};
+        for (int i = 0; i < 4; ++i) {
+          imageops::line(image, point(corners[kGround[i]]),
+                         point(corners[kGround[(i + 1) % 4]]),
+                         imageops::Color{0, 255, 255}, 2);
+          imageops::line(image, point(corners[kGround[i] + 4]),
+                         point(corners[kGround[(i + 1) % 4] + 4]),
+                         imageops::Color{0, 255, 255}, 2);
+          imageops::line(image, point(corners[kGround[i]]),
+                         point(corners[kGround[i] + 4]),
+                         imageops::Color{0, 255, 255}, 2);
+        }
+      });
+}
+#endif
 
 } // namespace
 
@@ -311,17 +398,13 @@ void DefaultResultRenderer::render(
   case neuriplo_tasks::TaskType::ImageUnderstanding:
     renderImageUnderstandingResults(results, image);
     break;
-// Version-adaptive like PredictionRecorder: re-add unconditionally after the
-// tasks pin carries Monocular3DDetection.
-#if __has_include(                                                             \
-    "neuriplo/tasks/monocular_3d_detection/monocular_3d_detection_types.hpp")
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
   case neuriplo_tasks::TaskType::Monocular3DDetection:
-    renderDetectionResults(results, image, context.classes);
+    renderMonocular3DResults(results, image, context.classes);
     break;
-#endif
-#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
   case neuriplo_tasks::TaskType::GazeEstimation:
-    throw std::runtime_error("Gaze estimation rendering is not implemented");
+    renderGazeEstimationResults(results, image);
+    break;
 #endif
   case neuriplo_tasks::TaskType::GaussianSplatting:
     break;

@@ -197,7 +197,7 @@ public:
                     {"source_keypoints", source},
                     {"target_keypoints", target},
                     {"matches", pairs}};
-#ifdef NEURIPLO_TASKS_HAS_GAZE_ESTIMATION
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
           } else if constexpr (std::is_same_v<T, GazeEstimation>) {
             return {{"kind", "gaze_estimation"},
                     {"pitch", r.pitch},
@@ -206,11 +206,8 @@ public:
                     {"confidence", r.confidence}};
 #endif
 // Monocular3D support is version-adaptive until the tasks pin carries it:
-// re-add unconditionally in the follow-up after the pin bump. The header is
-// absent from pinned tasks, so __has_include keeps this compiling there while
-// local sibling checkouts exercise the branch.
-#if __has_include(                                                             \
-    "neuriplo/tasks/monocular_3d_detection/monocular_3d_detection_types.hpp")
+// re-add unconditionally in the follow-up after the pin bump.
+#ifdef NEURIPLO_TASKS_HAS_GAZE_MONO3D
           } else if constexpr (std::is_same_v<T, Monocular3DDetection>) {
             json corners = json::array();
             for (const auto &c : r.projected_corners) {

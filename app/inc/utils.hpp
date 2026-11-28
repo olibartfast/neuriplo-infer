@@ -7,12 +7,16 @@
 
 bool isDirectory(const std::string &path);
 bool isFile(const std::string &path);
-// Filled confidence band marking a detection. Text rendering has no
-// OpenCV-free equivalent in the app, so the label string and confidence value
-// are intentionally not drawn; the band's position and colour still identify
-// which box produced it.
+// Filled band marking a detection, sized to the label text it now carries.
+// Black bitmap text is drawn on the band; overlong labels are clipped by
+// the image edge rather than wrapped.
 void drawLabelBand(neuriplo_tasks::vision::Image &image, int left, int top,
+                   const std::string &text,
                    neuriplo_infer::imageops::Color color);
+
+// Integer glyph scale for overlays, proportional to the frame's shorter
+// side (1 at <=360 px, 3 at 1080p, capped by legibility rather than size).
+int labelTextScale(const neuriplo_tasks::vision::Image &image);
 std::vector<std::string> readLabelNames(const std::string &fileName);
 std::string getFileExtension(const std::string &filename);
 // A source argument naming a still image, judged by its extension

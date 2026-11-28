@@ -1,10 +1,13 @@
 #include "AppImageOps.hpp"
+#include "BitmapFont.hpp"
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <stdexcept>
+#include <string>
 
 namespace neuriplo_infer::imageops {
 
@@ -376,6 +379,50 @@ void applyTurboColormap(const Image &gray, Image &destination) {
       row[static_cast<std::size_t>(x) * 3] = color.b;
       row[static_cast<std::size_t>(x) * 3 + 1] = color.g;
       row[static_cast<std::size_t>(x) * 3 + 2] = color.r;
+    }
+  }
+}
+
+neuriplo_tasks::vision::Point textSize(const std::string &text, int scale) {
+  if (text.empty() || scale <= 0) {
+    return neuriplo_tasks::vision::Point{0, 0};
+  }
+  const int glyph_scale = std::max(1, scale);
+  return neuriplo_tasks::vision::Point{
+      static_cast<int>(bitmap_font::kAdvance * glyph_scale * text.size()) -
+          glyph_scale,
+      bitmap_font::kHeight * glyph_scale};
+}
+
+void drawText(Image &image, const std::string &text, int x, int y, Color color,
+              int scale) {
+  // Text is a render-stage overlay: silently draw nothing on images that
+  // cannot carry it rather than failing the run.
+  if (text.empty() || image.channels() < 3 ||
+      image.pixelType() != PixelType::UInt8) {
+    return;
+  }
+  const int glyph_scale = std::max(1, scale);
+  for (std::size_t i = 0; i < text.size(); ++i) {
+    const char *const *rows =
+        bitmap_font::glyphFor(static_cast<unsigned char>(text[i]));
+    if (rows == nullptr) {
+      continue;
+    }
+    const int origin_x =
+        x + static_cast<int>(i) * bitmap_font::kAdvance * glyph_scale;
+    for (int row = 0; row < bitmap_font::kHeight; ++row) {
+      for (int col = 0; col < bitmap_font::kWidth; ++col) {
+        if (rows[row][col] != 'X') {
+          continue;
+        }
+        for (int dy = 0; dy < glyph_scale; ++dy) {
+          for (int dx = 0; dx < glyph_scale; ++dx) {
+            putPixel(image, origin_x + col * glyph_scale + dx,
+                     y + row * glyph_scale + dy, color);
+          }
+        }
+      }
     }
   }
 }
