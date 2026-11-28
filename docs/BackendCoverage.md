@@ -1,7 +1,7 @@
 # Backend coverage
 
 Tested model and backend combinations in `neuriplo-infer`.
-**Results last updated: 2026-11-28.** Some results use local, unreleased
+**Results last updated: 2026-11-26.** Some results use local, unreleased
 fixes; see [tested environments](#environments) and [known limitations](#known-limitations).
 
 Each binary uses the local backend selected at build time (`DEFAULT_BACKEND`).
@@ -56,8 +56,6 @@ contain the model type and, when different, the example preset.
 | Pose estimation (`vitpose`) | P | P | DR | P | B | B | B |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P | P | P | P | P | B |
 | Depth estimation (`depth_anything_v2`) | P | P | P | P | B | P | B |
-| Gaze estimation (`ethxgaze`) | U | U | U | P | U | U | U |
-| Monocular 3D detection (`urbanomni`) | U | U | U | P | U | U | U |
 | Open-vocabulary detection (`owlv2`) | P | P | P | P | B | P | B |
 | Image understanding (`gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
 | Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U |
@@ -85,8 +83,6 @@ contain the model type and, when different, the example preset.
 | Pose estimation (`yolo11pose`) | U | P | U | U | N/A | U |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | U | P | P | N/A | P |
 | Depth estimation (`depth_anything_v2`) | U | U | P | U | N/A | P |
-| Gaze estimation (`ethxgaze`) | U | U | U | U | N/A | U |
-| Monocular 3D detection (`urbanomni`) | U | U | U | U | N/A | U |
 | Open-vocabulary detection (`owlv2`) | U | U | U | U | N/A | P |
 | Image understanding (`gemma4`) | N/A | U | N/A | N/A | P | U |
 | Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | U | N/A | U |
@@ -108,7 +104,7 @@ Test counts below are from those runs, not fresh results for the current branch.
 | --- | --- | --- | --- |
 | DNN | OpenCV 5.0.0, built from source | App 191/191; backend 80/80 | Coverage is for 5.x. Distribution-provided 4.6 cannot load the current test models. |
 | ORT | 1.19.2 CPU | 179/179 | Used a local SDK because the pinned 1.28.0 download was unavailable. Rendered outputs checked. |
-| TRT | 11.2.1.2, NGC `tensorrt:26.08` | CI image build passed; detection, segmentation, and keypoint runs passed | Engines rebuilt from ONNX; `trtexec` 11.2 no longer accepts `--fp16`. Jetson Orin ARM64 (Ubuntu 24.04, TRT 10.16.2, JetPack R39) gated 2026-11-26: `rtdetrv4`, `rtdetr`, `rtdetr-l`, `yolov8n`, `resnet50`, `depth_anything_v2`, `owlv2`, `vitpose`, `raft_large` (static 1x3x520x960 export; dynamic-axes ONNX fails TRT 10.16 tactic selection), and `videomae-base` (P 2026-11-27 after the video-classification output fix: per-window logging + render save; top-1 grooming dog on a dog clip), and `ecseg_s` (native EdgeCrafter export; exact-GELU converts fine on TRT) engines built with local `trtexec` 10.16.2 — detection runs render-checked dog/bicycle/car, classifier cross-checked top-1 malamute on dog.jpg — see `docs/evidence/trt-rtdetrv4-2026-11-26.json`, `trt-rtdetr-2026-11-26.json`, `trt-yolov8-2026-11-26.json`, `trt-resnet50-2026-11-26.json`, `trt-rtdetrul-2026-11-26.json`, `trt-depth-2026-11-26.json`, `trt-owlv2-2026-11-26.json`, `trt-vitpose-2026-11-26.json`, `trt-raft-2026-11-26.json`, `trt-videomae-2026-11-26.json`, `trt-ecseg-2026-11-26.json`. Gaze (ptgaze ETH-XGaze resnet18) and monocular 3D (UrbanOmniDetect yolo11n-p2) gated 2026-11-28 on the same Orin stack: render-checked arrow/readout and cuboid wireframes on fresh media; evidence in `specs/2026-11-27-neuriplo-tasks-develop-matrix/validation.md`. |
+| TRT | 11.2.1.2, NGC `tensorrt:26.08` | CI image build passed; detection, segmentation, and keypoint runs passed | Engines rebuilt from ONNX; `trtexec` 11.2 no longer accepts `--fp16`. Jetson Orin ARM64 (Ubuntu 24.04, TRT 10.16.2, JetPack R39) gated 2026-11-26: `rtdetrv4`, `rtdetr`, `rtdetr-l`, `yolov8n`, `resnet50`, `depth_anything_v2`, `owlv2`, `vitpose`, `raft_large` (static 1x3x520x960 export; dynamic-axes ONNX fails TRT 10.16 tactic selection), and `videomae-base` (P 2026-11-27 after the video-classification output fix: per-window logging + render save; top-1 grooming dog on a dog clip), and `ecseg_s` (native EdgeCrafter export; exact-GELU converts fine on TRT) engines built with local `trtexec` 10.16.2 — detection runs render-checked dog/bicycle/car, classifier cross-checked top-1 malamute on dog.jpg — see `docs/evidence/trt-rtdetrv4-2026-11-26.json`, `trt-rtdetr-2026-11-26.json`, `trt-yolov8-2026-11-26.json`, `trt-resnet50-2026-11-26.json`, `trt-rtdetrul-2026-11-26.json`, `trt-depth-2026-11-26.json`, `trt-owlv2-2026-11-26.json`, `trt-vitpose-2026-11-26.json`, `trt-raft-2026-11-26.json`, `trt-videomae-2026-11-26.json`, `trt-ecseg-2026-11-26.json`. |
 | TRC | LibTorch 2.14 CPU | 134/134 | RF-DETR uses AOTInductor (`.pt2`); other results use TorchScript. KServe disabled because of a protobuf conflict. |
 | OV | OpenVINO 2026.3.0 | Live inference passed; unit tests unavailable | Unit-test executable fails to link; CI also builds with tests disabled. `rtdetr` gated 2026-11-25 on the x86_64 OpenVINO worker (exit 0, render-checked dog/bicycle/car) — see `docs/evidence/ov-rtdetr-2026-11-25.json`. |
 | TF | TensorFlow 2.19 | 179/179 | The 2.21 C++ runtime failed to load because of a protobuf ABI conflict. |
@@ -174,8 +170,6 @@ V-16/V-17/V-18.
 - Test EdgeCrafter segmentation and torchvision ResNet on OpenCV DNN 5.x.
 - Add a Gaussian-splatting example; no preset exists yet.
 - Build and test the app with MIGraphX on supported AMD/ROCm hardware.
-- Gaze estimation and monocular 3D detection are gated on TensorRT
-  (Jetson Orin) only; their other backend cells stay untested.
 - Test more GGML models once the GGUF converter and loader support them.
   YOLO11 det/seg/pose are gated (V-26/V-27/V-29); `yolov10n` stays
   converter-BLOCKED (no sibling loader path yet — in-graph TopK decode
