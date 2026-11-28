@@ -1,7 +1,7 @@
 # Backend coverage
 
 Tested model and backend combinations in `neuriplo-infer`.
-**Results last updated: 2026-11-26.** Some results use local, unreleased
+**Results last updated: 2026-11-28.** Some results use local, unreleased
 fixes; see [tested environments](#environments) and [known limitations](#known-limitations).
 
 Each binary uses the local backend selected at build time (`DEFAULT_BACKEND`).
@@ -56,6 +56,8 @@ contain the model type and, when different, the example preset.
 | Pose estimation (`vitpose`) | P | P | DR | P | B | B | B |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | P | P | P | P | P | P | B |
 | Depth estimation (`depth_anything_v2`) | P | P | P | P | B | P | B |
+| Gaze estimation (`ethxgaze`) | U | U | U | P | U | U | U |
+| Monocular 3D detection (`urbanomni`) | U | U | U | P | U | U | U |
 | Open-vocabulary detection (`owlv2`) | P | P | P | P | B | P | B |
 | Image understanding (`gemma4`) | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
 | Gaussian splatting (`lgm`/`grm`, no preset) | N/A | U | U | U | B | B | U |
@@ -66,23 +68,25 @@ contain the model type and, when different, the example preset.
 | Task (representative) | MGX | GGML | LiteRT | ExecT | LLaMA | KServe |
 | --- | --- | --- | --- | --- | --- | --- |
 | Object detection (`yolo26`, `yolo26s_tflite`) | U | U | P | U | N/A | P |
-| Object detection (`yolov8`, `yolov8_executorch`) | U | P | P | P | N/A | U |
-| Object detection (`yolo11`) | U | P | U | U | N/A | U |
+| Object detection (`yolov8`, `yolov8_executorch`) | U | U | P | P | N/A | U |
+| Object detection (`yolo11`) | U | U | U | U | N/A | U |
 | Object detection (`rtdetr`, `rtdetrv4`) | U | U | U | U | N/A | U |
 | Object detection (`rtdetrul`, Ultralytics RT-DETR) | U | U | U | U | N/A | U |
 | Object detection (`ecdet`, `edgecrafter_det`) | U | U | P | U | N/A | P |
-| Object detection (`rfdetr`, `rfdetr-medium`) | U | P | P | P | N/A | P |
-| Instance segmentation (`yoloseg`) | U | P | U | U | N/A | P |
-| Instance segmentation (`yolo11seg`) | U | P | U | U | N/A | U |
+| Object detection (`rfdetr`, `rfdetr-medium`) | U | U | P | P | N/A | P |
+| Instance segmentation (`yoloseg`) | U | U | U | U | N/A | P |
+| Instance segmentation (`yolo11seg`) | U | U | U | U | N/A | U |
 | Instance segmentation (`ecseg`, `edgecrafter_seg`) | U | U | U | U | N/A | U |
-| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | P | P | P | N/A | P |
-| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | P | U | U | N/A | U |
+| Instance segmentation (`rfdetrseg`, `rfdetrseg-medium`) | U | U | P | P | N/A | P |
+| Classification (`torchvisionclassifier`, `torchvision_classifier`) | U | U | U | U | N/A | U |
 | Video classification (`videomae`) | U | U | U | U | N/A | U |
 | Optical flow (`raft`) | U | U | U | U | N/A | U |
 | Pose estimation (`vitpose`) | U | U | P | U | N/A | P |
-| Pose estimation (`yolo11pose`) | U | P | U | U | N/A | U |
+| Pose estimation (`yolo11pose`) | U | U | U | U | N/A | U |
 | Pose estimation (`rfdetrpose`, `rfdetr_keypoint`) | U | U | P | P | N/A | P |
 | Depth estimation (`depth_anything_v2`) | U | U | P | U | N/A | P |
+| Gaze estimation (`ethxgaze`) | U | U | U | U | N/A | U |
+| Monocular 3D detection (`urbanomni`) | U | U | U | U | N/A | U |
 | Open-vocabulary detection (`owlv2`) | U | U | U | U | N/A | P |
 | Image understanding (`gemma4`) | N/A | U | N/A | N/A | P | U |
 | Gaussian splatting (`lgm`/`grm`, no preset) | U | U | U | U | N/A | U |
@@ -94,9 +98,7 @@ Most app tests ran on CPU; TensorRT tests used a GPU. The recorded baseline
 uses neuriplo-infer 0.11.6, neuriplo 0.11.3, and neuriplo-tasks 0.8.5.
 The November 1–2 runs used neuriplo-infer 0.11.7-dev, neuriplo 0.11.3,
 and neuriplo-tasks 0.8.4. OpenCV DNN and ExecuTorch include November 4
-local builds with unreleased fixes. GGML also uses unreleased code. Its loader
-accepts `.gguf` weights only, written by the sibling `convert_onnx_to_gguf.py`;
-`scripts/ggml_app_gate.py` defaults to that converter.
+local builds with unreleased fixes.
 
 Test counts below are from those runs, not fresh results for the current branch.
 
@@ -104,30 +106,25 @@ Test counts below are from those runs, not fresh results for the current branch.
 | --- | --- | --- | --- |
 | DNN | OpenCV 5.0.0, built from source | App 191/191; backend 80/80 | Coverage is for 5.x. Distribution-provided 4.6 cannot load the current test models. |
 | ORT | 1.19.2 CPU | 179/179 | Used a local SDK because the pinned 1.28.0 download was unavailable. Rendered outputs checked. |
-| TRT | 11.2.1.2, NGC `tensorrt:26.08` | CI image build passed; detection, segmentation, and keypoint runs passed | Engines rebuilt from ONNX; `trtexec` 11.2 no longer accepts `--fp16`. Jetson Orin ARM64 (Ubuntu 24.04, TRT 10.16.2, JetPack R39) gated 2026-11-26: `rtdetrv4`, `rtdetr`, `rtdetr-l`, `yolov8n`, `resnet50`, `depth_anything_v2`, `owlv2`, `vitpose`, `raft_large` (static 1x3x520x960 export; dynamic-axes ONNX fails TRT 10.16 tactic selection), and `videomae-base` (P 2026-11-27 after the video-classification output fix: per-window logging + render save; top-1 grooming dog on a dog clip), and `ecseg_s` (native EdgeCrafter export; exact-GELU converts fine on TRT) engines built with local `trtexec` 10.16.2 — detection runs render-checked dog/bicycle/car, classifier cross-checked top-1 malamute on dog.jpg — see `docs/evidence/trt-rtdetrv4-2026-11-26.json`, `trt-rtdetr-2026-11-26.json`, `trt-yolov8-2026-11-26.json`, `trt-resnet50-2026-11-26.json`, `trt-rtdetrul-2026-11-26.json`, `trt-depth-2026-11-26.json`, `trt-owlv2-2026-11-26.json`, `trt-vitpose-2026-11-26.json`, `trt-raft-2026-11-26.json`, `trt-videomae-2026-11-26.json`, `trt-ecseg-2026-11-26.json`. |
+| TRT | 11.2.1.2, NGC `tensorrt:26.08` | CI image build passed; detection, segmentation, and keypoint runs passed | Engines rebuilt from ONNX; `trtexec` 11.2 no longer accepts `--fp16`. Jetson Orin ARM64 (Ubuntu 24.04, TRT 10.16.2, JetPack R39) gated 2026-11-26: `rtdetrv4`, `rtdetr`, `rtdetr-l`, `yolov8n`, `resnet50`, `depth_anything_v2`, `owlv2`, `vitpose`, `raft_large` (static 1x3x520x960 export; dynamic-axes ONNX fails TRT 10.16 tactic selection), and `videomae-base` (P 2026-11-27 after the video-classification output fix: per-window logging + render save; top-1 grooming dog on a dog clip), and `ecseg_s` (native EdgeCrafter export; exact-GELU converts fine on TRT) engines built with local `trtexec` 10.16.2 — detection runs render-checked dog/bicycle/car, classifier cross-checked top-1 malamute on dog.jpg — see `docs/evidence/trt-rtdetrv4-2026-11-26.json`, `trt-rtdetr-2026-11-26.json`, `trt-yolov8-2026-11-26.json`, `trt-resnet50-2026-11-26.json`, `trt-rtdetrul-2026-11-26.json`, `trt-depth-2026-11-26.json`, `trt-owlv2-2026-11-26.json`, `trt-vitpose-2026-11-26.json`, `trt-raft-2026-11-26.json`, `trt-videomae-2026-11-26.json`, `trt-ecseg-2026-11-26.json`. Gaze (ptgaze ETH-XGaze resnet18) and monocular 3D (UrbanOmniDetect yolo11n-p2) gated 2026-11-28 on the same Orin stack: render-checked arrow/readout and cuboid wireframes on fresh media; evidence in `specs/2026-11-27-neuriplo-tasks-develop-matrix/validation.md`. |
 | TRC | LibTorch 2.14 CPU | 134/134 | RF-DETR uses AOTInductor (`.pt2`); other results use TorchScript. KServe disabled because of a protobuf conflict. |
 | OV | OpenVINO 2026.3.0 | Live inference passed; unit tests unavailable | Unit-test executable fails to link; CI also builds with tests disabled. `rtdetr` gated 2026-11-25 on the x86_64 OpenVINO worker (exit 0, render-checked dog/bicycle/car) — see `docs/evidence/ov-rtdetr-2026-11-25.json`. |
 | TF | TensorFlow 2.19 | 179/179 | The 2.21 C++ runtime failed to load because of a protobuf ABI conflict. |
 | LiteRT | 2.19.0 | 192/192 | SDK's bundled gtest/gmock headers removed to avoid test crashes. EdgeCrafter requires an unreleased backend fix. |
 | ExecT | ExecuTorch 1.2.0, optimized SDK | App 191/191; backend 77/77 | XNNPACK enabled. KServe and gRPC compiled, but live transport was not tested in this build. |
 | MGX | MIGraphX 2.12.0.60401-83, ROCm 6.4.1, MI300X | Backend 6/6: 3 CPU + 3 GPU | Synthetic backend tests only; no app build or trained model tested. |
-| GGML | Local CPU, AMD Ryzen 7 5700U; unreleased neuriplo changes | App 197/197; backend GGMLInferTest 35 passed / 8 skipped / 0 failed (Yolo/Ort50 parity SKIPs without their `/tmp` artifacts) and GGMLOpsParity 13/13 (including GridSample, tie-aware SoftmaxRows, sine-embed, TopK tie-break, bilinear Resize, exact depthwise-conv3x3, Gguf* parser/loader fixtures); the 77/77 upstream CTest predates strict-GGUF loading (ONNX-frontend and graph-executor suites removed) | ResNet-50 top-5 matches ORT exactly; YOLOv8n detection and segmentation match within 0.01 on `.gguf` with identical detections (V-16/V-17/V-18). RF-DETR detection gated 2026-11-16 on `.gguf` with detections identical to ORT (V-21: bicycle 0.94 / horse 0.92 / car 0.89 / motorbike 0.60). RF-DETR-seg gated 2026-11-16 on `.gguf` with ORT-identical instances and mask IoU 1.0 on every kept detection (V-23: bicycle 0.94 / horse 0.82 / car 0.61 / motorbike 0.59 + masks). No CI build job. |
+| GGML | Local CPU, AMD Ryzen 7 5700U; unreleased neuriplo changes | Not claimed for this release | The app and backend gates in the GGML packet pass only with unreleased neuriplo fixes (strict-GGUF-only loader, parser helpers, converter rules). The pinned neuriplo v0.11.3 does not contain them, so every GGML cell is U here. Evidence stays in the GGML coverage packet, not in the released scoreboard. |
 | LLaMA | llama.cpp b9085 | Unit tests unavailable | Unit-test executable fails to link because of missing ggml libraries. |
 | KServe | `neuriplo-kserve-runtime`, `real-onnx` / `grpc-onnx` | Manual HTTP tests passed | gRPC `ModelInfer` returns server error `13 INTERNAL`. |
 
-GGML results used unreleased neuriplo code: strict-GGUF-only loading is
-committed, and sibling branch `feature/ggml-rfdetr` (past `0aee3ea`, plus
-uncommitted decoder/head/seg work) adds parser hardening, native
-TopK/GridSample/softmax-rows/sine-embed/bilinear-resize/depthwise-conv3x3
-helpers, the converter RF-DETR head rule, the complete RF-DETR detection
-loader (S-1 through S-3 plus the V-21 app gate; the `rfdetr` cell is
-promoted), and the complete RF-DETR-seg loader (S-4: 12-block backbone,
-4-layer decoder, mask/proto branch plus the V-23 app gate; the `rfdetrseg`
-cell is promoted). These fixes are not included
-in the released dependency pins. Classification, `yolov8`, and `yoloseg`
-are gated on `.gguf` (strict-GGUF-only loader) with identical detections —
-see `specs/2026-11-13-ggml-matrix-coverage`
-V-16/V-17/V-18.
+GGML is **not part of this release**. The GGML packet records passing
+classification, YOLOv8n detection/segmentation, RF-DETR detection, and
+RF-DETR segmentation gates, but every one of them ran against unreleased
+`neuriplo` changes (strict-GGUF-only loader plus parser/op helpers). The
+pin shipped here is neuriplo v0.11.3, which predates those fixes, so the
+GGML column is U across the board and no GGML support is claimed. The
+column is restored when a `neuriplo` release carries the fixes and the pin
+moves.
 
 ## Known limitations
 
@@ -147,15 +144,14 @@ V-16/V-17/V-18.
   the original image and a fresh source build remain unverified.
 - **OpenCV DNN:** RT-DETRv4 needs a compatible export. EdgeCrafter's exact-GELU
   operation remains an import problem; GroundingDINO has not been retested.
-- **GGML:** only `.gguf` weights load. YOLO26's attention head is still
-  unsupported at the converter. YOLO11 det/seg/pose are gated on `.gguf`
-  (V-26/V-27/V-29: `model.23` DFL path + `/model.10` C2PSA subgraph from
-  sibling PR #79, pose kpt head from sibling `feature/ggml-pose-v10`); RF-DETR detection now has a complete loader
-  graph (backbone + projector + neck + 3-layer deformable decoder + head,
-  native GridSample/TopK/softmax-rows/sine-embed helpers) with an app gate
-  on `.gguf` (V-21); `rfdetrseg` is now also gated (V-23) and its cell is
-  promoted; pose and other transformer rows still need
-  sibling work, so their table entries remain untested.
+- **GGML (not in this release):** the strict-GGUF-only loader and the parser
+  helpers exist only on unreleased `neuriplo` branches, so the pinned build
+  does not run GGML models and every GGML cell is untested here. The GGML
+  packet still records what works with those fixes (classification, YOLOv8n
+  det/seg, RF-DETR det/seg) and the converter limits found there (YOLO26
+  attention head, YOLO10 decode); the column returns when a `neuriplo`
+  release carries the fixes.
+
 - **KServe:** HTTP has passing results; gRPC is blocked by a server error.
   Classification, video, optical flow, and image-understanding serving still
   need testing. See [KServe compatibility](KserveCompatibility.md).
@@ -170,7 +166,8 @@ V-16/V-17/V-18.
 - Test EdgeCrafter segmentation and torchvision ResNet on OpenCV DNN 5.x.
 - Add a Gaussian-splatting example; no preset exists yet.
 - Build and test the app with MIGraphX on supported AMD/ROCm hardware.
-- Test more GGML models once the GGUF converter and loader support them.
+- Release the GGML loader/parser fixes in `neuriplo`, move the pin, and then
+  re-gate the GGML column before claiming any GGML support.
   YOLO11 det/seg/pose are gated (V-26/V-27/V-29); `yolov10n` stays
   converter-BLOCKED (no sibling loader path yet — in-graph TopK decode
   needs mapping, separate packet), as does YOLO26's attention head. Other
